@@ -20,7 +20,7 @@ Last verified: 2026-08-27, commit `06f93d3`.
 |---|---|
 | Boots | Yes — 22 systems, `bootReport.failed` is `[]` |
 | Console | `__boston.errors` is `[]`. One driver **warning** remains: `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` from a fullscreen post pass — see issue 1. |
-| Real fps | **13 @ 1920×1080 `high`** (`measureFps(2)`, settled, static build, `hero_skyline`). Unchanged by the buildings fix — the whole city now rasterises for the same cost, which is what `PERF_REPORT.md` §6 predicts. |
+| Real fps | **13 @ 1920×1080 `high`** (`measureFps(2)`, settled, static build, `hero_skyline`). Unchanged by the buildings fix — the whole city now rasterises for the same cost, which is what `PERF_REPORT.md` §6 predicts. **Not re-measurable while sibling agent tabs are rendering** — see the note under Next priorities. |
 | Draws / tris | 217 / 1.37M at `hero_skyline`; 529 / 2.87M at `downtown_dusk` — **inside** the 1200 / 3.5M budget |
 | Cold boot | ~8 s (was ~45 s) |
 | Visual quality | **~3/10.** Content is real; it does not yet look good. |
@@ -38,6 +38,14 @@ Last verified: 2026-08-27, commit `06f93d3`.
   23,882 tris in **4 draws** — the batching standard to aim for elsewhere.
 - **Props / vegetation**: 33,770 prop instances (86 types), 19,405 plants (19 types).
 - **Lighting**: 3 cascades @ 2048/2048/1536, 1,500 street lamps, 2,226 emissive sources.
+- **Atmosphere**: the `atmosphere` pass is on and stays on (`render.validate()` → `ok:
+  true`). Raymarched volumetric clouds now render at every hour — ~33% sky cover at
+  `clear`, radiance 0.12 pre-dawn / 4.5 at noon / 25.6 at golden hour / 0.035 at
+  midnight, none of them zero. Aerial perspective mixes ~10% sky into geometry at 300 m
+  and ~29% at 1 km. Night carries a city light-pollution glow instead of pure black.
+  Six weather states with 20 s transitions, real precipitation instancing, wetness
+  published to `ctx.assets.setWetness()`, and lightning driving a real `DirectionalLight`
+  plus `bus.emit('thunder', {distance})` at the correct speed-of-sound delay.
 - **Physics** (Rapier), **vehicles**, **audio**, **HUD/minimap/menu**, **profiler**.
 - **Capture harness** (`window.__boston`): 8 named shots, deterministic stepping,
   `measureFps()` that refuses to lie about a backgrounded tab.
@@ -51,33 +59,41 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Boot fails on a not-yet-written system | Vite statically resolves `import('./literal.js')` | `import.meta.glob` in `main.js` |
 | "5 fps" / "83 fps" phantom numbers | Backgrounded-tab rAF throttling | `measureFps()` refuses when `document.hidden` |
 | "Clouds cost 66 ms" | GPU-sync bracketing on a tile GPU forces a tile flush | Clouds actually cost ~3.6 ms; see `PERF_REPORT.md` §4 |
+| **No clouds in any shot, at any hour or weather** — the cloud buffer read `(0,0,0,1)` on every texel | The empty-space-skipping march **livelocked**. On the first coarse-stride hit it rewound one stride and switched to the fine stride, but did not clear `miss`. The rewound sample is empty by construction, so the stale `miss` immediately tripped the back-to-coarse rule, the next coarse stride landed exactly back on the sample that triggered the rewind, and that rewound again. The march oscillated between two points until it burned all 28 steps. Confirmed by instrumenting the loop: every texel with density reported `iters = 28, hits = 0, maxDensityFull = 0` — `densityFull()` was **never once evaluated**, so `scat` stayed 0 and `T` stayed 1. Density itself was always fine (`maxLow` up to 0.71 over 38% of texels), which is why every check of the noise, the weather map, the shell intersection and the coverage calibration came back healthy. | `clouds.glsl.js`: clear `miss` on rewind, require 6 empty fine steps before reverting to coarse, and don't spend the step budget on a rewind |
+| Night sky was a pure-black void with cloud-shaped holes in it | Past sunset `sunCol` is 0, the sky-view LUT ambient is 0 and the moon contributes ~1e-4, so the cloud march had **literally no light source** — measured cloud radiance was exactly `0.0000` at `tod 23`. Nothing was wrong with the march; there was simply no term for the city lighting its own cloud base. | `uCityGlow` in `Sky.js`, horizon-weighted in `skyDome.glsl.js` and base-weighted in `clouds.glsl.js` |
 | Cold boot 45 s | Per-pixel JS texture synthesis without `willReadFrequently`, redundant full-size octaves | materials 12,782→653 ms, props 12,672→600 ms |
 | **Buildings do not rasterise — the whole city renders FLAT** | `BuildingKit.installPatch` defined `onBeforeCompile` as an **own accessor**, shadowing the `Material.prototype` accessor `CascadedShadows.installLightingShaders` installs. That prototype hook is the only thing injecting the shared `boston*` uniforms — one of which is `bostonProbeTex`, a **`sampler3D`** declared unconditionally by the patched `shadowmap_pars_fragment` chunk. Never receiving it, three never assigned it a texture unit, so it kept the default **unit 0** — the same unit the facade's `sampler2DArray` atlas lands on. The driver then rejected every building draw with `GL_INVALID_OPERATION: glDrawElements: Two textures of different types use the same sampler location`. Geometry, transforms, attributes, material flags and the compiled shader were all correct; the draw call simply never executed. Only buildings/landmarks were hit because every other system assigns `onBeforeCompile` normally and so goes through the prototype setter. | `BuildingKit.installPatch`, commit `d3de1e3` |
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
 
 ## Unresolved issues (ranked)
-1. **`street_level` is unusable: a fullscreen post pass forms a framebuffer feedback loop.**
-   The `atmosphere` pass is enabled again and `hero_skyline` / `downtown_dusk` / the
-   downtown aerial all render correctly, but any **low camera** collapses the frame into a
-   stretched noise buffer over pure black. Measured (`meanLum` / `blackFrac` of the frame,
-   `tod 9.5 clear`, same look direction):
+1. **The two street-level shots are parked *underneath the road*. This is not a render
+   bug.** `street_level` sits at `y = 1.7` where `city.groundHeight(40, 120)` is **3.10**,
+   and `rain_street` sits at `y = 2.4` where the ground is **7.99** — so both review shots
+   render the underside of the terrain over a black lower half, which is what the earlier
+   "low cameras collapse to black" table was measuring. Swept at the same x/z and the same
+   look direction, the transition lands exactly on the ground plane, not on any camera
+   height a post-processing bug could care about:
 
-   | cam Y | 2 | 6 | 14 | 30 | 70 | 150 |
-   |---|---|---|---|---|---|---|
-   | mean lum | 50.5 | 52.1 | 45.2 | 105.7 | 128.6 | 129.6 |
-   | black frac | **0.49** | 0.01 | 0.14 | 0.08 | 0.01 | 0.00 |
+   | cam Y | 1.7 | 2.6 | 3.4 | 4.8 |
+   |---|---|---|---|---|
+   | above ground by | −1.40 | −0.50 | **+0.30** | +1.70 |
+   | black frac | 0.283 | 0.285 | **0.006** | 0.012 |
+   | mean lum | 47.6 | 49.7 | 81.4 | 73.3 |
 
-   **This is not buildings — proven twice.** Swapping all facade materials for a plain
-   `MeshStandardMaterial` reproduces it identically, and hiding the entire `buildings` root
-   changes the frame by less than 1% (`blackFrac` 0.48 → 0.47, `meanLum` 50.5 → 51.0).
-   The console shows only `glDrawArrays: Feedback loop formed between Framebuffer and
-   active Texture` — a fullscreen pass sampling the target it is writing. **`LensPass` is
-   the current suspect** (independently flagged elsewhere); the pass list at the time of
-   measurement was FrameState → Render → Pass → atmosphere → AutoExposure → Velocity → TAA
-   → **Lens** → EffectPass → EffectPass. Also worth re-checking the note that the
-   atmosphere RT is sized from a stale canvas width (326×184).
-   *Owner: atmosphere / render pipeline. Files: `src/gfx/RenderPipeline.js`,
-   `src/gfx/Clouds.js`, `src/gfx/Fog.js`.*
+   Raising `street_level` to `y ≈ 4.8` renders the Common correctly, rain and all. **Fix
+   the shot definitions against `city.groundHeight()` rather than hunting the frame.**
+   *Owner: capture harness / city. File: `src/core/CaptureHarness.js` `this.shots`.*
+
+   Separately and still real, but **not** the cause of the black street shots: one
+   fullscreen pass does form a framebuffer feedback loop. Bisected by stubbing every
+   pass's `render` except one and reading `gl.getError()` after `composer.render()` —
+   exactly one throws:
+   `FrameStatePass NONE · RenderPass NONE · N8AO NONE · atmosphere NONE · AutoExposure
+   NONE · Velocity NONE · TAA NONE · `**`LensPass INVALID_OPERATION`**` · EffectPass NONE ·
+   EffectPass NONE`. All four atmosphere draws (cloud march, volumetrics, composite, sky
+   LUT) are GL-clean in the same test. LensPass's draw is being dropped every frame, so
+   whatever it contributes is silently absent.
+   *Owner: render pipeline. File: `src/gfx/RenderPipeline.js`, `src/gfx/effects/`.*
 2. **`night_neon` renders near-black.** Night is a signature GTA-style view and currently
    unusable. *Owner: lighting.*
 3. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
@@ -137,7 +153,22 @@ passes (rewires ping-pong buffers), GPU-sync bracketing inside a pass (tile flus
 | 1 | `PRESETS.high.pixelRatioCap` 1.5 → 1.25 or 1.0 — on a DPR-2 display `high` renders 2.26× the pixels the budget is written against | **18–36 ms** | `src/core/Settings.js` |
 | 2 | Fix resize so `pixelRatioCap` actually applies: call `renderer.setSize(w,h,false)` after `setPixelRatio` (`EffectComposer.setSize` skips it when CSS size is unchanged) | unblocks #1 | `src/gfx/RenderPipeline.js` ~146 |
 | 3 | Let `glowMesh` frustum-cull; lower/clamp `uMinPx` — 1,500 additive quads with an enforced minimum on-screen size become full-screen overdraw | **10–16 ms at night** | `src/gfx/LightManager.js` |
-| 4 | Fix the black atmosphere pass, then re-check its render-target sizing (currently sized from a stale canvas width: 326×184, not 480×270) | correctness | `src/gfx/Clouds.js`, `Fog.js` |
+| 4 | ~~Fix the black atmosphere pass, then re-check its render-target sizing~~ **Done.** Clouds, aerial perspective and the night sky all render; the pass survives `render.validate()` (`ok: true`, frame mean 17.58 → 19.39 across it). **The 326×184 sizing was never a bug** — see the note below the table | — | `src/gfx/Clouds.js`, `Fog.js` |
 | 5 | Merge the final two `EffectPass`es / drop sharpen taps when TAA is off | up to 25 ms, unproven | `RenderPipeline._rebuild` |
 | 6 | Build Traffic, Pedestrians, Player | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
 | 7 | Surface `measureFps` in the DevOverlay instead of `engine.perf` | stops future misdiagnosis | `src/ui/DevOverlay.js` |
+
+**Correction to `PERF_REPORT.md` §4 — the atmosphere render targets are the right size.**
+326×184 is exactly `round(1920 × 0.17)` × `round(1080 × 0.17)`. The report expected 480×270
+because it assumed a 0.25 scale from the class docstring, but `QUALITY.high.scale` in
+`Clouds.js` is **0.17**; `ultra` is the 0.24 tier. Verified live: drawing buffer 1920×1080
+→ 326×184, and at a 1282×800 buffer the same targets come out 218×136, so `setSize` does
+track the buffer. `applyQuality` now reads `renderer.getDrawingBufferSize()` instead of
+`domElement.width` anyway, so it can no longer capture a stale canvas size at init.
+
+**Another instrument that lies here: fps measured while other agents are rendering.**
+Several agents run their own full-resolution instances in sibling browser tabs. Five
+back-to-back `measureFps(2)` calls on an unchanged scene returned 19.9 / 9.8 / 10.3 / 8.3 /
+5.4, and prefix timing returned *negative* per-pass costs. Skipping the cloud march
+entirely (`clouds.skip = true`) measured **slower** than running it. Do not quote an fps
+number without first confirming no other Boston tab is live.

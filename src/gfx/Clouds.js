@@ -22,6 +22,9 @@ const QUALITY = {
 /** Cloud buffer frustum widening, for reprojection headroom on fast turns. */
 const RAY_SCALE = 1.18;
 
+/** Module-scope scratch: applyQuality must not allocate. */
+const _size = new THREE.Vector2();
+
 /**
  * Raymarched volumetric clouds.
  *
@@ -144,6 +147,8 @@ export default class Clouds {
       uMieG:        u.uMieG,
       uLightning:   u.uLightning,
       uLightningColor: u.uLightningColor,
+      uCityGlow:    u.uCityGlow,
+      uCityGlowGain: u.uCityGlowGain,
       uEarthR:      { value: 900000 },
       uWindOffset:  { value: this._wind },
       uDetailOffset:{ value: this._detail },
@@ -178,8 +183,12 @@ export default class Clouds {
     this.uniforms.uLightSteps.value = q.light;
     this.uniforms.uMaxMarch.value = q.march;
     this.interval = q.interval;
-    const w = ctx.renderer.domElement.width, h = ctx.renderer.domElement.height;
-    this.setSize(w, h);
+    // Ask the renderer for the drawing-buffer size rather than reading the
+    // canvas element: `domElement.width` is whatever the last `setSize` wrote,
+    // which at init time is the pre-`_applyResolution` size. That is how these
+    // buffers ended up 326x184 instead of the 480x270 the 0.25 scale implies.
+    ctx.renderer.getDrawingBufferSize(_size);
+    this.setSize(_size.x, _size.y);
   }
 
   setSize(w, h) {

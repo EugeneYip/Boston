@@ -33,6 +33,8 @@ uniform float uSunDisk;
 uniform float uMoonLight;
 uniform float uStarIntensity;
 uniform vec3  uNightGlow;
+uniform vec3  uCityGlow;
+uniform float uCityGlowGain;
 uniform float uTime;
 uniform float uLightning;
 uniform vec3  uLightningColor;
@@ -170,6 +172,17 @@ vec3 skyColor(vec3 rd) {
     night *= smoothstep(-0.03, 0.06, rd.y);
     L += night * uStarIntensity * viewT;
     L += uNightGlow * uStarIntensity * (0.35 + 0.65 * satf(rd.y));
+
+    // City light pollution. Sodium and LED scattered back out of the aerosol
+    // layer, so it is brightest a few degrees above the rooftops and falls off
+    // fast with elevation — the opposite weighting to airglow above. Warm at
+    // the horizon where the path through the aerosol is longest, cooling
+    // toward the zenith.
+    float pollute = (0.10 + 0.90 * exp(-satf(rd.y) * 2.6))
+                  * smoothstep(-0.16, 0.02, rd.y);
+    vec3 polluteCol = mix(uCityGlow, uCityGlow * vec3(0.62, 0.74, 1.05),
+                          satf(rd.y * 2.4));
+    L += polluteCol * (uStarIntensity * uCityGlowGain * pollute);
   }
 
   // --- lightning: a real luminance spike in the sky itself ---

@@ -29,6 +29,25 @@ const MAX_LIGHTS = 6000;
 const MAX_POOLS = 6000;
 const MAX_GLOWS = 8000;
 
+/**
+ * On-screen floor for a halo, in pixels of half-extent.
+ *
+ * A lamp two kilometres away is geometrically sub-pixel, and letting it shrink turns
+ * a lit skyline into grey mush, so the size is clamped. But every pixel of that clamp
+ * is additive overdraw multiplied by a few thousand instances, and the old constant
+ * (0.0016) was authored against one particular viewport: it meant 1.4 px at 1080p,
+ * 2.9 px at 540p and 1.9 px at 1440p. Deriving it from the live viewport instead
+ * makes the cost predictable and the look resolution-independent.
+ */
+const GLOW_MIN_PX = 1.1;
+/** Metres of slack in the glow bounds for that on-screen minimum at maximum reach. */
+const GLOW_BOUND_SLACK = 6;
+/**
+ * Halos dimmer than this cannot survive 8-bit quantisation after exposure, so they
+ * are pure overdraw. Cheap per-instance test in the vertex shader.
+ */
+const MIN_EMIT = 0.004;
+
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
@@ -38,10 +57,31 @@ const _col = new THREE.Color();
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
 const _obj = new THREE.Object3D();
+const _size = new THREE.Vector2();
 
 const NULL_HANDLE = {
   id: -1, setEnabled() {}, setIntensity() {}, setColor() {}, release() {},
 };
+
+/* Expand-only instance bounds, kept as six numbers so growing costs no allocation. */
+function newBox() {
+  return { x0: Infinity, y0: Infinity, z0: Infinity, x1: -Infinity, y1: -Infinity, z1: -Infinity };
+}
+function growBox(b, x, y, z, r) {
+  if (x - r < b.x0) b.x0 = x - r;
+  if (y - r < b.y0) b.y0 = y - r;
+  if (z - r < b.z0) b.z0 = z - r;
+  if (x + r > b.x1) b.x1 = x + r;
+  if (y + r > b.y1) b.y1 = y + r;
+  if (z + r > b.z1) b.z1 = z + r;
+}
+/** @returns {boolean} true when the sphere describes a real, non-empty set. */
+function boxToSphere(b, sphere) {
+  if (!(b.x0 <= b.x1)) return false;
+  sphere.center.set((b.x0 + b.x1) * 0.5, (b.y0 + b.y1) * 0.5, (b.z0 + b.z1) * 0.5);
+  sphere.radius = 0.5 * Math.hypot(b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0);
+  return true;
+}
 
 /** Boston runs warm sodium on the older streets and cool LED on the rebuilt ones. */
 const SODIUM = new THREE.Color('#ffb15c');
@@ -96,7 +136,8 @@ attribute vec4 iColor;
 uniform float uFade0;
 uniform float uFade1;
 uniform float uNight;
-uniform float uMinPx;    // world metres per pixel at 1 m, so far lamps stay visible
+uniform float uMinPx;    // view-space metres per screen pixel, per metre of depth
+uniform float uMinEmit;  // below this the halo cannot survive quantisation: skip it
 varying vec2 vQ;
 varying vec3 vC;
 void main() {
@@ -105,12 +146,19 @@ void main() {
   vec4 mv = modelViewMatrix * vec4( iPos, 1.0 );
   float d = max( -mv.z, 0.01 );
   gain *= 1.0 - smoothstep( uFade0, uFade1, d );
-  // Never let a lamp shrink below a couple of pixels; a receding lit street has to
-  // stay a chain of points, not fade into mush.
+  // Never let a lamp shrink below about a pixel; a receding lit street has to stay a
+  // chain of points, not fade into mush. uMinPx is derived from the real viewport
+  // each frame, so this is a *pixel* floor rather than a constant that silently
+  // becomes three pixels at half resolution and one at 4K.
   vec2 sz = max( iSize, vec2( d * uMinPx ) );
   mv.xy += position.xy * sz;
+  // Spreading a fixed amount of light over a larger quad has to dim it, or a distant
+  // street reads brighter than a near one.
   vC = iColor.rgb * gain * ( iSize.x * iSize.y ) / max( sz.x * sz.y, 1e-5 );
-  gl_Position = gain <= 0.0009 ? vec4( 2.0, 2.0, 2.0, 1.0 ) : projectionMatrix * mv;
+  // Cull outright rather than rasterising something that rounds to black. Both tests
+  // are per-instance, so the whole quad is skipped at the vertex stage.
+  bool dead = gain <= 0.0009 || max( vC.r, max( vC.g, vC.b ) ) < uMinEmit;
+  gl_Position = dead ? vec4( 2.0, 2.0, 2.0, 1.0 ) : projectionMatrix * mv;
 }
 `;
 
@@ -179,6 +227,12 @@ export default class LightManager {
     this._poolDirty = false;
     this._glowDirty = false;
     this._lampIds = [];
+    // Instance bounds, grown as sources are registered or move. Expand-only: a
+    // conservative sphere is always correct for culling, and the set converges on
+    // the city's own extent within a few seconds of a vehicle driving about.
+    this._poolBox = newBox();
+    this._glowBox = newBox();
+    this._boundsDirty = true;
 
     this.night = 0;
     this.group = new THREE.Group();
@@ -251,7 +305,13 @@ export default class LightManager {
       toneMapped: true, fog: false,
     });
     this.poolMesh = new THREE.Mesh(pg, this.poolMat);
-    this.poolMesh.frustumCulled = false;
+    // Both proxy meshes place their instances entirely in the vertex shader, so
+    // three's computeBoundingSphere would measure the 2x2 base quad and cull the
+    // whole city away. We track the real instance bounds ourselves (see _flush) —
+    // which is what makes frustum culling safe, and it is worth having: looking away
+    // from downtown should not rasterise downtown's halos.
+    pg.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    this.poolMesh.frustumCulled = true;
     this.poolMesh.renderOrder = 6;
     this.poolMesh.name = 'lightPools';
     this.group.add(this.poolMesh);
@@ -277,13 +337,15 @@ export default class LightManager {
       uniforms: {
         uFade0: { value: 700 }, uFade1: { value: 1600 },
         uNight: { value: 0 }, uMinPx: { value: 0.0016 },
+        uMinEmit: { value: MIN_EMIT },
       },
       transparent: true, blending: THREE.AdditiveBlending,
       depthWrite: false, depthTest: true,
       toneMapped: true, fog: false,
     });
     this.glowMesh = new THREE.Mesh(gg, this.glowMat);
-    this.glowMesh.frustumCulled = false;
+    gg.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    this.glowMesh.frustumCulled = true;
     this.glowMesh.renderOrder = 7;
     this.glowMesh.name = 'lightGlows';
     this.group.add(this.glowMesh);
@@ -356,7 +418,9 @@ export default class LightManager {
       this._poolPos.setXYZ(pi, _v.x, groundY + 0.035, _v.z);
       const len = o.poolLength ?? (type === T_HEADLIGHT ? 15 : pr);
       this._poolAxis.setXYZW(pi, 0, 1, len, pr);
+      growBox(this._poolBox, _v.x, groundY + 0.035, _v.z, Math.max(len, pr));
       this._poolDirty = true;
+      this._boundsDirty = true;
     }
     const hs = o.haloSize ?? (anchored ? 0 : type === T_HEADLIGHT ? 0.55 :
       type === T_TAIL ? 0.34 : type === T_SIGN ? 0.8 : 0.62);
@@ -366,7 +430,10 @@ export default class LightManager {
       f |= F_GLOW;
       this._glowPos.setXYZ(gi, _v.x, _v.y, _v.z);
       this._glowSize.setXY(gi, hs, hs);
+      // Slack covers the on-screen minimum size, which grows the quad with distance.
+      growBox(this._glowBox, _v.x, _v.y, _v.z, hs + GLOW_BOUND_SLACK);
       this._glowDirty = true;
+      this._boundsDirty = true;
     }
     this._flags[id] = f;
     this._writeProxyColour(id);
@@ -672,11 +739,27 @@ export default class LightManager {
     this.poolMat.uniforms.uFade1.value = Math.min(420, dd * 0.24);
     this.glowMat.uniforms.uFade1.value = dd;
     this.glowMat.uniforms.uFade0.value = dd * 0.55;
+    this.glowMat.uniforms.uMinPx.value = this._minPx(ctx);
 
     this._refreshDynamic();
     this._select(_camPos, _camFwd, ctx.settings.drawDist);
     this._applyPools(dt, night);
     this._flush();
+  }
+
+  /**
+   * View-space metres per screen pixel, per metre of depth — i.e. multiply by the
+   * distance to a point to get the size of one pixel there. That is exactly the unit
+   * GLOW_VERT's minimum-size clamp needs, so the halo floor is a fixed number of
+   * pixels at any resolution, FOV or quality preset.
+   */
+  _minPx(ctx) {
+    const cam = ctx.camera;
+    const h = ctx.renderer?.getDrawingBufferSize
+      ? ctx.renderer.getDrawingBufferSize(_size).y
+      : (ctx.renderer?.domElement?.height || 1080);
+    if (!cam.isPerspectiveCamera || !(h > 0)) return 0.0016;
+    return GLOW_MIN_PX * 2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) * 0.5) / h;
   }
 
   _refreshDynamic() {
@@ -692,17 +775,27 @@ export default class LightManager {
       this._readDirection(i, o);
 
       const gi = this._glowIdx[i];
-      if (gi >= 0) { this._glowPos.setXYZ(gi, _v.x, _v.y, _v.z); this._glowDirty = true; }
+      if (gi >= 0) {
+        this._glowPos.setXYZ(gi, _v.x, _v.y, _v.z);
+        growBox(this._glowBox, _v.x, _v.y, _v.z,
+          this._glowSize.getX(gi) + GLOW_BOUND_SLACK);
+        this._glowDirty = true;
+        this._boundsDirty = true;
+      }
       const pi = this._poolIdx[i];
       if (pi >= 0) {
         const dx = this._dx[i], dz = this._dz[i];
         const l = Math.hypot(dx, dz) || 1;
         const g = this._groundAt(_v.x, _v.z);
         const throwLen = this._type[i] === T_HEADLIGHT ? 11 : 0;
-        this._poolPos.setXYZ(pi, _v.x + (dx / l) * throwLen, g + 0.035, _v.z + (dz / l) * throwLen);
+        const px = _v.x + (dx / l) * throwLen, pz = _v.z + (dz / l) * throwLen;
+        this._poolPos.setXYZ(pi, px, g + 0.035, pz);
         this._poolAxis.setXYZW(pi, dx / l, dz / l,
           this._poolAxis.getZ(pi), this._poolAxis.getW(pi));
+        growBox(this._poolBox, px, g + 0.035, pz,
+          Math.max(this._poolAxis.getZ(pi), this._poolAxis.getW(pi)));
         this._poolDirty = true;
+        this._boundsDirty = true;
       }
     }
   }
@@ -845,6 +938,13 @@ export default class LightManager {
       this._glowSize.needsUpdate = true;
       this._glowCol.needsUpdate = true;
       this._glowDirty = false;
+    }
+    if (this._boundsDirty) {
+      this._boundsDirty = false;
+      // An empty set keeps the infinite sphere, so a mesh with no instances yet is
+      // never culled into a state it cannot recover from.
+      boxToSphere(this._poolBox, this.poolMesh.geometry.boundingSphere);
+      boxToSphere(this._glowBox, this.glowMesh.geometry.boundingSphere);
     }
   }
 

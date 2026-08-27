@@ -524,7 +524,13 @@ export default class RenderPipeline {
     // EffectComposer.setSize() skips renderer.setSize() when the CSS size is
     // unchanged, so a changed pixel ratio (quality switch at a fixed window size)
     // would never reach the drawing buffer. Apply it explicitly.
-    this.renderer.setSize(w, h, false);
+    //
+    // updateStyle MUST stay true. three writes an inline width/height on the canvas
+    // the first time setSize runs, and an inline style beats the `canvas{width:100%}`
+    // rule in index.html forever after. Passing false here leaves the element pinned
+    // at its boot-time CSS box while the drawing buffer follows the window, so the
+    // game renders into the top-left corner of a black page on every resize.
+    this.renderer.setSize(w, h, true);
     this.pixelRatio = r;
   }
 

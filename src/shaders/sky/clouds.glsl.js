@@ -79,6 +79,8 @@ uniform float uLightning;
 uniform vec3  uLightningColor;
 uniform float uAmbientScale;
 uniform float uAerial;
+uniform vec3  uCityGlow;
+uniform float uCityGlowGain;
 
 varying vec2 vUv;
 
@@ -252,15 +254,32 @@ void main() {
   vec3 ambTop = skyLut(vec3(0.0, 1.0, 0.0)) * uAmbientScale;
   vec3 ambBot = skyLut(normalize(vec3(rd.x, -0.12, rd.z))) * uAmbientScale * 0.55;
 
+  // City light reaching the cloud base from below. Once the sun is down this is
+  // the *only* light on the deck — sunCol and the sky-view ambient are both
+  // zero and the moon contributes ~1e-4 — so without it every cloud at night is
+  // a hole of exact black punched in the star field. Scaled by the deck's own
+  // depth: a solid overcast traps and re-emits far more of the city than a few
+  // fair-weather cumulus do.
+  // The 4x over the dome's glow is not a fudge: the dome term is the fraction of
+  // the city's upward flux that the clear-air aerosol scatters back down, while
+  // a cloud base intercepts and re-emits most of it. Get this the wrong way
+  // round and the clouds read as black holes cut out of a glowing sky.
+  vec3 cityBase = uCityGlow * (4.0 * uCityGlowGain
+                * smoothstep(0.05, -0.13, uSunDir.y));
+
   vec3 scat = vec3(0.0);
   float T = 1.0;
   float distAcc = 0.0, wAcc = 0.0;
   float step_ = dtCoarse;
   float t = t0 + jitter * dtCoarse;
   int miss = 0;
+  // Budget of *advancing* steps. A rewind moves backwards and must not spend
+  // one, or a march that enters a cloud late in the span pays for the refine
+  // twice: once in distance and once in budget.
+  float used = 0.0;
 
   for (int i = 0; i < 96; i++) {
-    if (i >= steps || T < 0.03 || t > t1) break;
+    if (used >= float(steps) || T < 0.03 || t > t1) break;
     vec3 p = uCamPos + rd * t;
     float h = heightFrac(p);
     float cov, type;
@@ -269,8 +288,18 @@ void main() {
     if (dLow > 0.001) {
       if (step_ > dtFine * 1.5) {
         // First hit inside a coarse stride: rewind once, then refine.
+        //
+        // 'miss' MUST be cleared here. Leaving it set is what made this march
+        // livelock: the rewound sample is by definition empty (the coarse
+        // stride passed through it), so a stale miss count immediately trips
+        // the back-to-coarse rule below, the next stride lands exactly back
+        // on the sample we rewound from, and that rewinds again. The march
+        // then oscillates between two points until it runs out of steps and
+        // densityFull() is never once evaluated — a completely transparent
+        // cloud buffer at every hour and every weather state.
         t = max(t - step_, t0);
         step_ = dtFine;
+        miss = 0;
         continue;
       }
       miss = 0;
@@ -290,6 +319,9 @@ void main() {
         lightE *= mix(1.0, (1.0 - exp(-dens * 34.0)) * 2.0, 0.62);   // powder
 
         vec3 amb = mix(ambBot, ambTop, satf(h * 0.85 + 0.15)) * (0.35 + 0.65 * satf(1.2 - cov));
+        // Lit from below, so it falls off through the deck rather than rising
+        // with altitude the way sky ambient does.
+        amb += cityBase * (0.30 + 0.70 * cov) * (0.15 + 0.85 * (1.0 - satf(h)));
         vec3 moonE = moonCol * hgPhase(0.55, cosM) * exp(-od * uExtinction * 0.55) * 4.0;
 
         vec3 S = sunCol * lightE + amb + moonE;
@@ -303,10 +335,15 @@ void main() {
         distAcc += t * dens; wAcc += dens;
       }
     } else {
+      // Only give up on the fine stride after enough consecutive empty fine
+      // samples to have re-crossed the coarse stride we rewound over
+      // (dtCoarse == 3 * dtFine), otherwise the revert leaps straight past the
+      // density that triggered the refine in the first place.
       miss++;
-      if (miss > 1) step_ = dtCoarse;
+      if (miss > 5) { step_ = dtCoarse; miss = 0; }
     }
     t += step_;
+    used += 1.0;
   }
 
   // Aerial perspective on the deck itself: distant towers of cloud desaturate

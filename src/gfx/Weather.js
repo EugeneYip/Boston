@@ -13,6 +13,12 @@ const SPLASH_MAX = 2600;
  * TRANSITION seconds, so the sky, clouds, fog, precipitation, wind and
  * wetness all move together.
  *
+ * `hazeSigma` is the aerosol extinction per metre and is what carries aerial
+ * perspective. Calibrated by reading depth-bucketed transmittance out of the
+ * composite rather than by eye: `clear` puts ~10% sky into geometry at 300 m
+ * and ~29% at 1 km, which is the ramp that makes the skyline read as
+ * kilometres deep instead of a few hundred metres of boxes.
+ *
  * Boston-specific: `storm` is a nor'easter — cumulonimbus to 8 km, wind out of
  * the north-east at 18 m/s and near-horizontal rain. `fog` is harbour sea fog,
  * a shallow 60 m layer that swallows the skyline but leaves the towers'
@@ -22,7 +28,7 @@ const PRESETS = {
   clear: {
     coverage: 0.42, cloudType: 0.40, density: 1, extinction: 0.018, detail: 0.35,
     cloudBottom: 1550, cloudTop: 3700, anvil: 0.0, ambient: 1.0, cloudShadow: 0.85,
-    turbidity: 1.25, hazeSigma: 0.00022, hazeH: 1500, hazeY0: 0, fogAlbedo: 0.0,
+    turbidity: 1.25, hazeSigma: 0.00034, hazeH: 1300, hazeY0: 0, fogAlbedo: 0.0,
     rayleigh: 1.0, shaft: 0.85, horizonHaze: 0.20, skyMul: 1.0, aerial: 4.5e-05,
     rain: 0, snow: 0, wind: 5, windDir: 235, lightning: 0, wetness: 0.0,
     fogTint: '#c9d3de',
@@ -30,7 +36,7 @@ const PRESETS = {
   overcast: {
     coverage: 1, cloudType: 0.10, density: 1.15, extinction: 0.024, detail: 0.24,
     cloudBottom: 750, cloudTop: 2000, anvil: 0.0, ambient: 1.35, cloudShadow: 2.2,
-    turbidity: 2.30, hazeSigma: 0.00042, hazeH: 1100, hazeY0: 0, fogAlbedo: 0.15,
+    turbidity: 2.30, hazeSigma: 0.00058, hazeH: 1000, hazeY0: 0, fogAlbedo: 0.15,
     rayleigh: 1.0, shaft: 0.35, horizonHaze: 0.45, skyMul: 1.0, aerial: 8e-05,
     rain: 0, snow: 0, wind: 7, windDir: 250, lightning: 0, wetness: 0.10,
     fogTint: '#b9c2cc',
@@ -206,6 +212,7 @@ export default class Weather {
     // The capture harness freezes the clock and steps frames by hand; a 20 s
     // ramp would never land, so a deterministic capture snaps instead.
     const deterministic = ctx.settings.timeScale === 0 || ctx.engine?._running === false;
+    this._deterministic = deterministic;
     this._blend = deterministic ? 1 : Math.min(1, this._blend + dt / TRANSITION);
     const k = this._blend * this._blend * (3 - 2 * this._blend);
 
@@ -301,10 +308,18 @@ export default class Weather {
     cl._windVec.copy(this._wind).multiplyScalar(1.8);   // cloud deck runs faster
 
     // Wetness: soaks in over ~8 s, dries over ~50 s.
+    //
+    // The soak/dry ramp is wall-clock, and a deterministic capture only advances
+    // ~30 frames, so without the snap a `rain` screenshot is taken on roads that
+    // are still 87% dry. Snap for the same reason the preset blend snaps.
     const target = Math.max(c.wetness, this.cur.rain * 0.9);
-    const rate = target > this._wet ? 1 / 8 : 1 / 50;
-    const step = rate * (ctx.time.dt || 1 / 60);
-    this._wet += THREE.MathUtils.clamp(target - this._wet, -step, step);
+    if (this._deterministic) {
+      this._wet = target;
+    } else {
+      const rate = target > this._wet ? 1 / 8 : 1 / 50;
+      const step = rate * (ctx.time.dt || 1 / 60);
+      this._wet += THREE.MathUtils.clamp(target - this._wet, -step, step);
+    }
     if (Math.abs(this._wet - this._appliedWet) > 0.004) {
       ctx.assets?.setWetness?.(this._wet);
       // The colour-grade pass reads assets.wetness; publish it alongside.

@@ -122,8 +122,76 @@ export default class AtmosphereFog {
     this.pass = new AtmospherePass(this);
     this._applyQuality();
     this._attach();
+    this._unshareComposerDepth();
 
-    ctx.bus.on('quality:changed', () => { this._applyQuality(); this._attach(); });
+    ctx.bus.on('quality:changed', () => {
+      this._applyQuality();
+      this._attach();
+      // A rebuild removes every pass, which makes the composer delete and then
+      // re-create its depth attachments — and re-create the bug with them.
+      this._unshareComposerDepth();
+    });
+  }
+
+  /**
+   * Give the composer's three depth textures three *actual* GL textures.
+   *
+   * This is the fix for the black atmosphere pass, and it is a library-level bug
+   * rather than anything wrong with this stage. `postprocessing` 6.39 knows that
+   * a pass cannot sample scene depth while rendering into a ping-pong buffer
+   * that has the same depth image attached, so `createDepthTexture()`
+   * deliberately builds three depth textures — input, output, and a "stable" one
+   * that is never a render output — via `DepthTexture.clone()`.
+   *
+   * `Texture.copy()` assigns `this.source = source.source`, and three r171 keys
+   * its GL texture cache on `(texture.source, textureCacheKey)`. Three clones of
+   * one texture therefore share a source *and* have identical cache keys, so all
+   * three resolve to a single `WebGLTexture`. Measured live:
+   *
+   *   sameSource(in, out) true   glTexture(in) === glTexture(stable) true
+   *
+   * So the "stable" depth texture *is* the image attached to the buffer we draw
+   * into. Sampling it is a framebuffer feedback loop; WebGL answers with
+   * GL_INVALID_OPERATION and drops the draw. Since a blit clears its target
+   * first, the pass emitted a cleared — i.e. pure black — buffer, which is
+   * exactly what RenderPipeline's validator caught when it disabled us.
+   *
+   * Handing each depth texture its own `Source` restores postprocessing's
+   * intent. It also unbreaks two things outside this stage: `blitDepthBuffer`
+   * (previously "read and write depth stencil attachments cannot be the same
+   * image", so the stable depth was never actually being filled) and N8AO,
+   * which reads the input buffer's depth while writing to the output buffer.
+   *
+   * Cost: nothing per frame. Safe to leave in — it no-ops the moment
+   * postprocessing or three stops producing shared sources.
+   *
+   * @return {boolean} true if any texture had to be un-shared
+   */
+  _unshareComposerDepth() {
+    const composer = this.ctx.composer;
+    if (!composer) return false;
+    const targets = [composer.inputBuffer, composer.outputBuffer,
+                     composer.depthRenderTarget];
+    const seen = new Set();
+    let fixed = false;
+    for (const rt of targets) {
+      const tex = rt && rt.depthTexture;
+      if (!tex) continue;
+      if (seen.has(tex.source)) {
+        // Dispose first so three decrements the shared source's use count
+        // instead of orphaning the GL texture it still thinks is in use.
+        tex.dispose();
+        const img = tex.image || {};
+        tex.source = new THREE.Source({
+          width: img.width | 0, height: img.height | 0, depth: 1,
+        });
+        tex.needsUpdate = true;
+        rt.dispose();               // force three to rebuild the FBO around it
+        fixed = true;
+      }
+      seen.add(tex.source);
+    }
+    return fixed;
   }
 
   _applyQuality() {

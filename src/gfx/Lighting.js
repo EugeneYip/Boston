@@ -21,7 +21,33 @@ installLightingShaders();
 
 const SUN_PEAK = 5.2;      // ARCHITECTURE: sun sits in the 3-6 band
 const SKY_PEAK = 1.05;
-const MOON_PEAK = 0.075;
+
+/**
+ * Night levels, in the same irradiance units as SUN_PEAK / SKY_PEAK.
+ *
+ * These are compressed, not physical: a moonless city night is about five orders of
+ * magnitude below noon and full moonlight is ~1/400,000 of sunlight, which no display
+ * and no tone curve can carry. What matters is that night keeps a *key* (the moon,
+ * so surfaces still have shape and cast shadows), a *fill* (skyglow off low cloud,
+ * which is the dominant real term and is warm rather than blue) and enough separation
+ * from the artificial lights that a lamp still reads as hot.
+ *
+ * NIGHT_SKY is the effective irradiance, not a number that then gets multiplied by a
+ * near-black sky colour — see the note in `_update`.
+ */
+const MOON_PEAK = 0.42;
+/**
+ * NIGHT_SKY is high for a physical skyglow because the exposure chain currently does
+ * not adapt: `AutoExposurePass`'s metering clamp (`minEV: -0.6` in RenderPipeline)
+ * pins the adapted log-luminance at -3.6 and therefore the exposure at 2.424 — the
+ * *same* value at noon and at 22:00, measured, while the real scene log-luminance
+ * median moves from -6.5 to -10.5. Until night gets its stops back, the ambient has
+ * to be authored at an absolute level instead of a physical one. When metering is
+ * fixed this should come back down to roughly 0.15-0.25.
+ */
+const NIGHT_SKY = 0.9;
+/** Extra environment (IBL) at night: wet asphalt and glass reflecting the skyglow. */
+const NIGHT_ENV = 0.30;
 
 const WEATHER = {
   clear:    { sun: 1.00, sky: 1.00, soft: 1.0, tint: 1.00 },
@@ -40,13 +66,31 @@ const _c2 = new THREE.Color();
 /* Sky and bounce reference colours, authored in sRGB. */
 const SKY_DAY = new THREE.Color('#8ab4ee');
 const SKY_DUSK = new THREE.Color('#c08a6e');
-const SKY_NIGHT = new THREE.Color('#16233f');
+// Night is authored at a moderate saturation on purpose. These colours are now
+// normalised to unit luminance before they reach the hemisphere light, and a deep
+// navy normalises to a 6:1 blue-to-red ratio — which painted the whole night city
+// cyan once the floor was raised. A city's night sky is skyglow scattered off low
+// cloud, which is a desaturated slate, not the navy of a rural sky.
+const SKY_NIGHT = new THREE.Color('#2d3341');
 const GND_DAY = new THREE.Color('#5b5348');
 const GND_DUSK = new THREE.Color('#4a382c');
-const GND_NIGHT = new THREE.Color('#241a12');   // sodium skyglow off low cloud
+const GND_NIGHT = new THREE.Color('#34271c');   // sodium skyglow off low cloud
 const MOON_COL = new THREE.Color('#9fb6de');
 
 const NEON = ['#ff2d55', '#00e5ff', '#ff9500', '#39ff88', '#ff36f0', '#ffd21e', '#4d6bff'];
+
+/**
+ * Emissive radiance of a lit window pane.
+ *
+ * A window seen from the street is bright but it is not a light source you look
+ * into: it has a frame, a ceiling glow and a dark half. Authored at 4.2 it cleared
+ * the tone curve's shoulder by two stops, so every pane clipped to flat white, the
+ * mullions between them bloomed shut and a whole facade read as one glowing slab —
+ * measured: 6.7% of a night street frame pinned at 255. At 1.5 the panes stay hot
+ * enough to bloom and to read as the brightest thing in the shot while keeping their
+ * grid, their colour and their variation.
+ */
+const WIN_BRIGHT = 1.5;
 
 /* -------------------------------------------------------------------------- */
 /* Window emissive injection                                                   */
@@ -65,33 +109,50 @@ float bostonHash21( vec2 p ) {
 }
 `;
 
+/**
+ * Runs on every facade fragment, so it is written as a funnel rather than as a
+ * straight-line block: each stage is gated on the cheapest test that can still
+ * prove the fragment contributes nothing.
+ *
+ *   uWinNight  — uniform, so the daytime branch is coherent across a whole draw
+ *   bwNrm.y    — roofs and soffits have no windows
+ *   shape      — mullions are ~45% of a facade's area and are never lit
+ *   lit        — roughly half the remaining windows are dark at any hour
+ *
+ * Only fragments that survive all four pay for the second and third hashes and the
+ * television flicker. The output is identical to evaluating everything up front.
+ */
 const WIN_BODY = /* glsl */`
 	if ( uWinNight > 0.002 ) {
-		vec3 bwPos = cameraPosition + ( - vViewPosition ) * mat3( viewMatrix );
 		vec3 bwNrm = normal * mat3( viewMatrix );
 		if ( abs( bwNrm.y ) < 0.45 ) {
+			vec3 bwPos = cameraPosition + ( - vViewPosition ) * mat3( viewMatrix );
 			float u = abs( bwNrm.x ) > abs( bwNrm.z ) ? bwPos.z : bwPos.x;
 			vec2 cell = vec2( u / uWinCell.x, ( bwPos.y - 1.3 ) / uWinCell.y );
-			vec2 id = floor( cell );
 			vec2 fr = fract( cell );
 			vec2 pane = smoothstep( vec2( 0.13 ), vec2( 0.25 ), fr ) *
 				( 1.0 - smoothstep( vec2( 0.75 ), vec2( 0.87 ), fr ) );
 			float shape = pane.x * pane.y;
-			float h1 = bostonHash21( id );
-			float h2 = bostonHash21( id + 37.7 );
-			float h3 = bostonHash21( id * 1.73 + 11.3 );
-			// Occupancy is per window and biased per floor, so a tower lights up in
-			// clumps the way a real one does rather than as uniform static.
-			float lit = step( h1, uWinLit * ( 0.45 + 1.05 * bostonHash21( vec2( id.y, 3.0 ) ) ) );
-			vec3 c = mix( vec3( 1.0, 0.60, 0.28 ), vec3( 0.70, 0.81, 1.0 ), step( 0.60, h2 ) );
-			float flick = 1.0;
-			if ( h2 > 0.90 ) {                       // televisions
-				c = vec3( 0.26, 0.46, 1.0 );
-				flick = 0.5 + 0.5 * abs( sin( uWinTime * 6.1 + h3 * 41.0 ) *
-					sin( uWinTime * 1.9 + h1 * 23.0 ) );
+			if ( shape > 0.0 ) {
+				vec2 id = floor( cell );
+				float h1 = bostonHash21( id );
+				// Occupancy is per window and biased per floor, so a tower lights up in
+				// clumps the way a real one does rather than as uniform static.
+				float lit = step( h1, uWinLit * ( 0.45 + 1.05 * bostonHash21( vec2( id.y, 3.0 ) ) ) );
+				if ( lit > 0.0 ) {
+					float h2 = bostonHash21( id + 37.7 );
+					float h3 = bostonHash21( id * 1.73 + 11.3 );
+					vec3 c = mix( vec3( 1.0, 0.60, 0.28 ), vec3( 0.70, 0.81, 1.0 ), step( 0.60, h2 ) );
+					float flick = 1.0;
+					if ( h2 > 0.90 ) {                       // televisions
+						c = vec3( 0.26, 0.46, 1.0 );
+						flick = 0.5 + 0.5 * abs( sin( uWinTime * 6.1 + h3 * 41.0 ) *
+							sin( uWinTime * 1.9 + h1 * 23.0 ) );
+					}
+					totalEmissiveRadiance += c * ( shape * flick * uWinBright *
+						uWinNight * ( 0.5 + h3 * 0.9 ) );
+				}
 			}
-			totalEmissiveRadiance += c * ( shape * lit * flick * uWinBright *
-				uWinNight * ( 0.5 + h3 * 0.9 ) );
 		}
 	}
 `;
@@ -280,7 +341,7 @@ export default class Lighting {
         uWinLit: { value: 0.35 },
         uWinTime: { value: 0 },
         uWinCell: { value: new THREE.Vector2(o.windowWidth ?? 3.1, o.floorHeight ?? 3.55) },
-        uWinBright: { value: o.brightness ?? 3.6 },
+        uWinBright: { value: o.brightness ?? WIN_BRIGHT },
       };
       // Compose, never replace: the facade agent already hooks onBeforeCompile for
       // its own soot and macro-variation code, and clobbering it would silently
@@ -332,7 +393,7 @@ export default class Lighting {
         if (!/facade|building|brownstone|brick|tower/i.test(m.name || '')) continue;
         if (m.userData.nightEmissive || m.emissiveMap) continue;   // already handled
         if (m.emissive && m.emissive.getHex() !== 0) continue;
-        this.applyWindowLights(m, { floorHeight: 3.6, windowWidth: 3.15, brightness: 4.2 });
+        this.applyWindowLights(m, { floorHeight: 3.6, windowWidth: 3.15 });
         n++;
       }
     });
@@ -344,7 +405,7 @@ export default class Lighting {
       const clone = mesh.material.clone();
       this._swapped.push({ mesh, original: mesh.material, clone });
       mesh.material = clone;
-      this.applyWindowLights(clone, { floorHeight: 3.6, windowWidth: 3.2, brightness: 4.2 });
+      this.applyWindowLights(clone, { floorHeight: 3.6, windowWidth: 3.2 });
       n = 1;
     }
     return n;
@@ -512,17 +573,31 @@ export default class Lighting {
       THREE.MathUtils.smoothstep(altDeg, -9, -1);
     this.skyColor.copy(SKY_DAY).lerp(SKY_DUSK, dusk * 0.85).lerp(SKY_NIGHT, this.night);
     _c2.copy(GND_DAY).lerp(GND_DUSK, dusk * 0.8).lerp(GND_NIGHT, this.night);
-    // Night floor: moonlight plus the city's own glow bouncing off the air.
-    // Night floor. Physically a moonless city night is ~5 orders below noon; every
-    // game compresses that to about 1.5 so the player can see. Skyglow off low cloud
-    // is the dominant term and it is warm, not blue, which is why GND_NIGHT is amber.
-    this.skyIntensity = SKY_PEAK * skyCurve * w.sky + this.night * 0.22;
-    this.hemi.color.copy(this.skyColor);
-    this.hemi.groundColor.copy(_c2);
+
+    // A HemisphereLight's irradiance is colour x intensity, so an authored colour
+    // quietly scales the level by its own luminance. SKY_NIGHT is a very dark blue
+    // (linear luminance 0.017), so the authored night floor was arriving at the
+    // shader ~58x weaker than the number said — that, not the tone mapper, is why
+    // night rendered near-black.
+    //
+    // Split the two concerns: the colours carry hue, `skyIntensity` carries level.
+    // Both hemisphere colours are divided by the *sky* luminance, which preserves
+    // the sky/ground brightness ratio the authored pair encodes, and the same
+    // luminance is folded back into the daylight term so daylight is unchanged to
+    // the last bit. Only the night floor changes meaning, and it now means what it
+    // says.
+    const skyLum = Math.max(luminance(this.skyColor), 1e-4);
+    const inv = 1 / skyLum;
+    this.hemi.color.copy(this.skyColor).multiplyScalar(inv);
+    this.hemi.groundColor.copy(_c2).multiplyScalar(inv);
+    this.skyIntensity = SKY_PEAK * skyCurve * w.sky * skyLum + this.night * NIGHT_SKY * w.sky;
     this.hemi.intensity = this.skyIntensity;
 
     // The PMREM sky is a second, uncontrolled ambient source; keep the total honest.
-    ctx.scene.environmentIntensity = 0.16 + 0.62 * skyCurve * w.tint;
+    // At night it is the only thing that puts skyglow into wet asphalt and glass, so
+    // it gets its own floor rather than decaying to the daylight base.
+    ctx.scene.environmentIntensity =
+      0.16 + 0.62 * skyCurve * w.tint + this.night * NIGHT_ENV * w.tint;
 
     // Softer sun under cloud: the disc becomes the whole sky.
     bostonUniforms.bostonSunAngular.value = 0.0093 * w.soft;
@@ -535,7 +610,9 @@ export default class Lighting {
     ps.dirY = this.toSun.y;
     ps.color.copy(this.sunColor);
     ps.intensity = this.sunIntensity;
-    ps.skyColor.copy(this.skyColor);
+    // Hue-only colour + honest level, exactly as the hemisphere light gets it, so
+    // the bounce the probe volume bakes matches the ambient the shader applies.
+    ps.skyColor.copy(this.hemi.color);
     ps.skyIntensity = this.skyIntensity;
     ps.night = this.night;
     this.probes.update(dt, ctx, ps);
@@ -624,6 +701,9 @@ export default class Lighting {
     this._winMats.length = 0;
   }
 }
+
+/** Rec.709 luminance of a colour that is already in the linear working space. */
+function luminance(c) { return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; }
 
 /**
  * Tanner Helland's blackbody approximation, good to a few percent over 1000-10000 K.

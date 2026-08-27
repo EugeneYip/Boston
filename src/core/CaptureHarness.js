@@ -33,6 +33,27 @@ export default class CaptureHarness {
       bridge:         { pos: [-40, 26, -980],  look: [120, 8, -1500], tod: 8.2,  fov: 52 },
     };
 
+    // Any system id that may write to the camera. `setCamera` stands these down,
+    // but the transform lock below is what actually guarantees the shot.
+    const CAMERA_DRIVERS = new Set(['cameraRig', 'player', 'gameplay', 'missions']);
+    const camLock = { active: false, pos: new THREE.Vector3(),
+                      quat: new THREE.Quaternion(), fov: null };
+    const _lookTmp = new THREE.Vector3();
+    {
+      const cam = engine.camera;
+      const origUpdate = cam.updateMatrixWorld.bind(cam);
+      cam.updateMatrixWorld = function (force) {
+        if (camLock.active) {
+          this.position.copy(camLock.pos);
+          this.quaternion.copy(camLock.quat);
+          if (camLock.fov && this.fov !== camLock.fov) {
+            this.fov = camLock.fov; this.updateProjectionMatrix();
+          }
+        }
+        return origUpdate(force);
+      };
+    }
+
     const api = {
       engine,
       ready: async () => {
@@ -56,19 +77,45 @@ export default class CaptureHarness {
       setTime: (h) => { engine.settings.timeOfDay = h % 24; engine.time.timeOfDay = h % 24; },
       setWeather: (w) => { engine.settings.weather = w; ctx.bus.emit('weather:set', w); },
       setQuality: (p) => { engine.settings.apply(p); ctx.bus.emit('quality:changed'); },
-      /** Park the camera. Disables the active camera controller for the shot. */
+      /**
+       * Park the camera for a shot.
+       *
+       * Politely asking camera systems to stand down does not work: any system may
+       * write to the camera, new ones get added, and one that ignores `enabled`
+       * silently invalidates every screenshot the visual critic takes. So we also
+       * hard-lock the transform in `camera.updateMatrixWorld`, which the renderer
+       * calls immediately before rasterising — whatever a system did during
+       * update/lateUpdate is overwritten before it can reach the frame.
+       */
       setCamera: (pos, look, fov) => {
-        const rig = engine.systems.get('cameraRig');
-        if (rig) rig.enabled = false;
-        engine.camera.position.set(pos[0], pos[1], pos[2]);
-        engine.camera.lookAt(new THREE.Vector3(look[0], look[1], look[2]));
-        if (fov) { engine.camera.fov = fov; engine.camera.updateProjectionMatrix(); }
+        for (const s of engine.order) {
+          if (CAMERA_DRIVERS.has(s.constructor.id) && 'enabled' in s) {
+            s.userData_wasEnabled = s.enabled;
+            s.enabled = false;
+          }
+        }
+        const cam = engine.camera;
+        cam.position.set(pos[0], pos[1], pos[2]);
+        cam.lookAt(_lookTmp.set(look[0], look[1], look[2]));
+        if (fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
+        camLock.pos.copy(cam.position);
+        camLock.quat.copy(cam.quaternion);
+        camLock.fov = fov || cam.fov;
+        camLock.active = true;
       },
       releaseCamera: () => {
+        camLock.active = false;
+        for (const s of engine.order) {
+          if (CAMERA_DRIVERS.has(s.constructor.id) && 'userData_wasEnabled' in s) {
+            s.enabled = s.userData_wasEnabled;
+            delete s.userData_wasEnabled;
+          }
+        }
         const rig = engine.systems.get('cameraRig');
-        if (rig) { rig.enabled = true;
-          if (rig.pos) rig.pos.copy(engine.camera.position); }
+        if (rig?.pos) rig.pos.copy(engine.camera.position);
       },
+      /** True if a shot is currently holding the camera. */
+      cameraLocked: () => camLock.active,
       /**
        * Set up a named (or ad-hoc) shot and render it deterministically.
        * Returns the perf numbers so the critic can enforce the frame budget.
@@ -126,6 +173,7 @@ export default class CaptureHarness {
         programs: engine.renderer.info.programs?.length ?? 0,
       }),
       errors: [],
+      glFaults: [],
     };
 
     window.__boston = api;
@@ -134,6 +182,17 @@ export default class CaptureHarness {
     // Collect runtime errors so the critic can fail a shot that logged one.
     const origErr = console.error;
     console.error = (...a) => { api.errors.push(a.map(String).join(' ')); origErr(...a); };
+
+    // GL driver faults arrive as console.warn, NOT console.error. A sampler-unit
+    // collision that rejected every building draw call hid behind this for an
+    // entire session because nothing was watching warnings.
+    const origWarn = console.warn;
+    const GL_FAULT = /GL_INVALID|INVALID_OPERATION|INVALID_VALUE|INVALID_ENUM|Framebuffer is incomplete|program not valid|feedback loop|not renderable/i;
+    console.warn = (...a) => {
+      const msg = a.map(String).join(' ');
+      if (GL_FAULT.test(msg)) api.glFaults.push(msg.slice(0, 300));
+      origWarn(...a);
+    };
   }
   dispose() { delete window.__boston; }
 }
