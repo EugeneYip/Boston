@@ -72,7 +72,18 @@ export default class CaptureHarness {
         engine.stop();
         const realDelta = engine._clock.getDelta;
         engine._clock.getDelta = () => dt;
-        for (let i = 0; i < n; i++) engine.frame();
+        for (let i = 0; i < n; i++) {
+          // Re-assert before the frame, not just in updateMatrixWorld. The render
+          // was always correct, but systems reading camera.position during their
+          // own update() saw whatever a camera driver had just written -- so the
+          // HUD reported a position the frame was not rendered from, which made
+          // one agent distrust a set of perfectly valid captures.
+          if (camLock.active) {
+            engine.camera.position.copy(camLock.pos);
+            engine.camera.quaternion.copy(camLock.quat);
+          }
+          engine.frame();
+        }
         engine._clock.getDelta = realDelta;
         if (wasRunning) engine.start();
         return { frames: n, fps: engine.perf.fps, draws: engine.perf.drawCalls,
@@ -188,7 +199,10 @@ export default class CaptureHarness {
 
       setCamera: (pos, look, fov) => {
         for (const s of engine.order) {
-          if (CAMERA_DRIVERS.has(s.constructor.id) && 'enabled' in s) {
+          // Note: no `'enabled' in s` test. A driver that hasn't declared the flag
+          // yet (Player currently reports `undefined`) still gets it set, so it
+          // opts in the moment it starts honouring it.
+          if (CAMERA_DRIVERS.has(s.constructor.id)) {
             // Only record the ORIGINAL value. Two setCamera calls without an
             // intervening release would otherwise save the already-false value
             // and latch the controller off permanently after release.
