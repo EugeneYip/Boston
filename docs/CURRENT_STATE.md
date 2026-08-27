@@ -3,7 +3,15 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: 2026-08-27, commit `bafd01b`.
+Last verified: 2026-08-27, commit `06f93d3`.
+
+> **Note on verification while several agents are running.** `capture()` runs the engine's
+> `update()` chain, so a throw in *any* system aborts the shot. During this pass `HUD`
+> (`this.moneyN` undefined), `Pedestrians` (`_refreshCandidates`) and `Traffic` all threw
+> inside `capture()`. If you need a shot and someone else's system is mid-flight, stub its
+> `update` at runtime rather than editing their file. Vite's HMR full-reload will also wipe
+> the page between `capture()` and a screenshot; `npx vite build` + a static server gives a
+> stable target.
 
 ---
 
@@ -11,9 +19,9 @@ Last verified: 2026-08-27, commit `bafd01b`.
 | | |
 |---|---|
 | Boots | Yes — 22 systems, `bootReport.failed` is `[]` |
-| Console | 1 known error (atmosphere pass auto-disabled, below) |
-| Real fps | 32.5 @ 981×568 `high`. **Not yet measured at the 1920×1080 budget resolution.** |
-| Draws / tris | 394 / 2.67M — **inside** the 1200 / 3.5M budget |
+| Console | `__boston.errors` is `[]`. One driver **warning** remains: `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` from a fullscreen post pass — see issue 1. |
+| Real fps | **13 @ 1920×1080 `high`** (`measureFps(2)`, settled, static build, `hero_skyline`). Unchanged by the buildings fix — the whole city now rasterises for the same cost, which is what `PERF_REPORT.md` §6 predicts. |
+| Draws / tris | 217 / 1.37M at `hero_skyline`; 529 / 2.87M at `downtown_dusk` — **inside** the 1200 / 3.5M budget |
 | Cold boot | ~8 s (was ~45 s) |
 | Visual quality | **~3/10.** Content is real; it does not yet look good. |
 
@@ -48,11 +56,25 @@ Last verified: 2026-08-27, commit `bafd01b`.
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
 
 ## Unresolved issues (ranked)
-1. **`atmosphere` pass collapses the frame to black** and is auto-disabled by the render
-   pipeline's validator, so **clouds and volumetric fog do not render at all**. The sky is
-   a flat gradient and there is no aerial perspective. This is the biggest single visual
-   deficit. Re-enable with `__boston.render.revalidate()` after fixing.
-   *Owner: atmosphere. Files: `src/gfx/Clouds.js`, `src/gfx/Fog.js`, `src/shaders/sky/`.*
+1. **`street_level` is unusable: a fullscreen post pass forms a framebuffer feedback loop.**
+   The `atmosphere` pass is enabled again and `hero_skyline` / `downtown_dusk` / the
+   downtown aerial all render correctly, but any **low camera** collapses the frame into a
+   stretched noise buffer over pure black. Measured (`meanLum` / `blackFrac` of the frame,
+   `tod 9.5 clear`, same look direction):
+
+   | cam Y | 2 | 6 | 14 | 30 | 70 | 150 |
+   |---|---|---|---|---|---|---|
+   | mean lum | 50.5 | 52.1 | 45.2 | 105.7 | 128.6 | 129.6 |
+   | black frac | **0.49** | 0.01 | 0.14 | 0.08 | 0.01 | 0.00 |
+
+   **This is not buildings — proven twice.** Swapping all facade materials for a plain
+   `MeshStandardMaterial` reproduces it identically, and hiding the entire `buildings` root
+   changes the frame by less than 1% (`blackFrac` 0.48 → 0.47, `meanLum` 50.5 → 51.0).
+   The console shows only `glDrawArrays: Feedback loop formed between Framebuffer and
+   active Texture` — a fullscreen pass sampling the target it is writing. Worth re-checking
+   the note that the atmosphere RT is sized from a stale canvas width (326×184).
+   *Owner: atmosphere / render pipeline. Files: `src/gfx/Clouds.js`, `src/gfx/Fog.js`,
+   `src/gfx/RenderPipeline.js`.*
 2. **`night_neon` renders near-black.** Night is a signature GTA-style view and currently
    unusable. *Owner: lighting.*
 3. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
