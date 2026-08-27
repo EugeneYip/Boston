@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- TEMPORARY: UI-agent isolation harness. Deleted before hand-off. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>BOSTON UI test</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070c;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff}
+  #app{position:fixed;inset:0;background-size:cover}
+  #app.day{background:linear-gradient(#bcd8f2 0%,#dbe9f6 42%,#e8eef2 58%,#9aa0a2 62%,#7c8286 100%)}
+  #app.night{background:linear-gradient(#05070f 0%,#0b1220 40%,#141a26 60%,#0a0d14 100%)}
+</style>
+</head>
+<body>
+  <div id="app" class="day"></div>
+  <script>
+    // Other agents are editing the repo live; Vite full-reloads every client on
+    // any change, which makes this harness impossible to inspect. Stub out the
+    // HMR socket (this classic script runs before the deferred module scripts).
+    (function () {
+      const OW = window.WebSocket;
+      const stub = { addEventListener() {}, removeEventListener() {}, send() {}, close() {},
+                     readyState: 3, onopen: null, onmessage: null, onclose: null, onerror: null };
+      window.WebSocket = function (url, proto) {
+        const p = Array.isArray(proto) ? proto.join() : String(proto || '');
+        if (p.indexOf('vite') >= 0) return stub;
+        return new OW(url, proto);
+      };
+      window.WebSocket.prototype = OW.prototype;
+    })();
+    const killOverlay = () => document.querySelectorAll('vite-error-overlay').forEach(n => n.remove());
+    new MutationObserver(killOverlay).observe(document.documentElement, { childList: true, subtree: true });
+  </script>
+  <script type="module">
+    import EventBus from '/src/core/EventBus.js';
+    import Settings from '/src/core/Settings.js';
+    import HUD from '/src/ui/HUD.js';
+    import Minimap from '/src/ui/Minimap.js';
+    import Menu from '/src/ui/Menu.js';
+    import DevOverlay from '/src/ui/DevOverlay.js';
+
+    const bus = new EventBus(), settings = new Settings('high');
+    const camera = { position: { x: 0, y: 12, z: 40 },
+                     matrixWorld: { elements: [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] } };
+    const time = { elapsed: 0, dt: 0, frame: 0, timeOfDay: 9.25 };
+    const engine = { perf: { fps: 60, ms: 16.1, drawCalls: 412, tris: 1234567 }, order: [], time,
+      renderer: { info: { memory: { geometries: 120, textures: 40 }, programs: [1,2,3] } } };
+    const systems = new Map();
+    const ctx = { camera, bus, settings, engine, time, scene: null, input: null,
+                  get: (id) => systems.get(id) };
+
+    // Fake player so the minimap has something to follow.
+    const player = { position: { x: 0, y: 1.8, z: 0 }, mode: 'onFoot', vehicle: null };
+    systems.set('player', player);
+
+    const inst = { hud: new HUD(), minimap: new Minimap(), menu: new Menu(), devOverlay: new DevOverlay() };
+    for (const [k, v] of Object.entries(inst)) { systems.set(k, v); engine.order.push(v); }
+    for (const v of Object.values(inst)) await v.init(ctx);
+
+    const fakeVeh = { speed: 0, rpm: 900, gear: 1, headlightsOn: false, sirenOn: false, type: 'sedan' };
+    let drive = false, t = 0, moving = false;
+
+    window.__t = {
+      ctx, bus, inst, player, fakeVeh,
+      day: (on) => { document.getElementById('app').className = on ? 'day' : 'night'; },
+      drive: (on) => {
+        drive = on;
+        player.mode = on ? 'driving' : 'onFoot';
+        player.vehicle = on ? fakeVeh : null;
+        bus.emit(on ? 'player:enterVehicle' : 'player:exitVehicle', fakeVeh);
+      },
+      move: (on) => { moving = on; },
+      step: (n = 1, dt = 1 / 60) => { for (let i = 0; i < n; i++) frame(dt); },
+      run: (on) => { running = on; if (on) loop(); },
+    };
+
+    function frame(dt) {
+      t += dt;
+      time.dt = dt; time.elapsed += dt; time.frame++;
+      settings.timeOfDay = (settings.timeOfDay + dt * settings.timeScale / 3600) % 24;
+      time.timeOfDay = settings.timeOfDay;
+      if (drive) {
+        fakeVeh.speed = 8 + Math.sin(t * 0.5) * 6 + 14;
+        fakeVeh.rpm = 1200 + (Math.sin(t * 1.7) * 0.5 + 0.5) * 5600;
+        fakeVeh.gear = 1 + Math.floor((fakeVeh.rpm / 7000) * 5);
+        fakeVeh.headlightsOn = true;
+      }
+      if (moving || drive) {
+        const sp = drive ? fakeVeh.speed : 4;
+        player.position.x += Math.sin(t * 0.23) * sp * dt;
+        player.position.z -= Math.cos(t * 0.23) * sp * dt;
+        player.heading = t * 0.23;
+        const c = Math.cos(player.heading), s = Math.sin(player.heading);
+        camera.matrixWorld.elements[8] = -s; camera.matrixWorld.elements[10] = -c;
+        camera.position.x = player.position.x; camera.position.z = player.position.z;
+      }
+      for (const v of Object.values(inst)) v.update?.(dt, ctx);
+    }
+
+    // Restore the demo state automatically so a reload doesn't lose the setup.
+    if (new URLSearchParams(location.search).get('demo') !== '0') {
+      inst.hud.demo(true);
+      moving = true;
+    }
+
+    let running = true, last = performance.now();
+    function loop() {
+      if (!running) return;
+      const n = performance.now();
+      frame(Math.min(0.1, (n - last) / 1000));
+      last = n;
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
+</body>
+</html>

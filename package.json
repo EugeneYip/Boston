@@ -1,0 +1,20 @@
+{
+  "name": "boston",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5273 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5273 --strictPort"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.20.0",
+    "n8ao": "^2.0.1",
+    "postprocessing": "^6.39.4",
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.7"
+  }
+}
