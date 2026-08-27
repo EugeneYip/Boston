@@ -852,15 +852,38 @@ totalEmissiveRadiance += bkTex.rgb * bkTex.a * uNight * uLampColor * 0.85;
 
 
 /**
+ * Resolve the `onBeforeCompile` that `m` *would* have used if we had not put an
+ * own property on it — i.e. walk past the instance to the prototype chain.
+ *
+ * This has to be looked up lazily, at compile time, rather than captured when the
+ * material is built: the lighting stack installs its `Material.prototype` accessor
+ * when its system boots, which is not guaranteed to be before ours.
+ */
+function inheritedHook(m) {
+  let o = Object.getPrototypeOf(m);
+  while (o) {
+    const d = Object.getOwnPropertyDescriptor(o, 'onBeforeCompile');
+    if (d) return d.get ? d.get.call(m) : d.value;
+    o = Object.getPrototypeOf(o);
+  }
+  return null;
+}
+
+/**
  * Install a shader patch that survives another system reassigning
  * `material.onBeforeCompile`. In a multi-agent codebase somebody will eventually
  * walk the scene graph and hook every MeshStandardMaterial; without this our
  * atlas sampling silently disappears and every building turns flat white.
  * Anything assigned later is chained after ours instead of replacing it.
+ *
+ * @param {THREE.Material} m
+ * @param {(sh:object, renderer:object)=>void} mine  our own injection
+ * @param {string} tag  stable discriminator for the program cache key
  */
-function installPatch(m, mine) {
+function installPatch(m, mine, tag) {
   let extra = null;
   let inExtra = false;
+  let keyCache = null;
 
   // Idempotent per compiled shader. Every consumer of this material shares one
   // shader object per program, and a chained patcher may legitimately invoke us
@@ -869,6 +892,20 @@ function installPatch(m, mine) {
   const base = function (sh, renderer) {
     if (sh._bkFacadePatched) return;
     sh._bkFacadePatched = true;
+    // Defining `onBeforeCompile` as an own property SHADOWS any accessor the
+    // lighting stack installed on Material.prototype, so we must call it by hand.
+    // Skipping it is what made the whole city invisible for two days: the
+    // prototype hook is how the shared `boston*` uniforms reach every material,
+    // and one of them is a `sampler3D` (the light probe). An unbound sampler
+    // keeps three's default texture unit 0 — the same unit our `sampler2DArray`
+    // atlas lands on — and WebGL rejects the entire draw with
+    // "two textures of different types use the same sampler location".
+    // Geometry, transforms and the shader itself were all fine; the driver was
+    // simply refusing to execute glDrawElements.
+    const up = inheritedHook(m);
+    if (typeof up === 'function' && up !== combined && up !== base) {
+      up.call(m, sh, renderer);
+    }
     mine(sh, renderer);
   };
 
@@ -891,8 +928,22 @@ function installPatch(m, mine) {
     configurable: true,
     enumerable: true,
     get() { return combined; },
-    set(fn) { extra = (typeof fn === 'function') ? fn : null; },
+    set(fn) {
+      extra = (typeof fn === 'function') ? fn : null;
+      keyCache = null;
+    },
   });
+
+  // The cache key must cover EVERYTHING that can change the emitted source.
+  // `extra` is chained-in GLSL from another system, so a constant key here would
+  // (a) let two materials that differ only in their chained patch share one
+  // program, and (b) make `needsUpdate = true` silently reuse a stale program —
+  // three only re-runs onBeforeCompile when the key actually changes, which is
+  // what invalidated an earlier bisect of this bug.
+  m.customProgramCacheKey = () => {
+    if (keyCache === null) keyCache = tag + '|' + (extra ? extra.toString() : '');
+    return keyCache;
+  };
 }
 
 /**
@@ -925,8 +976,7 @@ export function makeOpaqueMaterial(tex, room, macro) {
       .replace('#include <roughnessmap_fragment>', OPAQUE_ORM_F)
       .replace('#include <metalnessmap_fragment>', OPAQUE_METAL_F)
       .replace('#include <aomap_fragment>', OPAQUE_AO_F);
-  });
-  m.customProgramCacheKey = () => 'bkOpaque2';
+  }, 'bkOpaque3');
   return m;
 }
 
@@ -1101,8 +1151,7 @@ export function makeGlassMaterial(room) {
       .replace('#include <roughnessmap_fragment>', GLASS_ORM_F)
       .replace('#include <metalnessmap_fragment>', GLASS_METAL_F)
       .replace('#include <emissivemap_fragment>', GLASS_EMIS_F);
-  });
-  m.customProgramCacheKey = () => 'bkGlass2';
+  }, 'bkGlass3');
   return m;
 }
 
