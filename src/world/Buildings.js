@@ -10,6 +10,7 @@ import { isReserved } from '../data/landmarks.js';
 
 const CHUNK = 170;        // metres — LOD 0/1 streaming granularity
 const SECTOR = 1200;      // metres — always-resident shell granularity
+const CATCHUP_FRAMES = 45;   // frames of widened build budget after a camera teleport
 const MAX_BUILDINGS = 7200;
 
 /* -------------------------------------------------------------------------- */
@@ -268,6 +269,10 @@ export default class Buildings {
     this._tmpKeys = [];
     this._usedFallback = false;
     this._swapChecks = 0;
+    // Teleport catch-up. Plain numbers, not a vector: update() must not allocate.
+    this._lastCamX = NaN;
+    this._lastCamZ = NaN;
+    this._catchUp = 0;
   }
 
   async init(ctx) {
@@ -525,6 +530,16 @@ export default class Buildings {
     }
 
     const cam = ctx.camera.position;
+    // A teleport — capture() parking the camera, fast travel, a respawn —
+    // invalidates every near chunk at once, and the near field then has nothing
+    // but the crude LOD 2 shell in it until streaming catches up. Flag it so
+    // `_pump` is allowed to spend real time rebuilding.
+    if (Number.isFinite(this._lastCamX)) {
+      const moved = Math.hypot(cam.x - this._lastCamX, cam.z - this._lastCamZ);
+      if (moved > CHUNK) this._catchUp = CATCHUP_FRAMES;
+    }
+    this._lastCamX = cam.x; this._lastCamZ = cam.z;
+
     const cx = Math.floor(cam.x / CHUNK), cz = Math.floor(cam.z / CHUNK);
     if (cx !== this._camChunk.x || cz !== this._camChunk.z ||
         (ctx.time.frame & 31) === 0) {
@@ -559,12 +574,23 @@ export default class Buildings {
     q.sort((a, b) => a.dist - b.dist);
   }
 
-  /** Spend a fixed slice of the frame turning queued chunks into geometry. */
+  /** Spend a slice of the frame turning queued chunks into geometry. */
   _pump(ctx) {
+    if (this._catchUp > 0) this._catchUp--;
     if (!this._queue.length) return;
-    // Generous while the world first comes up (and during capture warmup),
-    // then a slice that never costs a frame.
-    const budget = ctx.time.frame < 200 ? 24 : 6;
+    // Three regimes:
+    //   boot      — the world is coming up and there is nothing to stutter yet;
+    //   catch-up  — the camera just teleported, so the near field is entirely
+    //               LOD 2 shell and needs real time to rebuild;
+    //   steady    — a slice that can never cost a frame.
+    //
+    // The old rule widened the budget only for `frame < 200`, i.e. the first few
+    // seconds of the session. Every capture() taken after that rendered before
+    // the detailed chunks existed, so most buildings in the shot were the crude
+    // shell — flat, pale and untextured next to fully facaded neighbours that
+    // happened to already be built. A dense chunk is ~160 ms of emit on its own,
+    // and capture() only warms up ~24 frames, so 6 ms/frame could never converge.
+    const budget = ctx.time.frame < 200 ? 24 : (this._catchUp > 0 ? 50 : 6);
     const deadline = performance.now() + budget;
     while (this._queue.length && performance.now() < deadline) {
       const ch = this._queue[0];
