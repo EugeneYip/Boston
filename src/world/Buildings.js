@@ -9,9 +9,32 @@ import { makeSpec, buildBuilding } from './Facades.js';
 import { isReserved } from '../data/landmarks.js';
 
 const CHUNK = 170;        // metres — LOD 0/1 streaming granularity
-const SECTOR = 1200;      // metres — always-resident shell granularity
+// Metres — always-resident shell granularity, and therefore the granularity at
+// which the shell can be frustum-culled at all.
+//
+// This was 1200 m, which is wider than most of what a street-level camera can
+// see, so culling did almost nothing: at `night_neon` 11 of 19 sectors
+// intersected the frustum and submitted 748k of the shell's 841k triangles,
+// nearly all of them behind other buildings or kilometres away. Triangles are
+// the constrained axis now and draw calls are not (94-688 against a 1200
+// budget), so trading a few dozen extra draws for a much tighter cull is the
+// right way round.
+const SECTOR = 600;
 const CATCHUP_FRAMES = 45;   // frames of widened build budget after a camera teleport
-const MAX_BUILDINGS = 7200;
+// A safety valve against a pathological parcel set, NOT a quality dial.
+//
+// `RoadNetwork.buildPlots` sorts its output by distance from the centre, so a
+// *count* cap here silently becomes a *radius* cap: at 7,200 of the 11,219
+// published parcels the city stopped dead at a 1,592 m radius and the outer
+// 4,277 parcels got no building at all. The whole west edge (x < -1800) and
+// north edge (z < -1800) were bare, and from Boylston St at (-2179, 1095) the
+// nearest building was 849 m away — the player could walk out of the city into
+// an empty plain. Keep this above the parcel count the city actually publishes.
+//
+// The outer ring costs almost nothing to carry: it is beyond every LOD radius,
+// so it exists only in the always-resident shell at ~80 tris a building, in its
+// own 1200 m sector meshes that frustum-cull independently of downtown.
+const MAX_BUILDINGS = 14000;
 
 /* -------------------------------------------------------------------------- */
 /* Fallback city layout                                                       */
