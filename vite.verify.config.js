@@ -17,8 +17,12 @@ export default {
     port: 5290,
     strictPort: true,
     host: '127.0.0.1',
+    // HMR off, but the file watcher stays ON. Disabling the watcher as well
+    // (watch.ignored) also disables Vite's transform-cache invalidation, so the
+    // server keeps serving stale modules and no amount of reloading helps.
+    // With just hmr:false, edits are picked up but nothing is pushed to the
+    // browser -- reload manually when you want the latest code.
     hmr: false,
-    watch: { ignored: ['**/*'] },
   },
   optimizeDeps: { exclude: ['@dimforge/rapier3d-compat'] },
 };
