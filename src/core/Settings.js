@@ -8,10 +8,10 @@ const PRESETS = {
             pedDensity: 0.5, trafficDensity: 0.6, anisotropy: 8, msaa: 0, pixelRatioCap: 1.25 },
   high:   { shadowMap: 3072, shadowCascades: 4, ssao: true,  ssr: true,  bloom: true,
             motionBlur: true,  dof: true,  volumetrics: true,  drawDist: 2200,
-            pedDensity: 0.85, trafficDensity: 0.9, anisotropy: 16, msaa: 0, pixelRatioCap: 1.5 },
+            pedDensity: 0.85, trafficDensity: 0.9, anisotropy: 16, msaa: 0, pixelRatioCap: 1.0 },
   ultra:  { shadowMap: 4096, shadowCascades: 4, ssao: true,  ssr: true,  bloom: true,
             motionBlur: true,  dof: true,  volumetrics: true,  drawDist: 3200,
-            pedDensity: 1.0, trafficDensity: 1.0, anisotropy: 16, msaa: 0, pixelRatioCap: 2.0 },
+            pedDensity: 1.0, trafficDensity: 1.0, anisotropy: 16, msaa: 0, pixelRatioCap: 1.5 },
 };
 
 export default class Settings {

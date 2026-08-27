@@ -521,6 +521,10 @@ export default class RenderPipeline {
     const byBudget = Math.sqrt(q.pixels / Math.max(w * h, 1));
     const r = Math.max(0.5, Math.min(window.devicePixelRatio, ctx.settings.pixelRatioCap, byBudget));
     this.renderer.setPixelRatio(r);
+    // EffectComposer.setSize() skips renderer.setSize() when the CSS size is
+    // unchanged, so a changed pixel ratio (quality switch at a fixed window size)
+    // would never reach the drawing buffer. Apply it explicitly.
+    this.renderer.setSize(w, h, false);
     this.pixelRatio = r;
   }
 
