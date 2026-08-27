@@ -71,10 +71,13 @@ Last verified: 2026-08-27, commit `06f93d3`.
    `MeshStandardMaterial` reproduces it identically, and hiding the entire `buildings` root
    changes the frame by less than 1% (`blackFrac` 0.48 → 0.47, `meanLum` 50.5 → 51.0).
    The console shows only `glDrawArrays: Feedback loop formed between Framebuffer and
-   active Texture` — a fullscreen pass sampling the target it is writing. Worth re-checking
-   the note that the atmosphere RT is sized from a stale canvas width (326×184).
-   *Owner: atmosphere / render pipeline. Files: `src/gfx/Clouds.js`, `src/gfx/Fog.js`,
-   `src/gfx/RenderPipeline.js`.*
+   active Texture` — a fullscreen pass sampling the target it is writing. **`LensPass` is
+   the current suspect** (independently flagged elsewhere); the pass list at the time of
+   measurement was FrameState → Render → Pass → atmosphere → AutoExposure → Velocity → TAA
+   → **Lens** → EffectPass → EffectPass. Also worth re-checking the note that the
+   atmosphere RT is sized from a stale canvas width (326×184).
+   *Owner: atmosphere / render pipeline. Files: `src/gfx/RenderPipeline.js`,
+   `src/gfx/Clouds.js`, `src/gfx/Fog.js`.*
 2. **`night_neon` renders near-black.** Night is a signature GTA-style view and currently
    unusable. *Owner: lighting.*
 3. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
