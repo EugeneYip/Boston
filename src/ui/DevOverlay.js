@@ -62,16 +62,37 @@ export default class DevOverlay {
     if (this._t < 0.2) return;
     this._t = 0;
 
+    // engine.perf.fps wraps engine.frame() with performance.now(), so it measures
+    // CPU submission only. When the frame is GPU-bound the CPU runs ahead and the
+    // real cost never shows up -- this readout has displayed 54 fps on a frame
+    // genuinely running at 5.5, and 129 fps on one running at 32.5. This overlay
+    // appears inside every screenshot the visual critic scores, so it must not lie.
+    // Measure wall-clock: engine frames actually completed per real second.
+    const nowMs = performance.now();
+    const frameNo = ctx.engine.time.frame;
+    let realFps = ctx.engine.perf.fps;             // frame 1 fallback
+    if (this._lastWallMs !== undefined) {
+      const secs = (nowMs - this._lastWallMs) / 1000;
+      const frames = frameNo - this._lastFrameNo;
+      if (secs > 0 && frames > 0) {
+        const inst = frames / secs;
+        this._fpsAvg = this._fpsAvg === undefined ? inst : this._fpsAvg * 0.6 + inst * 0.4;
+        realFps = this._fpsAvg;
+      }
+    }
+    this._lastWallMs = nowMs;
+    this._lastFrameNo = frameNo;
+
     const p = ctx.engine.perf, c = ctx.camera.position, r = ctx.engine.renderer;
     const h = ctx.time.timeOfDay;
     const hh = String(Math.floor(h)).padStart(2, '0');
     const mm = String(Math.floor((h % 1) * 60)).padStart(2, '0');
 
-    const f = p.fps.toFixed(0);
+    const f = realFps.toFixed(0);
     if (this.fpsEl.__v !== f) {
       this.fpsEl.__v = f;
       this.fpsEl.innerHTML = f + '<i>FPS</i>';
-      const cls = 'dv-fps' + (p.fps >= 57 ? '' : p.fps >= 45 ? ' warn' : ' bad');
+      const cls = 'dv-fps' + (realFps >= 57 ? '' : realFps >= 45 ? ' warn' : ' bad');
       if (this.fpsEl.className !== cls) this.fpsEl.className = cls;
     }
 
@@ -86,7 +107,7 @@ export default class DevOverlay {
     // Rolling frame-rate history. Transform-only writes, so no layout.
     const hist = this.hist;
     hist.copyWithin(0, 1);
-    hist[BARS - 1] = p.fps;
+    hist[BARS - 1] = realFps;
     for (let i = 0; i < BARS; i++) {
       const v = Math.max(0.04, Math.min(1, hist[i] / 72)).toFixed(3);
       const b = this.bars[i];
