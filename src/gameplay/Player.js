@@ -465,16 +465,18 @@ export default class Player {
 function makeActor() {
   const a = {
     x: 0, y: 0, z: 0, yaw: 0, tilt: 0, lean: 0,
-    h: 1.82, build: 1.02, seed: 0.31,
+    h: 1.82, build: 1.02, seed: 0.5,
     phase: 0, clip: 'idle', clipRow: CLIP_ROW.idle,
     topR: 1, topG: 1, topB: 1, botR: 1, botG: 1, botB: 1, skinR: 1, skinG: 1, skinB: 1,
   };
   let n = 0;
   dressActor(a, () => { n += 0.137; return (Math.sin(n * 91.7) * 0.5 + 0.5); });
-  a.h = 1.82; a.build = 1.02; a.seed = 0.31;
+  // seed 0.5 lands the sleeve test on 'sleeved' and the hair on dark brown.
+  // Bare pale forearms read as detached limbs at gameplay distance.
+  a.h = 1.82; a.build = 1.02; a.seed = 0.5;
   const c = new THREE.Color();
   c.setHex(0x2a3542); a.topR = c.r; a.topG = c.g; a.topB = c.b;      // dark blue jacket
   c.setHex(0x2b2f36); a.botR = c.r; a.botG = c.g; a.botB = c.b;      // charcoal jeans
-  c.setHex(0xd8b393); a.skinR = c.r; a.skinG = c.g; a.skinB = c.b;
+  c.setHex(0xc19a78); a.skinR = c.r; a.skinG = c.g; a.skinB = c.b;
   return a;
 }

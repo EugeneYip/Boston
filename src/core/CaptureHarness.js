@@ -113,7 +113,10 @@ export default class CaptureHarness {
       setCamera: (pos, look, fov) => {
         for (const s of engine.order) {
           if (CAMERA_DRIVERS.has(s.constructor.id) && 'enabled' in s) {
-            s.userData_wasEnabled = s.enabled;
+            // Only record the ORIGINAL value. Two setCamera calls without an
+            // intervening release would otherwise save the already-false value
+            // and latch the controller off permanently after release.
+            if (!('userData_wasEnabled' in s)) s.userData_wasEnabled = s.enabled;
             s.enabled = false;
           }
         }

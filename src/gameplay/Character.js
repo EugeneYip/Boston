@@ -57,10 +57,10 @@ const OFFSET = new Float32Array([
   0, 0.12, 0,        // spine
   0, 0.18, 0,        // chest
   0, 0.20, 0,        // head (neck joint)
-  0.17, 0.16, 0,     // armL
+  0.190, 0.155, 0,   // armL
   0, -0.28, 0,       // foreL
   0, -0.26, 0,       // handL
-  -0.17, 0.16, 0,    // armR
+  -0.190, 0.155, 0,  // armR
   0, -0.28, 0,       // foreR
   0, -0.26, 0,       // handR
   0.09, -0.02, 0,    // thighL
@@ -212,7 +212,7 @@ function poseAt(clip, p, rot, root) {
     for (const s of [1, -1]) {
       const arm = s > 0 ? BONE.armL : BONE.armR;
       const fore = s > 0 ? BONE.foreL : BONE.foreR;
-      set(arm, 0.03 + breathe * 0.012 * s, 0, s * 0.135);
+      set(arm, 0.03 + breathe * 0.012 * s, 0, s * 0.20);
       set(fore, 0.22 + breathe * 0.020, 0, 0);
       const thigh = s > 0 ? BONE.thighL : BONE.thighR;
       const shin = s > 0 ? BONE.shinL : BONE.shinR;
@@ -227,7 +227,7 @@ function poseAt(clip, p, rot, root) {
   // -- locomotion ----------------------------------------------------------
   let table = WALK_LEG, armK = 0.62, elbow0 = 0.18, elbowK = 0.55;
   let lean = 0.035, bobA = 0.020, swayA = 0.020, pelvisTwist = 0.09, chestTwist = 0.12;
-  let splay = 0.075, crouch = 0;
+  let splay = 0.115, crouch = 0;
   if (clip === 'jog') {
     table = JOG_LEG; armK = 0.78; elbow0 = 0.95; elbowK = 0.55;
     lean = 0.105; bobA = 0.036; swayA = 0.016; pelvisTwist = 0.13; chestTwist = 0.18;
@@ -440,17 +440,23 @@ function tube(B, cx, cz, y0, y1, r0, r1, sides, bone, zone, opt = {}) {
   return rings;
 }
 
-/** A low-poly ellipsoid — heads, hands and every joint that bends. */
+/**
+ * A low-poly ellipsoid — heads, hands and every joint that bends. `phiMax` under
+ * PI makes it a cap rather than a full solid, which is how the hair gets to sit
+ * on the head without swallowing the face.
+ */
 function blob(B, cx, cy, cz, rx, ry, rz, sides, rings, bone, zone, opt = {}) {
   const gs = opt.girth ?? 1;
   const crease = opt.crease ?? 0;
   const yBias = opt.yBias ?? 0;
+  const phiMax = opt.phiMax ?? Math.PI;
+  const closed = phiMax >= Math.PI - 1e-4;
   const grid = [];
   for (let i = 0; i <= rings; i++) {
-    const v = i / rings, phi = v * Math.PI;
+    const v = i / rings, phi = v * phiMax;
     const sp = Math.sin(phi), cp = Math.cos(phi);
     const row = [];
-    if (i === 0 || i === rings) {
+    if (i === 0 || (i === rings && closed)) {
       const y = cy + cp * ry;
       row.push(B.v(cx, y, cz, 0, cp, 0, bone, 0, cp * ry * gs * yBias, 0, zone,
         shadeFor(0, cp, 0, y, crease)));
@@ -572,9 +578,12 @@ export function buildCharacterGeometry(lod = 0) {
     { girth: 0.3, crease0: 0.55, crease1: 0.1 });
   blob(B, 0, 1.585, -0.004, 0.093, 0.116, 0.104, hi ? 8 : 5, hi ? 6 : 4,
     BONE.head, Z_SKIN, { girth: 0.22, yBias: 0.2 });
-  // hair: a shallow cap that gives the silhouette a top rather than a bald egg
-  blob(B, 0, 1.598, 0.006, 0.100, 0.116, 0.108, hi ? 8 : 5, hi ? 4 : 3,
-    BONE.head, Z_HAIR, { girth: 0.2, yBias: 0.2, crease: 0.1 });
+  // Hair. Pushed back and slightly narrower front-to-back than the skull, so its
+  // front surface falls *inside* the face and only the crown, temples and back
+  // break the surface — an ellipsoid centred on the head would simply paint the
+  // whole face brown and every character would read as a featureless egg.
+  blob(B, 0, 1.592, 0.023, 0.0995, 0.120, 0.100, hi ? 8 : 5, hi ? 4 : 3,
+    BONE.head, Z_HAIR, { girth: 0.2, yBias: 0.2, crease: 0.1, phiMax: Math.PI * 0.70 });
 
   // -- limbs -----------------------------------------------------------------
   for (const s of [1, -1]) {
@@ -660,8 +669,8 @@ const TINT = /* glsl */`
   else if (_zone < 1.5) { _tint = aTop;                      _rough = 1.06; }
   else if (_zone < 2.5) { _tint = aBot;                      _rough = 1.02; }
   else if (_zone < 3.5) { _tint = aBot * 0.22 + vec3(0.012); _rough = 0.62; }
-  else if (_zone < 4.5) { _tint = mix(vec3(0.030, 0.021, 0.016),
-                                      vec3(0.28, 0.17, 0.075),
+  else if (_zone < 4.5) { _tint = mix(vec3(0.016, 0.011, 0.008),
+                                      vec3(0.155, 0.092, 0.040),
                                       fract(aAnim.w * 4.31)); _rough = 0.88; }
   else                  { _tint = _sd < 0.24 ? aSkin * 0.94 : aTop;
                           _rough = _sd < 0.24 ? 0.74 : 1.06; }

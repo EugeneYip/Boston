@@ -212,6 +212,9 @@ export function offsetPolyline(pts, off, out) {
 
 export const GREEN = 0, YELLOW = 1, RED = 2;
 
+/** Probability that a pedestrian arriving at a junction chooses to cross. */
+const CROSS_CHANCE = 0.24;
+
 /**
  * Two-phase signals on the junctions that deserve them. Arms are grouped by
  * bearing modulo 180 degrees, which is exactly how a real four-way works: the
@@ -727,21 +730,43 @@ export class WalkNav {
     return this.roadNav.signalState(node, roadEdge) === RED;
   }
 
-  /** Pick the next sidewalk edge at `node`, avoiding an immediate about-turn. */
+  /**
+   * Pick the next sidewalk edge at `node`, avoiding an immediate about-turn.
+   *
+   * Crossing the road is decided *first* and separately, on a coin flip. It has
+   * to be: a crossing is one arm among several at every junction, so any scheme
+   * that scores it against the pavement and corner links has to score it low
+   * enough to stay a minority choice — and "low enough" turns out to be "below
+   * the worst score a pavement link can draw", at which point it is not a
+   * minority choice, it is an impossible one. Measured over 14 s of a 105-person
+   * crowd with the previous weights: **zero** crossings taken, ever. Nobody
+   * crossed a road in the entire city.
+   */
   nextEdge(node, fromEdge, rng, allowCross = true) {
     const outs = this.g.outgoing(node);
     if (!outs || !outs.length) return -1;
+
+    if (allowCross && rng.next() < CROSS_CHANCE) {
+      let pick = -1, n = 0;
+      for (let i = 0; i < outs.length; i++) {
+        const id = outs[i];
+        const e = this.g.edges[id];
+        if (!e || e.kind !== 'crossing' || id === fromEdge) continue;
+        if (rng.next() < 1 / ++n) pick = id;          // reservoir sample
+      }
+      if (pick >= 0) return pick;
+    }
+
     let best = -1, bestScore = -Infinity, fallback = -1;
     for (let i = 0; i < outs.length; i++) {
       const id = outs[i];
       const e = this.g.edges[id];
       if (!e) continue;
       if (id === fromEdge) { fallback = id; continue; }
-      if (e.kind === 'crossing' && !allowCross) continue;
+      if (e.kind === 'crossing') continue;            // already had its chance
       let score = rng.next() * 1.4;
       if (e.kind === 'walk') score += 1.6;
-      else if (e.kind === 'corner') score += 1.1;
-      else score += 0.15;                             // crossings are the rare choice
+      else score += 1.1;                              // corner link
       if (score > bestScore) { bestScore = score; best = id; }
     }
     return best >= 0 ? best : fallback;

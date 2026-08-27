@@ -206,6 +206,40 @@ export default class Pedestrians {
   /** @param {number} d 0..1 */
   setDensity(d) { this.density = clamp01(d); }
 
+  /**
+   * May a pedestrian step off the kerb onto this crossing?
+   *
+   * The signal test alone is not enough: `WalkNav.crossingClear` returns true at
+   * every *unsignalised* junction, which is most of them, and a person walking
+   * calmly through a moving car is the single worst thing this system could put
+   * on screen. So a signalised crossing is governed by its phase, and an
+   * unsignalised one by an actual gap in the traffic — time-to-contact against
+   * every car heading for the crossing.
+   *
+   * Only evaluated when someone arrives at a kerb or is already waiting there,
+   * so this never runs more than a handful of times a second.
+   */
+  _crossingSafe(edgeId) {
+    if (!this.walk.crossingClear(edgeId)) return false;
+    const cars = this.ctx.get('traffic')?.vehicles;
+    if (!cars || !cars.length) return true;
+    const e = this.walk.g.edges[edgeId];
+    if (!e?.pts?.length) return true;
+    const a = e.pts[0], b = e.pts[e.pts.length - 1];
+    const mx = (a.x + b.x) * 0.5, mz = (a.z + b.z) * 0.5;
+    for (let i = 0; i < cars.length; i++) {
+      const c = cars[i];
+      const dx = mx - c.x, dz = mz - c.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 > 900) continue;                       // 30 m is well past caring
+      const d = Math.sqrt(d2) || 1e-3;
+      // Only cars actually pointed at the crossing count.
+      if ((dx * -Math.sin(c.rotY) + dz * -Math.cos(c.rotY)) / d < 0.55) continue;
+      if (d / Math.max(c.v, 0.6) < 3.8) return false;
+    }
+    return true;
+  }
+
   // -- streaming -------------------------------------------------------------
 
   /**
@@ -253,25 +287,47 @@ export default class Pedestrians {
     const rng = this._rng, list = this._cand, sp = this._samp;
     if (!list.length) { this._free.push(ped); return false; }
     const min2 = minR * minR, max2 = SPAWN_MAX * SPAWN_MAX;
-    let path = null, edge = -1, s = 0;
-    for (let attempt = 0; attempt < 8; attempt++) {
+    let path = null, edge = -1, s = 0, best = Infinity;
+    // Prefer a spot near a corner. `buildSidewalks` gives one strand per road
+    // edge per side, and around the Common those run 430 m — a pedestrian
+    // dropped mid-block walks for five minutes before he reaches the only place
+    // he can cross a road, so a uniformly-spawned crowd contains nobody
+    // crossing, nobody at a kerb and nobody queued at a light. Taking the best
+    // of a few draws puts most of the crowd within a corner's reach without
+    // giving up the camera locality the sample list exists to provide.
+    let draws = rng.next() < 0.62 ? 4 : 1;
+    for (let attempt = 0; attempt < 10 && best > 0; attempt++) {
       const i = list[rng.int(list.length)];
       const sx = sp[i * 4], sz = sp[i * 4 + 1];
       const d2 = (sx - cx) ** 2 + (sz - cz) ** 2;
       if (d2 < min2 || d2 > max2) continue;
       if (rng.next() > this._weightAt(sx, sz)) continue;
-      edge = sp[i * 4 + 2];
-      path = this.walk.path(edge);
-      if (!path) continue;
-      s = Math.max(0.2, Math.min(path.length - 0.2, sp[i * 4 + 3] + rng.range(-8, 8)));
-      break;
+      const id = sp[i * 4 + 2];
+      const p = this.walk.path(id);
+      if (!p) continue;
+      const arc = Math.max(0.2, Math.min(p.length - 0.2, sp[i * 4 + 3] + rng.range(-8, 8)));
+      const toCorner = Math.min(arc, p.length - arc);
+      if (toCorner < best) { best = toCorner; path = p; edge = id; s = arc; }
+      if (path && --draws <= 0) break;
     }
     if (!path) { this._free.push(ped); return false; }
 
     dressActor(ped, () => rng.next());
     ped.edge = edge; ped.path = path;
-    ped.dir = rng.next() < 0.5 ? 1 : -1;
-    ped.s = ped.dir > 0 ? s : path.length - s;
+    // Walk toward the *nearer* corner, three times out of four.
+    //
+    // `buildSidewalks` lays one pavement strand per road edge per side, and a
+    // Boston road edge is a whole street: 177 m on average, 1.2 km at worst.
+    // Spawning with a coin-flip direction therefore points half the crowd at a
+    // junction two minutes away, and a pedestrian only ever decides to cross a
+    // road when he reaches one — so with a fair coin, nobody in a screenshot is
+    // ever crossing, queueing at a light, or standing at a kerb. Heading for the
+    // near end cuts the mean walk to a junction from ~131 s to ~35 s, and is
+    // also just what people do.
+    const nearEnd = (path.length - s) < s;
+    const fwd = rng.next() < 0.75 ? nearEnd : !nearEnd;
+    ped.dir = fwd ? 1 : -1;
+    ped.s = fwd ? s : path.length - s;
     ped.node = ped.dir > 0 ? this.walk.g.edges[edge].a : this.walk.g.edges[edge].b;
     // Height barely changes how fast people walk; hurry does.
     ped.baseSpeed = rng.range(1.02, 1.62) * (0.94 + (ped.h / REF_HEIGHT) * 0.06);
@@ -429,7 +485,7 @@ export default class Pedestrians {
       p.wait -= dt;
       if (p.wait <= 0) {
         p.wait = 0.4; p.waitTotal += 0.4;
-        if (this.walk.crossingClear(p.pendingEdge)) {
+        if (this._crossingSafe(p.pendingEdge)) {
           this._commitEdge(p, p.pendingEdge);
           p.state = 'cross';
         } else if (p.waitTotal > 20) {
@@ -455,7 +511,8 @@ export default class Pedestrians {
     // ---- desired speed ----------------------------------------------------
     let want = p.state === 'idle' ? 0
       : p.state === 'flee' ? Math.max(p.baseSpeed, 4.4)
-        : p.baseSpeed;
+        : p.state === 'cross' ? p.baseSpeed * 1.32   // nobody dawdles in the road
+          : p.baseSpeed;
     if (p.linger > 0) {
       p.linger -= dt;
       if (p.linger <= 0 && p.state === 'flee') p.state = 'walk';
@@ -545,7 +602,7 @@ export default class Pedestrians {
     const ne = g.edges[next];
     if (!ne) { p.state = 'idle'; return; }
 
-    if (ne.kind === 'crossing' && !this.walk.crossingClear(next)) {
+    if (ne.kind === 'crossing' && !this._crossingSafe(next)) {
       p.pendingEdge = next;
       p.state = 'wait';
       p.wait = 0.25;
