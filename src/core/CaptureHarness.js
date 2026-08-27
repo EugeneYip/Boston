@@ -23,7 +23,9 @@ export default class CaptureHarness {
     /** Named viewpoints the critic compares against GTA V reference framing. */
     this.shots = {
       street_level:   { pos: [40, 1.7, 120],   look: [0, 1.7, -400],  tod: 9.5,  fov: 55, eye: 1.7 },
-      downtown_dusk:  { pos: [180, 42, 260],   look: [-100, 30, -300],tod: 19.4, fov: 48 },
+      // Re-authored: the original [180,42,260] ended up pressed against a facade
+      // once building heights were fixed, so the shot was a wall of windows.
+      downtown_dusk:  { pos: [700, 120, 900],  look: [-100, 40, -200], tod: 19.4, fov: 48 },
       // Parked ON A LIT STREET. The previous position sat in Boston Common with no
       // street lamp within 186 m of it -- geographically correct (the Common has no
       // roads through it) but useless for judging night lighting.
@@ -110,6 +112,80 @@ export default class CaptureHarness {
         return eye != null ? g + eye : Math.max(y, g + 1.6);
       },
 
+      /**
+       * Push a shot position out of solid geometry.
+       *
+       * Shot positions are authored against the city as it was that day. When
+       * buildings change height or a new block lands, a shot that was in open air
+       * ends up buried inside a tower and the capture is a wall of facade.
+       *
+       * Buildings have no physics colliders -- only terrain and roads do -- so this
+       * tests the render geometry directly: fire rays along the six axes and treat
+       * the point as enclosed if nearly all of them hit something close by.
+       *
+       * @returns {{moved:number, pos:number[]}} how far it had to retreat
+       */
+      unstick: (pos, look, maxBack = 500) => {
+        const targets = [];
+        engine.scene.traverse((o) => {
+          if (!(o.isMesh || o.isInstancedMesh) || !o.visible) return;
+          const nm = (o.name || '') + '|' + (o.parent?.name || '');
+          if (/build|facade|shell|landmark/i.test(nm)) targets.push(o);
+        });
+        if (!targets.length) return { moved: 0, pos };
+
+        const ray = new THREE.Raycaster();
+        ray.far = 70;
+        const dirs = [
+          new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+          new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, -1, 0),
+          new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
+        ];
+        const origin = new THREE.Vector3();
+        const enclosed = (p) => {
+          origin.set(p[0], p[1], p[2]);
+          let hits = 0;
+          for (const d of dirs) {
+            ray.set(origin, d);
+            if (ray.intersectObjects(targets, false).length) hits++;
+          }
+          return hits >= 5;   // boxed in on nearly every side
+        };
+
+        // Being pressed against a facade is as useless as being inside one, and it
+        // does not read as "enclosed" -- only one ray hits. Check view clearance too.
+        const viewClear = (p) => {
+          origin.set(p[0], p[1], p[2]);
+          const d = new THREE.Vector3(look[0] - p[0], look[1] - p[1], look[2] - p[2]).normalize();
+          ray.set(origin, d);
+          ray.far = 25;
+          const hit = ray.intersectObjects(targets, false)[0];
+          ray.far = 70;
+          return !hit;
+        };
+        if (!enclosed(pos) && viewClear(pos)) return { moved: 0, pos };
+
+        // Retreat along the view axis, which preserves the framing intent.
+        const dx = pos[0] - look[0], dy = pos[1] - look[1], dz = pos[2] - look[2];
+        const len = Math.hypot(dx, dy, dz) || 1;
+        const ux = dx / len, uy = dy / len, uz = dz / len;
+        for (let d = 10; d <= maxBack; d += 10) {
+          const p = [pos[0] + ux * d, pos[1] + uy * d, pos[2] + uz * d];
+          if (!enclosed(p) && viewClear(p)) {
+            console.warn(`[capture] shot was inside or against geometry; backed off ${d}m`);
+            return { moved: d, pos: p };
+          }
+        }
+        for (let up = 20; up <= 400; up += 20) {
+          const p = [pos[0], pos[1] + up, pos[2]];
+          if (!enclosed(p) && viewClear(p)) {
+            console.warn(`[capture] shot was inside or against geometry; raised ${up}m`);
+            return { moved: up, pos: p };
+          }
+        }
+        return { moved: 0, pos };
+      },
+
       setCamera: (pos, look, fov) => {
         for (const s of engine.order) {
           if (CAMERA_DRIVERS.has(s.constructor.id) && 'enabled' in s) {
@@ -162,7 +238,8 @@ export default class CaptureHarness {
         // street shot still looks level instead of straight into a hillside.
         rawLook[1] += groundedPos - rawPos[1];
         rawPos[1] = groundedPos;
-        api.setCamera(rawPos, rawLook, fov ?? s.fov);
+        const freed = api.unstick(rawPos, rawLook);
+        api.setCamera(freed.pos, rawLook, fov ?? s.fov);
         // Warm up: lets IBL, streaming, LOD and temporal effects settle.
         api.step(warmup);
         await new Promise(r => setTimeout(r, 60));
