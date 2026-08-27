@@ -51,6 +51,38 @@ Last verified: 2026-08-27, commit `06f93d3`.
   published to `ctx.assets.setWetness()`, and lightning driving a real `DirectionalLight`
   plus `bus.emit('thunder', {distance})` at the correct speed-of-sound delay.
 - **Physics** (Rapier), **vehicles**, **audio**, **HUD/minimap/menu**, **profiler**.
+- **Traffic** (`src/ai/Traffic.js`, `Navigation.js`): ~120 kinematic AI cars on the real
+  lane graph. IDM car-following, two-phase signals on **108** junctions, priority + a
+  single-slot junction reservation everywhere else, don't-block-the-box, discretionary
+  lane changes, indicators, brake lights, headlights on the world clock. The player's car
+  is injected into the lane lists as an obstacle, so traffic queues behind him.
+  `traffic.takeOver(car, ctx)` swaps a kinematic car for a real physics `Vehicle` so the
+  player can drive anything on the road.
+- **Pedestrians** (`src/ai/Pedestrians.js`): ~100–150 people on `city.sidewalks`. They
+  cross only at crossing links and only when the signal governing that junction is red for
+  the traffic being crossed — reading the **same** `Navigation` instance the cars obey, so
+  a queue of people and a queue of cars never both think they have right of way. Keep
+  right, steer around each other and the player, stop and stand about, flee at
+  `wanted >= 3`. Density scales with the *pavement in range* and with the district (thick
+  at the Common, Faneuil Hall, Newbury St; thin in the Seaport). **Two draw calls** for the
+  whole crowd.
+- **Characters** (`src/gameplay/Character.js`): one procedural 16-bone humanoid shared by
+  the crowd and the player. Idle / walk / jog / run / sit / crouch clips are solved offline
+  and baked into a 48×150 half-float **GPU animation texture**; the vertex shader looks up
+  its own clip and phase, so a whole crowd animates for no CPU at all. Rigid one-bone
+  skinning with overlapping joint spheres (no candy-wrapper pinch, half the texture fetches
+  of weighted skinning). Per-instance height, build, gait, palette, sleeve length and
+  baked-in AO.
+- **Player** (`src/gameplay/Player.js`): Rapier `KinematicCharacterController` capsule —
+  walk / jog / sprint / crouch / jump with 45 cm autostep, snap-to-ground and a 52° climb
+  limit. `F` enters and exits vehicles and emits `player:enterVehicle` /
+  `player:exitVehicle`.
+- **Camera** (`src/gameplay/CameraRig.js`): GTA-style chase rig. Instant rotation with a
+  spring-damped pivot, a five-ray collision sweep that pulls in instantly and eases back
+  out, speed-dependent distance and field of view, distinct on-foot and in-vehicle
+  behaviour, auto-recentre behind the car when the mouse is idle, `V` toggles free-fly.
+  Honours `enabled` for the capture harness and re-derives its orbit angles from wherever
+  the harness left the camera.
 - **Capture harness** (`window.__boston`): 8 named shots, deterministic stepping,
   `measureFps()` that refuses to lie about a backgrounded tab.
 
@@ -75,6 +107,8 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Cold boot 45 s | Per-pixel JS texture synthesis without `willReadFrequently`, redundant full-size octaves | materials 12,782→653 ms, props 12,672→600 ms |
 | **Buildings do not rasterise — the whole city renders FLAT** | `BuildingKit.installPatch` defined `onBeforeCompile` as an **own accessor**, shadowing the `Material.prototype` accessor `CascadedShadows.installLightingShaders` installs. That prototype hook is the only thing injecting the shared `boston*` uniforms — one of which is `bostonProbeTex`, a **`sampler3D`** declared unconditionally by the patched `shadowmap_pars_fragment` chunk. Never receiving it, three never assigned it a texture unit, so it kept the default **unit 0** — the same unit the facade's `sampler2DArray` atlas lands on. The driver then rejected every building draw with `GL_INVALID_OPERATION: glDrawElements: Two textures of different types use the same sampler location`. Geometry, transforms, attributes, material flags and the compiled shader were all correct; the draw call simply never executed. Only buildings/landmarks were hit because every other system assigns `onBeforeCompile` normally and so goes through the prototype setter. | `BuildingKit.installPatch`, commit `d3de1e3` |
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
+| Skyline is a wall of same-height slabs | `plot.maxHeight` is **one flat number per district** (every Financial District parcel carries 240 m) and `makeSpec` did `storeys = max(storeys, floor(fit * 0.62))`, giving every tower the same fraction of the same number: 479 buildings inside one 20 m band with a hard gap from 100–140 m. Height now comes from a power law under a per-district ceiling (`Facades.DISTRICT_HEIGHT`), gated on parcel area and distance to Boston's two real tower clusters (`TOWER_CORES`). Caps stay under the landmarks so 200 Clarendon (241 m) and the Prudential (229 m) stay outliers. Result is monotonic: 5900 / 513 / 136 / 125 / 149 / 63 / 34 / 19 / 3 by 20 m bucket. | `Facades.makeSpec`, commit `9ed0f06` (swept in) |
+| Every tower ends in the same flat parapet line at distance | The rooftop antenna mast — a **silhouette** element — was emitted at `lod === 0` only, so it was dropped exactly when the top edge became the only readable thing about a tower. Now emits for `lod < 2` and is mirrored into `shellRoofKit` off the same keyed hash. | `Facades.roofClutter` / `shellRoofKit`, commit `35c42fe` |
 
 ## Unresolved issues (ranked)
 1. **The two street-level shots are parked *underneath the road*. This is not a render
@@ -154,17 +188,31 @@ Last verified: 2026-08-27, commit `06f93d3`.
    below luminance 2, 1.6% below 8, nothing clipped at the top; `downtown_dusk` 2.3% below
    2. Shadowed regions carry real gradient. Note `street_level` still reads 27.7% black —
    that is issue 1 (the camera is under the road), not the grade.
-6. **Buildings at mid/far LOD** — partly done. The LOD-2 shell already carries baked
-   `fac_*` facade strips (one vertical repeat = one storey), a plinth, a coping line and a
-   roof kit, so it no longer reads as a bare box; roofs now vary in surface and tone.
-   Still open: the height distribution is bimodal and wrong for Boston (5,900 buildings
-   under 20 m, then **479 between 140–160 m** — real Boston has ~40 buildings over 100 m),
-   so the skyline is a wall of same-height towers. *Owner: buildings.*
+6. **Buildings at mid/far LOD** — **done, keep an eye on it.** Verified by parking the
+   camera so the chunks in frame report `lod` 1 and 2 explicitly. The LOD-2 shell carries
+   baked `fac_*` facade strips (one vertical repeat = one storey), a plinth, a coping
+   line, a roof kit and now rooftop masts; roofs vary in surface and tone at every tier.
+   Nothing reads as a bare box and nothing pops across a LOD boundary.
+   *Owner: buildings.*
 7. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
    *Owner: vegetation.*
-8. **Not yet built at all**: `Player.js`, `Missions.js`.
-   The city has no traffic, no pedestrians and no player character. Empty streets are the
-   #1 tell of a tech demo on the critic rubric.
+8. **Not yet built at all**: `Missions.js`. Traffic, pedestrians, the player character and
+   the chase camera all landed — see §What exists and works.
+9. **Nothing reacts to being hit.** `player.health` never changes, cars drive through
+   pedestrians (peds avoid the *player*, not traffic), and `player:wanted` is only ever
+   raised by hand. Peds do flee at wanted ≥ 3 and traffic reads the level, but nothing
+   sets it. *Owner: gameplay/missions.*
+10. **Ped and car spawning still pops** at the streaming radius when the camera moves
+    quickly, because a spawn is placed on the nearest pavement/lane sample rather than
+    tested for visibility. Fine at walking pace, visible from a fast car.
+    *Owner: AI.*
+
+## Geometry really is free here — one more datum
+Hiding the **entire** `buildings` root at `hero_skyline` (1920×1080 `high`) removed 1.55 M
+triangles and made the frame **slower**, not faster: 7–8 fps with buildings, **3.5–5 fps
+without**. Less occlusion means more sky and ground reaching the post chain, and the post
+chain is the cost. This is `PERF_REPORT.md` §6 reproduced from the other direction — do not
+attribute an fps change to building geometry without an A/B like this one.
 
 ## Debugging methodology — learned the hard way on issue #0
 - **"The console is clean" is not the same as "the GL context is happy."** Driver-level
@@ -212,6 +260,22 @@ Trustworthy instruments: `__boston.measureFps()`, `Profiler.prefixCost()`.
 Garbage instruments here: `engine.perf`/DevOverlay fps (CPU-only), disabling composer
 passes (rewires ping-pong buffers), GPU-sync bracketing inside a pass (tile flush).
 
+**The one geometry exception: `VehicleVisual` does not obey the "geometry is free" rule.**
+An articulated car is ~19 separate meshes at LOD0, each with `frustumCulled = false`
+(`VehicleModels` culls the parent `Group`, and **three does not frustum-cull Groups**), and
+most of them cast into three shadow cascades. Sixteen of them measured **+600 draw calls
+and +1.27M triangles** — more than the entire rest of the city, which was 335 draws and
+2.2M triangles at the same moment. Anything that hands out `VehicleVisual`s in bulk must
+cap them hard, deny them to cars behind the camera, and put everything else in an instanced
+shell. `Traffic.js` now allows 3 at LOD0 / 10 total and cost drops to ~160 draws.
+
+**Verifying anything while other agents are editing.** Vite full-reloads the page on every
+save, which wipes `window.engine` mid-measurement and makes an `async` test script vanish.
+`npx vite build && npx vite preview --port 5299 --outDir dist` gives a target that does not
+move. Also: `measureFps()` correctly refuses when the tab is backgrounded, and a browser
+tool call that is not a screenshot will not front it — re-front before every measurement or
+you will collect a page of `hidden: true`.
+
 ## Next priorities (highest leverage first)
 | # | Action | Est. gain | File |
 |---|---|---|---|
@@ -220,7 +284,7 @@ passes (rewires ping-pong buffers), GPU-sync bracketing inside a pass (tile flus
 | 3 | ~~Let `glowMesh` frustum-cull; lower/clamp `uMinPx`~~ **Done, but the 10–16 ms was never there** — see the correction below the table. Measured cost of the additive proxies at `night_neon`/`high`/1080p: `lightGlows` **3.6 ms**, `lightPools` **2.7 ms** | ~1–2 ms | `src/gfx/LightManager.js` |
 | 4 | ~~Fix the black atmosphere pass, then re-check its render-target sizing~~ **Done.** Clouds, aerial perspective and the night sky all render; the pass survives `render.validate()` (`ok: true`, frame mean 17.58 → 19.39 across it). **The 326×184 sizing was never a bug** — see the note below the table | — | `src/gfx/Clouds.js`, `Fog.js` |
 | 5 | Merge the final two `EffectPass`es / drop sharpen taps when TAA is off | up to 25 ms, unproven | `RenderPipeline._rebuild` |
-| 6 | Build Traffic, Pedestrians, Player | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
+| 6 | ~~Build Traffic, Pedestrians, Player~~ **Done.** All four systems (`traffic`, `peds`, `player`, `cameraRig`) are live. Measured cost of the whole AI layer at 1080p/`high`: **1.5 fps** (10.7 → 9.2), ~160 draws, ~1.0M tris — of which **pedestrians are free** (10.7 → 10.7 fps, 2 draws, 76k tris) and all of it is traffic | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
 | 7 | Surface `measureFps` in the DevOverlay instead of `engine.perf` | stops future misdiagnosis | `src/ui/DevOverlay.js` |
 
 **Correction to `PERF_REPORT.md` §5 — "~16.5 ms is `lightGlows`" is an artefact of the
