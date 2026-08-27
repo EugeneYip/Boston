@@ -291,6 +291,16 @@ const ROOF_PATCH = ['roof_tar', 'roof_gravel', 'concrete', 'metal_rust', 'paint_
 const ROOF_UNIT_SCALE = (area) => Math.min(2.4, 0.90 + area / 700);
 
 /**
+ * Rooftop masts, shared by every tier so the distant shell puts the same mast in
+ * the same place at the same height as the detailed mesh.
+ *
+ * A real skyline's top edge is defined by masts, and a tall building is far more
+ * likely to carry one — it is the tall buildings that hold the transmitters.
+ */
+const mastChance = (spec) => (spec.h > 90 ? 0.62 : spec.h > 45 ? 0.40 : 0.26);
+const mastHeight = (spec, u) => 3 + u * 5 + Math.min(15, spec.h * 0.075);
+
+/**
  * Pick this building's roof surface and tone.
  * Driven by the *keyed* hash, not the sequential one, so adding it leaves every
  * other spec roll (bows, mansards, shopfronts) bit-for-bit unchanged.
@@ -1169,18 +1179,26 @@ function roofClutter(mb, poly, y, spec, lod) {
       mb.cap(dish, y + 1.12, 'metal_panel', [0.92, 0.92, 0.9], true);
       mb.cap(dish, y + 1.10, 'metal_panel', [0.7, 0.7, 0.7], false);
     }
-    if (area > 260 && r() < 0.5) {
-      const mx = rx(), mz = rz();
-      const mh = 3 + r() * 5;
-      mb.box(mx, y + mh * 0.5, mz, 0.14, mh, 0.14, 0, 'metal_dark', [0.4, 0.4, 0.42]);
-      mb.box(mx, y + mh, mz, 0.5, 0.06, 0.5, 0, 'metal_dark', [0.4, 0.4, 0.42]);
-    }
     // skylights
     if (r() < 0.45 && area > 80) {
       const sx = rx(), sz = rz();
       mb.box(sx, y + 0.20, sz, 1.2, 0.34, 0.9, 0, 'metal_dark', [0.35, 0.35, 0.36]);
       mb.box(sx, y + 0.40, sz, 1.05, 0.06, 0.76, 0, 'spandrel', [0.75, 0.85, 0.95], 0.12);
     }
+  }
+  // Rooftop mast. This is a SILHOUETTE element, not clutter: masts and the
+  // bulkheads beside them are most of what gives a distant skyline its ragged
+  // top edge. It used to be emitted at LOD 0 only, which is precisely backwards
+  // — by the time a tower is far enough away for its top edge to be the only
+  // thing you can read about it, the mast had already been dropped, and every
+  // tower ended in the same flat parapet line.
+  kk = 240;
+  if (lod < 2 && area > 240 && r() < mastChance(spec)) {
+    const mx = rx(), mz = rz();
+    const mh = mastHeight(spec, r());
+    mb.box(mx, y + mh * 0.5, mz, 0.16, mh, 0.16, 0, 'metal_dark', [0.4, 0.4, 0.42]);
+    mb.box(mx, y + mh * 0.62, mz, 0.62, 0.07, 0.62, 0, 'metal_dark', [0.4, 0.4, 0.42]);
+    mb.box(mx, y + mh, mz, 0.42, 0.06, 0.42, 0, 'metal_dark', [0.4, 0.4, 0.42]);
   }
   // chimneys — kept at every LOD, they define a rowhouse roofline
   kk = 260;
@@ -1579,6 +1597,18 @@ function shellRoofKit(mb, poly, y, spec) {
           uh = (0.75 + r0(k + 2) * 0.7) * Math.min(1.7, usc);
     mb.box(px(k + 3), y - DY + uh * 0.5 + 0.12, pz(k + 4), uw * K, uh, ud * K,
       r0(k + 5) < 0.5 ? 0 : Math.PI / 2, 'metal_panel', [0.85, 0.86, 0.88]);
+  }
+  // Mast — same keys, same place, same height as `roofClutter`. This is the one
+  // roof item that changes the building's silhouette, so the shell must have it:
+  // the shell is what you are looking at whenever the silhouette is all you can
+  // see. Not dropped by `K`/`DY` either — a mast shrunk into the roof would
+  // simply disappear.
+  if (area > 240 && r0(240) < mastChance(spec)) {
+    const mx = px(241), mz = pz(242);
+    const mh = mastHeight(spec, r0(243));
+    mb.box(mx, y - DY + mh * 0.5, mz, 0.16, mh, 0.16, 0, 'metal_dark', [0.4, 0.4, 0.42]);
+    mb.box(mx, y - DY + mh * 0.62, mz, 0.62, 0.07, 0.62, 0, 'metal_dark', [0.4, 0.4, 0.42]);
+    mb.box(mx, y - DY + mh, mz, 0.42, 0.06, 0.42, 0, 'metal_dark', [0.4, 0.4, 0.42]);
   }
   const cn = spec.S.chimneys || 0;
   for (let i = 0; i < cn; i++) {
