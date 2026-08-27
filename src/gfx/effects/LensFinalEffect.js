@@ -23,6 +23,14 @@ export default class LensFinalEffect extends Effect {
         ['adaptedLuminance', new THREE.Uniform(null)],
         // x: base CA in pixels, y: ISO/aperture scale, z: radial power, w: sharpness
         ['finalParams', new THREE.Uniform(new THREE.Vector4(1.15, 0.22, 2.0, 0.0))],
+        // Ceiling on the aperture term. This used to be unbounded, which was harmless
+        // only because the metering clamp had `adaptedLuminance` frozen at -3.6 in
+        // every shot: the aperture scale was a constant 1.87 and nobody noticed it was
+        // a free variable. With the clamp fixed the meter runs down to about -8 at
+        // night, which drove the same expression to 2.8 and put nearly 3 px of
+        // fringing on every corner of a night frame. 1.9 keeps the day look identical
+        // and stops night running away.
+        ['apertureMax', new THREE.Uniform(1.9)],
       ]),
     });
   }
@@ -32,11 +40,14 @@ export default class LensFinalEffect extends Effect {
   get sharpness() { return this.uniforms.get('finalParams').value.w; }
   /** @param {number} px - fringe width in pixels at the frame corner */
   set aberration(px) { this.uniforms.get('finalParams').value.x = px; }
+  /** @param {number} v - ceiling on the low-light aperture multiplier (>= 1) */
+  set apertureMax(v) { this.uniforms.get('apertureMax').value = Math.max(1, v); }
 }
 
 const FRAG = /* glsl */`
 uniform sampler2D adaptedLuminance;
 uniform vec4 finalParams;
+uniform float apertureMax;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
   vec3 c = inputColor.rgb;
@@ -60,7 +71,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   // --- lateral chromatic aberration ----------------------------------------------
   float avgLog = texture2D(adaptedLuminance, vec2(0.5)).r;
   float stopsUnder = clamp(0.35 - avgLog, 0.0, 8.0);
-  float apertureScale = 1.0 + stopsUnder * finalParams.y;
+  float apertureScale = min(1.0 + stopsUnder * finalParams.y, apertureMax);
 
   vec2 d = uv - 0.5;
   float r = length(d * vec2(aspect, 1.0)) * 1.4142;

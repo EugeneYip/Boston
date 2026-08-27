@@ -68,11 +68,34 @@ export default class LensPass extends Pass {
       uniforms: { inputBuffer: { value: null }, texelSize: { value: new THREE.Vector2() } },
     });
 
+    // The upsample blends the coarser level into the finer one *in place*.
+    //
+    // It used to do that by binding mips[i-1] as a `supportBuffer` sampler while
+    // rendering into mips[i-1] — reading and writing one texture in the same draw. That
+    // is a framebuffer feedback loop: the driver rejected every upsample draw with
+    // GL_INVALID_OPERATION (a console *warning*, so it never reached `__boston.errors`),
+    // and the whole progressive-tent halo was silently missing for months. The frame
+    // still looked plausible because mips[0] kept the plain downsample.
+    //
+    // Blending does the same arithmetic without ever sampling the destination:
+    //   dst = src.rgb + dst * (1 - src.a),  with src = vec4(col * k, k)
+    // which is exactly `mix(dst, col, k)` — an energy-preserving scatter rather than the
+    // old unbounded `support + col`, so the halo does not gain a level's worth of
+    // brightness every time the pyramid gets deeper.
     this.upMat = new THREE.ShaderMaterial({
       ...base, name: 'Lens.Up', fragmentShader: UP_FRAG,
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendEquationAlpha: THREE.AddEquation,
+      blendSrcAlpha: THREE.OneFactor,
+      blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
       uniforms: {
-        inputBuffer: { value: null }, supportBuffer: { value: null },
-        texelSize: { value: new THREE.Vector2() }, radius: { value: 0.85 },
+        inputBuffer: { value: null },
+        texelSize: { value: new THREE.Vector2() },
+        radius: { value: 0.85 },
+        scatter: { value: 0.62 },
       },
     });
 
@@ -116,6 +139,8 @@ export default class LensPass extends Pass {
   set threshold(t) { this.prefilterMat.uniforms.filterParams.value.x = t; }
   set softKnee(k) { this.prefilterMat.uniforms.filterParams.value.y = k; }
   set radius(r) { this.upMat.uniforms.radius.value = r; }
+  /** How much of each coarser level is blended into the finer one. 0..1. */
+  set scatter(s) { this.upMat.uniforms.scatter.value = Math.max(0, Math.min(1, s)); }
   set streaksEnabled(v) { this._streaksEnabled = v; }
   /** Trim the pyramid on cheaper presets. Fewer levels = a tighter, cheaper halo. */
   set activeLevels(n) { this._activeLevels = Math.max(2, Math.min(this._levels, n | 0)); }
@@ -143,7 +168,13 @@ export default class LensPass extends Pass {
   _draw(renderer, material, target) {
     this._quad.material = material;
     renderer.setRenderTarget(target);
+    // The upsample blends onto what the downsample already wrote, so the target must
+    // not be cleared first. EffectComposer sets autoClear = false globally, but this
+    // pass must not depend on a global that something else could flip back.
+    const auto = renderer.autoClear;
+    renderer.autoClear = false;
     renderer.render(this.scene, this.camera);
+    renderer.autoClear = auto;
   }
 
   render(renderer, inputBuffer) {
@@ -165,10 +196,11 @@ export default class LensPass extends Pass {
       src = this.mips[i];
     }
     // --- progressive tent upsample, accumulating back into mips[0] ---
+    // Reads mips[i] and blends into mips[i-1]: source and destination are always
+    // different targets, so there is no feedback loop. See the upMat comment.
     const u = this.upMat.uniforms;
     for (let i = levels - 1; i > 0; i--) {
       u.inputBuffer.value = this.mips[i].texture;
-      u.supportBuffer.value = this.mips[i - 1].texture;
       u.texelSize.value.set(1 / this.mips[i].width, 1 / this.mips[i].height);
       this._draw(renderer, this.upMat, this.mips[i - 1]);
     }
@@ -270,12 +302,15 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 
-// 9-tap tent upsample, added on top of the finer level.
+// 9-tap tent upsample. The result is emitted premultiplied by `scatter` in .a and the
+// material blends it as src + dst*(1-a), i.e. mix(dst, col, scatter), so the finer
+// level is read from the framebuffer by the blender instead of by a sampler. That is
+// what keeps this off a feedback loop.
 const UP_FRAG = /* glsl */`
 uniform sampler2D inputBuffer;
-uniform sampler2D supportBuffer;
 uniform vec2 texelSize;
 uniform float radius;
+uniform float scatter;
 varying vec2 vUv;
 void main() {
   vec2 t = texelSize * radius;
@@ -288,7 +323,7 @@ void main() {
   col += texture2D(inputBuffer, vUv + t * vec2(-1.0, -1.0)).rgb * 0.0625;
   col += texture2D(inputBuffer, vUv + t * vec2( 0.0, -1.0)).rgb * 0.125;
   col += texture2D(inputBuffer, vUv + t * vec2( 1.0, -1.0)).rgb * 0.0625;
-  gl_FragColor = vec4(texture2D(supportBuffer, vUv).rgb + col, 1.0);
+  gl_FragColor = vec4(col * scatter, scatter);
 }`;
 
 const BLUR_FRAG = /* glsl */`

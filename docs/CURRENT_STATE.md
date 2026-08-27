@@ -19,7 +19,7 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | | |
 |---|---|
 | Boots | Yes — 22 systems, `bootReport.failed` is `[]` |
-| Console | `__boston.errors` is `[]`. One driver **warning** remains: `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` from a fullscreen post pass — see issue 1. |
+| Console | `__boston.errors` is `[]` and `__boston.glFaults` is `[]`. The `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` warning is **gone** — it was `LensPass`; see §Resolved. Stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten. |
 | Real fps | **13 @ 1920×1080 `high`** (`measureFps(2)`, settled, static build, `hero_skyline`). Unchanged by the buildings fix — the whole city now rasterises for the same cost, which is what `PERF_REPORT.md` §6 predicts. **Not re-measurable while sibling agent tabs are rendering** — see the note under Next priorities. |
 | Draws / tris | 217 / 1.37M at `hero_skyline`; 529 / 2.87M at `downtown_dusk` — **inside** the 1200 / 3.5M budget |
 | Cold boot | ~8 s (was ~45 s) |
@@ -109,6 +109,12 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
 | Skyline is a wall of same-height slabs | `plot.maxHeight` is **one flat number per district** (every Financial District parcel carries 240 m) and `makeSpec` did `storeys = max(storeys, floor(fit * 0.62))`, giving every tower the same fraction of the same number: 479 buildings inside one 20 m band with a hard gap from 100–140 m. Height now comes from a power law under a per-district ceiling (`Facades.DISTRICT_HEIGHT`), gated on parcel area and distance to Boston's two real tower clusters (`TOWER_CORES`). Caps stay under the landmarks so 200 Clarendon (241 m) and the Prudential (229 m) stay outliers. Result is monotonic: 5900 / 513 / 136 / 125 / 149 / 63 / 34 / 19 / 3 by 20 m bucket. | `Facades.makeSpec`, commit `9ed0f06` (swept in) |
 | Every tower ends in the same flat parapet line at distance | The rooftop antenna mast — a **silhouette** element — was emitted at `lod === 0` only, so it was dropped exactly when the top edge became the only readable thing about a tower. Now emits for `lod < 2` and is mirrored into `shellRoofKit` off the same keyed hash. | `Facades.roofClutter` / `shellRoofKit`, commit `35c42fe` |
+| **Every hour of the day tone-maps identically — exposure is a fixed 2.424 at noon and at midnight** | `RenderPipeline.options.minEV` was `-0.6`, and `AutoExposurePass` converts EV100 to a log-luminance clamp as `log2(L) = EV100 - 3`. That put the metering **floor at log2 L = -3.6**, which is *brighter than most of the game*: measured metered log-luminance is -1.4 at overcast noon but -4.4 at a 09:30 street and -5.8 at 22:00. Everything from mid-afternoon downwards sat pinned on the floor, so the adaptation had a constant to integrate and the exposure never moved. Boston's scene-referred radiances are simply nowhere near photographic cd/m², so a photographic EV floor clamps real scenes. Floor is now `minEV: -8.5` (log2 L = -11.5), ~3 stops below the darkest shot. Verified: exposure now spans **0.54 (overcast noon) to 3.47 (rain street)** across the eight review shots and nothing sits on the clamp. | `RenderPipeline.options.minEV` |
+| Night rendered as bright as noon *after* the clamp was fixed | A meter with unit gain maps every scene onto the same middle grey by construction — that is what a meter is for. Fixing the clamp therefore made 22:00 render at frame p50 100/255, identical to 09:30. It also silently cancelled the lighting stage: any change to `NIGHT_SKY` was undone by the exposure stage within a second, which is why that constant had been pushed to a non-physical 0.9 chasing a visible result. `AutoExposurePass.setResponse(pivot, gainDown)` now compresses the metered value toward a pivot on the **dark side only** (full gain upwards, so a bright sky still stops down and cannot clip). At `meterGainDown: 0.55` night_neon lands 1.9 stops below its fully-adapted exposure while the four daylight shots move under a quarter of a stop. | `AutoExposurePass.setResponse` + `RenderPipeline.options.meterPivot`/`meterGainDown` |
+| `LensPass` draw rejected with `GL_INVALID_OPERATION` (framebuffer feedback loop) every frame — the whole progressive-tent bloom halo silently missing | The upsample bound `mips[i-1]` as a `supportBuffer` sampler **while rendering into `mips[i-1]`**. Reading and writing one texture in the same draw is a feedback loop; the driver dropped the draw and reported it as a `console.warn`, so it never reached `__boston.errors`. The frame still looked plausible because `mips[0]` kept its plain downsample. The upsample now emits `vec4(col * scatter, scatter)` and the *blender* combines it with the destination (`src + dst*(1-srcA)` = `mix(dst, col, scatter)`), so the finer level is never sampled. Also energy-preserving, unlike the old unbounded `support + col`. Verified: stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten passes, and binding a target as its own sampler still faults on this driver, so the test has not gone blind. | `LensPass.upMat` / `UP_FRAG` |
+| Shadow recovery believed unnecessary because "the HDR probe shows no detail below the clip point" | The probe *was* the frozen meter. With metering live, `probeLuminance()` on the dusk downtown framing reports scene p05 at **-7.36** against an adapted key of -3.11 — 4.2 stops of real rendered detail under a curve that clips at ~5.5. Toe re-enabled at `shadowContrast: 0.62`. Dusk pure-black pixels 7.45% → 1.9%, p05 0.4 → 4.9, with p50/p90/p99 moving under 1.5/255. Note `shadowToeStops` is a **width**: widening it to 9 lifts the deepest shadows *less* (night_neon black 5.4% at 7 stops, 8.9% at 9). Tune the contrast, not the width. | `RenderPipeline.options.shadowContrast` |
+| The `atmosphere` pass reported **zero** cost in every GPU profile | `_passNames` was captured inside `_rebuild`, which runs at init — before the atmosphere stage inserts its pass. `GpuTimer` round-robins over that list and `_instrument` is what makes a pass timable at all, so a pass added later was not merely mis-timed, it was invisible. `_syncPassList()` now re-reads the composer whenever the pass count changes. | `RenderPipeline._syncPassList` |
+| Lateral chromatic aberration much heavier at night than authored | `LensFinalEffect` scales CA by `1 + stopsUnder * 0.22` off the adapted luminance, uncapped. That was harmless only while the meter was frozen at -3.6 (a constant 1.87×); with metering live it reached 2.8× and put ~3 px of fringing in every corner of a night frame. Capped at `apertureMax` 1.9, which leaves the day look unchanged. | `LensFinalEffect` |
 | Buildings render as flat, pale, untextured white slabs beside properly-facaded neighbours ("floating with white outline boxes") | The slabs are the LOD 2 shell; the detailed LOD 0/1 chunks had not been built yet. `Buildings._pump` widened its per-frame build budget only while `ctx.time.frame < 200` and used 6 ms after that. A camera teleport invalidates every near chunk at once, a dense chunk is ~160 ms of emit on its own, and `capture()` warms up only ~24 frames — so 6 ms/frame could never converge. Whatever happened to be built already showed a full facade and everything else showed the shell, hence the mixture. `update` now detects a teleport (camera moved more than one CHUNK in a frame) and `_pump` spends 50 ms/frame for 45 frames. Normal driving moves ~0.5 m a frame and never trips it. Measured after a 2 km teleport and a single `capture()`: near chunks built 0/14 → **14/14**; frame changed by hiding the detailed meshes 1.5% → **66.1%** (noise 0.1%). | `Buildings._pump` / `update`, commit `a927ec9` |
 
 ## Unresolved issues (ranked)
@@ -130,38 +136,36 @@ Last verified: 2026-08-27, commit `06f93d3`.
    the shot definitions against `city.groundHeight()` rather than hunting the frame.**
    *Owner: capture harness / city. File: `src/core/CaptureHarness.js` `this.shots`.*
 
-   Separately and still real, but **not** the cause of the black street shots: one
-   fullscreen pass does form a framebuffer feedback loop. Bisected by stubbing every
-   pass's `render` except one and reading `gl.getError()` after `composer.render()` —
-   exactly one throws:
-   `FrameStatePass NONE · RenderPass NONE · N8AO NONE · atmosphere NONE · AutoExposure
-   NONE · Velocity NONE · TAA NONE · `**`LensPass INVALID_OPERATION`**` · EffectPass NONE ·
-   EffectPass NONE`. All four atmosphere draws (cloud march, volumetrics, composite, sky
-   LUT) are GL-clean in the same test. LensPass's draw is being dropped every frame, so
-   whatever it contributes is silently absent.
-   *Owner: render pipeline. File: `src/gfx/RenderPipeline.js`, `src/gfx/effects/`.*
-2. **The exposure chain never adapts — it is a fixed 2.424 at every hour.** This is now the
-   single biggest thing holding night back, and it is *not* a lighting bug.
-   `AutoExposurePass`'s metering clamp pins the adapted log-luminance at the bottom of its
-   range at **both** noon and 22:00, measured with `probeLuminance()`:
+   ~~Separately, one fullscreen pass forms a framebuffer feedback loop (`LensPass
+   INVALID_OPERATION`).~~ **Fixed** — see §Resolved. Re-derived after the critic could not
+   reproduce it: the bisect now returns `NONE` for all ten passes, *and* deliberately
+   re-creating the old shape at runtime (binding a render target as its own sampler) still
+   returns `INVALID_OPERATION` on this driver — so the clean result is a fix, not a blind
+   test.
+2. ~~**The exposure chain never adapts — a fixed 2.424 at every hour.**~~ **Fixed.** Three
+   separate defects, all in §Resolved: the `minEV` clamp floor sat above most of the game,
+   a unit-gain meter then cancelled the day/night cycle once the clamp was lifted, and the
+   shadow toe had been switched off on evidence produced by the frozen meter. Measured
+   after, `high`, verified camera positions, full-frame readback:
 
-   | shot | adapted log2 L | resulting exposure | true scene log2 L (p50) |
-   |---|---:|---:|---:|
-   | `street_level` 09:30 | −3.60 (clamped) | 2.424 | −6.54 |
-   | `night_neon` 22:00 | −3.60 (clamped) | 2.424 | **−10.49** |
+   | shot | exposure | frame p50 | % below lum 2 | % clipped |
+   |---|---:|---:|---:|---:|
+   | `overcast_wide` 13:00 | **0.54** | 103.8 | 0.0% | 0.0% |
+   | `hero_skyline` 17:48 | 0.78 | 111.7 | 0.0% | 0.0% |
+   | `bridge` 08:12 | 0.94 | 73.0 | 0.0% | 0.2% |
+   | dusk downtown 19:24 | 1.52 | 88.7 | 1.9% | 0.0% |
+   | `street_level` 09:30 | 2.11 | 70.0 | 0.1% | 2.5% |
+   | `golden_hour` 06:36 | 2.52 | 70.3 | 0.0% | 0.0% |
+   | `night_neon` 22:00 | **2.78** | **32.8** | 7.0% | 0.1% |
+   | `rain_street` 15:12 | **3.47** | 64.4 | 0.0% | 0.0% |
 
-   Night is genuinely four stops darker and the meter is not allowed to see any of it.
-   `minEV: -0.6` in `RenderPipeline`'s exposure options maps to a floor of
-   `log2(0.125·2^−0.6) = −3.6`; something around **−6 to −8** would give night its stops
-   back. Two consequences worth knowing before touching anything else: (a) raising scene
-   light is currently the *only* way to make night brighter, which is why `NIGHT_SKY` in
-   `Lighting.js` is authored far above a physical skyglow and is commented to come back
-   down once this is fixed; (b) `toeParams` shadow recovery is switched off on the grounds
-   that the HDR probe shows no detail below the clip point — it does, four stops of it.
-   Verified from lighting's side by rendering an identical emissive quad at both hours:
-   the same emitted radiance lands at the same output value, so nothing downstream of the
-   scene is compensating. *Owner: render. File: `src/gfx/RenderPipeline.js` ~line 177,
-   `src/gfx/effects/AutoExposurePass.js`.*
+   Exposure spans **2.7 stops** across the review set and nothing sits on the clamp. Night
+   median is now **~30% of overcast noon** (was ~70% end-to-end when the critic measured
+   it), and the worst clipping in the set is 2.5% on the one shot with the sun in frame
+   (was 15–16%). **For the lighting stage:** `NIGHT_SKY` can and should come back down to a
+   physical value now. At `meterGainDown: 0.55` a two-stop cut to the night ambient will
+   darken the frame by roughly 0.9 stops instead of being silently cancelled — so make the
+   change in small steps and re-read `probeLuminance()` rather than the frame alone.
 3. **Night on a street now works; `night_neon` specifically is still dark.** A/B of the
    night ambient fix alone, same build, 1920×1080 `high`, full-frame pixel readback:
 
@@ -180,33 +184,78 @@ Last verified: 2026-08-27, commit `06f93d3`.
    and all three are sitting under the exposure clamp in issue 2. **Judge night from a
    street, or re-frame the shot** — e.g. `pos [-1453.4, 4.85, 401.4] look [-1200, 11, 470]`.
    *Owner: lighting (done what it can without 2) + render (2).*
-4. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
+4. **A hard horizontal seam across the whole frame, introduced by the `atmosphere` pass.**
+   Distinct from the pure-black horizon gap the critic found (terrain ring ending before
+   the sky dome starts) — this one is a *step in the aerial perspective*, and the two can
+   appear in the same frame.
+
+   Bisected by rendering every prefix of the live chain into a full-res RGBA8 target and
+   reading it back (`prefixImage(k)`), on `capture({ pos:[1500,380,1900],
+   look:[-200,60,-400], tod:18.2, fov:45 })` at 1280×720. Sampling one column straight
+   down the frame:
+
+   | frame row | after `RenderPass`/`N8AO` | after `atmosphere` |
+   |---|---|---|
+   | 295 – 302 | `107, 88, 68` | `117, 96, 74` — essentially unfogged |
+   | **303** and below | `107, 88, 68` | **`228, 243, 255`** — full in-scatter |
+
+   The scene buffer is smooth across that boundary; the atmosphere pass creates a ~117/255
+   step at a single row, dead straight across all 1280 columns. Also reproduces at
+   `street_level` (rows 358–363) and worst at `overcast_wide`, where 14 separate seam rows
+   between 225 and 273 are introduced by that one pass.
+
+   **Cause**, in `src/shaders/sky/atmospherePass.glsl.js` (~line 156): `if (d > 0.99999)`
+   treats a pixel as sky and skips aerial perspective entirely. With the camera at
+   `near 0.25 / far 12000`, `d = 0.99999` is reached at about **8.1 km** — so the outer
+   third of the view distance is classified as sky and keeps its raw surface colour, while
+   the pixel one row nearer gets the full in-scatter. The band is simply the strip of
+   ground beyond 8 km. The sky is drawn with no depth write, so its depth is exactly
+   `1.0`; testing `d >= 1.0` (or comparing a reconstructed linear distance against the far
+   plane) separates sky from far geometry without an epsilon. Better still, make the two
+   branches agree in the limit so any residual mismatch is invisible.
+   *Owner: atmosphere. File: `src/shaders/sky/atmospherePass.glsl.js`.*
+   *Confirmed not the render chain: identical result with `fog.enabled = false` and with
+   `clouds.skip = true`, and absent from every prefix up to and including `N8AO`.*
+5. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
    redefined; three r171 renamed this varying. Two programs fail `VALIDATE_STATUS`.
    *Owner: city/materials. File: `src/world/Water.js`.*
-5. ~~**Crushed blacks in daylight**~~ — **verified fixed and holding.** The double
+6. ~~**Crushed blacks in daylight**~~ — **verified fixed and holding.** The double
    sRGB→linear conversion is gone from `LightProbes` (the albedo colours are constructed
    once and not re-converted). Full-frame readback at `golden_hour`: **0.6%** of pixels
    below luminance 2, 1.6% below 8, nothing clipped at the top; `downtown_dusk` 2.3% below
    2. Shadowed regions carry real gradient. Note `street_level` still reads 27.7% black —
    that is issue 1 (the camera is under the road), not the grade.
-6. **Buildings at mid/far LOD** — **done, keep an eye on it.** Verified by parking the
+7. **Buildings at mid/far LOD** — **done, keep an eye on it.** Verified by parking the
    camera so the chunks in frame report `lod` 1 and 2 explicitly. The LOD-2 shell carries
    baked `fac_*` facade strips (one vertical repeat = one storey), a plinth, a coping
    line, a roof kit and now rooftop masts; roofs vary in surface and tone at every tier.
    Nothing reads as a bare box and nothing pops across a LOD boundary.
    *Owner: buildings.*
-7. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
+8. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
    *Owner: vegetation.*
-8. **Not yet built at all**: `Missions.js`. Traffic, pedestrians, the player character and
+9. **Not yet built at all**: `Missions.js`. Traffic, pedestrians, the player character and
    the chase camera all landed — see §What exists and works.
-9. **Nothing reacts to being hit.** `player.health` never changes, cars drive through
+10. **Nothing reacts to being hit.** `player.health` never changes, cars drive through
    pedestrians (peds avoid the *player*, not traffic), and `player:wanted` is only ever
    raised by hand. Peds do flee at wanted ≥ 3 and traffic reads the level, but nothing
    sets it. *Owner: gameplay/missions.*
-10. **Ped and car spawning still pops** at the streaming radius when the camera moves
+11. **Ped and car spawning still pops** at the streaming radius when the camera moves
     quickly, because a spawn is placed on the nearest pavement/lane sample rather than
     tested for visibility. Fine at walking pace, visible from a fast car.
     *Owner: AI.*
+12. **Pedestrians almost never reach a junction, so crossings are rarely seen.**
+    `RoadNetwork.buildSidewalks` emits **one walk edge per road edge per side**, and a
+    Boston road edge is a whole street — mean **177 m**, up to **1.2 km**, and 430 m on the
+    strands round the Common. A crossing link only exists at a junction, so a pedestrian
+    dropped mid-block walks for two to five minutes before he can even decide to cross.
+    The crossing machinery itself is correct and verified: `WalkNav.nextEdge` returns a
+    crossing on **23.7%** of junction decisions (5,701 of 24,048 sampled), and pedestrians
+    forced to an edge end do enter `cross`, walk the crossing and continue. What is missing
+    is *opportunity*. `Pedestrians` already mitigates it from its own side — spawns take
+    the best of four draws by distance-to-corner and then head for the nearer corner, which
+    brought the median distance-to-junction from ~215 m down to **86 m** — but the real fix
+    is to subdivide long pavement strands at, say, 60 m so the graph has decision points.
+    *Owner: city (`RoadNetwork.buildSidewalks`), with AI to follow.*
 
 ## Geometry really is free here — one more datum
 Hiding the **entire** `buildings` root at `hero_skyline` (1920×1080 `high`) removed 1.55 M
@@ -285,7 +334,7 @@ you will collect a page of `hidden: true`.
 | 3 | ~~Let `glowMesh` frustum-cull; lower/clamp `uMinPx`~~ **Done, but the 10–16 ms was never there** — see the correction below the table. Measured cost of the additive proxies at `night_neon`/`high`/1080p: `lightGlows` **3.6 ms**, `lightPools` **2.7 ms** | ~1–2 ms | `src/gfx/LightManager.js` |
 | 4 | ~~Fix the black atmosphere pass, then re-check its render-target sizing~~ **Done.** Clouds, aerial perspective and the night sky all render; the pass survives `render.validate()` (`ok: true`, frame mean 17.58 → 19.39 across it). **The 326×184 sizing was never a bug** — see the note below the table | — | `src/gfx/Clouds.js`, `Fog.js` |
 | 5 | Merge the final two `EffectPass`es / drop sharpen taps when TAA is off | up to 25 ms, unproven | `RenderPipeline._rebuild` |
-| 6 | ~~Build Traffic, Pedestrians, Player~~ **Done.** All four systems (`traffic`, `peds`, `player`, `cameraRig`) are live. Measured cost of the whole AI layer at 1080p/`high`: **1.5 fps** (10.7 → 9.2), ~160 draws, ~1.0M tris — of which **pedestrians are free** (10.7 → 10.7 fps, 2 draws, 76k tris) and all of it is traffic | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
+| 6 | ~~Build Traffic, Pedestrians, Player~~ **Done.** All four systems (`traffic`, `peds`, `player`, `cameraRig`) are live. A/B at 1080p/`high` on the verify server: **7.3 → 6.9 fps**, +281 draws, +1.03M tris for the whole AI layer. **Pedestrians are effectively free** (2 draws, 76k tris, ~0.6 ms CPU); ~95% of the cost is traffic. Traffic is the first thing to trim if the triangle budget gets tight — lower `MAX_DETAIL`/`SHELL_SHADOW_CAP` in `Traffic.js` | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
 | 7 | Surface `measureFps` in the DevOverlay instead of `engine.perf` | stops future misdiagnosis | `src/ui/DevOverlay.js` |
 
 **Correction to `PERF_REPORT.md` §5 — "~16.5 ms is `lightGlows`" is an artefact of the
@@ -312,6 +361,36 @@ because it assumed a 0.25 scale from the class docstring, but `QUALITY.high.scal
 → 326×184, and at a 1282×800 buffer the same targets come out 218×136, so `setSize` does
 track the buffer. `applyQuality` now reads `renderer.getDrawingBufferSize()` instead of
 `domElement.width` anyway, so it can no longer capture a stale canvas size at init.
+
+**Resolution ladder — verified working, and the earlier "`getPixelRatio()` reads 1 at every
+preset" was the preset table, not the pipeline.** `_applyResolution` derives the ratio from
+`min(devicePixelRatio, settings.pixelRatioCap, sqrt(budgetPixels / cssPixels))` and then
+calls `renderer.setSize(w, h, true)` explicitly, because `EffectComposer.setSize` skips
+`renderer.setSize` when the CSS size is unchanged. Measured in a 1280×720 CSS window after
+the preset ladder was corrected to 1.0 / 1.25 / 1.5 / 2.0:
+
+| preset | cap | `getPixelRatio()` | drawing buffer | `composer.inputBuffer` | passes |
+|---|---:|---:|---|---|---:|
+| low | 1.0 | 1.00 | 1280×720 | 1280×720 | 8 |
+| medium | 1.25 | 1.25 | 1600×900 | 1600×900 | 9 |
+| high | 1.5 | 1.50 | **1920×1080** | 1920×1080 | 10 |
+| ultra | 2.0 | 2.00 | 2560×1440 | 2560×1440 | 13 |
+
+The ratio, the canvas and every composer buffer all track the cap. While `high` was
+capped at 1.0 every preset produced ratio 1.0 by construction, which is what made it look
+like the cap never reached the buffer.
+
+**Per-pass timing is currently unobtainable, not merely noisy.** Three back-to-back
+`prefixCost({frames:6, repeats:4})` runs on one frozen frame returned `fullChainMs`
+34.5 / 43.8 / 52.2 and three *mutually contradictory* rankings — run 1 said `TAAPass`
+40.6 ms and `N8AO` 1.7; run 3 said `N8AO` 21.1 and `TAAPass` 21.0 with `AutoExposurePass`
+at 10.8 ms, which is impossible (it renders a 128² and a 1×1). `measureFps(2)` on the same
+locked scene returned 15.8 / 5.4 / 3.5 fps. Real GPU timer queries *are* available here
+(`EXT_disjoint_timer_query_webgl2`, `gpuTimer.available === true`) but every pass reported
+a ~9 ms floor, i.e. the begin/end pair was catching queued work from other tabs. **Do not
+publish a per-stage millisecond table taken while sibling agent tabs are rendering** —
+wait for a quiet machine, and prefer `gpuProfile(true)` + `gpuTimings()` over `prefixCost`
+now that the timer extension is present.
 
 **Another instrument that lies here: fps measured while other agents are rendering.**
 Several agents run their own full-resolution instances in sibling browser tabs. Five

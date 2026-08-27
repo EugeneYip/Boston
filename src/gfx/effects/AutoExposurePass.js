@@ -63,6 +63,8 @@ export default class AutoExposurePass extends Pass {
         params: { value: new THREE.Vector4(0.016, 3.4, 1.1, 1) },
         // x: min log2 luminance, y: max log2 luminance
         range: { value: new THREE.Vector2(-6, 12) },
+        // x: pivot log2 luminance, y: adaptation gain below the pivot
+        response: { value: new THREE.Vector2(-2.2, 1.0) },
       },
       vertexShader: VERT,
       fragmentShader: ADAPT_FRAG,
@@ -74,19 +76,57 @@ export default class AutoExposurePass extends Pass {
 
     this.speedUp = 3.4;      // EV/s when the world gets brighter (pupil closes fast)
     this.speedDown = 1.1;    // EV/s when it gets darker (rods take their time)
-    this.setEVRange(-1.5, 15.5);
+    this.setEVRange(-8.5, 15.5);   // RenderPipeline pushes the live values every frame
     this.reset();
   }
 
   /**
    * Clamp window for the metered scene luminance, expressed as EV100.
-   * L = 0.125 * 2^EV100 (K = 12.5 reflected-light meter calibration).
+   * L = 0.125 * 2^EV100 (K = 12.5 reflected-light meter calibration), so the clamp
+   * this installs is on log2(L) = EV100 - 3.
+   *
+   * The window is a *guard rail*, not a look control. If it ever clips a real scene
+   * the adaptation silently stops adapting and every hour of the day tone-maps
+   * identically — which is exactly what happened with the old -0.6 floor. Boston's
+   * scene-referred values are far below photographic cd/m2, so the floor has to be
+   * well negative; see the measured per-shot table in `RenderPipeline.options.minEV`.
    */
   setEVRange(minEV, maxEV) {
     this.minEV = minEV; this.maxEV = maxEV;
     const r = this.adaptMaterial.uniforms.range.value;
     r.x = Math.log2(0.125 * Math.pow(2, minEV));
     r.y = Math.log2(0.125 * Math.pow(2, maxEV));
+  }
+
+  /**
+   * Partial adaptation — how much of a *darkening* the meter is allowed to follow.
+   *
+   * A meter with unit gain is self-defeating in a day/night game: it maps every scene
+   * to the same middle grey, so midnight renders at the same brightness as noon and any
+   * change the lighting stage makes is silently cancelled by the exposure stage. Real
+   * eyes do not do this either — human adaptation is famously incomplete downwards,
+   * which is why a night street still *looks* like night after you have stood in it for
+   * ten minutes.
+   *
+   * So the metered value is compressed toward a fixed pivot before it is integrated:
+   *
+   *     target = pivot + (metered - pivot) * (metered < pivot ? gainDown : 1)
+   *
+   * Brightening keeps unit gain — a scene brighter than the pivot must stop all the way
+   * down or the sun clips. Only the downward half is compressed. `gainDown = 1` restores
+   * the old fully-adapting behaviour exactly.
+   *
+   * The residual `1 - gainDown` is what makes the lighting stage's work visible: at
+   * gainDown 0.55, dropping the night ambient by two stops still darkens the frame by
+   * ~0.9 stops instead of being fully compensated away.
+   *
+   * @param {number} pivotLog2L - metered log2 luminance that is exposed exactly on key
+   * @param {number} gainDown - 0..1, stops of exposure per stop of scene darkening
+   */
+  setResponse(pivotLog2L, gainDown) {
+    const v = this.adaptMaterial.uniforms.response.value;
+    v.x = pivotLog2L;
+    v.y = Math.max(0, Math.min(1, gainDown));
   }
 
   /** Snap the adaptation to whatever the next frame measures (teleports, cuts). */
@@ -203,11 +243,16 @@ uniform sampler2D lumBuffer;
 uniform sampler2D prevBuffer;
 uniform vec4 params;   // dt, rateUp, rateDown, reset
 uniform vec2 range;    // min/max log2 luminance
+uniform vec2 response; // pivot log2 luminance, adaptation gain below the pivot
 varying vec2 vUv;
 
 void main() {
   vec4 s = texture2DLodEXT(lumBuffer, vec2(0.5), 7.0);
-  float target = clamp(s.x / max(s.y, 1e-4), range.x, range.y);
+  float metered = s.x / max(s.y, 1e-4);
+  // Partial adaptation: full gain upwards, response.y downwards. See setResponse().
+  float dev = metered - response.x;
+  float target = clamp(response.x + dev * (dev < 0.0 ? response.y : 1.0),
+                       range.x, range.y);
   float prev = texture2D(prevBuffer, vec2(0.5)).r;
   if (params.w > 0.5 || prev != prev) {
     gl_FragColor = vec4(target, 0.0, 0.0, 1.0);

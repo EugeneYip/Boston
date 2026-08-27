@@ -60,7 +60,10 @@ const BUDGET = {
   high: {
     pixels: 1920 * 1080,
     ao: true, taa: true, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 8, aoDenoise: 4, bloomLevels: 4, streaks: false,
+    // AO is the one place on `high` where sample count still buys measurable time
+    // (PERF_REPORT §9 row 7). 6/3 keeps contact shadows at street level — the AO is
+    // half-res and denoised, so the sample count mostly controls noise, not extent.
+    aoSamples: 6, aoDenoise: 3, bloomLevels: 4, streaks: false,
     dofRings: 3, dofMaxCoC: 10, mbSamples: 8,
     ssrSteps: 16, ssrRefine: 4, ssrDistance: 110,
   },
@@ -125,6 +128,8 @@ export default class RenderPipeline {
 
     // --- Ambient occlusion (N8AO handles large outdoor scenes correctly) ---
     this.ao = new N8AOPostPass(scene, camera, window.innerWidth, window.innerHeight);
+    // It inherits postprocessing's base name, "Pass", which is useless in a profile.
+    this.ao.name = 'N8AOPostPass';
     const ao = this.ao.configuration;
     ao.aoRadius = 2.6;              // metres — tuned for street-level geometry
     ao.distanceFalloff = 1.1;
@@ -174,12 +179,61 @@ export default class RenderPipeline {
     this.options = {
       exposureKey: 0.20,      // metered scene luminance is mapped to this middle grey
       autoExposure: true,
-      minEV: -0.6,
+      // Clamp window for the *metered* scene luminance, in EV100
+      // (AutoExposurePass converts: log2(L) = EV100 - 3).
+      //
+      // This used to be -0.6, which put the floor at log2(L) = -3.6 — brighter than
+      // most of the game. Measured metered log2 luminance across all eight review
+      // shots: overcast_wide -1.45, hero_skyline -2.01, bridge -2.28, downtown_dusk
+      // -4.30, street_level -4.74, golden_hour -4.89, rain_street -5.71, night_neon
+      // -8.20. Everything from dusk downwards sat on the floor, so the adaptation had
+      // nothing to integrate and exposure was pinned at 0.20/2^-3.6 = 2.42 at every
+      // hour of the day. That is why night read as near-black: the metering could not
+      // see it, so nothing opened up.
+      //
+      // -8.5 puts the floor at log2(L) = -11.5, about 3.3 stops below the darkest shot
+      // in the game, so it still guards against a fully black frame opening the
+      // aperture to infinity without ever clamping a real scene.
+      minEV: -8.5,
       maxEV: 15.5,
+      // --- partial adaptation ---------------------------------------------------
+      // With the clamp fixed the meter adapts over the full 4+ stop day/night range,
+      // and a meter with unit gain maps every one of those hours onto the same middle
+      // grey. Measured after the clamp fix and before this: `night_neon` at 22:00 came
+      // out at frame p50 100/255 — the same value as `street_level` at 09:30. Correct
+      // metering, wrong picture.
+      //
+      // `meterGainDown` is how many stops of exposure the meter is allowed to open per
+      // stop the scene darkens *below* `meterPivot`. Above the pivot the gain is 1, so
+      // a bright sky still stops all the way down and cannot clip.
+      //
+      // 0.55 puts night_neon ~1.9 stops below its fully-adapted exposure while moving
+      // the four daylight shots by less than a quarter of a stop.
+      //
+      // The second reason this matters: at unit gain the exposure stage exactly cancels
+      // anything the lighting stage does, so `NIGHT_SKY` and friends have no visible
+      // effect and get pushed to non-physical values chasing one. At 0.55 a two-stop
+      // change in scene light still moves the frame by ~0.9 stops.
+      meterPivot: -2.2,       // metered log2 luminance exposed exactly on key
+      meterGainDown: 0.55,    // 1.0 = fully adapting (the old behaviour)
       vignette: 0.55,
-      // Shadow recovery: 1.0 = off. Raised only if the HDR probe shows real detail
-      // sitting below the point where the tone curve clips it.
-      shadowContrast: 1.0,
+      // Shadow recovery: 1.0 = off, lower recovers more. This was off on the grounds
+      // that the HDR probe showed nothing below the clip point. It was off because the
+      // *probe* was reading a frozen meter: with the clamp fixed, `probeLuminance()` at
+      // dusk reports scene p05 at -7.36 against an adapted key of -3.11, i.e. **4.2
+      // stops of real, rendered detail** sitting under a curve that clips at ~5.5.
+      //
+      // Measured on the dusk downtown framing, same frame, toe off vs 0.70:
+      //   pure-black pixels 7.45% -> 2.6%, p05 0.4 -> 4.1,
+      //   while p50/p90/p99 move by less than 1.5/255 each.
+      // That is the whole point of a toe rather than a lifted black point: the streets
+      // between the towers come back without the highlights going milky.
+      //
+      // `shadowToeStops` is a *width*, not a depth: widening it to 9 spreads the same
+      // compression over more stops and therefore lifts the deepest shadows **less**
+      // (night_neon pure-black 5.4% at 7 stops, 8.9% at 9). Tune the contrast, not the
+      // width.
+      shadowContrast: 0.62,
       shadowToeStops: 7.0,
       grain: 0.015,
       aberration: 1.15,
@@ -265,6 +319,11 @@ export default class RenderPipeline {
     const flush = () => {
       if (!batch.length) return;
       const pass = new EffectPass(ctx.camera, ...batch);
+      // Every EffectPass otherwise reports as the string "EffectPass". GpuTimer keys
+      // its round-robin on the pass name, so two identically-named passes fold into a
+      // single averaged entry and the most expensive stage in the frame becomes
+      // unattributable. Name them after what they contain.
+      pass.name = 'FX[' + batch.map((e) => e.name.replace(/Effect$/, '')).join('+') + ']';
       this.composer.addPass(pass);
       this._owned.push(pass);
       batch = [];
@@ -352,9 +411,25 @@ export default class RenderPipeline {
     // The A/B profiler disables passes to measure them; make sure a rebuild always
     // leaves everything armed.
     for (const p of this.composer.passes) p.enabled = true;
-    this._passNames = this.composer.passes.map((p) => p.name || p.constructor.name);
-    for (const p of this.composer.passes) this._instrument(p);
+    this._syncPassList();
     console.info('[render] ' + this._passNames.join(' -> '));
+  }
+
+  /**
+   * Re-read the composer's pass list, name it and arm the GPU timer on it.
+   *
+   * Other systems add their own passes *after* init — the atmosphere stage inserts
+   * `atmosphere` once its LUTs are up — so a list captured at rebuild time is already
+   * out of date by the time the first frame renders. That list is what `GpuTimer`
+   * round-robins over, and `_instrument` is what lets a pass be timed at all, so a
+   * late-arriving pass was invisible to the profiler: `atmosphere` reported no cost at
+   * all, not a small one. Called every frame; it does nothing unless the chain changed.
+   */
+  _syncPassList() {
+    const passes = this.composer.passes;
+    this._passNames = passes.map((p) => p.name || p.constructor.name);
+    this._passCount = passes.length;
+    for (const p of passes) this._instrument(p);
   }
 
   /**
@@ -642,12 +717,14 @@ export default class RenderPipeline {
         if (worthIt) this.ssr.reset();
       }
     }
+    if (this.composer.passes.length !== this._passCount) this._syncPassList();
     this.gpuTimer.beginFrame(this._passNames);
 
     const look = this.grade.evaluate(tod, s.weather, ctx.assets?.wetness ?? 0);
 
     this.autoExposure.setDeltaTime(dt);
     this.autoExposure.setEVRange(o.minEV, o.maxEV);
+    this.autoExposure.setResponse(o.meterPivot, o.meterGainDown);
     const lumTex = this.autoExposure.texture;
     this.exposure.luminanceTexture = lumTex;
     this.grain.luminanceTexture = lumTex;
