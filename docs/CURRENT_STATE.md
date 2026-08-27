@@ -22,7 +22,9 @@ Last verified: 2026-08-27, commit `bafd01b`.
   render step, `import.meta.glob` auto-loading of subsystems.
 - **City**: 504 edges / 375 nodes, **96 km of street**, 11,219 parcels, 1,513 spawn points,
   real Boston geography via `geo(lat,lon)`. HUD reads real street names.
-- **Buildings**: 6,942, placed on real parcels, with compiling facade shaders.
+- **Buildings**: 6,942, placed on real parcels, **and they now actually rasterise** —
+  facade banding, window grids and rooflines read at every LOD (see §Resolved). Roofs get
+  a per-building surface, tone and re-covered field from `Facades.pickRoof`.
 - **Landmarks**: 20, at true coordinates — 200 Clarendon, Prudential, State House dome,
   Custom House, Fenway/Green Monster, Citgo sign, Zakim Bridge, Old State House.
   23,882 tris in **4 draws** — the batching standard to aim for elsewhere.
@@ -42,6 +44,8 @@ Last verified: 2026-08-27, commit `bafd01b`.
 | "5 fps" / "83 fps" phantom numbers | Backgrounded-tab rAF throttling | `measureFps()` refuses when `document.hidden` |
 | "Clouds cost 66 ms" | GPU-sync bracketing on a tile GPU forces a tile flush | Clouds actually cost ~3.6 ms; see `PERF_REPORT.md` §4 |
 | Cold boot 45 s | Per-pixel JS texture synthesis without `willReadFrequently`, redundant full-size octaves | materials 12,782→653 ms, props 12,672→600 ms |
+| **Buildings do not rasterise — the whole city renders FLAT** | `BuildingKit.installPatch` defined `onBeforeCompile` as an **own accessor**, shadowing the `Material.prototype` accessor `CascadedShadows.installLightingShaders` installs. That prototype hook is the only thing injecting the shared `boston*` uniforms — one of which is `bostonProbeTex`, a **`sampler3D`** declared unconditionally by the patched `shadowmap_pars_fragment` chunk. Never receiving it, three never assigned it a texture unit, so it kept the default **unit 0** — the same unit the facade's `sampler2DArray` atlas lands on. The driver then rejected every building draw with `GL_INVALID_OPERATION: glDrawElements: Two textures of different types use the same sampler location`. Geometry, transforms, attributes, material flags and the compiled shader were all correct; the draw call simply never executed. Only buildings/landmarks were hit because every other system assigns `onBeforeCompile` normally and so goes through the prototype setter. | `BuildingKit.installPatch`, commit `d3de1e3` |
+| Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
 
 ## Unresolved issues (ranked)
 1. **`atmosphere` pass collapses the frame to black** and is auto-disabled by the render
@@ -57,13 +61,40 @@ Last verified: 2026-08-27, commit `bafd01b`.
 4. **Crushed blacks in daylight** — a double sRGB→linear conversion was found making
    bounce light 7.8× too dark. Verify the fix actually landed and holds.
    *Owner: lighting.*
-5. **Buildings read as flat boxes at mid/far LOD.** Even the cheapest tier needs facade
-   banding, window-grid variation and a roofline. *Owner: buildings.*
+5. **Buildings at mid/far LOD** — partly done. The LOD-2 shell already carries baked
+   `fac_*` facade strips (one vertical repeat = one storey), a plinth, a coping line and a
+   roof kit, so it no longer reads as a bare box; roofs now vary in surface and tone.
+   Still open: the height distribution is bimodal and wrong for Boston (5,900 buildings
+   under 20 m, then **479 between 140–160 m** — real Boston has ~40 buildings over 100 m),
+   so the skyline is a wall of same-height towers. *Owner: buildings.*
 6. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
    *Owner: vegetation.*
 7. **Not yet built at all**: `Traffic.js`, `Pedestrians.js`, `Player.js`, `Missions.js`.
    The city has no traffic, no pedestrians and no player character. Empty streets are the
    #1 tell of a tech demo on the critic rubric.
+
+## Debugging methodology — learned the hard way on issue #0
+- **"The console is clean" is not the same as "the GL context is happy."** Driver-level
+  `GL_INVALID_OPERATION` from `glDrawElements` arrives as a **`warn`**, not an `error`, so
+  it never reaches `__boston.errors` and is easy to scroll past. Chrome then prints
+  *"WebGL: too many errors, no more errors will be reported to the context"* and goes
+  silent for the rest of the session. Always read console **warnings** when geometry that
+  should be there isn't.
+- A draw call that the driver rejects renders **nothing at all** — not black, not
+  untextured. If geometry, transforms, bounds, attributes and material flags all check out
+  and a plain material works, suspect the *program's* texture-unit state, not the mesh.
+- **A `sampler` that three never uploads defaults to texture unit 0.** If any other sampler
+  in the same program is a different type (`sampler2D` vs `sampler2DArray` vs `sampler3D`),
+  WebGL kills the draw. Uniforms only reach a material through `onBeforeCompile`; if you
+  shadow that property, you silently opt out of every prototype-level injector.
+- **`material.needsUpdate = true` does NOT re-run `onBeforeCompile`.** Three caches the
+  program per `(material, programCacheKey)`, so an unchanged key returns the old program
+  without recompiling. Any bisect that swaps `onBeforeCompile` and sets `needsUpdate` is a
+  **no-op** and proves nothing — this invalidated a whole earlier round of diagnosis. Vary
+  `customProgramCacheKey` to force a real recompile.
+- A `customProgramCacheKey` that returns a **constant** is not itself dangerous for program
+  sharing (three appends it to a full parameter key), but it *does* freeze recompilation,
+  and it makes two materials that differ only in chained-in GLSL share one program.
 
 ## Performance methodology (read `PERF_REPORT.md` §0 in full before profiling)
 **The headline: this is a fill-rate problem in post-processing, not a geometry problem.**

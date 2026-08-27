@@ -164,6 +164,89 @@ function pickStyle(district, r) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Roofscape                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * From any elevated shot the roofs are half the frame, and a whole district
+ * sharing one `St.roof` reads as a sea of cardboard. A real roofscape is a
+ * patchwork: black felt beside pale ballast beside a silver-coated membrane
+ * beside rusted standing seam, re-roofed in different decades.
+ *
+ * Every entry is an atlas layer that already exists, so the variety costs no
+ * texture memory and no triangles — it is the highest value-per-byte change
+ * available to the roofline.
+ */
+const ROOF_MIX = {
+  roof_tar: [
+    ['roof_tar', 0.42], ['roof_gravel', 0.20], ['metal_rust', 0.13],
+    ['paint_green', 0.09], ['metal_panel', 0.08], ['concrete', 0.08],
+  ],
+  roof_gravel: [
+    ['roof_gravel', 0.38], ['roof_tar', 0.24], ['concrete', 0.15],
+    ['metal_panel', 0.13], ['metal_rust', 0.10],
+  ],
+  slate: [
+    ['slate', 0.70], ['roof_tar', 0.15], ['metal_rust', 0.09], ['copper', 0.06],
+  ],
+};
+
+/**
+ * Mean tint and spread per roof surface. The spread matters more than the mean:
+ * neighbouring roofs have to differ in *value*, or they merge into one plane no
+ * matter how much clutter sits on them.
+ */
+const ROOF_VALUE = {
+  roof_tar:    [0.56, 0.34],
+  roof_gravel: [0.84, 0.42],
+  concrete:    [0.76, 0.34],
+  metal_panel: [0.90, 0.30],
+  metal_rust:  [0.70, 0.38],
+  paint_green: [0.66, 0.30],
+  slate:       [0.88, 0.26],
+  copper:      [0.90, 0.20],
+};
+
+/** The contrasting field a roof gets re-covered with. Never the same as the deck. */
+const ROOF_PATCH = ['roof_tar', 'roof_gravel', 'concrete', 'metal_rust', 'paint_green'];
+
+/**
+ * Roof furniture scales with the deck it sits on. Shared by every tier so the
+ * detailed mesh and the distant shell agree on unit size to the centimetre.
+ */
+const ROOF_UNIT_SCALE = (area) => Math.min(2.4, 0.90 + area / 700);
+
+/**
+ * Pick this building's roof surface and tone.
+ * Driven by the *keyed* hash, not the sequential one, so adding it leaves every
+ * other spec roll (bows, mansards, shopfronts) bit-for-bit unchanged.
+ */
+function pickRoof(base, rr) {
+  const mix = ROOF_MIX[base] || ROOF_MIX.roof_gravel;
+  let t = rr(0), acc = 0, surf = mix[0][0];
+  for (const [k, w] of mix) { acc += w; if (t <= acc) { surf = k; break; } }
+  const V = ROOF_VALUE[surf] || [0.80, 0.34];
+  const v = Math.max(0.18, V[0] + (rr(1) - 0.5) * V[1]);
+  const warm = (rr(2) - 0.5) * 0.15;
+  const col = [v * (1 + warm), v, v * (1 - warm * 0.8)];
+
+  // A re-covered field over most of the deck. Two triangles, and from above it
+  // is the single strongest thing on the roof.
+  let patch = null;
+  if (rr(3) < 0.62) {
+    const cand = ROOF_PATCH.filter(s => s !== surf);
+    const ps = cand[Math.min(cand.length - 1, (rr(4) * cand.length) | 0)];
+    const PV = ROOF_VALUE[ps] || [0.80, 0.34];
+    const pv = Math.max(0.18, PV[0] + (rr(5) - 0.5) * PV[1]);
+    // Reject a patch that would be invisible against the deck it sits on.
+    if (Math.abs(pv - v) > 0.13) {
+      patch = { surf: ps, col: [pv * (1 + warm * 0.5), pv, pv * (1 - warm * 0.4)] };
+    }
+  }
+  return { surf, col, patch };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Spec generation                                                            */
 /* -------------------------------------------------------------------------- */
 
@@ -284,6 +367,14 @@ export function makeSpec(plot, baseY, seed) {
   };
   spec.hasStoop = r() < (St.stoop || 0) && !spec.shop;
   if (spec.hasStoop) spec.base += 0;    // stoop rises from grade, mass starts above
+
+  // Roof surface, tone and re-covered field. Keyed off `spec.rnd` rather than the
+  // sequential `r()` so every tier — LOD 0, LOD 1 and the always-resident shell —
+  // resolves the identical roof without having to pass anything between them.
+  const roof = pickRoof(St.roof, (k) => spec.rnd(7000 + k));
+  spec.roofSurf = roof.surf;
+  spec.roofCol = roof.col;
+  spec.roofPatch = roof.patch;
 
   // Setbacks for 1920s towers: real ziggurat massing.
   if (St.setbacks && h > 45) {
@@ -907,13 +998,17 @@ function roofClutter(mb, poly, y, spec, lod) {
     mb.box(bx, y + bh * 0.5, bz, bw, bh, bd, r() * 3.14, 'brick_dark', [0.86, 0.82, 0.80]);
     mb.box(bx, y + bh + 0.06, bz, bw + 0.18, 0.12, bd + 0.18, 0, 'metal_dark', [0.4, 0.4, 0.4]);
   }
-  // HVAC farm
+  // HVAC farm. Units scale with the roof: a 1.5 m box on a 40 m warehouse roof
+  // is invisible past the next block, and real packaged rooftop units on a big
+  // commercial deck are 4–6 m long.
   kk = 20;
+  const usc = ROOF_UNIT_SCALE(area);
   const hn = lod === 0
     ? Math.min(7, Math.max(1, Math.floor(area / 140) + (r() < 0.5 ? 1 : 0)))
-    : Math.min(2, Math.max(1, Math.floor(area / 260)));
+    : Math.min(4, Math.max(1, Math.floor(area / 200)));
   for (let i = 0; i < hn; i++) {
-    const uw = 1.1 + r() * 1.5, ud = 0.9 + r() * 1.1, uh = 0.75 + r() * 0.7;
+    const uw = (1.1 + r() * 1.5) * usc, ud = (0.9 + r() * 1.1) * usc,
+          uh = (0.75 + r() * 0.7) * Math.min(1.7, usc);
     const ux = rx(), uz = rz();
     const rot = r() < 0.5 ? 0 : Math.PI / 2;
     mb.box(ux, y + uh * 0.5 + 0.12, uz, uw, uh, ud, rot, 'metal_panel', [0.85, 0.86, 0.88]);
@@ -926,17 +1021,18 @@ function roofClutter(mb, poly, y, spec, lod) {
         'metal_dark', [0.22, 0.22, 0.23]);
     }
   }
-  // ducting
+  // ducting — a long horizontal run is one of the few roof items that still
+  // reads as a shape rather than a speck at LOD 1 distance, so keep it there.
   kk = 120;
-  if (lod === 0 && area > 120) {
+  if (lod < 2 && area > 120) {
     const dx0 = rx(), dz0 = rz();
-    const len = 2 + r() * 5;
-    mb.box(dx0, y + 0.55, dz0, len, 0.42, 0.42, r() < 0.5 ? 0 : Math.PI / 2,
+    const len = (2 + r() * 5) * usc;
+    mb.box(dx0, y + 0.55, dz0, len, 0.42 * usc, 0.42 * usc, r() < 0.5 ? 0 : Math.PI / 2,
       'metal_panel', [0.8, 0.82, 0.84]);
   }
   // vent stacks
   kk = 140;
-  const vn = lod === 0 ? 2 + Math.floor(r() * 4) : 0;
+  const vn = lod === 0 ? 2 + Math.floor(r() * 4) : 2;
   for (let i = 0; i < vn; i++) {
     const vh = 0.5 + r() * 1.5;
     mb.box(rx(), y + vh * 0.5, rz(), 0.16, vh, 0.16, 0, 'metal_dark', [0.45, 0.44, 0.42]);
@@ -1010,6 +1106,25 @@ function roofClutter(mb, poly, y, spec, lod) {
   }
 }
 
+/**
+ * The re-covered field: a large contrasting rectangle over most of the deck.
+ * Two triangles on a quad footprint, and from above it is the single strongest
+ * thing on the roof — more legible at any distance than a dozen HVAC boxes.
+ */
+function roofField(mb, poly, y, spec) {
+  const p = spec.roofPatch;
+  if (!p) return;
+  const q = insetPoly(poly, 0.8 + spec.rnd(7100) * 2.0);
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const pt of q) {
+    if (pt.x < minX) minX = pt.x; if (pt.x > maxX) maxX = pt.x;
+    if (pt.z < minZ) minZ = pt.z; if (pt.z > maxZ) maxZ = pt.z;
+  }
+  // insetPoly walks vertices toward the centroid, so a small roof collapses.
+  if (maxX - minX < 2.5 || maxZ - minZ < 2.5) return;
+  mb.cap(q, y + 0.045, p.surf, p.col, true);
+}
+
 /** Parapet, coping and the roof deck itself. */
 function flatRoof(mb, poly, y, spec, lod) {
   const ph = spec.parapet;
@@ -1031,7 +1146,8 @@ function flatRoof(mb, poly, y, spec, lod) {
       Math.atan2(e.nx, e.nz), 'trim_stone', spec.trimCol);
   }
   const deck = insetPoly(poly, 0.24);
-  mb.cap(deck, y, spec.roofSurf, [0.95, 0.94, 0.92], true);
+  mb.cap(deck, y, spec.roofSurf, spec.roofCol, true);
+  roofField(mb, deck, y, spec);
   if (lod < 2) roofClutter(mb, deck, y, spec, lod);
 }
 
@@ -1053,7 +1169,8 @@ function mansardRoof(mb, gb, poly, y, spec, lod) {
     mb.box(mp[0], y - 0.14, mp[2], e.L, 0.30, 0.44,
       Math.atan2(e.nx, e.nz), spec.trimSurf, spec.trimCol);
   }
-  mb.cap(top, y + mh, spec.roofSurf, [0.95, 0.94, 0.92], true);
+  mb.cap(top, y + mh, spec.roofSurf, spec.roofCol, true);
+  roofField(mb, top, y + mh, spec);
   if (lod < 2) roofClutter(mb, insetPoly(top, 0.5), y + mh, spec, lod);
 
   // Dormers on the street-facing slopes.
@@ -1230,7 +1347,7 @@ export function buildBuilding(spec, mb, gb, lod) {
     }
     // Ledge over each setback so the massing reads as stone, not a stack.
     if (si < stages.length - 1) {
-      mb.cap(insetPoly(sp, 0.1), st.y1, spec.roofSurf, [0.9, 0.9, 0.88], true);
+      mb.cap(insetPoly(sp, 0.1), st.y1, spec.roofSurf, spec.roofCol, true);
       for (let i = 0; i < m; i++) {
         const a = sp[i], b = sp[(i + 1) % m];
         const e = edgeFrame(a, b);
@@ -1271,7 +1388,7 @@ export function buildBuilding(spec, mb, gb, lod) {
         const a = c2[k], b = c2[(k + 1) % c2.length];
         mb.wall(a.x, a.z, b.x, b.z, cy, cy + 2.2, spec.wallSurf, spec.wallCol, 0, 0);
       }
-      mb.cap(cp, cy + 2.2, spec.roofSurf, [0.9, 0.9, 0.88], true);
+      mb.cap(cp, cy + 2.2, spec.roofSurf, spec.roofCol, true);
       cy += 2.2;
       cp = insetPoly(cp, 1.5);
       if (Math.hypot(cp[0].x - cp[2].x, cp[0].z - cp[2].z) < 3) break;
@@ -1361,10 +1478,14 @@ function shellRoofKit(mb, poly, y, spec) {
     mb.box(px(3), y - DY + bh * 0.5, pz(4), bw * K, bh, bd * K, r0(5) * 3.14,
       'brick_dark', [0.86, 0.82, 0.80]);
   }
-  const hn = Math.min(2, Math.max(1, Math.floor(area / 260)));
+  // Unit count and size must track `roofClutter` or the furniture visibly
+  // resizes as a chunk crosses the LOD 1 boundary.
+  const usc = ROOF_UNIT_SCALE(area);
+  const hn = Math.min(3, Math.max(1, Math.floor(area / 240)));
   for (let i = 0; i < hn; i++) {
     const k = 20 + i * 6;
-    const uw = 1.1 + r0(k) * 1.5, ud = 0.9 + r0(k + 1) * 1.1, uh = 0.75 + r0(k + 2) * 0.7;
+    const uw = (1.1 + r0(k) * 1.5) * usc, ud = (0.9 + r0(k + 1) * 1.1) * usc,
+          uh = (0.75 + r0(k + 2) * 0.7) * Math.min(1.7, usc);
     mb.box(px(k + 3), y - DY + uh * 0.5 + 0.12, pz(k + 4), uw * K, uh, ud * K,
       r0(k + 5) < 0.5 ? 0 : Math.PI / 2, 'metal_panel', [0.85, 0.86, 0.88]);
   }
@@ -1432,7 +1553,7 @@ function buildShell(spec, mb) {
       }
     }
     if (si < stages.length - 1) {
-      mb.cap(shrunk, st.y1 - DROP, 'roof_gravel', [0.9, 0.9, 0.88], true);
+      mb.cap(shrunk, st.y1 - DROP, spec.roofSurf, spec.roofCol, true);
     }
   }
 
@@ -1451,7 +1572,8 @@ function buildShell(spec, mb) {
         e.nx, 0.35, e.nz, [0, 0, e.L, 0, e.L, mh * 1.2, 0, mh * 1.2],
         [0.95, 0.96, 0.98], 'slate');
     }
-    mb.cap(tt, ty + mh, spec.roofSurf, [0.92, 0.91, 0.89], true);
+    mb.cap(tt, ty + mh, spec.roofSurf, spec.roofCol, true);
+    roofField(mb, tt, ty + mh, spec);
   } else if (St.hipRoof) {
     const tt = insetPoly(tp, 1.7);
     for (let i = 0; i < tp.length; i++) {
@@ -1468,13 +1590,26 @@ function buildShell(spec, mb) {
     const cop = Math.min(0.30, ph * 0.45);
     for (let i = 0; i < tp.length; i++) {
       const a = tp[i], b = tp[(i + 1) % tp.length];
+      const e = edgeFrame(a, b);
       mb.wall(a.x, a.z, b.x, b.z, ty, ty + ph - cop, spec.wallSurf, col, 0, 0);
       // A pale coping line at the parapet is the strongest horizontal a facade
       // has at distance; without it every roofline dissolves into the wall.
       // Two triangles an edge, stacked rather than overlaid, so nothing fights.
       mb.wall(a.x, a.z, b.x, b.z, ty + ph - cop, ty + ph, 'trim_stone', spec.trimCol, 0, 0);
+      // Inner parapet face. Walls are single-sided, so without this you can see
+      // straight through the far parapet into the sky from any elevated shot.
+      mb.quadAuto(P(e, 0, ty, -0.18), P(e, e.L, ty, -0.18),
+        P(e, e.L, ty + ph - 0.06, -0.18), P(e, 0, ty + ph - 0.06, -0.18),
+        -e.nx, 0, -e.nz, [0, 0, e.L / 2, 0, e.L / 2, ph / 2, 0, ph / 2],
+        [col[0] * 0.86, col[1] * 0.86, col[2] * 0.86], spec.wallSurf);
     }
-    mb.cap(tp, ty + ph, spec.roofSurf, [0.9, 0.89, 0.87], true);
+    // The deck sits on the shell's own drop plane, NOT on top of the parapet.
+    // Lidding the parapet put this surface up to 0.9 m ABOVE the LOD 0 deck —
+    // and because the shell is always resident, that lid covered every detailed
+    // roof in the city. Roofs read as bare pale planes from every elevated shot
+    // while all their furniture was hidden underneath.
+    mb.cap(insetPoly(tp, 0.18), ty, spec.roofSurf, spec.roofCol, true);
+    roofField(mb, insetPoly(tp, 0.18), ty, spec);
     shellRoofKit(mb, insetPoly(top.poly, 0.24), top.y1, spec);
   }
   if (St.mech && spec.h > 40) {
