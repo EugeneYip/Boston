@@ -1,3 +1,4 @@
+import { geo } from '../core/Geo.js';
 import { SURF, rng, hash2, orientOutward, polyCentroid, insetPoly } from './BuildingKit.js';
 
 /**
@@ -164,6 +165,79 @@ function pickStyle(district, r) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Vertical profile                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Boston's real height profile, per district.
+ *
+ * This exists because `plot.maxHeight` cannot be used directly. The city
+ * publishes **one flat zoned height for an entire district** (every parcel in
+ * the Financial District carries the same 240 m), and `RoadNetwork.ZONING` has
+ * no entry at all for `downtown`, `westEnd`, `chinatown` or `southBoston`, so
+ * those four silently inherit the 20 m *residential* fallback. Taking a fixed
+ * fraction of that number produced exactly two heights in the whole city: a
+ * mass under 20 m and 479 towers inside a single 20 m band, with a hard gap
+ * from 100–140 m. The skyline read as one extruded slab.
+ *
+ * `floor`/`cap` bracket the envelope; the published number is only allowed to
+ * move it inside that bracket. Where the zoning table has **no entry at all**,
+ * its 20 m fallback is an artefact rather than data, so `floor` is set equal to
+ * `cap` and the published value is overridden outright — those rows are marked.
+ *
+ * `tail` shapes the draw inside the envelope. A real city's height histogram is
+ * close to exponential — Boston has thousands of 4–6 storey rowhouses, roughly
+ * forty buildings over 100 m and a dozen over 150 m — so `tail` is the exponent
+ * on a 0..1 roll, and any value above 1 pushes mass toward the bottom. Bigger
+ * `tail` = rarer tall building.
+ *
+ * `cap` deliberately stays under the landmarks. 200 Clarendon is 241 m and the
+ * Prudential 229 m; if generic infill could reach them they would stop reading
+ * as landmarks at all, which is the whole point of putting them in.
+ */
+const DISTRICT_HEIGHT = {
+  financial:   { floor:  60, cap: 188, tail: 3.9 },
+  downtown:    { floor: 126, cap: 126, tail: 4.3 },  // no ZONING entry — 20 m is bogus
+  westEnd:     { floor: 104, cap: 104, tail: 4.3 },  // no ZONING entry
+  chinatown:   { floor:  76, cap:  76, tail: 4.1 },  // no ZONING entry
+  southBoston: { floor:  23, cap:  23, tail: 3.2 },  // no ZONING entry
+  backBay:     { floor:  20, cap:  62, tail: 4.6 },  // brownstone, rare tall infill
+  beaconHill:  { floor:  14, cap:  23, tail: 3.0 },  // the protected low-rise
+  northEnd:    { floor:  16, cap:  25, tail: 3.0 },
+  southEnd:    { floor:  16, cap:  27, tail: 3.4 },
+  seaport:     { floor:  24, cap: 104, tail: 3.4 },  // newest, so the flattest tail
+  fenway:      { floor:  16, cap:  48, tail: 3.6 },
+  charlestown: { floor:  11, cap:  19, tail: 3.0 },
+  cambridge:   { floor:  18, cap:  68, tail: 3.8 },
+  default:     { floor:  16, cap:  42, tail: 3.4 },
+};
+
+/**
+ * Where Boston's height actually is. Towers are not spread evenly across a
+ * zoning district — they pile into two tight clusters, and everything between
+ * them is low. Without this the Financial District becomes a uniform plateau
+ * instead of a massing with a peak.
+ */
+const TOWER_CORES = [
+  { lat: 42.3563, lon: -71.0565, r: 470 },   // Financial District
+  { lat: 42.3480, lon: -71.0790, r: 400 },   // Back Bay: Hancock / Prudential
+];
+const _cores = TOWER_CORES.map((c) => {
+  const p = geo(c.lat, c.lon);
+  return { x: p.x, z: p.z, r: c.r };
+});
+
+/** 1 at the centre of the nearest tower cluster, 0 once you are outside it. */
+function coreWeight(cx, cz) {
+  let best = 0;
+  for (const c of _cores) {
+    const t = 1 - Math.hypot(cx - c.x, cz - c.z) / c.r;
+    if (t > best) best = t;
+  }
+  return best > 0 ? best : 0;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Roofscape                                                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -278,16 +352,33 @@ export function makeSpec(plot, baseY, seed) {
   let styleName = plot.style || pickStyle(district, r);
   const S = STYLES[styleName] || STYLES.commercial;
 
-  // Storeys: driven by the parcel's zoned height when the city gives us one.
+  // Storeys.
   const span = S.storeys[1] - S.storeys[0];
   let storeys = S.storeys[0] + Math.floor(r() * (span + 1));
   const groundH = S.groundH * (0.94 + r() * 0.12);
   const storeyH = S.storeyH * (0.96 + r() * 0.09);
-  if (plot.maxHeight) {
-    const fit = Math.floor((plot.maxHeight - groundH) / storeyH) + 1;
-    storeys = Math.max(2, Math.min(storeys, fit));
-    // Towers want to actually use their envelope, not sit at the minimum.
-    if (S.setbacks || S.curtain) storeys = Math.max(storeys, Math.floor(fit * 0.62));
+
+  // The envelope. `plot.maxHeight` is a hint, not truth — see DISTRICT_HEIGHT
+  // for why it cannot be trusted on its own — so bracket it by what the
+  // district is really allowed to do.
+  const HP = DISTRICT_HEIGHT[district] || DISTRICT_HEIGHT.default;
+  const envelope = Math.min(HP.cap, Math.max(plot.maxHeight || 0, HP.floor));
+  const fit = Math.max(2, Math.floor((envelope - groundH) / storeyH) + 1);
+  storeys = Math.max(2, Math.min(storeys, fit));
+
+  if (S.setbacks || S.curtain) {
+    // Most parcels zoned for height never use it. Draw the tower's share of its
+    // envelope from a power law so the mass sits low and the tail is genuinely
+    // rare, then gate it on the two things that decide height in a real city:
+    // how much land the parcel has, and how close it is to the tower cluster.
+    // The previous `max(storeys, floor(fit * 0.62))` gave every tower the same
+    // fraction of the same flat number, which is what welded the skyline shut.
+    const c = polyCentroid(poly);
+    const u = hash2(seed | 0, 991);
+    const land = Math.min(1, Math.max(0, (area - 300) / 900));
+    const core = coreWeight(c.x, c.z);
+    const t = Math.pow(u, HP.tail) * (0.26 + 0.74 * land) * (0.34 + 0.66 * core);
+    storeys = Math.max(storeys, Math.round(2 + (fit - 2) * t));
   }
   // A parcel too small for a tower gets a mid-rise instead of a pencil.
   if ((S.setbacks || S.curtain) && area < 420) {

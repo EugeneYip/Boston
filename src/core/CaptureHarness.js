@@ -22,14 +22,14 @@ export default class CaptureHarness {
 
     /** Named viewpoints the critic compares against GTA V reference framing. */
     this.shots = {
-      street_level:   { pos: [40, 1.7, 120],   look: [0, 1.7, -400],  tod: 9.5,  fov: 55 },
+      street_level:   { pos: [40, 1.7, 120],   look: [0, 1.7, -400],  tod: 9.5,  fov: 55, eye: 1.7 },
       downtown_dusk:  { pos: [180, 42, 260],   look: [-100, 30, -300],tod: 19.4, fov: 48 },
       night_neon:     { pos: [-60, 6, 40],     look: [200, 14, -260], tod: 22.0, fov: 62 },
       hero_skyline:   { pos: [620, 150, 780],  look: [-200, 60, -300],tod: 17.8, fov: 40 },
       golden_hour:    { pos: [-300, 18, 420],  look: [300, 40, -200], tod: 6.6,  fov: 50 },
       overcast_wide:  { pos: [0, 320, 900],    look: [0, 30, -400],   tod: 13.0, fov: 60 },
       rain_street:    { pos: [90, 2.4, -40],   look: [-300, 6, -420], tod: 15.2, fov: 58,
-                        weather: 'rain' },
+                        weather: 'rain', eye: 2.4 },
       bridge:         { pos: [-40, 26, -980],  look: [120, 8, -1500], tod: 8.2,  fov: 52 },
     };
 
@@ -87,6 +87,25 @@ export default class CaptureHarness {
        * calls immediately before rasterising — whatever a system did during
        * update/lateUpdate is overwritten before it can reach the frame.
        */
+      /**
+       * Resolve a shot's Y against the terrain.
+       *
+       * Shot positions were authored as absolute heights before the city had real
+       * elevation, which parked `street_level` (y=1.7) and `rain_street` (y=2.4)
+       * *underneath* the road -- ground there is 3.10 m and 7.99 m. That produced a
+       * mostly-black frame which was misread for a long time as a post-processing
+       * feedback loop. Eye heights are now relative to the ground beneath the shot.
+       */
+      groundedY: (x, y, z, eye) => {
+        const city = engine.systems.get('city');
+        if (!city || typeof city.groundHeight !== 'function') return y;
+        const g = city.groundHeight(x, z);
+        if (!Number.isFinite(g)) return y;
+        // `eye` is the intended height above ground; absolute shots keep their
+        // height but are never allowed below the surface.
+        return eye != null ? g + eye : Math.max(y, g + 1.6);
+      },
+
       setCamera: (pos, look, fov) => {
         for (const s of engine.order) {
           if (CAMERA_DRIVERS.has(s.constructor.id) && 'enabled' in s) {
@@ -128,7 +147,15 @@ export default class CaptureHarness {
         const w = weather ?? s?.weather ?? 'clear';
         api.setWeather(w);
         api.setTime(tod ?? s?.tod ?? 12);
-        api.setCamera(pos ?? s.pos, look ?? s.look, fov ?? s.fov);
+        const rawPos = (pos ?? s.pos).slice();
+        const rawLook = (look ?? s.look).slice();
+        const eye = (pos ? null : s.eye);
+        const groundedPos = api.groundedY(rawPos[0], rawPos[1], rawPos[2], eye);
+        // Shift the aim point by the same amount the camera rose, so a grounded
+        // street shot still looks level instead of straight into a hillside.
+        rawLook[1] += groundedPos - rawPos[1];
+        rawPos[1] = groundedPos;
+        api.setCamera(rawPos, rawLook, fov ?? s.fov);
         // Warm up: lets IBL, streaming, LOD and temporal effects settle.
         api.step(warmup);
         await new Promise(r => setTimeout(r, 60));

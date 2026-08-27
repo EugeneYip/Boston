@@ -38,6 +38,10 @@ Last verified: 2026-08-27, commit `06f93d3`.
   23,882 tris in **4 draws** — the batching standard to aim for elsewhere.
 - **Props / vegetation**: 33,770 prop instances (86 types), 19,405 plants (19 types).
 - **Lighting**: 3 cascades @ 2048/2048/1536, 1,500 street lamps, 2,226 emissive sources.
+  Hemisphere colours are normalised to unit luminance so `skyIntensity` is a real
+  irradiance at every hour (see §Resolved). Both additive proxy meshes carry real instance
+  bounds and frustum-cull; the halo minimum size is derived from the live viewport, so it
+  is a fixed 1.1 px at any resolution or FOV rather than a constant tuned for one canvas.
 - **Atmosphere**: the `atmosphere` pass is on and stays on (`render.validate()` → `ok:
   true`). Raymarched volumetric clouds now render at every hour — ~33% sky cover at
   `clear`, radiance 0.12 pre-dawn / 4.5 at noon / 25.6 at golden hour / 0.035 at
@@ -55,6 +59,9 @@ Last verified: 2026-08-27, commit `06f93d3`.
 |---|---|---|
 | Whole frame renders black | `postprocessing`'s `SSAOEffect` reports full occlusion at city scale and `MULTIPLY`-blends the frame to nothing | Replaced with N8AO |
 | Whole frame renders black (2nd time) | `CopyPass` ignores its `outputBuffer` argument and writes to its own target | RenderPipeline |
+| `street_level` / `rain_street` mostly black -- long misread as a post-processing feedback loop | The shots were parked **underneath the road**. Authored as absolute heights before the city had elevation: `street_level` y=1.7 where ground is **3.10**, `rain_street` y=2.4 where ground is **7.99**. Shot heights are now resolved against `city.groundHeight()` and the aim point shifts with them. | this commit |
+| Cloud buffer read `(0,0,0,1)` on all 60k texels, every hour, every weather | The raymarch **livelocked**: empty-space-skip rewound one coarse stride on first density hit without clearing the `miss` counter, so it oscillated between two samples until the step budget ran out. `densityFull()` was never once evaluated. | atmosphere agent |
+| Clouds pure black at night | After sunset `sunCol` is 0 and sky ambient is 0, so the cloud deck had **no light source at all**. Added `uCityGlow`. | atmosphere agent |
 | Capture harness shot the wrong place (camera not parked) | `setCamera` only stood down `cameraRig`; the newly-landed `player` system also drives the camera. Now hard-locks the transform inside `camera.updateMatrixWorld`, which runs immediately before rasterising, so it holds for **any** camera driver added later. | `6f7d861` |
 | GL driver faults invisible to the critic | They arrive on `console.warn`, not `console.error`. The sampler-unit collision that hid the invisible city for a session was a warn. Now captured in `__boston.glFaults`. | `6f7d861` |
 | Facade shader: ~500 duplicate `aTex`/`vLayer`/`vEmis`/`vWPosB` declarations | Mutual infinite recursion between two `onBeforeCompile` interceptors; the `RangeError` was swallowed by a bare `catch` | `BuildingKit.installPatch` + `Lighting.applyWindowLights`, commit `bafd01b` |
@@ -63,6 +70,8 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | "Clouds cost 66 ms" | GPU-sync bracketing on a tile GPU forces a tile flush | Clouds actually cost ~3.6 ms; see `PERF_REPORT.md` §4 |
 | **No clouds in any shot, at any hour or weather** — the cloud buffer read `(0,0,0,1)` on every texel | The empty-space-skipping march **livelocked**. On the first coarse-stride hit it rewound one stride and switched to the fine stride, but did not clear `miss`. The rewound sample is empty by construction, so the stale `miss` immediately tripped the back-to-coarse rule, the next coarse stride landed exactly back on the sample that triggered the rewind, and that rewound again. The march oscillated between two points until it burned all 28 steps. Confirmed by instrumenting the loop: every texel with density reported `iters = 28, hits = 0, maxDensityFull = 0` — `densityFull()` was **never once evaluated**, so `scat` stayed 0 and `T` stayed 1. Density itself was always fine (`maxLow` up to 0.71 over 38% of texels), which is why every check of the noise, the weather map, the shell intersection and the coverage calibration came back healthy. | `clouds.glsl.js`: clear `miss` on rewind, require 6 empty fine steps before reverting to coarse, and don't spend the step budget on a rewind |
 | Night sky was a pure-black void with cloud-shaped holes in it | Past sunset `sunCol` is 0, the sky-view LUT ambient is 0 and the moon contributes ~1e-4, so the cloud march had **literally no light source** — measured cloud radiance was exactly `0.0000` at `tod 23`. Nothing was wrong with the march; there was simply no term for the city lighting its own cloud base. | `uCityGlow` in `Sky.js`, horizon-weighted in `skyDome.glsl.js` and base-weighted in `clouds.glsl.js` |
+| **Night ambient arrived ~58× weaker than the number that authored it** | A `HemisphereLight`'s irradiance is `colour × intensity`. `SKY_NIGHT` (`#16233f`) has a linear luminance of **0.017**, so the authored night floor of `0.22` reached the shader as **0.0038**. Every night surface that was not directly lit was therefore two orders of magnitude too dark, and no amount of tuning the *intensity* could find it, because the intensity was never the problem. | `Lighting._update` now divides both hemisphere colours by the sky luminance (hue in the colour, level in the intensity) and folds that luminance back into the daylight term, so **daylight is unchanged** and only the night floor changes meaning. Probes get the same normalised colour. |
+| Lit windows bloomed into one glowing slab per facade | `uWinBright` 4.2 sat two stops above the tone curve's shoulder at the pipeline's fixed exposure — measured 6.7% of a night street frame pinned at 255, mullions bloomed shut. | `WIN_BRIGHT = 1.5` in `Lighting.js`; clipping 6.7% → 0.1% |
 | Cold boot 45 s | Per-pixel JS texture synthesis without `willReadFrequently`, redundant full-size octaves | materials 12,782→653 ms, props 12,672→600 ms |
 | **Buildings do not rasterise — the whole city renders FLAT** | `BuildingKit.installPatch` defined `onBeforeCompile` as an **own accessor**, shadowing the `Material.prototype` accessor `CascadedShadows.installLightingShaders` installs. That prototype hook is the only thing injecting the shared `boston*` uniforms — one of which is `bostonProbeTex`, a **`sampler3D`** declared unconditionally by the patched `shadowmap_pars_fragment` chunk. Never receiving it, three never assigned it a texture unit, so it kept the default **unit 0** — the same unit the facade's `sampler2DArray` atlas lands on. The driver then rejected every building draw with `GL_INVALID_OPERATION: glDrawElements: Two textures of different types use the same sampler location`. Geometry, transforms, attributes, material flags and the compiled shader were all correct; the draw call simply never executed. Only buildings/landmarks were hit because every other system assigns `onBeforeCompile` normally and so goes through the prototype setter. | `BuildingKit.installPatch`, commit `d3de1e3` |
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
@@ -96,23 +105,55 @@ Last verified: 2026-08-27, commit `06f93d3`.
    LUT) are GL-clean in the same test. LensPass's draw is being dropped every frame, so
    whatever it contributes is silently absent.
    *Owner: render pipeline. File: `src/gfx/RenderPipeline.js`, `src/gfx/effects/`.*
-2. **`night_neon` renders near-black.** Night is a signature GTA-style view and currently
-   unusable. *Owner: lighting.*
-3. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
+2. **The exposure chain never adapts — it is a fixed 2.424 at every hour.** This is now the
+   single biggest thing holding night back, and it is *not* a lighting bug.
+   `AutoExposurePass`'s metering clamp pins the adapted log-luminance at the bottom of its
+   range at **both** noon and 22:00, measured with `probeLuminance()`:
+
+   | shot | adapted log2 L | resulting exposure | true scene log2 L (p50) |
+   |---|---:|---:|---:|
+   | `street_level` 09:30 | −3.60 (clamped) | 2.424 | −6.54 |
+   | `night_neon` 22:00 | −3.60 (clamped) | 2.424 | **−10.49** |
+
+   Night is genuinely four stops darker and the meter is not allowed to see any of it.
+   `minEV: -0.6` in `RenderPipeline`'s exposure options maps to a floor of
+   `log2(0.125·2^−0.6) = −3.6`; something around **−6 to −8** would give night its stops
+   back. Two consequences worth knowing before touching anything else: (a) raising scene
+   light is currently the *only* way to make night brighter, which is why `NIGHT_SKY` in
+   `Lighting.js` is authored far above a physical skyglow and is commented to come back
+   down once this is fixed; (b) `toeParams` shadow recovery is switched off on the grounds
+   that the HDR probe shows no detail below the clip point — it does, four stops of it.
+   Verified from lighting's side by rendering an identical emissive quad at both hours:
+   the same emitted radiance lands at the same output value, so nothing downstream of the
+   scene is compensating. *Owner: render. File: `src/gfx/RenderPipeline.js` ~line 177,
+   `src/gfx/effects/AutoExposurePass.js`.*
+3. **`night_neon` is still dark, but no longer black** — and what is left is mostly issues
+   1 and 2 plus the shot's own framing. Measured at 1920×1080 `high`, full-frame pixel
+   readback: mean luminance **5.3 → 12.3**, p50 **1.6 → 7.7**, p99 **19.6 → 108**,
+   fraction below luminance 2 **51.3% → 34.4%**. A representative *street* night shot
+   (Marlborough St, Back Bay) now reads mean **46**, 14.4% below 2, 0.1% clipped, and
+   looks like a night city. `night_neon`'s camera is parked in the middle of Boston Common
+   with **no street lamp within 186 m** — geographically correct, but it means the shot is
+   carried entirely by ambient, the night sky and the distant skyline. Worth re-framing the
+   shot, or judging night from a street. *Owner: lighting (done what it can) + render (2).*
+4. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
    redefined; three r171 renamed this varying. Two programs fail `VALIDATE_STATUS`.
    *Owner: city/materials. File: `src/world/Water.js`.*
-4. **Crushed blacks in daylight** — a double sRGB→linear conversion was found making
-   bounce light 7.8× too dark. Verify the fix actually landed and holds.
-   *Owner: lighting.*
-5. **Buildings at mid/far LOD** — partly done. The LOD-2 shell already carries baked
+5. ~~**Crushed blacks in daylight**~~ — **verified fixed and holding.** The double
+   sRGB→linear conversion is gone from `LightProbes` (the albedo colours are constructed
+   once and not re-converted). Full-frame readback at `golden_hour`: **0.6%** of pixels
+   below luminance 2, 1.6% below 8, nothing clipped at the top; `downtown_dusk` 2.3% below
+   2. Shadowed regions carry real gradient. Note `street_level` still reads 27.7% black —
+   that is issue 1 (the camera is under the road), not the grade.
+6. **Buildings at mid/far LOD** — partly done. The LOD-2 shell already carries baked
    `fac_*` facade strips (one vertical repeat = one storey), a plinth, a coping line and a
    roof kit, so it no longer reads as a bare box; roofs now vary in surface and tone.
    Still open: the height distribution is bimodal and wrong for Boston (5,900 buildings
    under 20 m, then **479 between 140–160 m** — real Boston has ~40 buildings over 100 m),
    so the skyline is a wall of same-height towers. *Owner: buildings.*
-6. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
+7. **Vegetation reads as "broccoli"** — blobby canopies, insufficient silhouette variety.
    *Owner: vegetation.*
-7. **Not yet built at all**: `Traffic.js`, `Pedestrians.js`, `Player.js`, `Missions.js`.
+8. **Not yet built at all**: `Player.js`, `Missions.js`.
    The city has no traffic, no pedestrians and no player character. Empty streets are the
    #1 tell of a tech demo on the critic rubric.
 
@@ -154,11 +195,28 @@ passes (rewires ping-pong buffers), GPU-sync bracketing inside a pass (tile flus
 |---|---|---|---|
 | 1 | `PRESETS.high.pixelRatioCap` 1.5 → 1.25 or 1.0 — on a DPR-2 display `high` renders 2.26× the pixels the budget is written against | **18–36 ms** | `src/core/Settings.js` |
 | 2 | Fix resize so `pixelRatioCap` actually applies: call `renderer.setSize(w,h,false)` after `setPixelRatio` (`EffectComposer.setSize` skips it when CSS size is unchanged) | unblocks #1 | `src/gfx/RenderPipeline.js` ~146 |
-| 3 | Let `glowMesh` frustum-cull; lower/clamp `uMinPx` — 1,500 additive quads with an enforced minimum on-screen size become full-screen overdraw | **10–16 ms at night** | `src/gfx/LightManager.js` |
+| 3 | ~~Let `glowMesh` frustum-cull; lower/clamp `uMinPx`~~ **Done, but the 10–16 ms was never there** — see the correction below the table. Measured cost of the additive proxies at `night_neon`/`high`/1080p: `lightGlows` **3.6 ms**, `lightPools` **2.7 ms** | ~1–2 ms | `src/gfx/LightManager.js` |
 | 4 | ~~Fix the black atmosphere pass, then re-check its render-target sizing~~ **Done.** Clouds, aerial perspective and the night sky all render; the pass survives `render.validate()` (`ok: true`, frame mean 17.58 → 19.39 across it). **The 326×184 sizing was never a bug** — see the note below the table | — | `src/gfx/Clouds.js`, `Fog.js` |
 | 5 | Merge the final two `EffectPass`es / drop sharpen taps when TAA is off | up to 25 ms, unproven | `RenderPipeline._rebuild` |
 | 6 | Build Traffic, Pedestrians, Player | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
 | 7 | Surface `measureFps` in the DevOverlay instead of `engine.perf` | stops future misdiagnosis | `src/ui/DevOverlay.js` |
+
+**Correction to `PERF_REPORT.md` §5 — "~16.5 ms is `lightGlows`" is an artefact of the
+toggle, not a measurement of overdraw.** §5 derives the figure by subtracting `lightPools`
+(2.6 ms) from "hide the whole `lights` subtree" (19.1 ms). But `LightManager`'s `lights`
+group also holds the **fixed pool of 10 `PointLight`s and 5 `SpotLight`s**, and
+`WebGLRenderer.projectObject` returns early on `visible === false` *before* it pushes a
+light — so hiding the group silently changes `NUM_POINT_LIGHTS`/`NUM_SPOT_LIGHTS` and
+recompiles every lit material in the scene. Verified: `renderer.info.programs.length` goes
+**61 → 81** on that single toggle. The subtraction is therefore comparing two different
+shader worlds.
+
+Toggling each proxy mesh on its own — which changes no light count and recompiles nothing —
+against a 97.1 ms `night_neon` frame (alternating A/B, median of 6 × 3 s `measureFps`,
+1920×1080 `high`): `lightGlows` **3.63 ms**, `lightPools` **2.75 ms**. Real, worth having,
+but an order of magnitude short of the estimate. The per-fragment cost of the 15 pooled
+lights is the more interesting number and is still unmeasured — every attempt landed in a
+window where sibling agent tabs had the GPU at 2–4 fps.
 
 **Correction to `PERF_REPORT.md` §4 — the atmosphere render targets are the right size.**
 326×184 is exactly `round(1920 × 0.17)` × `round(1080 × 0.17)`. The report expected 480×270

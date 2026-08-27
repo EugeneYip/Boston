@@ -307,6 +307,53 @@ export default class Traffic {
   /** @param {number} d 0..1 */
   setDensity(d) { this.density = clamp01(d); }
 
+  /** The nearest AI car to a point on the ground, or null. */
+  nearestCar(x, z, maxDist = 6) {
+    let best = null, bd = maxDist * maxDist;
+    const list = this.vehicles;
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      const d = (c.x - x) ** 2 + (c.z - z) ** 2;
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  /**
+   * Hand a kinematic AI car over to the physics vehicle factory so the player
+   * can drive it.
+   *
+   * Traffic is simulated kinematically because a city's worth of Rapier
+   * raycast-vehicles costs twenty milliseconds a frame — but that means an AI
+   * car has no rigid body and cannot be driven. So the moment the player wants
+   * one, it is swapped: the kinematic car is despawned and a real `Vehicle` is
+   * spawned in its place with the same type, colour, heading and speed. From
+   * the player's side the car he was looking at is simply the car he gets into.
+   *
+   * @returns {object|null} the physical Vehicle, or null if the factory is absent
+   */
+  takeOver(car, ctx) {
+    const factory = ctx.get('vehicles');
+    if (!factory?.spawn || !car?.active) return null;
+    let v = null;
+    try {
+      v = factory.spawn(car.type, { x: car.x, y: car.y, z: car.z }, car.rotY,
+        { color: car.color });
+    } catch (err) {
+      console.warn('[traffic] hand-over to the vehicle factory failed', err);
+      return null;
+    }
+    // Carry the momentum across so the car does not stop dead under the player.
+    const speed = Math.min(car.v, 12);
+    if (speed > 0.5) {
+      try {
+        v.body?.setLinvel({ x: -Math.sin(car.rotY) * speed, y: 0, z: -Math.cos(car.rotY) * speed }, true);
+      } catch { /* older Rapier binding: just start from rest */ }
+    }
+    this._despawn(car);
+    return v;
+  }
+
   // -- streaming -------------------------------------------------------------
 
   _targetCount() {

@@ -227,11 +227,11 @@ function poseAt(clip, p, rot, root) {
   // -- locomotion ----------------------------------------------------------
   let table = WALK_LEG, armK = 0.62, elbow0 = 0.18, elbowK = 0.55;
   let lean = 0.035, bobA = 0.020, swayA = 0.020, pelvisTwist = 0.09, chestTwist = 0.12;
-  let splay = 0.115, crouch = 0;
+  let splay = 0.075, crouch = 0;
   if (clip === 'jog') {
     table = JOG_LEG; armK = 0.78; elbow0 = 0.95; elbowK = 0.55;
     lean = 0.105; bobA = 0.036; swayA = 0.016; pelvisTwist = 0.13; chestTwist = 0.18;
-    splay = 0.16;
+    splay = 0.12;
   } else if (clip === 'run') {
     table = RUN_LEG; armK = 0.92; elbow0 = 1.32; elbowK = 0.50;
     lean = 0.175; bobA = 0.050; swayA = 0.012; pelvisTwist = 0.17; chestTwist = 0.24;
@@ -663,8 +663,8 @@ const TINT = /* glsl */`
   else if (_zone < 4.5) { _tint = mix(vec3(0.030, 0.021, 0.016),
                                       vec3(0.28, 0.17, 0.075),
                                       fract(aAnim.w * 4.31)); _rough = 0.88; }
-  else                  { _tint = _sd < 0.42 ? aSkin : aTop;
-                          _rough = _sd < 0.42 ? 0.74 : 1.06; }
+  else                  { _tint = _sd < 0.24 ? aSkin * 0.94 : aTop;
+                          _rough = _sd < 0.24 ? 0.74 : 1.06; }
   vChar = vec4(_tint * _shade, _rough);
 `;
 

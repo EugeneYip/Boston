@@ -39,6 +39,12 @@ node tools/parsecheck.mjs
 
 # 3. Run the dev server (port 5273, strict)
 npm run dev
+
+# 3b. HMR-FREE verification server (port 5290) -- use this for screenshots and
+#     any frame timing when other agents may be saving files. The shared dev
+#     server full-reloads every tab on every save, which makes measurements
+#     fiction (observed: 19.9 / 9.8 / 10.3 / 8.3 / 5.4 fps on an UNCHANGED scene).
+npm run verify
 ```
 
 Then in the browser at `http://localhost:5273`:

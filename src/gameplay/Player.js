@@ -33,8 +33,9 @@ const EYE = 1.58;                    // eye height above the feet, standing
 const SPEED = { walk: 1.45, jog: 3.40, sprint: 6.30, crouch: 1.15 };
 const ACCEL_GROUND = 14.0;
 const ACCEL_AIR = 2.2;
-const JUMP_V = 4.55;                 // ~1.05 m of clearance
+const JUMP_V = 6.05;                 // ~0.92 m of clearance against GRAVITY
 const GRAVITY = 20.0;                // heavier than real: games always are
+const SNAP_GROUND = 0.35;
 const ENTER_RANGE = 4.6;
 
 const _v = new THREE.Vector3();
@@ -62,11 +63,17 @@ export default class Player {
     this.crouching = false;
     this.sprinting = false;
     this.speed = 0;
-    this.enabled = true;
+    // Deliberately no `enabled` flag: `CaptureHarness.setCamera` stands down every
+    // system that has one, and this system does not drive the camera — `CameraRig`
+    // does. Advertising an `enabled` here would only freeze the character for no
+    // reason during a shot.
     this.visible = true;
 
     this._vy = 0;
     this._yaw = 0;                   // where the character is facing
+    this._hh = CAP_HH;               // current capsule half height
+    this._crouched = false;
+    this._snapOn = true;
     this._coyote = 0;                // grace period for a late jump press
     this._jumpBuffer = 0;
     this._exitCooldown = 0;
@@ -194,7 +201,7 @@ export default class Player {
     const yaw = this._lookYaw();
     const mv = inp.moveAxis();
 
-    this.crouching = inp.down('crouch');
+    this._setCrouch(inp.down('crouch'));
     const mag = Math.min(1, Math.hypot(mv.x, mv.y));
     this.sprinting = inp.down('sprint') && mag > 0.1 && !this.crouching;
     let top = this.crouching ? SPEED.crouch : this.sprinting ? SPEED.sprint : SPEED.jog;
@@ -221,6 +228,17 @@ export default class Player {
       this._vy -= GRAVITY * fdt;
       if (this._vy < -55) this._vy = -55;
       this._coyote -= fdt;
+    }
+
+    // Snap-to-ground is what keeps him glued to a camber on the way down — and
+    // it is also what silently eats a jump, because a 7 cm first step upward is
+    // well inside the 35 cm snap distance and gets pulled straight back. Turn it
+    // off for exactly as long as he is rising.
+    const wantSnap = this._vy <= 0.01;
+    if (wantSnap !== this._snapOn) {
+      this._snapOn = wantSnap;
+      if (wantSnap) this.ctrl.enableSnapToGround(SNAP_GROUND);
+      else this.ctrl.disableSnapToGround();
     }
 
     _delta.x = this.velocity.x * fdt;
@@ -250,14 +268,35 @@ export default class Player {
     // Never let a solver hiccup drop him through the world.
     const ground = this.city?.groundHeight?.(_next.x, _next.z);
     if (ground !== undefined && _next.y < ground - 6) {
-      _next.y = ground + CAP_HH + CAP_R + 0.1;
+      _next.y = ground + this._hh + CAP_R + 0.1;
       this._vy = 0;
     }
     if (!isFinite(_next.x) || !isFinite(_next.y) || !isFinite(_next.z)) return;
 
     this.body.setNextKinematicTranslation(_next);
-    this.position.set(_next.x, _next.y - CAP_HH - CAP_R, _next.z);
+    this.position.set(_next.x, _next.y - this._hh - CAP_R, _next.z);
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  /**
+   * Shrink or restore the capsule.
+   *
+   * A capsule shrinks about its centre, so changing the half height alone lifts
+   * the feet off the ground by the difference. The body has to move down by the
+   * same amount for the character to crouch in place rather than hop.
+   */
+  _setCrouch(on) {
+    this.crouching = on;
+    if (on === this._crouched) return;
+    const hh = on ? CAP_HH_CROUCH : CAP_HH;
+    const dy = on ? -(CAP_HH - CAP_HH_CROUCH) : (CAP_HH - CAP_HH_CROUCH);
+    try {
+      this.collider.setHalfHeight(hh);
+      const t = this.body.translation();
+      this.body.setTranslation({ x: t.x, y: t.y + dy, z: t.z }, true);
+    } catch { return; }               // older binding: keep the standing capsule
+    this._crouched = on;
+    this._hh = hh;
   }
 
   /** Face the way he is going; stand still facing wherever he stopped. */
@@ -283,12 +322,6 @@ export default class Player {
     a.x = this.position.x; a.y = this.position.y; a.z = this.position.z;
     a.yaw = this._yaw;
     a.tilt = 0; a.lean = 0;
-
-    if (this.crouching !== this._wasCrouch) {
-      this._wasCrouch = this.crouching;
-      const hh = this.crouching ? CAP_HH_CROUCH : CAP_HH;
-      try { this.collider.setHalfHeight?.(hh); } catch { /* shape is immutable here */ }
-    }
   }
 
   /** Seated: ride the car's transform, with the sit clip. */
@@ -329,7 +362,17 @@ export default class Player {
     const factory = ctx.get('vehicles');
     if (!factory?.nearest) return;
     _v2.set(this.position.x, this.position.y + 0.9, this.position.z);
-    const v = factory.nearest(_v2, ENTER_RANGE);
+    let v = factory.nearest(_v2, ENTER_RANGE);
+    if (v === this.vehicle) v = null;
+    if (!v) {
+      // Nothing physical in reach, so try the AI traffic: `Traffic.takeOver`
+      // swaps the kinematic car for a real one in the same place. Without this
+      // there is nothing in the city to get into — every car on the road is
+      // kinematic and has no rigid body.
+      const traffic = ctx.get('traffic');
+      const car = traffic?.nearestCar?.(this.position.x, this.position.z, ENTER_RANGE + 1.6);
+      if (car) v = traffic.takeOver(car, ctx);
+    }
     if (!v) return;
     this.vehicle = v;
     this.mode = 'driving';
@@ -363,8 +406,8 @@ export default class Player {
       this.position.set(x, g + 0.05, z);
       this._yaw = Math.atan2(-(lx / L), -(lz / L));
       this.body.setTranslation(
-        { x, y: g + 0.05 + CAP_HH + CAP_R, z }, true);
-      this.body.setNextKinematicTranslation({ x, y: g + 0.05 + CAP_HH + CAP_R, z });
+        { x, y: g + 0.05 + this._hh + CAP_R, z }, true);
+      this.body.setNextKinematicTranslation({ x, y: g + 0.05 + this._hh + CAP_R, z });
     }
     this.velocity.set(0, 0, 0);
     this._vy = 0;
