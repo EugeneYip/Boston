@@ -109,6 +109,16 @@ export default class Profiler {
     this.gpuTimer = this.pipeline?.gpuTimer || new GpuTimer(this.renderer);
     this._ownsTimer = !this.pipeline?.gpuTimer;
 
+    // The lighting agent's shared uniform block, used as recompile-free A/B toggles.
+    // Dynamic so a missing or renamed lighting module degrades instead of breaking
+    // the whole profiler.
+    try {
+      const m = await import('../gfx/CascadedShadows.js');
+      this._uniforms = m.bostonUniforms || null;
+    } catch (e) {
+      this._uniforms = null;
+    }
+
     this._install();
     ctx.bus.on('engine:ready', () => {
       this._install();          // idempotent; catches systems that rebind in init()
@@ -231,6 +241,11 @@ export default class Profiler {
     api.sceneCost = (o) => this.walkScene(o);
     api.systemCost = () => this.systemCost();
     api.bisect = (o) => this.bisect(o);
+    api.passCost = (n) => this.measurePasses(n);
+    api.cascadeCost = (n) => this.measureCascades(n);
+    api.prefixCost = (o) => this.measurePrefix(o);
+    api.initCost = (id, m) => this.profileInit(id, m);
+    api.loopFps = (s) => this.measureLoopFps(s);
   }
 
   /* ------------------------------------------------------------------ tick -- */
@@ -423,8 +438,9 @@ export default class Profiler {
       return null;
     }
     if (!calls) return null;
+    // Instancing multiplies triangles, not draw calls — that is the whole point of it.
     return {
-      calls: calls * (obj.isInstancedMesh || g.isInstancedBufferGeometry ? 1 : 1),
+      calls,
       tris: perVert ? Math.floor(drawn / perVert) * instances : 0,
       instances,
     };
@@ -459,26 +475,76 @@ export default class Profiler {
     return out;
   }
 
+  /* ------------------------------------------------------------ visibility -- */
+
+  /**
+   * Backgrounded tabs throttle `requestAnimationFrame` to zero and the compositor
+   * stops presenting, so a hidden tab has produced more than one phantom number on
+   * this project already. Every measurement this profiler returns carries the flag,
+   * and the rAF-based one refuses outright.
+   * @return {{hidden:boolean, warning?:string}}
+   */
+  visibility() {
+    if (typeof document === 'undefined' || !document.hidden) return { hidden: false };
+    return {
+      hidden: true,
+      warning: 'Tab is backgrounded: rAF is throttled and the compositor is not ' +
+        'presenting. Front the tab before quoting any number from this report.',
+    };
+  }
+
+  /**
+   * Real frame rate from the natural rAF loop — the only number that includes
+   * presentation and vsync back-pressure. Refuses to answer from a hidden tab.
+   * @param {number} [seconds=2]
+   * @return {Promise<object>}
+   */
+  async measureLoopFps(seconds = 2) {
+    const v = this.visibility();
+    if (v.hidden) return { ...v, fps: null };
+    const engine = this.engine;
+    if (!engine._running) engine.start();
+    const f0 = engine.time.frame, t0 = performance.now();
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    const frames = engine.time.frame - f0;
+    const elapsed = (performance.now() - t0) / 1000;
+    const gl = this.renderer.getContext();
+    return {
+      hidden: false,
+      fps: +(frames / elapsed).toFixed(1),
+      ms: +(elapsed * 1000 / Math.max(frames, 1)).toFixed(2),
+      frames,
+      draws: engine.perf.drawCalls,
+      tris: engine.perf.tris,
+      buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+    };
+  }
+
   /* ------------------------------------------------------------- measuring -- */
 
   /**
    * Block until the GPU has finished everything submitted so far.
    *
-   * A WebGL2 fence is used rather than `finish()` plus a readback, for two reasons:
-   * `finish()` is advisory in some drivers, and a readback would need the render
-   * target bound — which makes it unusable *between* composer passes, where the
-   * chain's current target must not be disturbed. The fence touches no GL state.
+   * `gl.finish()` alone is NOT sufficient on Chrome: measured this way, frame cost
+   * came out *lower* at 4K than at 1080p, which is only possible if the CPU was
+   * running ahead of a queue that never drained. A one-pixel `readPixels` forces a
+   * genuine round trip, and after adding it the numbers scale with pixel count as
+   * they must. The active render target is saved and restored so this stays usable
+   * between composer passes, where the chain's current target has to survive.
+   *
+   * A WebGL2 fence would be the textbook answer, but `clientWaitSync` may only be
+   * called with a zero timeout from JS, so using one means spinning on a synchronous
+   * IPC per poll — that costs more than it measures and can wedge the main thread.
    */
   _sync() {
-    const gl = this.renderer.getContext();
-    const fence = gl.fenceSync ? gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0) : null;
-    if (!fence) { gl.finish(); return; }
-    gl.flush();
-    for (let i = 0; i < 2e7; i++) {
-      const s = gl.clientWaitSync(fence, 0, 0);
-      if (s === gl.ALREADY_SIGNALED || s === gl.CONDITION_SATISFIED || s === gl.WAIT_FAILED) break;
-    }
-    gl.deleteSync(fence);
+    const r = this.renderer;
+    const gl = r.getContext();
+    const prev = r.getRenderTarget();
+    r.setRenderTarget(null);
+    gl.finish();
+    const px = this._px || (this._px = new Uint8Array(4));
+    try { gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } catch (e) { /* ignore */ }
+    r.setRenderTarget(prev);
   }
 
   /**
@@ -534,8 +600,14 @@ export default class Profiler {
    * GPU milliseconds for every composer pass, by hard-syncing either side of each
    * pass's `render()`.
    *
-   * This is the measurement of choice when `EXT_disjoint_timer_query_webgl2` is
-   * missing, which on Chrome is almost always. It beats A/B-disabling passes because
+   * WARNING - VALIDATED AS UNRELIABLE ON TILE-BASED GPUs (Apple Silicon).
+   * Every mid-chain sync forces a render-pass/tile flush costing tens of ms, which lands
+   * on whatever is being bracketed. Measured here: clouds reported 96.9 ms bracketed vs
+   * 3.6 ms end-to-end; one cascade reported 1008 ms. Prefer `measurePrefix()`, which pays
+   * a single sync per measurement so the overhead cancels in the subtraction.
+   *
+   * Kept because it is correct on immediate-mode desktop GPUs and when the timer-query
+   * extension is present. It beats A/B-disabling passes because
    * it perturbs nothing: disabling TAA or SSR throws away temporal history and
    * changes what every later pass reads, so the difference you measure is not the
    * cost of the pass you removed. The trade is that syncing serialises the GPU, so
@@ -603,30 +675,90 @@ export default class Profiler {
   }
 
   /**
-   * The shared CSM/probe uniform block, reached through the lighting system so we do
-   * not have to import a module the lighting agent owns.
+   * The shared CSM/probe uniform block. Every lit material holds these objects by
+   * reference, so writing one changes the whole scene without a recompile — which is
+   * what makes them usable as A/B toggles.
    * @return {object|null}
    */
-  _csmUniforms() {
-    const csm = this.ctx.get('lighting')?.shadows;
-    const l = csm?.lights?.[0];
-    if (!l) return null;
-    // Every material shares these uniform objects by reference; grab them off any
-    // compiled program's uniform map via the light's own shadow material is not
-    // possible, so walk the scene for the first material that has them injected.
-    if (this._uCache) return this._uCache;
-    let found = null;
-    this.ctx.scene.traverse((o) => {
-      if (found || !o.isMesh) return;
-      const m = Array.isArray(o.material) ? o.material[0] : o.material;
-      const u = m?.userData?.__bostonUniforms;
-      if (u) found = u;
-    });
-    if (!found && csm.constructor) {
-      // Fall back to the module export the lighting system already holds a ref to.
-      found = csm._uniforms || null;
+  _csmUniforms() { return this._uniforms || null; }
+
+  /**
+   * Per-pass GPU cost by **prefix timing** — the most trustworthy instrument here.
+   *
+   * Render the chain but stub out every pass after index k, sync once, and time it.
+   * The cost of pass k is then T(k) - T(k-1). Because each measurement contains
+   * exactly one sync, the sync overhead is a constant that cancels in the
+   * subtraction — unlike bracketing every pass, which pays ~13 syncs a frame and
+   * inflates cheap passes beyond recognition.
+   *
+   * It also avoids the trap that makes A/B-disabling useless in this pipeline:
+   * `pass.enabled = false` changes postprocessing's ping-pong and `needsSwap`
+   * bookkeeping, so removing a pass can legitimately make the frame *slower*.
+   * Stubbing `render` leaves the chain's structure and buffer rotation identical.
+   *
+   * Shadow maps only re-render when something marks `shadow.needsUpdate`, and
+   * `composer.render()` never runs `lateUpdate` — so they are excluded by default and
+   * measured separately via `shadows: true`.
+   *
+   * @param {{frames?:number, repeats?:number, shadows?:boolean}} [o]
+   * @return {object}
+   */
+  measurePrefix({ frames = 6, repeats = 3, shadows = true } = {}) {
+    const composer = this.engine.composer;
+    if (!composer) return { passes: [] };
+    const passes = [...composer.passes];
+    const names = passes.map((p, i) => (p.name || p.constructor.name) + '#' + i);
+    const origs = passes.map((p) => p.render);
+    const noop = function () {};
+
+    const stubFrom = (k) => {
+      for (let i = 0; i < passes.length; i++) {
+        passes[i].render = i <= k ? origs[i] : noop;
+      }
+    };
+    const timeIt = (markShadows) => {
+      let best = Infinity;
+      for (let r = 0; r < repeats; r++) {
+        for (let i = 0; i < 2; i++) { if (markShadows) this._markShadowsDirty(); composer.render(1 / 60); }
+        this._sync();
+        const t0 = performance.now();
+        for (let i = 0; i < frames; i++) {
+          if (markShadows) this._markShadowsDirty();
+          composer.render(1 / 60);
+        }
+        this._sync();
+        best = Math.min(best, (performance.now() - t0) / frames);
+      }
+      return best;
+    };
+
+    const cum = [];
+    for (let k = -1; k < passes.length; k++) { stubFrom(k); cum.push(timeIt(false)); }
+
+    let shadowMs = null;
+    if (shadows) {
+      // Whole chain, but forcing every cascade to re-render each frame.
+      stubFrom(passes.length - 1);
+      shadowMs = Math.max(0, timeIt(true) - cum[cum.length - 1]);
     }
-    return (this._uCache = found);
+
+    for (let i = 0; i < passes.length; i++) passes[i].render = origs[i];
+
+    const out = [];
+    for (let i = 0; i < passes.length; i++) {
+      out.push({ name: names[i], ms: +Math.max(0, cum[i + 1] - cum[i]).toFixed(2) });
+    }
+    if (shadowMs !== null) out.push({ name: 'ShadowMaps(worst-case, every cascade)', ms: +shadowMs.toFixed(2) });
+    const total = cum[cum.length - 1];
+    out.sort((a, b) => b.ms - a.ms);
+    return {
+      emptyChainMs: +cum[0].toFixed(2),
+      fullChainMs: +total.toFixed(2),
+      withShadowsMs: shadowMs === null ? null : +(total + shadowMs).toFixed(2),
+      passes: out,
+      note: 'Prefix timing: cost(k) = T(k) - T(k-1). One sync per measurement, min of ' +
+        repeats + ' repeats x ' + frames + ' frames.',
+    };
   }
 
   /** Force every cascade to re-render on the next frame. */
@@ -638,6 +770,12 @@ export default class Profiler {
 
   /**
    * GPU milliseconds for each individual shadow cascade.
+   *
+   * WARNING - VALIDATED AS UNRELIABLE ON TILE-BASED GPUs (Apple Silicon).
+   * Every mid-chain sync forces a render-pass/tile flush costing tens of ms, which lands
+   * on whatever is being bracketed. Measured here: clouds reported 96.9 ms bracketed vs
+   * 3.6 ms end-to-end; one cascade reported 1008 ms. Prefer `measurePrefix()`, which pays
+   * a single sync per measurement so the overhead cancels in the subtraction.
    *
    * Measured by letting exactly one cascade's `needsUpdate` through per frame, which
    * changes no shader define and therefore triggers no recompile. Toggling
@@ -683,6 +821,63 @@ export default class Profiler {
     this._syncShadow = false;
     for (const l of csm.lights) l.shadow.needsUpdate = true;
     return { cascades: out, totalMs: +total.toFixed(2), amortisedMs: +out.reduce((a, c) => a + c.amortisedMs, 0).toFixed(2) };
+  }
+
+  /* ------------------------------------------------------------ init cost -- */
+
+  /**
+   * Break down a system's cold-boot cost, method by method.
+   *
+   * Init has already happened by the time anyone can ask, so re-running it on the
+   * live instance is not an option. Instead a *second* instance of the same class is
+   * built against a throwaway scene, with the named methods wrapped first. Nothing
+   * the live game is using is touched, and the copy is disposed straight after.
+   *
+   * The wrap is on the instance, so no other agent's source is involved:
+   *   await window.__boston.profiler.profileInit('props',
+   *     ['_registerTypes', '_buildWires', 'populate'])
+   *
+   * @param {string} id                system id, as registered on the engine
+   * @param {string[]} [methods]       instance methods to time individually
+   * @return {Promise<object>} { id, totalMs, methods: {name: ms}, unattributedMs }
+   */
+  async profileInit(id, methods = []) {
+    const live = this.ctx.get(id);
+    if (!live) return { id, error: 'system not registered' };
+    const Cls = live.constructor;
+
+    const scene = new THREE.Scene();
+    const ctx = new Proxy(this.ctx, {
+      get: (t, k) => (k === 'scene' ? scene : t[k]),
+    });
+
+    const copy = new Cls();
+    const times = {};
+    for (const name of methods) {
+      const fn = copy[name];
+      if (typeof fn !== 'function') { times[name] = null; continue; }
+      times[name] = 0;
+      copy[name] = function (...a) {
+        const t0 = performance.now();
+        const r = fn.apply(this, a);
+        times[name] += performance.now() - t0;
+        return r;
+      };
+    }
+
+    const t0 = performance.now();
+    let error = null;
+    try { await copy.init?.(ctx); } catch (e) { error = String(e?.message || e); }
+    const totalMs = performance.now() - t0;
+    let attributed = 0;
+    for (const k in times) if (times[k]) attributed += times[k];
+    try { copy.dispose?.(); } catch (e) { /* best effort */ }
+    scene.clear();
+
+    const out = { id, totalMs: +totalMs.toFixed(0), methods: {}, error };
+    for (const k in times) out.methods[k] = times[k] === null ? null : +times[k].toFixed(0);
+    out.unattributedMs = +(totalMs - attributed).toFixed(0);
+    return out;
   }
 
   /* --------------------------------------------------------------- bisect -- */
@@ -802,8 +997,11 @@ export default class Profiler {
     const scene = this.walkScene({ heavy });
     const shadow = this.shadowCost();
 
+    const vis = this.visibility();
     const report = {
       shot,
+      hidden: vis.hidden,
+      warning: vis.warning,
       meta: {
         preset: s.preset,
         timeOfDay: +engine.time.timeOfDay.toFixed(2),
@@ -849,21 +1047,15 @@ export default class Profiler {
 
     if (!deep) return report;
 
+    // measureRender() does NOT include the shadow maps: `composer.render()` never runs
+    // `lateUpdate`, so nothing re-marks `shadow.needsUpdate` and three skips them.
+    // That is exactly why the two numbers are reported separately.
+    report.frame.loop = await this.measureLoopFps(1.5);
     report.frame.syncedRenderMs = +this.measureRender(frames).toFixed(2);
     report.frame.syncedFrameMs = +this.measureFrame(frames).toFixed(2);
-
-    report.bisect = await this.bisect({
-      frames,
-      shadows: true,
-      passes: composer ? composer.passes
-        .map((p) => p.name || p.constructor.name)
-        .filter((n) => n !== 'RenderPass' && n !== 'FrameStatePass') : [],
-      subtrees: this.ctx.scene.children.filter((c) => c.name).map((c) => c.name),
-    });
-    report.bisectSystems = await this.bisect({
-      frames, full: true,
-      systems: [...this.records.keys()].filter((id) => id !== 'render' && id !== 'capture'),
-    });
+    report.gpu.passes = this.measurePasses(Math.max(4, frames >> 1));
+    report.gpu.cascades = this.measureCascades(Math.max(4, frames >> 2));
+    report.bisect = await this.bisect({ frames: Math.max(4, frames >> 1), shadows: true });
     return report;
   }
 

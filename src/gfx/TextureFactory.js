@@ -183,9 +183,9 @@ class Surface {
  * Baking float buffers -> GPU textures
  * ========================================================================== */
 
-function finishTexture(t, { srgb = false, clampV = false } = {}) {
-  t.wrapS = THREE.RepeatWrapping;
-  t.wrapT = clampV ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
+function finishTexture(t, { srgb = false, clampV = false, clampAll = false } = {}) {
+  t.wrapS = clampAll ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
+  t.wrapT = (clampV || clampAll) ? THREE.ClampToEdgeWrapping : THREE.RepeatWrapping;
   t.magFilter = THREE.LinearFilter;
   t.minFilter = THREE.LinearMipmapLinearFilter;
   t.generateMipmaps = true;
@@ -444,13 +444,19 @@ export default class TextureFactory {
 
   /* ---- canvas rasterisation (vector shapes: cracks, leaves, blades) ------ */
 
+  /**
+   * Cached 2D surface + context. The context is created once, with
+   * willReadFrequently, because every mask does a getImageData readback and
+   * Chrome only honours the hint on the call that creates the context.
+   */
   _canvas(w, h) {
     const key = w + 'x' + h;
     let c = this._canvases.get(key);
     if (!c) {
-      c = (typeof OffscreenCanvas !== 'undefined')
+      const el = (typeof OffscreenCanvas !== 'undefined')
         ? new OffscreenCanvas(w, h)
         : Object.assign(document.createElement('canvas'), { width: w, height: h });
+      c = { el, g: el.getContext('2d', { willReadFrequently: true, alpha: true }) };
       this._canvases.set(key, c);
     }
     return c;
@@ -472,8 +478,7 @@ export default class TextureFactory {
    */
   mask(draw, div = 2) {
     const w = (this.w / div) | 0, h = (this.h / div) | 0;
-    const c = this._canvas(w, h);
-    const g = c.getContext('2d', { willReadFrequently: true });
+    const g = this._canvas(w, h).g;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, w, h);
     g.fillStyle = '#fff'; g.strokeStyle = '#fff';
@@ -646,7 +651,45 @@ export default class TextureFactory {
     this.stats.texels += w * h * (1 + (out.normalMap ? 1 : 0) + (out.ormMap ? 0.25 : 0));
     this.stats.textures += 1 + (out.normalMap ? 1 : 0) + (out.ormMap ? 1 : 0);
     this.stats.timings.push([name, performance.now() - t0]);
+    this.lastSurface = S;
+    this.lastRelief = (recipe.relief ?? 0.015) * w / (8 * (recipe.tile || 1)) * (recipe.normalStrength ?? 1);
     return out;
+  }
+
+  /** Allocate a square 2x2 atlas surface. */
+  newAtlas(size) {
+    const A = new Surface(size, size);
+    A.reset([0.5, 0.5, 0.5], 0.9);
+    return A;
+  }
+
+  /**
+   * Copy a painted tile into an atlas at (ox, oy), rescaling its height so a
+   * single Sobel pass over the atlas still produces the right slope for a tile
+   * whose physical relief differs from the reference.
+   */
+  blitTile(A, S, ox, oy, heightRatio = 1) {
+    for (let y = 0; y < S.h; y++) {
+      const sr = y * S.w, dr = (oy + y) * A.w + ox;
+      for (let x = 0; x < S.w; x++) {
+        const i = sr + x, o = dr + x;
+        A.r[o] = S.r[i]; A.g[o] = S.g[i]; A.b[o] = S.b[i];
+        A.rough[o] = S.rough[i]; A.metal[o] = S.metal[i]; A.ao[o] = S.ao[i];
+        A.height[o] = 0.5 + (S.height[i] - 0.5) * heightRatio;
+      }
+    }
+  }
+
+  /** Bake an assembled atlas: colour + normal only, clamped, no ORM. */
+  bakeAtlas(A, k, gain = 1) {
+    const prevW = this.w, prevH = this.h;
+    this.w = A.w; this.h = A.h;
+    const map = bakeAlbedo(A, true, gain, 0.045);
+    map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
+    const nrm = bakeNormal(A, k);
+    nrm.wrapS = nrm.wrapT = THREE.ClampToEdgeWrapping;
+    this.w = prevW; this.h = prevH;
+    return { map, nrm };
   }
 
   /** Free CPU scratch memory once the library is built. */
@@ -655,7 +698,7 @@ export default class TextureFactory {
     this._grain.clear();
     this._axisCache?.clear();
     this._bank = null;
-    for (const c of this._canvases.values()) { c.width = 1; c.height = 1; }
+    for (const c of this._canvases.values()) { c.el.width = 1; c.el.height = 1; }
     this._canvases.clear();
   }
 }
@@ -801,7 +844,7 @@ function paintBrick(S, F, o) {
 }
 
 const BRICK_RED = {
-  res: 1024, tile: 2.03, cols: 10, rows: 30, joint: 0.011, normalStrength: 1.15, relief: 0.016, gain: 1.48,
+  res: 512, tile: 2.03, cols: 10, rows: 30, joint: 0.011, normalStrength: 1.15, relief: 0.016, gain: 1.48,
   base: hx('#6b3327'), rough: 0.92, glazed: 0.06, sootAmt: 0.72, efflor: 0.30,
   // North End / Beacon Hill oxblood, with over-fired near-black outliers.
   palette: [hx('#8a4834'), hx('#743425'), hx('#57271f'), hx('#3b1d19')],
@@ -818,7 +861,7 @@ const BRICK_BROWN = {
 
 /** Beacon Hill / Acorn Street setts: rounded, irregular, polished by traffic. */
 const COBBLESTONE = {
-  res: 1024, tile: 2.4, base: hx('#5c5a58'), rough: 0.9, normalStrength: 1.6, relief: 0.050,
+  res: 512, tile: 2.4, base: hx('#5c5a58'), rough: 0.9, normalStrength: 1.6, relief: 0.050,
   paint(S, F) {
     const { w, h } = F;
     const stone = F.noise('C', 1, 1, false);
@@ -1215,7 +1258,7 @@ function paintAsphalt(S, F, o) {
 }
 
 const ASPHALT = {
-  res: 1024, tile: 2.4, base: hx('#57575d'), rough: 0.93, normalStrength: 0.9, relief: 0.019,
+  res: 512, tile: 2.4, base: hx('#57575d'), rough: 0.93, normalStrength: 0.9, relief: 0.019,
   binder: hx('#57575d'), wear: 0.34, patches: 2, cracks: 5, snakes: 3, oil: 0.5,
   patchFresh: hx('#3a3a41'), patchOld: hx('#66666c'), paintGhost: false, paint: paintAsphalt,
 };
@@ -1284,7 +1327,7 @@ const ROAD_LINE_YELLOW = { ...ROAD_LINE_WHITE, base: hx('#d3a622'), color: hx('#
 
 /** Poured concrete walk: 1.2 m slabs, tooled joints, broom finish, gum. */
 const SIDEWALK = {
-  res: 1024, tile: 2.4, base: hx('#918d85'), rough: 0.9, normalStrength: 1.0, relief: 0.013,
+  res: 512, tile: 2.4, base: hx('#918d85'), rough: 0.9, normalStrength: 1.0, relief: 0.013,
   paint(S, F) {
     const { w, h } = F;
     const R = F.rand;
@@ -2107,9 +2150,10 @@ const GRASS = {
         const len = R.range(0.012, 0.036) * w, a = -1.5708 + (R() - 0.5) * 1.5;
         g.lineWidth = R.range(0.7, 1.7) * (w / 512);
         g.globalAlpha = R.range(0.35, 1);
-        wrap(x, y, len, (c) => {
+        const bow = (R() - 0.5) * 4;      // resolved outside wrap: the wrapped
+        wrap(x, y, len, (c) => {          // copies must be the same blade
           c.beginPath(); c.moveTo(x, y);
-          c.quadraticCurveTo(x + Math.cos(a) * len * 0.5 + (R() - 0.5) * 4, y + Math.sin(a) * len * 0.5,
+          c.quadraticCurveTo(x + Math.cos(a) * len * 0.5 + bow, y + Math.sin(a) * len * 0.5,
             x + Math.cos(a) * len, y + Math.sin(a) * len);
           c.stroke();
         });

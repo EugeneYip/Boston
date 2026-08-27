@@ -181,7 +181,10 @@ export default class SkySystem {
 
     // Dev affordance: survives hot reloads, so the atmosphere can be profiled
     // and retuned from the console in a single call.
-    if (typeof window !== 'undefined') window.__atmos = this._devApi(ctx);
+    if (typeof window !== 'undefined') {
+      window.__atmos = this._devApi(ctx);
+      this._devAutoRun(ctx);
+    }
   }
 
   // --------------------------------------------------------------- celestial
@@ -259,6 +262,33 @@ export default class SkySystem {
   }
 
   /**
+   * Opt-in dev harness: `?atmos=1&tod=18.5&wx=storm&shot=hero_skyline&bench=1`
+   * re-applies the same viewpoint and (optionally) re-profiles after every hot
+   * reload, so an automated critic loop does not have to race the dev server.
+   */
+  _devAutoRun(ctx) {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('atmos')) return;
+    ctx.bus.on('engine:ready', () => setTimeout(() => {
+      const b = window.__boston;
+      if (!b) return;
+      try {
+        b.freeze(true);
+        b.setWeather(q.get('wx') || 'clear');
+        const shot = q.get('shot') ? b.engine.systems.get('capture').shots[q.get('shot')] : null;
+        b.setTime(q.has('tod') ? parseFloat(q.get('tod')) : (shot?.tod ?? 12));
+        if (shot) b.setCamera(shot.pos, shot.look, shot.fov);
+        if (q.has('quality')) b.setQuality(q.get('quality'));
+        b.step(36);
+        window.__atmos.ready = true;
+        window.__atmos.probe = window.__atmos.diagnose();
+        if (q.has('bench')) window.__atmos.last = window.__atmos.breakdown(8);
+        b.step(8);
+      } catch (e) { window.__atmos.autoError = String(e && e.message || e); }
+    }, 500));
+  }
+
+  /**
    * Console API: `__atmos.bench()` isolates the atmosphere's GPU cost by
    * toggling the pass and the dome off between timed runs; `__atmos.tune({})`
    * retunes any uniform live.
@@ -275,6 +305,69 @@ export default class SkySystem {
         ...Object.fromEntries(Object.entries(self.fog?.p || {}).map(([k, c]) =>
           [k, c.value?.getHexString ? '#' + c.value.getHexString() : c.value])),
       }),
+      /**
+       * One-shot health check for the screen-space stages. Reads the cloud
+       * buffer back, and probes whether the composite's depth-based branch is
+       * reachable at all by cranking the haze and watching the frame respond.
+       */
+      diagnose() {
+        const e = ctx.engine, r = e.renderer;
+        const clouds = self.clouds, fog = self.fog;
+        const h2f = (h) => {
+          const s = (h & 0x8000) >> 15, x = (h & 0x7C00) >> 10, f = h & 0x3FF;
+          if (x === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
+          if (x === 31) return f ? NaN : (s ? -1 : 1) * Infinity;
+          return (s ? -1 : 1) * Math.pow(2, x - 15) * (1 + f / 1024);
+        };
+        const px16 = new Uint16Array(4);
+        const probe = (rt, x, y) => {
+          r.readRenderTargetPixels(rt, x, y, 1, 1, px16);
+          return [...px16].map((v) => +h2f(v).toFixed(3));
+        };
+        const step = (n) => {
+          const was = e._running; e.stop();
+          const real = e._clock.getDelta; e._clock.getDelta = () => 1 / 60;
+          for (let i = 0; i < n; i++) e.frame();
+          e._clock.getDelta = real; if (was) e.start();
+        };
+        step(6);
+        const rt = clouds._flip ? clouds.rtB : clouds.rtA;
+        const cloudRows = [0.95, 0.85, 0.72, 0.6].map((f) =>
+          [f, probe(rt, rt.width >> 1, Math.round(rt.height * f))]);
+
+        // Screen readback helper (the canvas back buffer, post-tonemap).
+        const c = r.domElement;
+        const grab = (fx, fy) => {
+          const cv = document.createElement('canvas');
+          cv.width = 1; cv.height = 1;
+          cv.getContext('2d').drawImage(c, Math.round(c.width * fx), Math.round(c.height * fy),
+            1, 1, 0, 0, 1, 1);
+          return [...cv.getContext('2d').getImageData(0, 0, 1, 1).data].slice(0, 3);
+        };
+        const before = grab(0.5, 0.72);
+        const savedHaze = fog.p.uHazeSigma.value;
+        fog.p.uHazeSigma.value = 0.05;      // ~20 m visibility: must whiteout
+        step(4);
+        const after = grab(0.5, 0.72);
+        fog.p.uHazeSigma.value = savedHaze;
+        step(4);
+        return {
+          shapeStats: clouds.shapeStats,
+          coverage: clouds.p.uCoverage.value,
+          threshold: +(clouds.p.uShapeHi.value + (clouds.p.uShapeLo.value
+            - clouds.p.uShapeHi.value) * clouds.p.uCoverage.value).toFixed(4),
+          cloudBuffer: cloudRows,           // [.., [r,g,b, transmittance]]
+          cloudAllClear: cloudRows.every((x) => x[1][3] > 0.995),
+          groundBefore: before,
+          groundHeavyHaze: after,
+          // If cranking haze does nothing, the composite never takes its
+          // depth<far branch, i.e. the depth texture is not what we think.
+          depthBranchLive: Math.abs(after[0] - before[0]) + Math.abs(after[1] - before[1])
+                         + Math.abs(after[2] - before[2]) > 12,
+          hasDepthTexture: !!fog._depth,
+          depthType: fog._depth ? fog._depth.constructor.name : null,
+        };
+      },
       /**
        * Per-stage GPU-synced timings. Isolates the dome shader from dome
        * overdraw by swapping in a trivial material, and each screen-space

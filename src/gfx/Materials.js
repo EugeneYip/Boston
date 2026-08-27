@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import TextureFactory, { RECIPES } from './TextureFactory.js';
+import { makeRoadMaterial } from '../world/Roads.js';
 
 /**
  * The city's material library.
@@ -62,8 +63,11 @@ const SPEC = {
   /* --- metals ---------------------------------------------------------- */
   metal_painted:    { normalScale: 0.7, ao: 0.7, wet: true, env: 1.0 },
   metal_rusty:      { normalScale: 1.1, ao: 1.0, wet: true, env: 0.9 },
-  steel_brushed:    { normalScale: 0.5, ao: 0.6, env: 1.1, physical: true, wet: true,
-                      anisotropy: 0.7, anisotropyRotation: Math.PI / 2 },
+  // Deliberately NOT using MeshPhysicalMaterial.anisotropy: three's anisotropy
+  // chunk redeclares geometryNormal, which collides with the custom lighting
+  // injected via onBeforeCompile and fails the fragment shader outright. The
+  // directional scratch normal map carries the brushed look on its own.
+  steel_brushed:    { normalScale: 0.5, ao: 0.6, env: 1.1, wet: true },
   chrome:           { normalScale: 0.25, ao: 0.3, env: 1.3, wet: true },
   copper_patina:    { normalScale: 0.8, ao: 0.9, wet: true, env: 1.0 },
 
@@ -89,6 +93,21 @@ const SPEC = {
                       transparent: true, opacity: 0.30, color: 0x0b1014,
                       ior: 1.52, depthWrite: false, side: THREE.DoubleSide },
 };
+
+/**
+ * Road atlas layout, in the UV space `Roads.js` samples with
+ * (`TILE_UV = [[0,0],[0.5,0],[0,0.5],[0.5,0.5]]`, tiles asphalt/concrete/brick/
+ * cobble). Our textures are baked flipped (painted row 0 becomes v=1), so
+ * uv v 0..0.5 is the LOWER half of the painted image.
+ */
+const ATLAS_TILES = {
+  asphalt:        [0, 512],     // uv (0.0, 0.0)  T_ASPHALT
+  sidewalk:       [512, 512],   // uv (0.5, 0.0)  T_CONCRETE
+  sidewalk_brick: [0, 0],       // uv (0.0, 0.5)  T_BRICK
+  cobblestone:    [512, 0],     // uv (0.5, 0.5)  T_COBBLE
+};
+/** Sobel gain the atlas is baked at — asphalt's, the tile seen most. */
+const ATLAS_REF_K = 0.019 * 512 / (8 * 2.4);
 
 /** Fallback used by get() for unknown names — neutral, never null. */
 function makeFallback() {
@@ -121,18 +140,43 @@ export default class Materials {
     this.factory = new TextureFactory({ scale, seed: 20240826 });
 
     const t0 = performance.now();
-    for (const name of Object.keys(SPEC)) this._build(name, ctx);
-    this.carPaint(0xb9bec4);                    // warm up the shared flake maps
+    // Only the road atlas is built eagerly. Everything else is generated on the
+    // first get(), because consumers resolve their materials during their own
+    // init() — so anything the city actually uses is still ready before the
+    // first frame, and we stop paying ~120 MB and ~2.5 s for the materials
+    // nobody has adopted yet.
+    //
+    // The atlas gives the whole street network one draw call per chunk. Its
+    // four tiles are the same recipes as the standalone materials, so we
+    // capture each painted surface as it is built rather than painting twice.
+    this._atlas = this.factory.newAtlas(1024);
+    for (const name of Object.keys(ATLAS_TILES)) this._build(name, ctx);
+    this._buildRoadAtlas();
     this.buildMs = performance.now() - t0;
 
-    const mb = (this.factory.stats.texels * 4 * 1.334) / (1024 * 1024);
-    console.info(`[materials] ${this._mats.size} materials, ` +
-      `${this.factory.stats.textures} textures, ~${mb.toFixed(0)} MB VRAM, ` +
-      `${this.buildMs | 0} ms (bank ${this.factory.stats.bankMs | 0} ms)`);
-    const slow = this.factory.stats.timings.sort((a, b) => b[1] - a[1]).slice(0, 6)
-      .map(([n, ms]) => `${n} ${ms | 0}ms`).join(', ');
-    console.info('[materials] slowest:', slow);
-    this.factory.release();                     // drop CPU scratch buffers
+    console.info(`[materials] ready in ${this.buildMs | 0} ms ` +
+      `(road atlas + ${this._mats.size - 1} tiles; ${Object.keys(SPEC).length} more on demand)`);
+
+    // Anything generated after boot costs a ~150 ms hitch on the frame that
+    // asks for it. Every consumer should resolve its materials in init(), so
+    // surface it loudly rather than letting it hide as a stutter.
+    ctx.bus.on('engine:ready', () => { this._booted = true; });
+  }
+
+  /** Force-build a set of materials up front, e.g. before a level transition. */
+  prewarm(names) {
+    for (const n of names) this.get(n);
+  }
+
+  /** Aggregate cost of everything generated so far. */
+  stats() {
+    const f = this.factory.stats;
+    return {
+      materials: this._mats.size,
+      textures: f.textures,
+      vramMB: +((f.texels * 4 * 1.334) / (1024 * 1024)).toFixed(1),
+      buildMs: +f.timings.reduce((a, x) => a + x[1], 0).toFixed(0),
+    };
   }
 
   /* ---------------------------------------------------------------------- */
@@ -165,6 +209,11 @@ export default class Materials {
   }
 
   _build(name, ctx) {
+    if (this._booted && !this._warned.has('late:' + name)) {
+      this._warned.add('late:' + name);
+      console.warn(`[materials] "${name}" generated after boot — this stalls a ` +
+        `frame. Resolve it in your system's init(), or call materials.prewarm().`);
+    }
     const s = SPEC[name] || {};
     const recipe = RECIPES[name];
     const maps = this._mapsFor(name);
@@ -209,6 +258,17 @@ export default class Materials {
       return m;
     });
 
+    const slot = ATLAS_TILES[name];
+    if (slot && this._atlas) {
+      const S = this.factory.lastSurface;
+      if (S && S.w === 512) {
+        this.factory.blitTile(this._atlas, S, slot[0], slot[1],
+          this.factory.lastRelief / ATLAS_REF_K);
+        this._atlasRef = this._atlasRef || {};
+        this._atlasRef[name] = true;
+      }
+    }
+
     mat.userData.tileMeters = recipe?.tile ?? 1;
     mat.userData.tileMetersY = recipe?.tileY ?? recipe?.tile ?? 1;
     if (s.scroll) mat.userData.scrollSpeed = s.scroll;
@@ -221,6 +281,30 @@ export default class Materials {
     this._mats.set(name, mat);
     void ctx;
     return mat;
+  }
+
+  /**
+   * Assemble the shared paved-surface atlas and wrap it in the road shader.
+   * The material is built by Roads.js's own exported `makeRoadMaterial`, so the
+   * custom attributes (aSurf/aTile/aRough) and the tiling shader stay in sync
+   * with the geometry that feeds them — we only supply the pixels.
+   */
+  _buildRoadAtlas() {
+    const missing = Object.keys(ATLAS_TILES).filter(n => !this._atlasRef?.[n]);
+    if (missing.length) {
+      console.warn('[materials] road_atlas missing tiles:', missing.join(', '));
+    }
+    const tex = this.factory.bakeAtlas(this._atlas, ATLAS_REF_K);
+    const map = this.assets.texture('road_atlas.alb', () => tex.map);
+    const nrm = this.assets.texture('road_atlas.nrm', () => tex.nrm);
+    map.anisotropy = Math.min(map.anisotropy || 1, 8);
+    nrm.anisotropy = Math.min(nrm.anisotropy || 1, 4);
+    const m = this.assets.material('road_atlas', () => makeRoadMaterial({ map, nrm }));
+    m.userData.tileMeters = 2.4;
+    m.userData.wetnessRough = m.roughness;
+    m.userData.wetnessColor = m.color.clone();
+    this._mats.set('road_atlas', m);
+    this._atlas = null;                        // free the 4 MB float composite
   }
 
   /* ---- public API (CONTRACTS.md) --------------------------------------- */
@@ -236,6 +320,7 @@ export default class Materials {
     if (m) return m;
     if (name && name.startsWith('car_paint:')) return this.carPaint(name.slice(10));
     if (name === 'car_paint') return this.carPaint();
+    if (SPEC[name]) return this._build(name, this.ctx);      // generate on demand
     if (!this._warned.has(name)) {
       this._warned.add(name);
       console.warn(`[materials] unknown material "${name}" — using fallback`);
@@ -246,8 +331,17 @@ export default class Materials {
     return this._fallback;
   }
 
-  /** @returns {string[]} every material name this library can serve. */
+  /**
+   * Every material name this library can serve, whether or not it has been
+   * generated yet. Generation happens on first get().
+   * @returns {string[]}
+   */
   names() {
+    return [...new Set([...Object.keys(SPEC), ...this._mats.keys(), 'car_paint'])].sort();
+  }
+
+  /** @returns {string[]} names that have actually been generated. */
+  built() {
     return [...this._mats.keys()].sort();
   }
 
@@ -314,9 +408,16 @@ export default class Materials {
     }
   }
 
+  /**
+   * The factory deliberately stays resident after init so an on-demand build
+   * does not have to regenerate the 512^2 noise bank. That is ~25 MB of JS
+   * heap, not VRAM, and it is released here.
+   */
   dispose() {
     // Textures and materials are owned by ctx.assets, which disposes them.
     this._mats.clear(); this._maps.clear(); this._carPaints.clear();
     this.factory?.release();
   }
 }
+
+export { SPEC as MATERIAL_SPEC };

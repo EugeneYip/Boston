@@ -28,21 +28,30 @@ const VERGE = 2.2;          // graded strip that hides the terrain stamp seam
 const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
 
 // --- tints (linear-ish sRGB authored values; the ACES stack does the rest) ---
+// Linear albedo. The atlas is a near-white modulation map, so what is written
+// here is very close to what the surface actually reflects: aged asphalt sits
+// around 0.09, fresh road paint around 0.55, Boston granite kerb around 0.22.
 const C = {
-  asphalt:   [0.104, 0.107, 0.116],
-  asphaltHot:[0.128, 0.128, 0.130],
-  gutter:    [0.088, 0.090, 0.096],
-  white:     [0.560, 0.552, 0.520],
-  whiteWorn: [0.300, 0.298, 0.286],
-  yellow:    [0.470, 0.352, 0.108],
-  granite:   [0.198, 0.196, 0.192],
-  concrete:  [0.300, 0.296, 0.288],
-  brick:     [0.196, 0.098, 0.076],
-  cobble:    [0.150, 0.146, 0.140],
-  verge:     [0.108, 0.116, 0.072],
+  asphalt:   [0.092, 0.095, 0.104],
+  asphaltHot:[0.115, 0.116, 0.120],
+  gutter:    [0.078, 0.080, 0.086],
+  white:     [0.600, 0.590, 0.552],
+  whiteWorn: [0.330, 0.326, 0.310],
+  yellow:    [0.520, 0.386, 0.108],
+  granite:   [0.225, 0.222, 0.216],
+  concrete:  [0.330, 0.324, 0.312],
+  brick:     [0.235, 0.112, 0.086],
+  cobble:    [0.170, 0.166, 0.158],
+  verge:     [0.115, 0.126, 0.076],
 };
 
-const rnd = (s) => { const x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+/** Cheap deterministic hash. Math.sin-based noise costs ~1M trig calls building
+ *  the atlas; an integer mix is an order of magnitude faster and tiles better. */
+const rnd = (s) => {
+  let h = (s * 374761393) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
 
 // ---------------------------------------------------------------------------
 // Procedural atlases. Four seamless patterns, base colour + normal, so the
@@ -73,7 +82,7 @@ function makeAtlas() {
         v += (rnd(cx * 57 + cy * 131 + o * 13) - 0.5) * (0.5 / (o + 1));
       }
       const grain = rnd(x * 3 + y * 7.3) * 0.34 + rnd(x * 11.7 - y * 5.1) * 0.2;
-      const l = 118 + v * 90 + (grain - 0.27) * 78;
+      const l = 232 + v * 46 + (grain - 0.27) * 44;
       d.data[i * 4] = l * 0.99; d.data[i * 4 + 1] = l; d.data[i * 4 + 2] = l * 1.03;
       d.data[i * 4 + 3] = 255;
       const h = (grain - 0.27) * 2.4 + v;
@@ -86,7 +95,7 @@ function makeAtlas() {
   }
   // --- tile 1: concrete slab with control joints ---
   {
-    g.fillStyle = '#b9b5ad'; g.fillRect(S, 0, S, S);
+    g.fillStyle = '#eeeae2'; g.fillRect(S, 0, S, S);
     const d = px(g, S, 0), n = px(ng, S, 0);
     for (let i = 0; i < S * S; i++) {
       const x = i % S, y = (i / S) | 0;
@@ -95,7 +104,7 @@ function makeAtlas() {
       const jx = Math.min(x % (S / 2), (S / 2) - 1 - (x % (S / 2)));
       const jy = Math.min(y % (S / 2), (S / 2) - 1 - (y % (S / 2)));
       const joint = (jx < 2 || jy < 2) ? -58 : 0;
-      const l = 176 + blot + grain + joint;
+      const l = 238 + blot * 0.8 + grain * 0.8 + joint * 0.8;
       d.data[i * 4] = l; d.data[i * 4 + 1] = l * 0.985; d.data[i * 4 + 2] = l * 0.955;
       d.data[i * 4 + 3] = 255;
       const nb = (jx === 2 || jy === 2) ? 60 : (jx < 2 || jy < 2) ? -50 : 0;
@@ -119,8 +128,8 @@ function makeAtlas() {
       const tone = rnd(bid) * 44 - 22;
       const grain = (rnd(x * 6.1 + y * 3.3) - 0.5) * 20;
       let r, gg, b;
-      if (mortar) { r = 150 + grain; gg = 143 + grain; b = 132 + grain; }
-      else { r = 150 + tone + grain; gg = 78 + tone * 0.55 + grain; b = 62 + tone * 0.4 + grain; }
+      if (mortar) { r = 252 + grain; gg = 250 + grain; b = 244 + grain; }
+      else { r = 236 + tone + grain; gg = 214 + tone + grain; b = 206 + tone + grain; }
       d.data[i * 4] = r; d.data[i * 4 + 1] = gg; d.data[i * 4 + 2] = b; d.data[i * 4 + 3] = 255;
       const ex = bx < 3 ? (bx - 1.5) * 34 : bx > BW - 3 ? (bx - (BW - 1.5)) * 34 : 0;
       const ey = by < 3 ? (by - 1.5) * 34 : by > BH - 3 ? (by - (BH - 1.5)) * 34 : 0;
@@ -144,7 +153,7 @@ function makeAtlas() {
       const inJoint = bx < 3 + jitter || by < 3 + jitter;
       const tone = rnd(id + 7) * 52 - 26;
       const grain = (rnd(x * 7.7 + y * 4.9) - 0.5) * 26;
-      const l = inJoint ? 62 + grain * 0.5 : 128 + tone + grain;
+      const l = inJoint ? 150 + grain * 0.5 : 240 + tone * 0.8 + grain;
       d.data[i * 4] = l * 1.01; d.data[i * 4 + 1] = l; d.data[i * 4 + 2] = l * 0.96;
       d.data[i * 4 + 3] = 255;
       // domed setts
@@ -576,11 +585,22 @@ export default class Roads {
 
   // -- build ----------------------------------------------------------------
 
-  build(scene, materials) {
+  build(scene, materials, assets) {
+    // The road material carries custom vertex attributes (atlas tile, world
+    // pattern UV, per-band roughness) and does its tiling in the shader, so it
+    // cannot be one of the materials library's generic surfaces. Build it here
+    // and register it so it is still shared, disposed centrally and picked up
+    // by `assets.setWetness()` when it rains.
     this.atlas = makeAtlas();
-    const shared = materials?.get?.('road_atlas');
-    this.material = shared || makeRoadMaterial(this.atlas);
-    this._ownMaterial = !shared;
+    this.material = assets
+      ? assets.material('road_atlas', () => makeRoadMaterial(this.atlas))
+      : makeRoadMaterial(this.atlas);
+    this._ownMaterial = !assets;
+    // Match the materials library's environment response if it has landed.
+    const ref = materials?.get?.('asphalt');
+    if (ref && ref.name === 'asphalt') {
+      this.material.envMapIntensity = ref.envMapIntensity ?? this.material.envMapIntensity;
+    }
 
     this.planNodes();
     const net = this.net;
@@ -748,7 +768,7 @@ export default class Roads {
     for (const ch of this.chunks.values()) {
       if (!ch.nearMesh) continue;
       const d = Math.hypot(p.x - ch.center.x, p.z - ch.center.z) - ch.radius;
-      const near = d < 330;
+      const near = d < 290;
       if (ch.nearMesh.visible !== near) {
         ch.nearMesh.visible = near;
         ch.farMesh.visible = !near;

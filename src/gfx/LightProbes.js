@@ -27,7 +27,7 @@ const HF_HALF = (HF_N * HF_CELL) / 2;
 const AZIMUTHS = 6;
 const RADII = [10, 22, 46, 95, 190];
 const LOCAL_R2 = 25;    // the column's own occluder is treated as 5 m away
-const MIN_VIS = 0.05;   // even a sealed room gets a little light in a game
+const MIN_VIS = 0.08;   // even a sealed room gets a little light in a game
 const BOX_CELLS = 10;   // an AABB wider than ~80 m is a merged chunk, not a building
 const MAX_VERTS_PER_MESH = 24000;
 
@@ -37,6 +37,25 @@ const PRESETS = {
   medium: { gx: 24, gy: 8, gz: 24, sx: 24, sy: 14, budget: 26 },
   low:    null,
 };
+
+const FOLIAGE_RE = /tree|foliage|canopy|leaf|leaves|shrub|bush|hedge|vegetation|grass|ivy|planting/i;
+
+/**
+ * Foliage must not enter the occlusion field.
+ *
+ * A canopy is porous and, more importantly, the sun shadow map already resolves it
+ * at centimetre scale. Stamping a tree's bounding box into a 19 m probe grid tells
+ * every probe underneath that it is sealed inside a building, so dappled shade
+ * turns into flat black — the worst artefact this system can produce. Buildings and
+ * terrain are what this field is for.
+ */
+function isFoliage(o) {
+  if (o.userData.foliage || o.userData.isFoliage) return true;
+  if (FOLIAGE_RE.test(o.name)) return true;
+  const m = Array.isArray(o.material) ? o.material[0] : o.material;
+  if (m && (m.alphaTest > 0 || (m.transparent && m.side === THREE.DoubleSide))) return true;
+  return false;
+}
 
 const _box = new THREE.Box3();
 const _mat = new THREE.Matrix4();
@@ -58,9 +77,12 @@ export default class LightProbes {
       this._sinA[a] = Math.sin(t);
     }
     // Boston reads as brick, granite and asphalt: a warm-neutral bounce, not grey.
-    this.groundAlbedo = new THREE.Color('#6b6257').convertSRGBToLinear();
-    this.wallAlbedo = new THREE.Color('#7d6a5c').convertSRGBToLinear();
-    this.sodium = new THREE.Color('#ff9c46').convertSRGBToLinear();
+    // Color already converts sRGB into the linear working space on construction, so
+    // these must NOT be converted again. Doing so darkened all bounce by ~8x, which
+    // is what turned every shadowed surface into a flat black hole.
+    this.groundAlbedo = new THREE.Color('#6b6257');
+    this.wallAlbedo = new THREE.Color('#7d6a5c');
+    this.sodium = new THREE.Color('#ff9c46');
   }
 
   init(ctx) {
@@ -125,6 +147,7 @@ export default class LightProbes {
     scene.traverseVisible((o) => {
       if (budget <= 0) return;
       if (!o.isMesh || !o.castShadow || o.userData.noOcclusion) return;
+      if (isFoliage(o)) return;
       const geo = o.geometry;
       if (!geo) return;
       if (!geo.boundingBox) geo.computeBoundingBox();
@@ -349,6 +372,24 @@ export default class LightProbes {
     }
     const v = sum / AZIMUTHS;
     return v < MIN_VIS ? MIN_VIS : v;
+  }
+
+  /** Decode the probe nearest a world point — debugging and the dev overlay. */
+  sampleVisibility(p) {
+    if (!this.enabled || !this.data) return null;
+    const ix = THREE.MathUtils.clamp(Math.floor((p.x - this.originX) / this.sx), 0, this.gx - 1);
+    const iy = THREE.MathUtils.clamp(Math.floor((p.y - this.originY) / this.sy), 0, this.gy - 1);
+    const iz = THREE.MathUtils.clamp(Math.floor((p.z - this.originZ) / this.sz), 0, this.gz - 1);
+    const o = (ix + this.gx * (iy + this.gy * iz)) * 4;
+    const f = (h) => {
+      const s = (h & 0x8000) ? -1 : 1, e = (h >> 10) & 0x1f, m = h & 0x3ff;
+      if (e === 0) return s * Math.pow(2, -14) * (m / 1024);
+      return e === 31 ? NaN : s * Math.pow(2, e - 15) * (1 + m / 1024);
+    };
+    return {
+      skyVis: +f(this.data[o + 3]).toFixed(3),
+      bounce: [f(this.data[o]), f(this.data[o + 1]), f(this.data[o + 2])].map(v => +v.toFixed(3)),
+    };
   }
 
   _dispose() {

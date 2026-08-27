@@ -89,6 +89,34 @@ export default class CaptureHarness {
         return { shot: shot || 'custom', weather: w,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
       },
+      /**
+       * Measure REAL frame rate from the natural rAF loop.
+       *
+       * Read this before trusting any fps number: a backgrounded tab throttles
+       * requestAnimationFrame to zero, and `step()` drives frames synchronously,
+       * so neither reflects real performance. Only a fronted, visible tab does.
+       * `hidden: true` in the result means the number is meaningless — front the
+       * tab (mcp__Claude_Browser__tabs_select) and measure again.
+       */
+      measureFps: async (seconds = 2) => {
+        if (document.hidden) {
+          return { hidden: true, fps: null,
+            warning: 'Tab is backgrounded — rAF is throttled to zero. Front the tab first; this number would be meaningless.' };
+        }
+        const f0 = engine.time.frame, t0 = performance.now();
+        await new Promise(r => setTimeout(r, seconds * 1000));
+        const frames = engine.time.frame - f0;
+        const elapsed = (performance.now() - t0) / 1000;
+        return {
+          hidden: false,
+          fps: +(frames / elapsed).toFixed(1),
+          frames,
+          draws: engine.perf.drawCalls,
+          tris: engine.perf.tris,
+          resolution: [engine.renderer.domElement.width, engine.renderer.domElement.height],
+          preset: engine.settings.preset,
+        };
+      },
       shotNames: () => Object.keys(this.shots),
       stats: () => ({
         fps: +engine.perf.fps.toFixed(1), ms: +engine.perf.ms.toFixed(2),

@@ -40,8 +40,6 @@ export default class LensPass extends Pass {
     this._opts = opts;
 
     this.prefilterRT = new THREE.WebGLRenderTarget(1, 1, opts);
-    this.coreRT = new THREE.WebGLRenderTarget(1, 1, opts);
-    this.coreTmpRT = new THREE.WebGLRenderTarget(1, 1, opts);
     this.mips = [];
     for (let i = 0; i < levels; i++) this.mips.push(new THREE.WebGLRenderTarget(1, 1, opts));
     this.streakRT = [new THREE.WebGLRenderTarget(1, 1, opts),
@@ -95,7 +93,16 @@ export default class LensPass extends Pass {
     this._size = new THREE.Vector2(1, 1);
   }
 
-  get coreTexture() { return this.coreRT.texture; }
+  /**
+   * The tight lobe of the point spread function.
+   *
+   * This is the prefiltered quarter-res image itself rather than a separately blurred
+   * copy. On this driver each render-target bind costs more than the shading inside
+   * it, so a dedicated core blur was buying a slightly rounder kernel for a whole
+   * extra pass; the 4-tap prefilter plus the bilinear upsample in the composite
+   * already softens it enough.
+   */
+  get coreTexture() { return this.prefilterRT.texture; }
   get wideTexture() { return this.mips[0].texture; }
   get streakTexture() { return this.streakRT[this._streakOut || 0].texture; }
 
@@ -116,17 +123,19 @@ export default class LensPass extends Pass {
 
   setSize(width, height) {
     this._size.set(width, height);
-    let w = Math.max(1, Math.round(width * 0.5));
-    let h = Math.max(1, Math.round(height * 0.5));
+    // Quarter res, not half. Glare is inherently low frequency, and on a tile-based
+    // GPU the fixed cost of binding each target in the chain dominates the shading —
+    // starting one level lower removes three quarters of the pixels from the two most
+    // expensive passes without any visible change to the halo.
+    let w = Math.max(1, Math.round(width * 0.25));
+    let h = Math.max(1, Math.round(height * 0.25));
     this.prefilterRT.setSize(w, h);
-    this.coreRT.setSize(w, h);
-    this.coreTmpRT.setSize(w, h);
     for (let i = 0; i < this.mips.length; i++) {
       w = Math.max(1, w >> 1); h = Math.max(1, h >> 1);
       this.mips[i].setSize(w, h);
     }
-    const sw = Math.max(1, Math.round(width * 0.25));
-    const sh = Math.max(1, Math.round(height * 0.25));
+    const sw = Math.max(1, Math.round(width * 0.125));
+    const sh = Math.max(1, Math.round(height * 0.125));
     this.streakRT[0].setSize(sw, sh);
     this.streakRT[1].setSize(sw, sh);
   }
@@ -143,17 +152,7 @@ export default class LensPass extends Pass {
     q.texelSize.value.set(1 / inputBuffer.width, 1 / inputBuffer.height);
     this._draw(renderer, this.prefilterMat, this.prefilterRT);
 
-    // --- tight core: separable 5-tap blur of the prefiltered image ---
     const b = this.blurMat.uniforms;
-    b.texelSize.value.set(1 / this.prefilterRT.width, 1 / this.prefilterRT.height);
-    b.stride.value = 1;
-    b.decay.value = 1.0;
-    b.inputBuffer.value = this.prefilterRT.texture;
-    b.direction.value.set(1, 0);
-    this._draw(renderer, this.blurMat, this.coreTmpRT);
-    b.inputBuffer.value = this.coreTmpRT.texture;
-    b.direction.value.set(0, 1);
-    this._draw(renderer, this.blurMat, this.coreRT);
 
     // --- wide halo: downsample pyramid ---
     const d = this.downMat.uniforms;
@@ -181,7 +180,7 @@ export default class LensPass extends Pass {
       b.direction.value.set(1, 0);
       b.decay.value = 0.88;
       let dst = 1;
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
         b.stride.value = Math.pow(4, i);
         this._draw(renderer, this.blurMat, this.streakRT[dst]);
         b.inputBuffer.value = this.streakRT[dst].texture;
@@ -192,7 +191,7 @@ export default class LensPass extends Pass {
   }
 
   dispose() {
-    this.prefilterRT.dispose(); this.coreRT.dispose(); this.coreTmpRT.dispose();
+    this.prefilterRT.dispose();
     for (const m of this.mips) m.dispose();
     this.streakRT[0].dispose(); this.streakRT[1].dispose();
     this.prefilterMat.dispose(); this.downMat.dispose();

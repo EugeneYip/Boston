@@ -41,6 +41,20 @@ Drive it with the browser tools:
 
 A change isn't done until you have looked at a screenshot of it and the console is clean.
 
+## MEASURING PERFORMANCE — read this before quoting any fps number
+A backgrounded tab throttles `requestAnimationFrame` to **zero**, and `capture()`/`step()`
+drive frames synchronously. **Neither reflects real performance.** fps numbers taken from a
+background tab — in either direction, too low or too high — are meaningless, and quoting one
+has already sent this project chasing a phantom twice.
+
+To get a real number:
+1. `mcp__Claude_Browser__tabs_select` on your tab to front it.
+2. `await window.__boston.measureFps(2)` — it measures the natural rAF loop and refuses to
+   report at all if `document.hidden` is true.
+
+Always state the resolution and quality preset alongside any fps figure. The budget is
+60 fps at 1920x1080 on the `high` preset.
+
 ## Definition of done
 - Renders correctly at the named shots relevant to your system.
 - **60 fps at 1080p**, within the draw-call and triangle budget in ARCHITECTURE.md.

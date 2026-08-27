@@ -874,9 +874,19 @@ function fireEscape(mb, e, u, spec, lod) {
 /* Roofs                                                                      */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Roof furniture. You look down on a lot of roofs in an open-world game, so a
+ * bare lid is an instant tell.
+ *
+ * Every item draws from an *explicitly keyed* hash rather than a running
+ * counter, so LOD 0, LOD 1 and the distant shell all place the same bulkhead in
+ * the same spot. A running counter would drift the moment one tier skipped an
+ * item, and the roofs would visibly reshuffle as you approached.
+ */
 function roofClutter(mb, poly, y, spec, lod) {
-  let kk = 5000;
-  const r = () => spec.rnd(kk++);
+  const r0 = (k) => spec.rnd(5000 + k);
+  let kk = 0;
+  const r = () => r0(kk++);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const p of poly) {
     if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
@@ -890,6 +900,7 @@ function roofClutter(mb, poly, y, spec, lod) {
   const rz = () => minZ + inset + r() * Math.max(0.1, d - inset * 2);
 
   // roof access bulkhead — every flat roof in the city has one
+  kk = 0;
   if (area > 55) {
     const bw = 2.0 + r() * 1.1, bd = 2.2 + r() * 1.2, bh = 2.35 + r() * 0.5;
     const bx = rx(), bz = rz();
@@ -897,6 +908,7 @@ function roofClutter(mb, poly, y, spec, lod) {
     mb.box(bx, y + bh + 0.06, bz, bw + 0.18, 0.12, bd + 0.18, 0, 'metal_dark', [0.4, 0.4, 0.4]);
   }
   // HVAC farm
+  kk = 20;
   const hn = lod === 0
     ? Math.min(7, Math.max(1, Math.floor(area / 140) + (r() < 0.5 ? 1 : 0)))
     : Math.min(2, Math.max(1, Math.floor(area / 260)));
@@ -915,6 +927,7 @@ function roofClutter(mb, poly, y, spec, lod) {
     }
   }
   // ducting
+  kk = 120;
   if (lod === 0 && area > 120) {
     const dx0 = rx(), dz0 = rz();
     const len = 2 + r() * 5;
@@ -922,12 +935,14 @@ function roofClutter(mb, poly, y, spec, lod) {
       'metal_panel', [0.8, 0.82, 0.84]);
   }
   // vent stacks
+  kk = 140;
   const vn = lod === 0 ? 2 + Math.floor(r() * 4) : 0;
   for (let i = 0; i < vn; i++) {
     const vh = 0.5 + r() * 1.5;
     mb.box(rx(), y + vh * 0.5, rz(), 0.16, vh, 0.16, 0, 'metal_dark', [0.45, 0.44, 0.42]);
   }
   // rooftop water tank on a steel cradle
+  kk = 170;
   if (spec.waterTank && area > 90 && lod === 0) {
     const tx = rx(), tz = rz();
     const legH = 1.9, tr = 1.5, th = 2.8;
@@ -952,6 +967,7 @@ function roofClutter(mb, poly, y, spec, lod) {
       'metal_dark', [0.42, 0.40, 0.38]);
   }
   // satellite dishes and an antenna mast
+  kk = 200;
   if (lod === 0) {
     const dn = Math.floor(r() * 3);
     for (let i = 0; i < dn; i++) {
@@ -980,6 +996,7 @@ function roofClutter(mb, poly, y, spec, lod) {
     }
   }
   // chimneys — kept at every LOD, they define a rowhouse roofline
+  kk = 260;
   const cn = spec.S.chimneys || 0;
   for (let i = 0; i < cn; i++) {
     const cx = minX + inset + (i + 0.5) / cn * Math.max(0.2, w - inset * 2);
@@ -1319,6 +1336,49 @@ function partyWall(mb, gb, e, y0, y1, spec, lod, stage) {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Distant roof furniture: the same bulkhead and the first two HVAC units the
+ * detailed tiers place, at the same coordinates, 0.30 m lower and 6% smaller so
+ * the detailed geometry swallows it whole. Twelve triangles buys a roofline
+ * that still reads as a city from a kilometre up.
+ */
+function shellRoofKit(mb, poly, y, spec) {
+  const r0 = (k) => spec.rnd(5000 + k);
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const p of poly) {
+    if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+    if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+  }
+  const w = maxX - minX, d = maxZ - minZ;
+  if (w < 3 || d < 3) return;
+  const area = w * d;
+  const inset = 1.3;
+  const K = 0.94, DY = 0.30;
+  const px = (k) => minX + inset + r0(k) * Math.max(0.1, w - inset * 2);
+  const pz = (k) => minZ + inset + r0(k) * Math.max(0.1, d - inset * 2);
+
+  if (area > 55) {
+    const bw = 2.0 + r0(0) * 1.1, bd = 2.2 + r0(1) * 1.2, bh = 2.35 + r0(2) * 0.5;
+    mb.box(px(3), y - DY + bh * 0.5, pz(4), bw * K, bh, bd * K, r0(5) * 3.14,
+      'brick_dark', [0.86, 0.82, 0.80]);
+  }
+  const hn = Math.min(2, Math.max(1, Math.floor(area / 260)));
+  for (let i = 0; i < hn; i++) {
+    const k = 20 + i * 6;
+    const uw = 1.1 + r0(k) * 1.5, ud = 0.9 + r0(k + 1) * 1.1, uh = 0.75 + r0(k + 2) * 0.7;
+    mb.box(px(k + 3), y - DY + uh * 0.5 + 0.12, pz(k + 4), uw * K, uh, ud * K,
+      r0(k + 5) < 0.5 ? 0 : Math.PI / 2, 'metal_panel', [0.85, 0.86, 0.88]);
+  }
+  const cn = spec.S.chimneys || 0;
+  for (let i = 0; i < cn; i++) {
+    const cx = minX + inset + (i + 0.5) / cn * Math.max(0.2, w - inset * 2);
+    const cz = minZ + d * (0.18 + r0(261 + i * 3) * 0.1);
+    const ch = 1.5 + r0(262 + i * 3) * 1.3;
+    mb.box(cx, y - DY + ch * 0.5, cz, 0.85 * K, ch, 0.62 * K, 0,
+      'brick_dark', [0.88, 0.84, 0.82]);
+  }
+}
+
+/**
  * A ~40 triangle version of the same building, textured with a baked facade
  * strip so the window rhythm still reads from a kilometre away. Inset 0.25 m
  * (0.9 m at street level, where shopfronts recess) so the detailed LODs always
@@ -1405,11 +1465,17 @@ function buildShell(spec, mb) {
     mb.cap(tt, ty + 1.9, 'slate', [0.94, 0.95, 0.97], true);
   } else {
     const ph = spec.parapet - 0.16;
+    const cop = Math.min(0.30, ph * 0.45);
     for (let i = 0; i < tp.length; i++) {
       const a = tp[i], b = tp[(i + 1) % tp.length];
-      mb.wall(a.x, a.z, b.x, b.z, ty, ty + ph, spec.wallSurf, col, 0, 0);
+      mb.wall(a.x, a.z, b.x, b.z, ty, ty + ph - cop, spec.wallSurf, col, 0, 0);
+      // A pale coping line at the parapet is the strongest horizontal a facade
+      // has at distance; without it every roofline dissolves into the wall.
+      // Two triangles an edge, stacked rather than overlaid, so nothing fights.
+      mb.wall(a.x, a.z, b.x, b.z, ty + ph - cop, ty + ph, 'trim_stone', spec.trimCol, 0, 0);
     }
     mb.cap(tp, ty + ph, spec.roofSurf, [0.9, 0.89, 0.87], true);
+    shellRoofKit(mb, insetPoly(top.poly, 0.24), top.y1, spec);
   }
   if (St.mech && spec.h > 40) {
     const pen = insetPoly(tp, Math.min(4.5, spec.h * 0.03 + 2) + 0.25);

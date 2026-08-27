@@ -339,7 +339,11 @@ export default class Buildings {
       if (!plot?.polygon || plot.polygon.length < 3) continue;
       const c = polyCentroid(plot.polygon);
       if (isReserved(c.x, c.z)) continue;
-      const base = this.groundAt(c.x, c.z) - 0.25;
+      // The city publishes a per-parcel ground elevation; prefer it over
+      // sampling the terrain ourselves so a building can never float or sink
+      // relative to the pavement the city laid at the same height.
+      const g = Number.isFinite(plot.y) ? plot.y : this.groundAt(c.x, c.z);
+      const base = g - 0.25;
       if (!Number.isFinite(base)) continue;
       const spec = makeSpec(plot, base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
       if (!spec) continue;

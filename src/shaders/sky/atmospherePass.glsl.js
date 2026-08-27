@@ -125,6 +125,8 @@ uniform sampler2D inputBuffer;
 uniform sampler2D uDepth;
 uniform sampler2D uCloud;
 uniform sampler2D uVolume;
+uniform mat4  uCloudViewProj;
+uniform float uCloudRayScale;
 uniform sampler2D uSkyView;
 uniform vec3  uSunDir;
 uniform float uSkyIntensity;
@@ -152,8 +154,15 @@ void main() {
   vec3 rd = viewRay(vUv);
 
   if (d > 0.99999) {
-    vec4 cl = texture2D(uCloud, vUv);
-    col = col * cl.a + cl.rgb;
+    // The cloud buffer is only re-marched every few frames and is rendered
+    // with a wider frustum than the camera, so it is sampled through the
+    // view-projection it was actually marched with rather than through vUv.
+    vec4 cp = uCloudViewProj * vec4(rd, 0.0);
+    if (cp.w > 0.0) {
+      vec2 cuv = (cp.xy / cp.w) / uCloudRayScale * 0.5 + 0.5;
+      vec4 cl = texture2D(uCloud, clamp(cuv, vec2(0.0015), vec2(0.9985)));
+      col = col * cl.a + cl.rgb;
+    }
   } else {
     float dist = sceneDist(vUv, d);
 

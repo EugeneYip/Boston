@@ -125,6 +125,10 @@ export default class Lighting {
   async init(ctx) {
     this.ctx = ctx;
     const s = ctx.settings;
+    // Exposed so tooling reads the *live* uniform objects. Vite serves HMR-updated
+    // modules under a versioned URL, so a console `import()` can hand back a second
+    // copy of the module with pristine defaults and quietly lie about the state.
+    this.uniforms = bostonUniforms;
 
     this.shadows = new CascadedShadows({
       cascades: this._cascadeCount(s),
@@ -278,13 +282,24 @@ export default class Lighting {
         uWinCell: { value: new THREE.Vector2(o.windowWidth ?? 3.1, o.floorHeight ?? 3.55) },
         uWinBright: { value: o.brightness ?? 3.6 },
       };
-      m.onBeforeCompile = (shader) => {
+      // Compose, never replace: the facade agent already hooks onBeforeCompile for
+      // its own soot and macro-variation code, and clobbering it would silently
+      // delete their work.
+      const prev = m.onBeforeCompile;
+      m.onBeforeCompile = function (shader, renderer) {
+        if (typeof prev === 'function') prev.call(this, shader, renderer);
         Object.assign(shader.uniforms, u);
+        // Guard per shader object as well as per material: a chained patcher can
+        // call us more than once for one program, and a second injection would
+        // redefine WIN_PARS and break compilation.
+        if (shader._bkWindowLights) return;
+        shader._bkWindowLights = true;
         shader.fragmentShader = shader.fragmentShader
           .replace('#include <common>', '#include <common>\n' + WIN_PARS)
           .replace('#include <emissivemap_fragment>',
             '#include <emissivemap_fragment>\n' + WIN_BODY);
       };
+      m.userData.bostonWindowLights = true;
       m.needsUpdate = true;
       this._winMats.push(u);
     }
@@ -297,29 +312,113 @@ export default class Lighting {
    * evaluated. Self-disabling: the moment a real road graph exists we assume the
    * facade owner is calling applyWindowLights itself.
    */
+  /**
+   * Lit windows.
+   *
+   * If the facade owner already publishes a night emissive (Materials tags those
+   * with `userData.nightEmissive`, and an emissiveMap means the interior is
+   * authored), leave it alone — two window grids on one wall is worse than none.
+   * Otherwise a procedural grid is what stops a night city reading as a cliff face.
+   */
   _adoptBuildings(ctx) {
+    const seen = new Set();
+    let n = 0;
+    ctx.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (!m || seen.has(m) || !m.isMeshStandardMaterial) continue;
+        seen.add(m);
+        if (!/facade|building|brownstone|brick|tower/i.test(m.name || '')) continue;
+        if (m.userData.nightEmissive || m.emissiveMap) continue;   // already handled
+        if (m.emissive && m.emissive.getHex() !== 0) continue;
+        this.applyWindowLights(m, { floorHeight: 3.6, windowWidth: 3.15, brightness: 4.2 });
+        n++;
+      }
+    });
+    // Placeholder city: light the stand-in blocks so night is testable pre-Buildings.
     const city = ctx.get('city');
-    if (!city || city.roads) return;
-    const mesh = city.blocks;
-    if (!mesh?.isMesh || !mesh.material?.isMeshStandardMaterial) return;
-    const clone = mesh.material.clone();
-    this._swapped.push({ mesh, original: mesh.material, clone });
-    mesh.material = clone;
-    this.applyWindowLights(clone, { floorHeight: 3.6, windowWidth: 3.2, brightness: 3.8 });
+    if (!n && city && !city.roads && city.blocks?.isMesh &&
+        city.blocks.material?.isMeshStandardMaterial) {
+      const mesh = city.blocks;
+      const clone = mesh.material.clone();
+      this._swapped.push({ mesh, original: mesh.material, clone });
+      mesh.material = clone;
+      this.applyWindowLights(clone, { floorHeight: 3.6, windowWidth: 3.2, brightness: 4.2 });
+      n = 1;
+    }
+    return n;
   }
 
-  /** Shopfront neon at street level. Real signs should come from the City agent. */
+  /**
+   * Shopfront and sign spill.
+   *
+   * Nobody else publishes sign data, and an unlit shopfront is the difference
+   * between a night street and a night car park. Signs sit on the building line,
+   * throw a saturated pool onto the pavement, and read as a bloom source.
+   */
   _buildShopfronts(ctx) {
     const city = ctx.get('city');
-    if (city?.roads) return;                    // real content exists; not our job
+    const R = city?.roads;
+    if (R?.edges?.length && R.sample) return this._signsFromRoads(ctx, city, R);
+    return this._signsPlaceholder(ctx, city);
+  }
+
+  _signsFromRoads(ctx, city, R) {
+    const COMMERCIAL = new Set(['financial', 'backBay', 'northEnd', 'southEnd', 'seaport', 'fenway']);
+    let seed = 90210;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    let n = 0;
+    for (const e of R.edges) {
+      if (n > 900) break;
+      if (e.type === 'highway') continue;
+      const halfW = (e.width || (e.lanes || 2) * 3.5) * 0.5;
+      // Step along the edge in world metres; edges vary wildly in length.
+      const a = R.sample(e.id, 0), b = R.sample(e.id, 1);
+      if (!a || !b) continue;
+      const len = Math.hypot(b.x - a.x, b.z - a.z);
+      if (len < 25) continue;
+      const steps = Math.max(1, Math.round(len / 38));
+      for (let i = 0; i < steps && n < 900; i++) {
+        const t = (i + 0.5) / steps;
+        const s0 = R.sample(e.id, t);
+        const s1 = R.sample(e.id, Math.min(1, t + 0.02));
+        if (!s0 || !s1) continue;
+        let tx = s1.x - s0.x, tz = s1.z - s0.z;
+        const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+        const side = rnd() < 0.5 ? 1 : -1;
+        const off = halfW + 3.4;
+        const x = s0.x + -tz * off * side;
+        const z = s0.z + tx * off * side;
+        const dist = city.districtAt ? city.districtAt(x, z) : 'financial';
+        if (!COMMERCIAL.has(dist)) continue;
+        if (rnd() > (dist === 'financial' || dist === 'northEnd' ? 0.55 : 0.34)) continue;
+        const g = city.groundHeight ? city.groundHeight(x, z) : 0;
+        this.manager.register(null, {
+          type: 'sign',
+          position: [x, g + 3.3 + rnd() * 1.9, z],
+          groundY: g,
+          color: NEON[(rnd() * NEON.length) | 0],
+          range: 14, intensity: 22,
+          poolRadius: 4.6, haloSize: 0.7 + rnd() * 0.55,
+        });
+        n++;
+      }
+    }
+    return n;
+  }
+
+  /** Placeholder-city fallback: neon on the block faces so night is testable. */
+  _signsPlaceholder(ctx, city) {
     const PITCH = 90, HALF_BLOCK = 26, SPAN = 560;
     let seed = 1337;
     const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    let n = 0;
     for (let bx = -6; bx <= 6; bx++) {
       for (let bz = -6; bz <= 6; bz++) {
         const cx = bx * PITCH, cz = bz * PITCH;
         if (Math.abs(cx) > SPAN || Math.abs(cz) > SPAN) continue;
-        if (Math.abs(bx) < 2 && Math.abs(bz) < 2) continue;   // no block there
+        if (Math.abs(bx) < 2 && Math.abs(bz) < 2) continue;
         for (let f = 0; f < 4; f++) {
           if (rnd() > 0.55) continue;
           const ang = f * Math.PI * 0.5;
@@ -327,19 +426,20 @@ export default class Lighting {
           const t = (rnd() - 0.5) * HALF_BLOCK * 1.5;
           const x = cx + nx * (HALF_BLOCK + 0.6) - nz * t;
           const z = cz + nz * (HALF_BLOCK + 0.6) + nx * t;
-          const col = NEON[(rnd() * NEON.length) | 0];
           const g = city?.groundHeight ? city.groundHeight(x, z) : 0;
           this.manager.register(null, {
             type: 'sign',
             position: [x + nx * 0.9, g + 3.4 + rnd() * 1.6, z + nz * 0.9],
             groundY: g,
-            color: col,
-            range: 13, intensity: 16,
+            color: NEON[(rnd() * NEON.length) | 0],
+            range: 13, intensity: 20,
             poolRadius: 4.4, haloSize: 0.75 + rnd() * 0.5,
           });
+          n++;
         }
       }
     }
+    return n;
   }
 
   /** Dev helper: drop N moving headlight rigs to sanity-check the vehicle path. */
@@ -413,7 +513,10 @@ export default class Lighting {
     this.skyColor.copy(SKY_DAY).lerp(SKY_DUSK, dusk * 0.85).lerp(SKY_NIGHT, this.night);
     _c2.copy(GND_DAY).lerp(GND_DUSK, dusk * 0.8).lerp(GND_NIGHT, this.night);
     // Night floor: moonlight plus the city's own glow bouncing off the air.
-    this.skyIntensity = SKY_PEAK * skyCurve * w.sky + this.night * 0.055;
+    // Night floor. Physically a moonless city night is ~5 orders below noon; every
+    // game compresses that to about 1.5 so the player can see. Skyglow off low cloud
+    // is the dominant term and it is warm, not blue, which is why GND_NIGHT is amber.
+    this.skyIntensity = SKY_PEAK * skyCurve * w.sky + this.night * 0.22;
     this.hemi.color.copy(this.skyColor);
     this.hemi.groundColor.copy(_c2);
     this.hemi.intensity = this.skyIntensity;
@@ -489,14 +592,24 @@ export default class Lighting {
   /* ------------------------------------------------------------------ misc -- */
 
   debug() {
+    const P = this.probes;
     return {
       tod: +this.ctx.time.timeOfDay.toFixed(2),
       sun: +this.sunIntensity.toFixed(3),
       sky: +this.skyIntensity.toFixed(3),
+      env: +(this.ctx.scene.environmentIntensity ?? 1).toFixed(3),
       night: +this.night.toFixed(2),
       alt: +(Math.asin(THREE.MathUtils.clamp(this.toSun.y, -1, 1)) * 57.3).toFixed(1),
       csm: this.shadows.debugInfo(),
       lights: this.manager.stats(),
+      probes: {
+        on: +bostonUniforms.bostonProbeMix.value,
+        enabled: P.enabled, solved: !!P._solvedOnce,
+        grid: P.enabled ? [P.gx, P.gy, P.gz] : null,
+        skyOcc: bostonUniforms.bostonSkyOcc.value,
+        iblOcc: bostonUniforms.bostonIblOcc.value,
+        vis: P.enabled ? P.sampleVisibility(this.ctx.camera.position) : null,
+      },
     };
   }
 

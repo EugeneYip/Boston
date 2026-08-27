@@ -23,7 +23,11 @@ const N = Math.round(SPAN / RES) + 1;
 const IDS = ['financial', 'backBay', 'beaconHill', 'northEnd', 'fenway', 'seaport',
              'southEnd', 'charlestown', 'cambridge', 'park', 'water'];
 
-const rnd = (s) => { const x = Math.sin(s * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const rnd = (s) => {
+  let h = (s * 374761393) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
 
 function toWorld(ring) { return ring.map(([la, lo]) => geo(la, lo)); }
 

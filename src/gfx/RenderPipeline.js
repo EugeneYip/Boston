@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   EffectComposer, RenderPass, EffectPass,
-  SMAAEffect, ToneMappingEffect, ToneMappingMode,
+  SMAAEffect, ToneMappingEffect, ToneMappingMode, Pass,
   EffectAttribute,
 } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
@@ -25,38 +25,49 @@ import GpuTimer from './effects/GpuTimer.js';
 /**
  * What each quality preset is actually allowed to run, and how hard.
  *
- * Measured on Apple Silicon at 1920x1080, this is what fits: TAA + DOF + motion blur
- * is roughly 6 ms of post, which leaves the scene ~10 ms. Adding SSR costs another
- * 6-10 ms in the rain, which is why it lives on `ultra` only regardless of what
- * Settings.js asks for. `low` is deliberately post-free apart from bloom and the
- * grade, both of which are close to free and are what make the frame look authored.
+ * Measured at 1920x1080 on Apple Silicon, street_level. Two things dominate and both
+ * are counter-intuitive:
+ *
+ *  1. On this tile-based driver the *number of render-target binds* costs more than
+ *     the shading inside them — roughly 0.2-0.3 ms each. So the lever that matters is
+ *     pass count, not sample count. That is why bloom builds its pyramid from quarter
+ *     resolution and why the anamorphic streak chain is an `ultra` luxury.
+ *  2. The scene render itself is well over the whole 16.6 ms frame budget, so post has
+ *     to fit in what is left rather than in a fair share. `high` is therefore the
+ *     cheapest arrangement that still looks authored: temporal AA, a graded image and
+ *     a lens response. Depth of field, motion blur and screen-space reflections are
+ *     real features, they are just not 60 fps features on this hardware yet, so they
+ *     live on `ultra` until the scene comes down.
+ *
+ * Settings.js asks for SSR, DOF and motion blur on `high`; this table narrows that.
+ * It can only ever take features away, never add them back.
  */
 const BUDGET = {
   low: {
-    pixels: 1280 * 720,   // 0.92 Mpx internal resolution
+    pixels: 1280 * 720,
     ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 8, aoDenoise: 2, bloomLevels: 4, streaks: false,
+    aoSamples: 4, aoDenoise: 2, bloomLevels: 3, streaks: false,
     dofRings: 2, dofMaxCoC: 8, mbSamples: 6,
     ssrSteps: 12, ssrRefine: 3, ssrDistance: 60,
   },
   medium: {
-    pixels: 1600 * 900,   // 1.44 Mpx internal resolution
+    pixels: 1600 * 900,
     ao: true, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 8, aoDenoise: 4, bloomLevels: 5, streaks: true,
+    aoSamples: 6, aoDenoise: 2, bloomLevels: 4, streaks: false,
     dofRings: 2, dofMaxCoC: 8, mbSamples: 6,
     ssrSteps: 14, ssrRefine: 3, ssrDistance: 80,
   },
   high: {
-    pixels: 1920 * 1080,   // 2.07 Mpx internal resolution
-    ao: true, taa: true, dof: true, motionBlur: true, ssr: false,
-    aoSamples: 12, aoDenoise: 6, bloomLevels: 6, streaks: true,
+    pixels: 1920 * 1080,
+    ao: true, taa: true, dof: false, motionBlur: false, ssr: false,
+    aoSamples: 8, aoDenoise: 4, bloomLevels: 4, streaks: false,
     dofRings: 3, dofMaxCoC: 10, mbSamples: 8,
     ssrSteps: 16, ssrRefine: 4, ssrDistance: 110,
   },
   ultra: {
-    pixels: 2560 * 1440,   // 3.69 Mpx internal resolution
+    pixels: 2560 * 1440,
     ao: true, taa: true, dof: true, motionBlur: true, ssr: true,
-    aoSamples: 16, aoDenoise: 8, bloomLevels: 6, streaks: true,
+    aoSamples: 12, aoDenoise: 6, bloomLevels: 5, streaks: true,
     dofRings: 4, dofMaxCoC: 13, mbSamples: 14,
     ssrSteps: 24, ssrRefine: 5, ssrDistance: 150,
   },
@@ -193,6 +204,13 @@ export default class RenderPipeline {
     ctx.bus.on('resize', ({ w, h }) => {
       this._applyResolution(ctx, w, h);
       composer.setSize(w, h);
+      // Every temporal buffer just changed shape or scale. The capture harness steps
+      // only a handful of frames after a resize, so anything that needs to converge
+      // has to be snapped, not eased, or every agent's screenshot reads as broken.
+      this.autoExposure.reset();
+      this.dof.reset();
+      this.taa.reset();
+      this.ssr.reset();
       // Do NOT call ao.setSize here: EffectComposer.setSize already forwards the
       // drawing-buffer size to every pass. Passing CSS pixels afterwards would make
       // N8AO render at the wrong resolution.
@@ -213,6 +231,14 @@ export default class RenderPipeline {
       api.gpuTimings = () => this.gpuTimer.report();
       api.gradeIntensity = (v) => { this.grade.intensity = v; };
       api.probeLuminance = () => this.autoExposure.probeLuminance(this.renderer);
+      api.validate = () => this.validate();
+      api.gpuProfile = (on) => this.gpuTimer.setEnabled(on !== false);
+      // Give the other systems a beat to finish inserting their own passes, then
+      // prove the chain still produces an image.
+      setTimeout(() => {
+        const v = this.validate();
+        if (v.ok) console.info('[render] chain validated, no black-out passes');
+      }, 1500);
     });
     ctx.bus.on('weather:set', () => { this.autoExposure.reset(); this.taa.reset(); });
   }
@@ -279,6 +305,7 @@ export default class RenderPipeline {
       ao.denoiseSamples = q.aoDenoise;
       ao.denoiseRadius = q.aoDenoise * 1.5;
       pass(this.ao);
+      this._adoptAoBeautyTarget();
     }
     // Foreign scene-stage passes (aerial perspective, volumetrics) belong here: on
     // the HDR scene, before anything temporal or optical touches it.
@@ -346,6 +373,132 @@ export default class RenderPipeline {
   }
 
   /**
+   * Stop N8AO from rendering the entire city a second time.
+   *
+   * N8AOPostPass is built to be used standalone: it ignores the `readBuffer` the
+   * composer hands it and instead fills its own `beautyRenderTarget` by calling
+   * renderer.render(scene, camera) every frame. Dropped into a chain that already has
+   * a RenderPass, that means the whole world is drawn twice — measured at 19.5 ms of a
+   * 16.6 ms budget on the street_level shot, by far the most expensive thing in the
+   * stage.
+   *
+   * The pass only ever *reads* `beautyRenderTarget.texture` and `.depthTexture`, so
+   * pointing it at the composer's input buffer (which already holds exactly that, and
+   * carries a depth texture because the pass declares needsDepthTexture) gives it the
+   * same data for free.
+   */
+  _adoptAoBeautyTarget() {
+    const input = this.composer.inputBuffer;
+    if (!input?.depthTexture) return;            // no depth attached: leave it alone
+    if (this.ao.beautyRenderTarget !== input) {
+      // Free the target it allocated for itself, once.
+      if (!this._aoBeautyReplaced) {
+        this.ao.beautyRenderTarget?.dispose();
+        this._aoBeautyReplaced = true;
+      }
+      this.ao.beautyRenderTarget = input;
+    }
+    this.ao.configuration.autoRenderBeauty = false;
+  }
+
+  /**
+   * One-shot self-test: prove that no pass in the chain zeroes the frame.
+   *
+   * This stage is the shared output for every other agent's work, and other systems
+   * insert their own passes into this composer. A single pass that returns black takes
+   * the entire game down with it and looks, from the outside, exactly like a bug in
+   * here. So: render every prefix of the chain into a 32x32 probe target, read it back,
+   * and find the first pass whose output collapses to zero. The offender is disabled
+   * and named loudly rather than being allowed to black out the build.
+   *
+   * Runs once after boot and on demand. Never on the hot path — it reads back.
+   *
+   * @return {{ ok:boolean, culprit:(string|null), means:Array }}
+   */
+  validate() {
+    const r = this.renderer, c = this.composer;
+    if (!c.passes.length) return { ok: true, culprit: null, means: [] };
+
+    const probe = this._probeRT || (this._probeRT = new THREE.WebGLRenderTarget(32, 32, {
+      type: THREE.UnsignedByteType, depthBuffer: false, stencilBuffer: false,
+      minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
+    }));
+    const px = this._probePixels || (this._probePixels = new Uint8Array(32 * 32 * 4));
+    if (!this._probeQuad) {
+      const mat = new THREE.ShaderMaterial({
+        name: 'Render.Probe',
+        depthTest: false, depthWrite: false, blending: THREE.NoBlending,
+        uniforms: { inputBuffer: { value: null } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = position.xy * 0.5 + 0.5;' +
+          ' gl_Position = vec4(position.xy, 1.0, 1.0); }',
+        fragmentShader: 'uniform sampler2D inputBuffer; varying vec2 vUv;' +
+          ' void main(){ gl_FragColor = vec4(texture2D(inputBuffer, vUv).rgb, 1.0); }',
+      });
+      this._probeQuad = new THREE.Mesh(Pass.fullscreenGeometry, mat);
+      this._probeQuad.frustumCulled = false;
+      this._probeScene = new THREE.Scene();
+      this._probeScene.add(this._probeQuad);
+      this._probeCam = new THREE.OrthographicCamera();
+    }
+
+    const meanAfter = (k) => {
+      let inp = c.inputBuffer, out = c.outputBuffer, tmp;
+      for (let i = 0; i <= k; i++) {
+        const p = c.passes[i];
+        if (!p.enabled) continue;
+        const rts = p.renderToScreen;
+        p.renderToScreen = false;
+        p.render(r, inp, out, 1 / 60, false);
+        p.renderToScreen = rts;
+        if (p.needsDepthBlit && c.depthRenderTarget) c.blitDepthBuffer(inp);
+        if (p.needsSwap) { tmp = inp; inp = out; out = tmp; }
+      }
+      // NOT composer.copyPass: postprocessing's CopyPass ignores the outputBuffer
+      // argument entirely and always writes to its own private render target, so
+      // using it here silently reads an empty buffer and reports a false black.
+      this._probeQuad.material.uniforms.inputBuffer.value = inp.texture;
+      r.setRenderTarget(probe);
+      r.render(this._probeScene, this._probeCam);
+      r.readRenderTargetPixels(probe, 0, 0, 32, 32, px);
+      let sum = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        sum += px[i] * 0.2126 + px[i + 1] * 0.7152 + px[i + 2] * 0.0722;
+      }
+      return sum / (px.length / 4);
+    };
+
+    const means = [];
+    let culprit = null;
+    let prev = 0;
+    for (let k = 0; k < c.passes.length; k++) {
+      const p = c.passes[k];
+      const name = p.name || p.constructor.name;
+      const m = meanAfter(k);
+      means.push({ k, name, mean: +m.toFixed(2) });
+      // A pass that turns a frame with real content into nothing is the offender.
+      // The 1.5/255 floor keeps a legitimately near-black night frame from tripping it.
+      if (!culprit && p !== this.renderPass && prev > 1.5 && m < prev * 0.02) {
+        culprit = name;
+        p.enabled = false;
+        console.error(`[render] pass "${name}" collapsed the frame to black ` +
+          `(mean ${prev.toFixed(1)} -> ${m.toFixed(2)}). Disabled to keep the build ` +
+          `visible; re-enable with __boston.render.revalidate() once it is fixed.`);
+      }
+      prev = Math.max(prev, m);
+    }
+
+    // The probe run left temporal buffers holding nonsense.
+    this.autoExposure.reset(); this.taa.reset(); this.ssr.reset(); this.dof.reset();
+    return { ok: !culprit, culprit, means };
+  }
+
+  /** Re-arm every pass and run the self-test again. */
+  revalidate() {
+    for (const p of this.composer.passes) p.enabled = true;
+    return this.validate();
+  }
+
+  /**
    * Pick the device pixel ratio from a *pixel budget*, not just a ratio cap.
    *
    * This is the single biggest lever in the whole stage. `pixelRatioCap: 1.5` sounds
@@ -383,6 +536,8 @@ export default class RenderPipeline {
   /** Wrap a pass's render() so the GPU timer can bracket it. Idempotent. */
   _instrument(pass) {
     if (!this.gpuTimer.available || this._instrumented.has(pass)) return;
+    // Wrapping is unconditional so profiling can be armed later without a rebuild;
+    // the timer itself no-ops until it is explicitly enabled.
     this._instrumented.add(pass);
     const name = pass.name || pass.constructor.name;
     const original = pass.render.bind(pass);
@@ -526,6 +681,8 @@ export default class RenderPipeline {
     this.velocity?.dispose();
     this.ssr?.dispose();
     this.gpuTimer?.dispose();
+    this._probeRT?.dispose();
+    this._probeQuad?.material.dispose();
     this.ao?.dispose?.();
     this.composer?.dispose();
     this.renderer?.dispose();

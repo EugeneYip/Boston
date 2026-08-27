@@ -15,6 +15,13 @@ export default class GpuTimer {
     this.gl = renderer.getContext();
     this.ext = this.gl.getExtension('EXT_disjoint_timer_query_webgl2') || null;
     this.available = !!this.ext;
+    /**
+     * Off by default. Timer queries are not free: on a tile-based GPU each
+     * begin/end pair can act as a barrier and serialise passes that would otherwise
+     * overlap, which turns a profiling tool into a performance bug. Turn it on only
+     * while measuring.
+     */
+    this.enabled = false;
     /** name -> smoothed milliseconds */
     this.timings = new Map();
     this._pending = [];      // { name, query }
@@ -30,14 +37,14 @@ export default class GpuTimer {
    * @param {string[]} names - the passes in this frame, in order
    */
   beginFrame(names) {
-    if (!this.available) return;
+    if (!this.available || !this.enabled) return;
     this._names = names;
     this._collect();
   }
 
   /** @param {string} name @return {boolean} whether this pass is being timed */
   begin(name) {
-    if (!this.available || this._active) return false;
+    if (!this.available || !this.enabled || this._active) return false;
     if (this._names.length === 0) return false;
     if (this._names[this._cursor % this._names.length] !== name) return false;
     const q = this.gl.createQuery();
@@ -69,6 +76,23 @@ export default class GpuTimer {
       gl.deleteQuery(p.query);
       this._pending.splice(i, 1);
     }
+  }
+
+  /**
+   * Arm or disarm profiling. Clears stale results when turning on.
+   * @param {boolean} v
+   */
+  setEnabled(v) {
+    this.enabled = !!v && this.available;
+    if (!this.enabled) {
+      for (const p of this._pending) this.gl.deleteQuery(p.query);
+      this._pending.length = 0;
+      this._active = null;
+    } else {
+      this.timings.clear();
+      this._cursor = 0;
+    }
+    return this.enabled;
   }
 
   /** @return {Object<string, number>} milliseconds per pass */

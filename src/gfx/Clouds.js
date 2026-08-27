@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { QUAD_VERT } from '../shaders/sky/luts.glsl.js';
-import { BASE_NOISE_FRAG, DETAIL_NOISE_FRAG, WEATHER_FRAG } from '../shaders/sky/cloudNoise.glsl.js';
+import { BASE_NOISE_FRAG, DETAIL_NOISE_FRAG, WEATHER_FRAG, SHAPE_STATS_FRAG } from '../shaders/sky/cloudNoise.glsl.js';
 import { CLOUD_FRAG } from '../shaders/sky/clouds.glsl.js';
 
 const BASE_RES = 128;      // 128^3 shape volume, ~8 MB
@@ -9,12 +9,18 @@ const WEATHER_RES = 512;
 const BASE_TILE = 5120;    // metres per wrap of the shape volume
 const DETAIL_TILE = 320;   // metres per wrap of the erosion volume (5120 / 16)
 
+// `interval` = frames between re-marches. The composite reprojects the stale
+// buffer through the view-projection it was marched with, so the only cost of
+// amortising is a few frames of latency in the cloud shapes themselves.
 const QUALITY = {
-  low:    { scale: 0.14, steps: 16, light: 3, march: 11000 },
-  medium: { scale: 0.18, steps: 26, light: 4, march: 16000 },
-  high:   { scale: 0.22, steps: 36, light: 5, march: 22000 },
-  ultra:  { scale: 0.30, steps: 52, light: 6, march: 30000 },
+  low:    { scale: 0.11, steps: 14, light: 3, march: 11000, interval: 4 },
+  medium: { scale: 0.14, steps: 20, light: 4, march: 16000, interval: 3 },
+  high:   { scale: 0.17, steps: 28, light: 5, march: 22000, interval: 2 },
+  ultra:  { scale: 0.24, steps: 40, light: 6, march: 30000, interval: 2 },
 };
+
+/** Cloud buffer frustum widening, for reprojection headroom on fast turns. */
+const RAY_SCALE = 1.18;
 
 /**
  * Raymarched volumetric clouds.
@@ -42,6 +48,9 @@ export default class Clouds {
     this._weatherScroll = new THREE.Vector2();
     this._windVec = new THREE.Vector3(4, 0, -2);
     this._prevVP = new THREE.Matrix4();
+    this.viewProj = new THREE.Matrix4();
+    this.rayScale = RAY_SCALE;
+    this._sinceMarch = 1e9;
     this._flip = false;
     this._hasHistory = 0;
     this.skip = false;          // profiling hook
@@ -62,8 +71,9 @@ export default class Clouds {
       uDensity:        { value: 1.0 },
       uExtinction:     { value: 0.018 },
       uDetailStrength: { value: 0.35 },
-      uShapeLo:        { value: 0.16 },
+      uShapeLo:        { value: 0.16 },   // measured at init by _calibrate()
       uShapeHi:        { value: 0.86 },
+      uShapeSpan:      { value: 0.18 },
       uCloudBottom:    { value: 1500 },
       uCloudTop:       { value: 3600 },
       uAnvil:          { value: 0.0 },
@@ -105,6 +115,7 @@ export default class Clouds {
     this._bakeVolume(renderer, mDetail, this.detailRT, DETAIL_RES);
     sky._blit(renderer, mWeather, this.weatherRT);
     mBase.dispose(); mDetail.dispose(); mWeather.dispose();
+    this._calibrate(renderer, sky);
 
     // ---- raymarch material ----------------------------------------------
     this.uniforms = {
@@ -125,10 +136,10 @@ export default class Clouds {
       uInvView:     u.uInvView,
       uPrevViewProj: { value: this._prevVP },
       uResolution:  { value: new THREE.Vector2(1, 1) },
-      uDepthTexel:  { value: new THREE.Vector2(0.001, 0.001) },
+      uRayScale:    { value: RAY_SCALE },
       uFrame:       u.uFrame,
       uHasHistory:  { value: 0 },
-      uBlend:       { value: 0.28 },
+      uBlend:       { value: 0.45 },
       uTurbidity:   u.uTurbidity,
       uMieG:        u.uMieG,
       uLightning:   u.uLightning,
@@ -166,6 +177,7 @@ export default class Clouds {
     this.uniforms.uSteps.value = q.steps;
     this.uniforms.uLightSteps.value = q.light;
     this.uniforms.uMaxMarch.value = q.march;
+    this.interval = q.interval;
     const w = ctx.renderer.domElement.width, h = ctx.renderer.domElement.height;
     this.setSize(w, h);
   }
@@ -184,9 +196,8 @@ export default class Clouds {
     this.rtA = new THREE.WebGLRenderTarget(cw, ch, opts);
     this.rtB = new THREE.WebGLRenderTarget(cw, ch, opts);
     this.uniforms.uResolution.value.set(cw, ch);
-    // Half a low-res texel, expressed in the full-res depth texture's uv.
-    this.uniforms.uDepthTexel.value.set(0.5 / cw, 0.5 / ch);
     this._hasHistory = 0;
+    this._sinceMarch = 1e9;
   }
 
   update(dt, ctx) {
@@ -206,19 +217,68 @@ export default class Clouds {
 
   lateUpdate() {}
 
-  /** Called from the atmosphere pass, inside the composer's render. */
+  /**
+   * Called from the atmosphere pass, inside the composer's render.
+   * Re-marches at most every `interval` frames; in between, the composite
+   * keeps sampling the last buffer through `viewProj`.
+   */
   render(renderer, depthTexture) {
     if (!this.rtA || this.skip) return;
+    if (++this._sinceMarch < this.interval) return;
+    this._sinceMarch = 0;
+
     const src = this._flip ? this.rtB : this.rtA;
     const dst = this._flip ? this.rtA : this.rtB;
     this.uniforms.uDepth.value = depthTexture;
     this.uniforms.uPrevCloud.value = src.texture;
     this.uniforms.uHasHistory.value = this._hasHistory;
+    this._prevVP.copy(this.viewProj);
+    const cam = this.ctx.camera;
+    this.viewProj.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+    if (!this._hasHistory) this._prevVP.copy(this.viewProj);
     this.sky._blit(renderer, this.material, dst);
     this._flip = !this._flip;
     this._hasHistory = 1;
-    const cam = this.ctx.camera;
-    this._prevVP.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+  }
+
+  /**
+   * Measure the baked volume instead of guessing at it.
+   *
+   * The coverage parameter works by thresholding a noise field, so the mapping
+   * from "coverage 0.4" to "how much sky is cloud" depends entirely on that
+   * field's distribution — and an FBM's distribution is narrow and easy to
+   * miss by enough that the sky comes out either empty or solid. Sampling the
+   * volume once at init and taking real percentiles makes coverage mean the
+   * same thing no matter how the noise bakes out.
+   */
+  _calibrate(renderer, sky) {
+    const N = 64;
+    const rt = new THREE.WebGLRenderTarget(N, N, {
+      format: THREE.RGBAFormat, type: THREE.UnsignedByteType,
+      minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter,
+      depthBuffer: false, stencilBuffer: false, generateMipmaps: false,
+    });
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: QUAD_VERT, fragmentShader: SHAPE_STATS_FRAG,
+      uniforms: { uBaseNoise: { value: this.baseRT.texture } },
+      depthTest: false, depthWrite: false,
+    });
+    sky._blit(renderer, mat, rt);
+
+    const buf = new Uint8Array(N * N * 4);
+    renderer.readRenderTargetPixels(rt, 0, 0, N, N, buf);
+    const v = new Float32Array(N * N);
+    for (let i = 0; i < N * N; i++) v[i] = buf[i * 4] / 255;
+    v.sort();
+    const pct = (q) => v[Math.min(v.length - 1, Math.max(0, Math.round(q * (v.length - 1))))];
+    const lo = pct(0.02), hi = pct(0.995);
+    mat.dispose(); rt.dispose();
+
+    if (!(hi > lo + 0.02)) return;          // degenerate bake: keep the defaults
+    this.p.uShapeLo.value = lo;
+    this.p.uShapeHi.value = hi;
+    this.p.uShapeSpan.value = (hi - lo) * 0.45;
+    this.shapeStats = { lo: +lo.toFixed(4), hi: +hi.toFixed(4), median: +pct(0.5).toFixed(4) };
   }
 
   _bakeVolume(renderer, material, rt, depth) {

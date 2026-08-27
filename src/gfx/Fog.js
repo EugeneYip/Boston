@@ -5,9 +5,9 @@ import { VOLUME_FRAG, COMPOSITE_FRAG } from '../shaders/sky/atmospherePass.glsl.
 
 const VOL_QUALITY = {
   low:    { scale: 0.0,  steps: 0 },
-  medium: { scale: 0.18, steps: 12 },
-  high:   { scale: 0.22, steps: 16 },
-  ultra:  { scale: 0.30, steps: 24 },
+  medium: { scale: 0.14, steps: 10 },
+  high:   { scale: 0.17, steps: 14 },
+  ultra:  { scale: 0.24, steps: 20 },
 };
 
 /**
@@ -89,6 +89,8 @@ export default class AtmosphereFog {
       inputBuffer:  { value: null },
       uDepth:       { value: null },
       uCloud:       { value: null },
+      uCloudViewProj: { value: sky.clouds.viewProj },
+      uCloudRayScale: { value: sky.clouds.rayScale },
       uVolume:      { value: this._dummyShadow },
       uSkyView:     u.uSkyView,
       uSunDir:      u.uSunDir,

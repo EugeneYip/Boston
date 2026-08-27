@@ -162,7 +162,7 @@ export default class Terrain {
     // stamp has to reach a full cell past the kerb: every cell that a point on
     // the carriageway can bilinearly sample from must be clamped, or the ground
     // interpolates straight back up through the asphalt.
-    const REACH = CELL * 0.85;
+    const REACH = CELL * 1.1;
     for (const e of net.edges) {
       if (e.bridged) continue;
       const zA = e.halfRoad + 0.25 + REACH;               // never above the gutter
@@ -189,7 +189,7 @@ export default class Terrain {
             const k = j * NX + i2;
             // Lowest wins, so two streets crossing never fight over a cell.
             let cap;
-            if (d <= zA) cap = y - 0.34;
+            if (d <= zA) cap = y - 0.40;
             else if (d <= zB) cap = y + 0.02;
             else cap = y + 0.02 + (d - zB) * (1 / BLEND) * Math.max(0, H[k] - y);
             if (cap < H[k]) H[k] = cap;
@@ -289,8 +289,12 @@ export default class Terrain {
 
   /** Build the nested LOD rings and add them to the scene. */
   build(scene, material) {
-    const core = this._patch(1500, 10, 0);
-    const mid = this._patch(3200, 40, 1500);
+    // 14 m in the core: the road stamp reaches a full 11 m past every kerb, so
+    // the mesh cannot interpolate back up through the carriageway at this
+    // spacing, and the ground here is almost entirely hidden under road,
+    // pavement and buildings anyway.
+    const core = this._patch(1500, 14, 0);
+    const mid = this._patch(3200, 44, 1500);
     const far = this._patch(11000, 550, 3200);
     for (const g of [core, mid, far]) {
       const m = new THREE.Mesh(g, material);
@@ -300,7 +304,8 @@ export default class Terrain {
       scene.add(m);
       this.meshes.push(m);
     }
-    this.meshes[0].castShadow = true;   // only the near ring casts; hills matter
+    // Terrain does not cast: it would re-render the whole core patch into the
+    // shadow map for silhouettes that buildings already provide.
     return this.meshes;
   }
 

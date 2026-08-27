@@ -17,6 +17,13 @@ import { WATER } from '../data/boston-geo.js';
 
 const MAX_EDGE = 34;        // triangle subdivision target, metres
 
+/** Fast deterministic hash — the ripple bake is a quarter-million pixels. */
+const rnd = (s) => {
+  let h = (s * 374761393) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+
 /** Seamless ripple normal map: three octaves of rotated, scrolling wavelets. */
 function rippleNormal(size = 512) {
   const cv = document.createElement('canvas');
@@ -204,8 +211,9 @@ export default class Water {
             (nA.x * 1.0 + nB.x * 0.72 * fine + nC.x * 0.45 * fine) * uChop,
             2.4,
             (nA.y * 1.0 + nB.y * 0.72 * fine + nC.y * 0.45 * fine) * uChop));
+          // NB: three declares geometryNormal itself in lights_fragment_begin;
+          // only normal and nonPerturbedNormal belong to this chunk.
           vec3 normal = normalize(nrm);
-          vec3 geometryNormal = normal;
           vec3 nonPerturbedNormal = normal;`)
         .replace('#include <roughnessmap_fragment>', `
           float dist2 = length(vWPos - cameraPosition);

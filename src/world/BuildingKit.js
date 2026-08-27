@@ -409,73 +409,103 @@ function paintCopper(a, h, ro, seedN) {
 
 /**
  * Baked facade strip for the distant LOD. One vertical repeat is exactly one
- * storey, so the far skyline still has correct-scale window rows for ~2 triangles.
- * Alpha channel carries the window mask that lights up at night.
+ * storey, so the far skyline still has correct-scale window rows for two
+ * triangles a face.
+ *
+ * The alpha channel carries the window mask that lights up at night. It is
+ * written once at the end from the recorded window rectangles: painting with
+ * low-alpha fills onto an already-transparent canvas and reading it back gives
+ * garbage, because 2D canvases store premultiplied colour and un-premultiplying
+ * a 3%-alpha pixel reconstructs it as pure black or pure white.
  */
 function paintFacadeStrip(a, h, ro, kind, seedN) {
   const r = rng(seedN);
-  const wallCols = {
-    fac_brick: ['#8e4a38', '#6f3a2c'],
-    fac_brownstone: ['#7a5a41', '#5e4531'],
-    fac_stone: ['#b9b2a4', '#948d81'],
-    fac_glass: ['#2b3d4c', '#1d2b36'],
-    fac_metal: ['#8d939a', '#5f666d'],
+  const P = {
+    fac_brick:      { wall: '#8e4a38', dark: '#5e3226', trim: '#cfc7b6', bays: 3 },
+    fac_brownstone: { wall: '#7a5a41', dark: '#4d3827', trim: '#c8bda8', bays: 3 },
+    fac_stone:      { wall: '#b9b2a4', dark: '#7d766a', trim: '#d8d2c4', bays: 3 },
+    fac_glass:      { wall: '#33414e', dark: '#1d2b36', trim: '#4a545e', bays: 4 },
+    fac_metal:      { wall: '#8d939a', dark: '#5f666d', trim: '#a8aeb4', bays: 3 },
   }[kind];
-  a.fillStyle = wallCols[0]; a.fillRect(0, 0, SZ, SZ);
+  const win = [];                        // window rects -> alpha mask
+
+  a.fillStyle = P.wall; a.fillRect(0, 0, SZ, SZ);
   h.fillStyle = '#a0a0a0'; h.fillRect(0, 0, SZ, SZ);
   ro.fillStyle = kind === 'fac_glass' ? '#3a3a3a' : '#d0d0d0';
   ro.fillRect(0, 0, SZ, SZ);
-  // the tile is opaque wall by default -> alpha 1 everywhere, window mask via alpha 0
-  const img = a.getImageData(0, 0, SZ, SZ);
-  for (let i = 3; i < img.data.length; i += 4) img.data[i] = 0;
-  a.putImageData(img, 0, 0);
 
   if (kind === 'fac_glass' || kind === 'fac_metal') {
-    const bays = kind === 'fac_glass' ? 4 : 3;
-    const bw = SZ / bays;
+    const bays = P.bays, bw = SZ / bays;
     // spandrel band at the floor line
-    a.fillStyle = wallCols[1]; a.fillRect(0, SZ * 0.72, SZ, SZ * 0.28);
+    a.fillStyle = P.dark; a.fillRect(0, SZ * 0.70, SZ, SZ * 0.30);
+    h.fillStyle = '#6c6c6c'; h.fillRect(0, SZ * 0.70, SZ, SZ * 0.30);
     for (let i = 0; i < bays; i++) {
-      a.fillStyle = 'rgba(255,255,255,1)';    // alpha 255 = lit at night
-      a.globalAlpha = 1;
-      const gx = i * bw + 3, gw = bw - 6;
-      const grd = a.createLinearGradient(gx, 0, gx, SZ * 0.72);
-      grd.addColorStop(0, 'rgba(120,150,175,1)');
-      grd.addColorStop(0.55, 'rgba(46,66,84,1)');
-      grd.addColorStop(1, 'rgba(30,44,58,1)');
-      a.fillStyle = grd;
-      a.fillRect(gx, SZ * 0.06, gw, SZ * 0.62);
-      // mullion
-      a.fillStyle = 'rgba(38,42,46,1)'; a.fillRect(i * bw, 0, 3, SZ);
-      h.fillStyle = '#f0f0f0'; h.fillRect(i * bw, 0, 3, SZ);
-    }
-  } else {
-    const bays = 3;
-    const bw = SZ / bays;
-    for (let i = 0; i < bays; i++) {
-      const gx = i * bw + bw * 0.28, gw = bw * 0.44;
-      const gy = SZ * 0.16, gh = SZ * 0.50;
-      a.fillStyle = 'rgba(22,24,28,1)';
-      a.fillRect(gx - 3, gy - 3, gw + 6, gh + 6);   // reveal shadow
+      const gx = i * bw + 4, gw = bw - 8, gy = SZ * 0.07, gh = SZ * 0.60;
       const grd = a.createLinearGradient(gx, gy, gx, gy + gh);
-      grd.addColorStop(0, 'rgba(58,70,84,1)');
-      grd.addColorStop(1, 'rgba(26,32,40,1)');
+      const t = 0.82 + r() * 0.36;                 // per-bay tint variation
+      grd.addColorStop(0, `rgb(${(126 * t) | 0},${(158 * t) | 0},${(186 * t) | 0})`);
+      grd.addColorStop(0.5, `rgb(${(44 * t) | 0},${(64 * t) | 0},${(82 * t) | 0})`);
+      grd.addColorStop(1, `rgb(${(26 * t) | 0},${(38 * t) | 0},${(50 * t) | 0})`);
       a.fillStyle = grd; a.fillRect(gx, gy, gw, gh);
-      h.fillStyle = '#202020'; h.fillRect(gx - 3, gy - 3, gw + 6, gh + 6);
-      // sill + lintel
-      a.fillStyle = kind === 'fac_stone' ? '#c9c2b2' : '#cfc7b6';
-      a.globalAlpha = 1;
-      a.fillRect(gx - 6, gy + gh, gw + 12, 5);
-      a.fillRect(gx - 6, gy - 8, gw + 12, 5);
-      h.fillStyle = '#ffffff'; h.fillRect(gx - 6, gy + gh, gw + 12, 5);
+      h.fillStyle = '#4a4a4a'; h.fillRect(gx, gy, gw, gh);
+      ro.fillStyle = '#1c1c1c'; ro.fillRect(gx, gy, gw, gh);
+      win.push([gx, gy, gw, gh]);
+      // mullion
+      a.fillStyle = P.trim; a.fillRect(i * bw, 0, 3.5, SZ);
+      h.fillStyle = '#f0f0f0'; h.fillRect(i * bw, 0, 3.5, SZ);
     }
-    // cornice / floor band at the top of the storey
-    a.fillStyle = 'rgba(0,0,0,0.30)'; a.fillRect(0, SZ * 0.92, SZ, SZ * 0.08);
-    h.fillStyle = '#d8d8d8'; h.fillRect(0, SZ * 0.92, SZ, SZ * 0.08);
-    blotch(a, SZ, 8, 44, 0.14, r);
-    streaks(a, SZ, 5, 0.18, r);
+    a.fillStyle = P.trim; a.fillRect(0, SZ * 0.66, SZ, 3.5);
+    h.fillStyle = '#efefef'; h.fillRect(0, SZ * 0.66, SZ, 3.5);
+  } else {
+    const bays = P.bays, bw = SZ / bays;
+    for (let i = 0; i < bays; i++) {
+      const gx = i * bw + bw * 0.30, gw = bw * 0.40;
+      const gy = SZ * 0.17, gh = SZ * 0.48;
+      // deep reveal shadow, then the glass itself
+      a.fillStyle = '#15171b';
+      a.fillRect(gx - 4, gy - 4, gw + 8, gh + 8);
+      h.fillStyle = '#1a1a1a'; h.fillRect(gx - 4, gy - 4, gw + 8, gh + 8);
+      const grd = a.createLinearGradient(gx, gy, gx, gy + gh);
+      const t = 0.85 + r() * 0.32;
+      grd.addColorStop(0, `rgb(${(70 * t) | 0},${(84 * t) | 0},${(100 * t) | 0})`);
+      grd.addColorStop(1, `rgb(${(24 * t) | 0},${(30 * t) | 0},${(38 * t) | 0})`);
+      a.fillStyle = grd; a.fillRect(gx, gy, gw, gh);
+      ro.fillStyle = '#303030'; ro.fillRect(gx, gy, gw, gh);
+      win.push([gx, gy, gw, gh]);
+      // sash bar, then stone sill and lintel
+      a.fillStyle = '#2a2c30'; a.fillRect(gx, gy + gh * 0.5 - 1, gw, 2);
+      a.fillStyle = P.trim;
+      a.fillRect(gx - 8, gy + gh + 4, gw + 16, 6);
+      a.fillRect(gx - 8, gy - 11, gw + 16, 6);
+      h.fillStyle = '#ffffff';
+      h.fillRect(gx - 8, gy + gh + 4, gw + 16, 6);
+      h.fillRect(gx - 8, gy - 11, gw + 16, 6);
+    }
+    // storey band: cornice shadow above, string course below
+    a.fillStyle = 'rgba(0,0,0,0.34)'; a.fillRect(0, SZ * 0.90, SZ, SZ * 0.10);
+    h.fillStyle = '#d8d8d8'; h.fillRect(0, SZ * 0.90, SZ, SZ * 0.06);
+    a.fillStyle = P.trim; a.fillRect(0, SZ * 0.90, SZ, 4);
+    blotch(a, SZ, 10, 44, 0.16, r);
+    streaks(a, SZ, 6, 0.20, r);
   }
   grain(a, 0, 0, SZ, SZ, 0.07, 2200, r);
+  // The caller stamps these into the alpha channel after readback. Writing a
+  // zero alpha into the canvas first would destroy the colour: 2D canvases are
+  // premultiplied, so an alpha-0 pixel reads back as pure black.
+  return win;
+}
+
+/** Stamp window rectangles into the alpha channel of already-read RGBA data. */
+function stampWindowMask(data, rects) {
+  for (let i = 3; i < data.length; i += 4) data[i] = 0;
+  for (const [wx, wy, ww, wh] of rects) {
+    const x0 = Math.max(0, Math.round(wx)), x1 = Math.min(SZ, Math.round(wx + ww));
+    const y0 = Math.max(0, Math.round(wy)), y1 = Math.min(SZ, Math.round(wy + wh));
+    for (let y = y0; y < y1; y++) {
+      const row = y * SZ;
+      for (let x = x0; x < x1; x++) data[(row + x) * 4 + 3] = 255;
+    }
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -549,6 +579,7 @@ export function buildAtlas() {
     h.globalAlpha = 1; ro.globalAlpha = 1;
     seed += 7919;
     let bump = 2.6;
+    let winRects = null;
 
     switch (name) {
       case 'brick_red':     paintBrick(a, h, ro, [151, 78, 60], '#b0a496', seed, false); break;
@@ -592,13 +623,15 @@ export function buildAtlas() {
       case 'sign':          paintSign(a, h, ro, seed); bump = 1.4; break;
       case 'paint_green':   paintFlat(a, h, ro, '#1d4b32', 190, seed, { blotch: 14, blotchAmt: 0.20, streak: 6, grain: 0.08, hgrain: 0.06 }); break;
       default:
-        if (name.startsWith('fac_')) { paintFacadeStrip(a, h, ro, name, seed); bump = 2.0; }
-        else paintFlat(a, h, ro, '#808080', 200, seed, {});
+        if (name.startsWith('fac_')) {
+          winRects = paintFacadeStrip(a, h, ro, name, seed); bump = 2.0;
+        } else paintFlat(a, h, ro, '#808080', 200, seed, {});
     }
 
     const li = def.layer;
     const off = SZ * SZ * 4 * li;
     const ia = a.getImageData(0, 0, SZ, SZ);
+    if (winRects) stampWindowMask(ia.data, winRects);
     albedo.set(ia.data, off);
     const ih = h.getImageData(0, 0, SZ, SZ);
     heightToNormal(ih, normal, off, bump * 8);
@@ -827,15 +860,37 @@ totalEmissiveRadiance += bkTex.rgb * bkTex.a * uNight * uLampColor * 0.85;
  */
 function installPatch(m, mine) {
   let extra = null;
+  let inExtra = false;
+
+  // Idempotent per compiled shader. Every consumer of this material shares one
+  // shader object per program, and a chained patcher may legitimately invoke us
+  // more than once; injecting twice redefines `aTex`/`vLayer`/`vEmis`/`vWPosB`
+  // and the vertex shader fails to compile.
+  const base = function (sh, renderer) {
+    if (sh._bkFacadePatched) return;
+    sh._bkFacadePatched = true;
+    mine(sh, renderer);
+  };
+
+  // NOTE: this must be a STABLE function identity, not a fresh closure per get().
+  // The common chaining idiom is `const prev = m.onBeforeCompile; m.onBeforeCompile =
+  // (sh) => { prev(sh); ...mine... }`. If get() minted a new wrapper that closed over
+  // `extra`, then `prev` and `extra` would call each other forever — and the previous
+  // implementation swallowed the resulting RangeError, so instead of a stack trace we
+  // got a vertex shader with several hundred duplicate declarations.
+  const combined = function (sh, renderer) {
+    base(sh, renderer);
+    if (extra && !inExtra) {
+      inExtra = true;
+      try { extra.call(m, sh, renderer); }
+      finally { inExtra = false; }
+    }
+  };
+
   Object.defineProperty(m, 'onBeforeCompile', {
     configurable: true,
     enumerable: true,
-    get() {
-      return function (sh, renderer) {
-        mine(sh, renderer);
-        if (extra) { try { extra.call(m, sh, renderer); } catch (e) { void e; } }
-      };
-    },
+    get() { return combined; },
     set(fn) { extra = (typeof fn === 'function') ? fn : null; },
   });
 }

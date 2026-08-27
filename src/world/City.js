@@ -30,10 +30,14 @@ export default class City {
     const t0 = performance.now();
     const scene = ctx.scene;
     const materials = ctx.get('materials');
+    const T = {};
+    let tm = performance.now();
+    const mark = (k) => { T[k] = Math.round(performance.now() - tm); tm = performance.now(); };
 
     // --- ground ------------------------------------------------------------
     this.terrain = new Terrain();
     this.terrain.bake();
+    mark('terrain');
 
     // --- street graph ------------------------------------------------------
     // Built before the terrain mesh: the roads decide their own elevation
@@ -41,36 +45,47 @@ export default class City {
     // through the carriageway and `groundHeight()` is true on the street.
     this.net = new RoadNetwork(this.terrain);
     this.net.build();
+    mark('graph');
     this.terrain.stampRoads(this.net);
+    mark('stamp');
     this.terrain.build(scene, this._terrainMaterial(materials));
+    mark('ground');
 
     // --- neighbourhoods ----------------------------------------------------
     this.districts = new Districts(this.terrain);
     this.districts.bake();
+    mark('districts');
     this.districts.build(scene, materials);
+    mark('parks');
 
     this.net.buildSidewalks();
+    mark('pavement');
     this.net.buildPlots(
       (x, z) => this.districts.districtAt(x, z),
       (x, z) => this.districts.isReserved(x, z));
     this.net.buildSpawns();
+    mark('parcels');
 
     // --- geometry ----------------------------------------------------------
     this.roadMesh = new Roads(this.net, this.terrain);
-    this.roadMesh.build(scene, materials);
+    this.roadMesh.build(scene, materials, ctx.assets);
     if (this.roadMesh.decals) scene.add(this.roadMesh.decals);
+    mark('roads');
 
     this.waterSys = new Water(this.terrain);
     this.waterSys.build(scene);
+    mark('water');
 
     this._publish();
     this._colliders(ctx);
+    mark('colliders');
 
     const ms = performance.now() - t0;
     const s = this.net.stats();
     console.info(`[city] ${s.edges} edges / ${s.nodes} nodes / ${s.km} km of street, ` +
       `${this.plots.length} parcels, ${this.spawnPoints.length} spawns, ` +
       `${(this.roadMesh.triangles / 1000) | 0}k road tris, ${ms | 0}ms`);
+    console.debug('[city] timing', T);
     ctx.bus.emit('city:ready', this);
   }
 

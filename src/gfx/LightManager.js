@@ -320,7 +320,7 @@ export default class LightManager {
     this._cr[id] = _col.r; this._cg[id] = _col.g; this._cb[id] = _col.b;
 
     this._range[id] = o.range ?? (type === T_HEADLIGHT ? 42 : type === T_TAIL ? 9 : 26);
-    this._power[id] = o.intensity ?? (type === T_HEADLIGHT ? 60 : type === T_TAIL ? 6 : 45);
+    this._power[id] = o.intensity ?? (type === T_HEADLIGHT ? 150 : type === T_TAIL ? 9 : 110);
     this._cone[id] = Math.cos(o.cone ?? 0.62);
     this._gain[id] = 1;
 
@@ -444,9 +444,9 @@ export default class LightManager {
         position: [L.x, L.y, L.z],
         groundY: L.g,
         color: L.led ? LED : L.mercury ? MERCURY : SODIUM,
-        range: L.h * 3.2,
-        intensity: L.led ? 52 : 44,
-        poolRadius: L.h * 1.25,
+        range: L.h * 3.4,
+        intensity: L.led ? 130 : 108,
+        poolRadius: L.h * 1.45,
         haloSize: L.led ? 0.5 : 0.62,
       });
       if (h.id >= 0) this._lampIds.push(h.id);
@@ -819,13 +819,13 @@ export default class LightManager {
     const t = this._type[id];
     const pi = this._poolIdx[id];
     if (pi >= 0) {
-      const k = (t === T_HEADLIGHT ? 0.85 : 0.5) * g * scale;
+      const k = (t === T_HEADLIGHT ? 1.7 : t === T_SIGN ? 1.15 : 1.5) * g * scale;
       this._poolCol.setXYZW(pi, this._cr[id], this._cg[id], this._cb[id], k * clock);
       this._poolDirty = true;
     }
     const gi = this._glowIdx[id];
     if (gi >= 0) {
-      const k = (t === T_TAIL ? 2.2 : t === T_HEADLIGHT ? 5.0 : 3.4) * g;
+      const k = (t === T_TAIL ? 2.8 : t === T_HEADLIGHT ? 6.0 : t === T_SIGN ? 5.5 : 4.6) * g;
       this._glowCol.setXYZW(gi, this._cr[id], this._cg[id], this._cb[id], k * clock);
       this._glowDirty = true;
     }

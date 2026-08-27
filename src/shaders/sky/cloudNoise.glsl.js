@@ -64,11 +64,15 @@ void main() {
   float w16 = worley3(p, 16.0);
   float wfbm = w4 * 0.625 + w8 * 0.25 + w16 * 0.125;
 
-  float perlin = gfbm3(p, 4.0, 5);
+  // FBM averages octaves back toward 0.5, which leaves a distribution far too
+  // narrow to threshold against. Stretch it so the volume actually has cores
+  // and gaps rather than a uniform grey.
+  float perlin = satf((gfbm3(p, 4.0, 5) - 0.5) * 2.4 + 0.5);
   // Perlin-Worley: billowy where Worley is dense, wispy where Perlin is.
   float pw = remapv(perlin, wfbm - 1.0, 1.0, 0.0, 1.0);
+  pw = satf((pw - 0.5) * 1.6 + 0.5);
 
-  gl_FragColor = vec4(satf(pw), w4, w8, w16);
+  gl_FragColor = vec4(pw, w4, w8, w16);
 }
 `;
 
@@ -111,5 +115,24 @@ void main() {
   float large  = gfbm3(vec3(vUv, 3.9), 2.0, 2);
 
   gl_FragColor = vec4(cov, type, precip, large);
+}
+`;
+
+/**
+ * Scatters samples through the baked volume and writes back exactly the
+ * silhouette value the raymarch thresholds on, so Clouds.js can read the real
+ * distribution and calibrate coverage against it instead of guessing.
+ */
+export const SHAPE_STATS_FRAG = /* glsl */`
+precision highp sampler3D;
+${MATH}
+uniform sampler3D uBaseNoise;
+varying vec2 vUv;
+
+void main() {
+  vec3 p = hash32(vUv * 91.7 + 3.1);
+  vec4 n = texture(uBaseNoise, p);
+  float fbm = n.g * 0.625 + n.b * 0.25 + n.a * 0.125;
+  gl_FragColor = vec4(satf(n.r * 0.62 + fbm * 0.38));
 }
 `;
