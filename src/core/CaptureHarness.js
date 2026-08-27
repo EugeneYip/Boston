@@ -154,6 +154,7 @@ export default class CaptureHarness {
           new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1),
         ];
         const origin = new THREE.Vector3();
+        const _dirTmp = new THREE.Vector3();
         const enclosed = (p) => {
           origin.set(p[0], p[1], p[2]);
           let hits = 0;
@@ -165,13 +166,31 @@ export default class CaptureHarness {
         };
 
         // Being pressed against a facade is as useless as being inside one, and it
-        // does not read as "enclosed" -- only one ray hits. Check view clearance too.
+        // does not read as "enclosed" -- only one ray hits.
+        //
+        // The threshold has to be SMALL. An earlier 25m version fired on ordinary
+        // street-level shots -- looking down a street at a building 20m away is the
+        // normal case, not a defect -- and backed the camera 10m the other way,
+        // straight into the facade behind. 4m only catches a camera genuinely
+        // jammed against a wall.
+        const NEAR_WALL = 4;
         const viewClear = (p) => {
           origin.set(p[0], p[1], p[2]);
-          const d = new THREE.Vector3(look[0] - p[0], look[1] - p[1], look[2] - p[2]).normalize();
-          ray.set(origin, d);
-          ray.far = 25;
-          const hit = ray.intersectObjects(targets, false)[0];
+          _dirTmp.set(look[0] - p[0], look[1] - p[1], look[2] - p[2]).normalize();
+          ray.set(origin, _dirTmp);
+          ray.far = NEAR_WALL;
+          const hit = ray.intersectObjects(targets, false).length > 0;
+          ray.far = 70;
+          return !hit;
+        };
+        // A retreat point is only good if it is also clear BEHIND -- otherwise
+        // backing away from one wall parks the camera inside another.
+        const backClear = (p) => {
+          origin.set(p[0], p[1], p[2]);
+          _dirTmp.set(p[0] - look[0], p[1] - look[1], p[2] - look[2]).normalize();
+          ray.set(origin, _dirTmp);
+          ray.far = NEAR_WALL;
+          const hit = ray.intersectObjects(targets, false).length > 0;
           ray.far = 70;
           return !hit;
         };
@@ -183,14 +202,14 @@ export default class CaptureHarness {
         const ux = dx / len, uy = dy / len, uz = dz / len;
         for (let d = 10; d <= maxBack; d += 10) {
           const p = [pos[0] + ux * d, pos[1] + uy * d, pos[2] + uz * d];
-          if (!enclosed(p) && viewClear(p)) {
+          if (!enclosed(p) && viewClear(p) && backClear(p)) {
             console.warn(`[capture] shot was inside or against geometry; backed off ${d}m`);
             return { moved: d, pos: p };
           }
         }
         for (let up = 20; up <= 400; up += 20) {
           const p = [pos[0], pos[1] + up, pos[2]];
-          if (!enclosed(p) && viewClear(p)) {
+          if (!enclosed(p) && viewClear(p) && backClear(p)) {
             console.warn(`[capture] shot was inside or against geometry; raised ${up}m`);
             return { moved: up, pos: p };
           }
