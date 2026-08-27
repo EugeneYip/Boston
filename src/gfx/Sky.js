@@ -69,10 +69,12 @@ export default class SkySystem {
       // void with cloud-shaped holes punched in it, which the critic rubric
       // scores as an automatic fail, and it is also simply wrong: you cannot
       // see the Milky Way from the Common.
-      // Gain is calibrated against measured frame luminance, not guessed: at
-      // 0.30 the clear night sky just above the rooftops reads ~28/255 while
-      // the lit city reads ~117/255, which is the ratio a long-exposure night
-      // photograph of a downtown skyline actually has.
+      //
+      // The gain is calibrated against measured frame luminance rather than
+      // guessed: at 0.30 the clear night sky just above the rooftops reads
+      // ~31/255 while the lit city reads ~116/255, which is roughly the ratio a
+      // long-exposure night photograph of a downtown skyline actually has. It
+      // was 5/255 against 111/255 before, i.e. black.
       uCityGlow:      { value: c('#6a4a2c') },
       uCityGlowGain:  { value: 0.30 },
       uTime:          { value: 0 },
