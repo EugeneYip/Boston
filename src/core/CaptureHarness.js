@@ -24,7 +24,11 @@ export default class CaptureHarness {
     this.shots = {
       street_level:   { pos: [40, 1.7, 120],   look: [0, 1.7, -400],  tod: 9.5,  fov: 55, eye: 1.7 },
       downtown_dusk:  { pos: [180, 42, 260],   look: [-100, 30, -300],tod: 19.4, fov: 48 },
-      night_neon:     { pos: [-60, 6, 40],     look: [200, 14, -260], tod: 22.0, fov: 62 },
+      // Parked ON A LIT STREET. The previous position sat in Boston Common with no
+      // street lamp within 186 m of it -- geographically correct (the Common has no
+      // roads through it) but useless for judging night lighting.
+      night_neon:     { pos: [-1453.4, 4.85, 401.4], look: [-1200, 11, 470],
+                        tod: 22.0, fov: 62, eye: 1.7 },
       hero_skyline:   { pos: [620, 150, 780],  look: [-200, 60, -300],tod: 17.8, fov: 40 },
       golden_hour:    { pos: [-300, 18, 420],  look: [300, 40, -200], tod: 6.6,  fov: 50 },
       overcast_wide:  { pos: [0, 320, 900],    look: [0, 30, -400],   tod: 13.0, fov: 60 },

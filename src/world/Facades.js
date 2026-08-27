@@ -171,36 +171,35 @@ function pickStyle(district, r) {
 /**
  * Boston's real height profile, per district.
  *
- * This exists because `plot.maxHeight` cannot be used directly. The city
- * publishes **one flat zoned height for an entire district** (every parcel in
- * the Financial District carries the same 240 m), and `RoadNetwork.ZONING` has
- * no entry at all for `downtown`, `westEnd`, `chinatown` or `southBoston`, so
- * those four silently inherit the 20 m *residential* fallback. Taking a fixed
- * fraction of that number produced exactly two heights in the whole city: a
- * mass under 20 m and 479 towers inside a single 20 m band, with a hard gap
- * from 100–140 m. The skyline read as one extruded slab.
+ * This exists because `plot.maxHeight` cannot be used as a height. The city
+ * publishes **one flat zoned height for an entire district** — every parcel in
+ * the Financial District carries the same 240 m — so the old
+ * `storeys = max(storeys, floor(fit * 0.62))` gave every tower in the district
+ * the same fraction of the same number. The result was 479 buildings inside a
+ * single 20 m band with a hard gap from 100–140 m, and a skyline that read as
+ * one extruded slab. A flat envelope is a *ceiling*, not a design.
  *
- * `floor`/`cap` bracket the envelope; the published number is only allowed to
- * move it inside that bracket. Where the zoning table has **no entry at all**,
- * its 20 m fallback is an artefact rather than data, so `floor` is set equal to
- * `cap` and the published value is overridden outright — those rows are marked.
- *
- * `tail` shapes the draw inside the envelope. A real city's height histogram is
- * close to exponential — Boston has thousands of 4–6 storey rowhouses, roughly
- * forty buildings over 100 m and a dozen over 150 m — so `tail` is the exponent
- * on a 0..1 roll, and any value above 1 pushes mass toward the bottom. Bigger
- * `tail` = rarer tall building.
+ * `cap` is the real ceiling for generic infill and `tail` shapes the draw
+ * underneath it. A city's height histogram is close to exponential — Boston has
+ * thousands of 4–6 storey rowhouses, roughly forty buildings over 100 m and a
+ * dozen over 150 m — so `tail` is the exponent on a 0..1 roll, and any value
+ * above 1 pushes mass toward the bottom. Bigger `tail` = rarer tall building.
  *
  * `cap` deliberately stays under the landmarks. 200 Clarendon is 241 m and the
  * Prudential 229 m; if generic infill could reach them they would stop reading
  * as landmarks at all, which is the whole point of putting them in.
+ *
+ * `floor` only bites when the published envelope is *lower* than the district
+ * could plausibly build. On the live parcel path it never does — the city only
+ * ever emits the nine districts `RoadNetwork.ZONING` knows, and its numbers are
+ * sane for all of them. It matters on the `Buildings.fallbackPlots` path, which
+ * is the only source of `downtown`, `westEnd`, `chinatown` and `southBoston`.
  */
 const DISTRICT_HEIGHT = {
   financial:   { floor:  60, cap: 188, tail: 3.9 },
-  downtown:    { floor: 126, cap: 126, tail: 4.3 },  // no ZONING entry — 20 m is bogus
-  westEnd:     { floor: 104, cap: 104, tail: 4.3 },  // no ZONING entry
-  chinatown:   { floor:  76, cap:  76, tail: 4.1 },  // no ZONING entry
-  southBoston: { floor:  23, cap:  23, tail: 3.2 },  // no ZONING entry
+  downtown:    { floor:  40, cap: 126, tail: 4.3 },
+  westEnd:     { floor:  32, cap: 104, tail: 4.3 },
+  chinatown:   { floor:  24, cap:  76, tail: 4.1 },
   backBay:     { floor:  20, cap:  62, tail: 4.6 },  // brownstone, rare tall infill
   beaconHill:  { floor:  14, cap:  23, tail: 3.0 },  // the protected low-rise
   northEnd:    { floor:  16, cap:  25, tail: 3.0 },
@@ -209,6 +208,7 @@ const DISTRICT_HEIGHT = {
   fenway:      { floor:  16, cap:  48, tail: 3.6 },
   charlestown: { floor:  11, cap:  19, tail: 3.0 },
   cambridge:   { floor:  18, cap:  68, tail: 3.8 },
+  southBoston: { floor:  11, cap:  23, tail: 3.2 },
   default:     { floor:  16, cap:  42, tail: 3.4 },
 };
 

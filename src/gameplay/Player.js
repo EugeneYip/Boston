@@ -74,6 +74,7 @@ export default class Player {
     this._hh = CAP_HH;               // current capsule half height
     this._crouched = false;
     this._snapOn = true;
+    this._airborne = false;
     this._coyote = 0;                // grace period for a late jump press
     this._jumpBuffer = 0;
     this._exitCooldown = 0;
@@ -197,11 +198,14 @@ export default class Player {
   }
 
   _move(fdt, inp) {
-    const t = this.body.translation();
     const yaw = this._lookYaw();
     const mv = inp.moveAxis();
 
+    // Crouching moves the body, so it has to happen before the translation is
+    // read — otherwise `setNextKinematicTranslation` below writes the pre-crouch
+    // position straight back over it and the character drops half a capsule.
     this._setCrouch(inp.down('crouch'));
+    const t = this.body.translation();
     const mag = Math.min(1, Math.hypot(mv.x, mv.y));
     this.sprinting = inp.down('sprint') && mag > 0.1 && !this.crouching;
     let top = this.crouching ? SPEED.crouch : this.sprinting ? SPEED.sprint : SPEED.jog;
@@ -218,16 +222,24 @@ export default class Player {
     this.velocity.x += (wantX - this.velocity.x) * k;
     this.velocity.z += (wantZ - this.velocity.z) * k;
 
-    if (this.grounded) {
-      if (this._jumpBuffer > 0 || (this._coyote > 0 && inp.down('jump'))) {
-        this._vy = JUMP_V; this._jumpBuffer = 0; this._coyote = 0; this.grounded = false;
-      } else if (this._vy <= 0) {
-        this._vy = -2.0;             // press into the ground so snap-to-ground bites
-      }
-    } else {
+    // ---- vertical state ----------------------------------------------------
+    // `computedGrounded()` keeps reporting true for the first few centimetres of
+    // a jump — the capsule is still inside the controller's ground tolerance — so
+    // driving gravity straight off it makes a jump either impossible or, worse,
+    // a slow unstoppable climb. An explicit airborne latch, cleared only on the
+    // way *down*, is the only version of this that behaves.
+    if (!this._airborne && (this.grounded || this._coyote > 0)
+        && (this._jumpBuffer > 0 || (this._coyote > 0 && inp.down('jump')))) {
+      this._vy = JUMP_V;
+      this._jumpBuffer = 0; this._coyote = 0;
+      this._airborne = true; this.grounded = false;
+    }
+    if (this._airborne || !this.grounded) {
       this._vy -= GRAVITY * fdt;
       if (this._vy < -55) this._vy = -55;
-      this._coyote -= fdt;
+      if (this._coyote > 0) this._coyote -= fdt;
+    } else if (this._vy <= 0) {
+      this._vy = -2.0;               // press into the ground so snap-to-ground bites
     }
 
     // Snap-to-ground is what keeps him glued to a camber on the way down — and
@@ -250,7 +262,11 @@ export default class Player {
     _next.x = t.x + m.x; _next.y = t.y + m.y; _next.z = t.z + m.z;
 
     const wasGrounded = this.grounded;
-    this.grounded = this.ctrl.computedGrounded();
+    const onGround = this.ctrl.computedGrounded();
+    // Only a descending character may land; while rising, the ground report is
+    // the tolerance talking, not the floor.
+    if (this._airborne && onGround && this._vy <= 0) this._airborne = false;
+    this.grounded = onGround && !this._airborne;
     if (this.grounded) { this._vy = Math.min(this._vy, 0); this._coyote = 0.12; }
     else if (wasGrounded) this._coyote = 0.12;
 
@@ -378,6 +394,7 @@ export default class Player {
     this.mode = 'driving';
     this.velocity.set(0, 0, 0);
     this._vy = 0;
+    this._airborne = false;
     factory.driveWithInput = true;
     // Out of the collision world entirely: a capsule left inside the car body
     // is a solver fight nobody wins.
@@ -411,6 +428,7 @@ export default class Player {
     }
     this.velocity.set(0, 0, 0);
     this._vy = 0;
+    this._airborne = false;
     this.grounded = true;
     this._exitCooldown = 0.4;
     if (v) ctx.bus.emit('player:exitVehicle', v);

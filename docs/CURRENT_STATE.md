@@ -189,6 +189,19 @@ Last verified: 2026-08-27, commit `06f93d3`.
   sharing (three appends it to a full parameter key), but it *does* freeze recompilation,
   and it makes two materials that differ only in chained-in GLSL share one program.
 
+## Corrections to docs/PERF_REPORT.md — believe these over the report
+The report is broadly excellent but three of its specifics were later disproved by
+direct measurement. Do not act on the originals.
+
+| Report claim | Correction |
+|---|---|
+| §5: "~16.5 ms is `lightGlows`" at night | **Does not exist.** Derived by hiding the whole `lights` subtree, which also hides 15 pooled Point/SpotLights — `projectObject` returns early on `visible === false` *before* pushing a light, so the toggle silently changes the light count and recompiles every lit material (`renderer.info.programs` 61 → 81). Measured per-mesh instead: `lightGlows` **3.63 ms**, `lightPools` **2.75 ms**. |
+| §4: cloud RT is 326x184 due to a stale canvas width | **Not a bug.** 326x184 is exactly `round(1920 x 0.17)`; `QUALITY.high.scale` is **0.17** (0.24 is `ultra`). The report assumed 0.25 from a class docstring. |
+| §7 / issue #1: low cameras collapse to black = post-processing feedback loop | **Mostly the camera being underground.** `street_level` was parked 1.4 m below the road surface. Fixed in `9ed0f06`. A genuine `LensPass` GL fault does also exist, but it is a separate and smaller effect. |
+
+**General lesson, now twice-proven:** never A/B a subsystem by toggling `visible` on a
+group that also contains lights. It changes shader permutations, not just what is drawn.
+
 ## Performance methodology (read `PERF_REPORT.md` §0 in full before profiling)
 **The headline: this is a fill-rate problem in post-processing, not a geometry problem.**
 The entire scene render — every building, road, tree and prop — is ~4.8 ms of a ~48 ms
