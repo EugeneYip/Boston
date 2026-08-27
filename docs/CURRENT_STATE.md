@@ -127,15 +127,24 @@ Last verified: 2026-08-27, commit `06f93d3`.
    the same emitted radiance lands at the same output value, so nothing downstream of the
    scene is compensating. *Owner: render. File: `src/gfx/RenderPipeline.js` ~line 177,
    `src/gfx/effects/AutoExposurePass.js`.*
-3. **`night_neon` is still dark, but no longer black** — and what is left is mostly issues
-   1 and 2 plus the shot's own framing. Measured at 1920×1080 `high`, full-frame pixel
-   readback: mean luminance **5.3 → 12.3**, p50 **1.6 → 7.7**, p99 **19.6 → 108**,
-   fraction below luminance 2 **51.3% → 34.4%**. A representative *street* night shot
-   (Marlborough St, Back Bay) now reads mean **46**, 14.4% below 2, 0.1% clipped, and
-   looks like a night city. `night_neon`'s camera is parked in the middle of Boston Common
-   with **no street lamp within 186 m** — geographically correct, but it means the shot is
-   carried entirely by ambient, the night sky and the distant skyline. Worth re-framing the
-   shot, or judging night from a street. *Owner: lighting (done what it can) + render (2).*
+3. **Night on a street now works; `night_neon` specifically is still dark.** A/B of the
+   night ambient fix alone, same build, 1920×1080 `high`, full-frame pixel readback:
+
+   | | mean | p50 | p90 | % below lum 2 | % below lum 8 |
+   |---|---:|---:|---:|---:|---:|
+   | Marlborough St 22:00, before | 26.2 | 10.0 | 89.1 | 33.1% | 46.1% |
+   | Marlborough St 22:00, **after** | **39.4** | **20.9** | 106.2 | **19.4%** | **29.9%** |
+   | `night_neon` 22:00, before | 5.8 | 1.7 | 16.4 | 50.9% | 68.0% |
+   | `night_neon` 22:00, **after** | 7.3 | 2.1 | 17.4 | 48.9% | 65.3% |
+
+   A night street reads as a night city — brick, stoops, cornices, warm sodium halos, pools
+   on the pavement, lane markings. `night_neon` barely moves because that specific camera is
+   parked in the middle of Boston Common with **no street lamp within 186 m** (checked
+   against every registered source; geographically correct — the Common has no roads through
+   it), so the frame is carried entirely by ambient, the night sky and a skyline 400 m away,
+   and all three are sitting under the exposure clamp in issue 2. **Judge night from a
+   street, or re-frame the shot** — e.g. `pos [-1453.4, 4.85, 401.4] look [-1200, 11, 470]`.
+   *Owner: lighting (done what it can without 2) + render (2).*
 4. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
    redefined; three r171 renamed this varying. Two programs fail `VALIDATE_STATUS`.
    *Owner: city/materials. File: `src/world/Water.js`.*
