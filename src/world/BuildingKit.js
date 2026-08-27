@@ -631,7 +631,19 @@ export function buildAtlas() {
     const li = def.layer;
     const off = SZ * SZ * 4 * li;
     const ia = a.getImageData(0, 0, SZ, SZ);
+    // The albedo alpha channel is the NIGHT WINDOW MASK, and it is only
+    // meaningful on the baked `fac_*` facade strips. Every other layer is
+    // painted with opaque fills, so `getImageData` hands back alpha 255 across
+    // the whole tile — and the shader's
+    //   totalEmissiveRadiance += bkTex.rgb * bkTex.a * uNight * ...
+    // then lit up entire brick, stone and spandrel surfaces after dark instead
+    // of just the windows. That is what read as full-width glowing bars across
+    // the masonry at every storey, at every hour with any night weighting at
+    // all (uNight is already 0.5 at 06:35). At LOD 0/1 the windows are real
+    // glass with their own interior lighting, so a non-strip layer must carry
+    // no mask whatsoever.
     if (winRects) stampWindowMask(ia.data, winRects);
+    else for (let i = 3; i < ia.data.length; i += 4) ia.data[i] = 0;
     albedo.set(ia.data, off);
     const ih = h.getImageData(0, 0, SZ, SZ);
     heightToNormal(ih, normal, off, bump * 8);
@@ -844,10 +856,27 @@ reflectedLight.indirectDiffuse *= bkAO;
   sheenSpecularIndirect *= bkAO;
 #endif
 material.specularF90 *= mix(1.0, bkAO, 0.5);
-// Shop signage and lit fascias. bkTex.a is the window mask on facade strips.
-float lit = mix(0.10, 1.0, uNight);
+// Shop signage and lit fascias. An internally-lit sign is on during the day too,
+// but it must be barely perceptible against sunlight rather than a glowing bar.
+float lit = mix(0.045, 1.0, uNight);
 totalEmissiveRadiance += diffuseColor.rgb * vEmis * lit * uLampColor;
-totalEmissiveRadiance += bkTex.rgb * bkTex.a * uNight * uLampColor * 0.85;
+
+// Night windows on the baked facade strips (bkTex.a is the window mask; it is
+// zero on every other layer, see buildAtlas).
+//
+// Lighting the whole mask at once turned every storey into one continuous
+// glowing bar, because a strip repeat is a full row of windows and at any
+// distance the row closes up into a band. Real cities are perhaps a third lit
+// at 2 am, and it is the GAPS that make a night skyline read as windows at all.
+// So roll per window cell: vUv.x runs three bays to a repeat and vUv.y is one
+// storey, and the quantised world anchor keeps neighbouring buildings from
+// lighting in the same pattern. Quantised, so it never shimmers as the camera
+// moves.
+vec2 bkCell = floor(vec2(vUv.x * 3.0, vUv.y));
+vec2 bkAnchor = floor(vWPosB.xz * 0.05);
+float bkRoll = fract(sin(dot(bkCell + bkAnchor * 7.31, vec2(12.9898, 78.233))) * 43758.545);
+float bkOn = step(bkRoll, 0.34);
+totalEmissiveRadiance += bkTex.rgb * bkTex.a * bkOn * uNight * uLampColor * 0.85;
 `;
 
 
