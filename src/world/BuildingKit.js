@@ -964,6 +964,13 @@ export function makeOpaqueMaterial(tex, room, macro) {
   m.userData.uniforms = u;
   m.userData.wetnessRough = 1.0;
   m.userData.wetnessColor = m.color.clone();
+  // Declare that this material authors its own night emissive, which is the
+  // opt-out `Lighting._adoptBuildings` documents. We light shop signage from
+  // `vEmis` and, on the distant `fac_*` strips, the window mask baked into the
+  // albedo alpha. At LOD 0/1 the walls have real holes with real glass in them,
+  // so a second procedural grid stamps windows onto solid brick between the
+  // actual windows — "two window grids on one wall is worse than none".
+  m.userData.nightEmissive = true;
   installPatch(m, (sh) => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
@@ -1137,6 +1144,9 @@ export function makeGlassMaterial(room) {
     uLampColor: { value: new THREE.Color(1.0, 0.76, 0.48) },
   };
   m.userData.uniforms = u;
+  // Every pane already parallaxes a real room that lights up on its own
+  // per-window roll, so this is about as authored as a night emissive gets.
+  m.userData.nightEmissive = true;
   installPatch(m, (sh) => {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
