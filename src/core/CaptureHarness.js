@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import yieldToPaint from './Yield.js';
 
 /**
  * Deterministic screenshot harness for the automated visual-critic loop.
@@ -11,6 +12,21 @@ import * as THREE from 'three';
  *   await window.__boston.ready()
  *   await window.__boston.capture({ shot: 'downtown_dusk' })
  */
+
+/**
+ * Wait `ms` of real wall-clock time without using a timer.
+ *
+ * Chrome clamps setTimeout in a hidden tab to ~1/second, and ~1/minute once the
+ * tab has been hidden five minutes. Every automation tab is hidden, so a
+ * `setTimeout(60)` here can cost 60 SECONDS -- and this runs once per capture,
+ * eight times per critic pass. yieldToPaint() is a MessageChannel task, which is
+ * exempt from the clamp, so we spin on it until the clock actually advances.
+ */
+async function settle(ms) {
+  const t0 = performance.now();
+  while (performance.now() - t0 < ms) await yieldToPaint();
+}
+
 export default class CaptureHarness {
   static id = 'capture';
   static label = 'Capture harness';
@@ -64,7 +80,7 @@ export default class CaptureHarness {
     const api = {
       engine,
       ready: async () => {
-        for (let i = 0; i < 200 && !engine._running; i++) await new Promise(r => setTimeout(r, 50));
+        for (let i = 0; i < 200 && !engine._running; i++) await settle(50);
         return true;
       },
       /** Advance n frames synchronously with a fixed dt, ignoring rAF throttling. */
@@ -276,7 +292,7 @@ export default class CaptureHarness {
         api.setCamera(freed.pos, rawLook, fov ?? s.fov);
         // Warm up: lets IBL, streaming, LOD and temporal effects settle.
         api.step(warmup);
-        await new Promise(r => setTimeout(r, 60));
+        await settle(60);
         const stats = api.step(6);
         return { shot: shot || 'custom', weather: w,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
@@ -291,14 +307,24 @@ export default class CaptureHarness {
        * tab (mcp__Claude_Browser__tabs_select) and measure again.
        */
       measureFps: async (seconds = 2) => {
+        // `document.hidden` is NOT sufficient. When the Browser pane is collapsed
+        // rather than backgrounded, document.hidden stays FALSE while rAF still
+        // delivers zero frames -- so the old guard passed and returned a garbage
+        // number. Measure actual frame delivery and judge on that.
         if (document.hidden) {
           return { hidden: true, fps: null,
             warning: 'Tab is backgrounded — rAF is throttled to zero. Front the tab first; this number would be meaningless.' };
         }
         const f0 = engine.time.frame, t0 = performance.now();
-        await new Promise(r => setTimeout(r, seconds * 1000));
+        await settle(seconds * 1000);
         const frames = engine.time.frame - f0;
         const elapsed = (performance.now() - t0) / 1000;
+        if (frames < 2) {
+          return { hidden: false, notCompositing: true, fps: null, frames,
+            warning: `rAF delivered ${frames} frames in ${elapsed.toFixed(1)}s despite document.hidden===false. `
+              + 'The Browser pane is almost certainly collapsed or not compositing. '
+              + 'Display the pane and measure again; any number from here would be meaningless.' };
+        }
         return {
           hidden: false,
           fps: +(frames / elapsed).toFixed(1),

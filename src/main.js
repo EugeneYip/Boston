@@ -18,6 +18,7 @@ const stat = document.getElementById('stat');
  * Order below is a hint only — Engine.init() topologically sorts by `static deps`.
  */
 const MODULES = import.meta.glob([
+  './core/Profiler.js',
   './gfx/*.js', './world/*.js', './ai/*.js',
   './gameplay/*.js', './ui/*.js', './audio/*.js',
 ]);
@@ -25,6 +26,7 @@ const MODULES = import.meta.glob([
 // Terrain / Roads / Water / RoadNetwork are deliberately absent: they carry no
 // `static id` because City.js composes them directly rather than registering them.
 const OPTIONAL = [
+  './core/Profiler.js',
   './gfx/Materials.js',
   './gfx/Sky.js',
   './gfx/Clouds.js',
