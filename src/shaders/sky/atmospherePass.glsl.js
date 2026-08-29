@@ -146,6 +146,10 @@ uniform float uFlashScreen;
 uniform float uMaxRadiance;
 varying vec2 vUv;
 
+// ~5.2 deg. Its half-value, 2.6 deg, is where every horizontal-or-below ray
+// samples: seven LUT texels clear of the uy = 0.5 sky/ground boundary.
+const float SKY_ELEV_FLOOR = 0.09;
+
 vec3 skyLut(vec3 rd) {
   float r = ATM_GROUND + max(uCamPos.y, 0.0) * 0.001;
   return texture2D(uSkyView, atmSkyViewUv(rd, vec3(0.0, 1.0, 0.0), uSunDir, r)).rgb * uSkyIntensity;
@@ -189,7 +193,28 @@ void main() {
     vec3 od = ATM_RAY_S * 1e-3 * uRayleighScale * pathRay + vec3(uHazeSigma) * pathHaze;
     vec3 T = exp(-od);
 
-    vec3 inscat = skyLut(normalize(vec3(rd.x, max(rd.y, -0.02), rd.z)));
+    // Hold the in-scatter sample inside the sky-view LUT's upper branch.
+    //
+    // atmSkyViewUv is the Hillaire parametrisation: uy = 0.5 - 0.5*sqrt(1-c)
+    // above the horizon and 0.5 + 0.5*sqrt(c) below it. duy/dtheta is therefore
+    // unbounded exactly at the horizon, AND the LUT's own sky/ground boundary
+    // sits at uy = 0.5. Sampled with the raw view ray, in-scatter changed
+    // content over a fraction of a degree: at a 14 m camera the boundary lands
+    // at rd.y = -0.0021 -- about two screen rows below the horizontal -- and
+    // walking rd.y from 0 to the old -0.02 clamp moved uy 0.4817 -> 0.5534,
+    // seven texels of a 96-tall LUT, straight through it. That was the hard
+    // horizontal step at the horizon of every level-camera frame.
+    //
+    // Aerial perspective is a property of the path, not of which side of the
+    // horizontal the ray is on: a ray one degree below and one a degree above
+    // travel the same air over the same 500 m, so they must in-scatter the
+    // same. The floor below is C1 -- value and slope both match at the join --
+    // so it replaces the step without introducing a crease of its own.
+    float tSky = satf(rd.y / SKY_ELEV_FLOOR);
+    float eSky = (rd.y > SKY_ELEV_FLOOR)
+               ? rd.y
+               : SKY_ELEV_FLOOR * (0.5 + 0.5 * tSky * tSky);
+    vec3 inscat = skyLut(normalize(vec3(rd.x, eSky, rd.z)));
     // Thick fog is a local white medium, not a window onto the sky.
     inscat = mix(inscat, uFogTint * (0.35 + 0.65 * dot(inscat, vec3(0.33))), uFogAlbedo);
 
