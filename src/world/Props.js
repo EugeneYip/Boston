@@ -1306,8 +1306,11 @@ function runPlacement(sys, L, counting, take) {
     // travel lanes are clear by construction.
     if (s.parking && s.type !== 'alley') {
       const off = s.parking.offset;
-      // Arterials in the core are tow-away at rush hour and much emptier.
-      const fill = s.type === 'arterial' ? (busy ? 0.66 : 0.82) : 0.90;
+      // Arterials in the core are tow-away at rush hour and a little emptier —
+      // but only a little. These were low enough (0.66) that a North End
+      // arterial had 5 parked cars within 40 m of the camera while its
+      // neighbours had 11-18, which reads as a street nobody parks on.
+      const fill = s.type === 'arterial' ? (busy ? 0.80 : 0.89) : 0.94;
       for (const side of [-1, 1]) {
         // Cars face the direction of travel on their own side of the road.
         // NOTE the extra half turn: `facing` aims the model's local +Z along the
@@ -1317,7 +1320,7 @@ function runPlacement(sys, L, counting, take) {
         const ry = facing(s.dx, s.dz) + (side > 0 ? Math.PI : 0);
         let t = rng.range(2, 8);
         while (t < s.len - 6) {
-          if (!rng.chance(fill)) { t += rng.range(5.0, 12.0); continue; }  // driveway, hydrant, loading
+          if (!rng.chance(fill)) { t += rng.range(4.0, 9.0); continue; }   // driveway, hydrant, loading
           const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
           if (take('parked')) {
             const x = s.ax + s.dx * (t + carLen / 2) + s.nx * off * side;
