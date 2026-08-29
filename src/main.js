@@ -92,15 +92,24 @@ async function main() {
   });
 
   engine.start();
-  await new Promise(r => setTimeout(r, 300));
-  boot.classList.add('gone');
-  setTimeout(() => boot.remove(), 900);
 
+  // Publish the automation surface the instant the engine is live, BEFORE the
+  // cosmetic overlay fade. Every agent (and the capture harness) waits on
+  // `bootReport`, and it used to sit behind the `setTimeout(300)` below — which a
+  // hidden tab clamps to 1/second, or 1/minute once it has been hidden for five
+  // minutes. Measured: engine ready at 44 s, `bootReport` still unset at 125 s.
   window.engine = engine;
   if (window.__boston) window.__boston.bootReport = report;
   console.info('[boston] active:', engine.order.map(s => s.constructor.id).join(', '));
   if (report.missing.length) console.info('[boston] not yet built:', report.missing.join(', '));
   if (report.failed.length) console.warn('[boston] failed:', report.failed.join(' | '));
+
+  // Let one frame land before the overlay fades, so there is no black flash. A
+  // hidden tab never renders one (rAF is paused), so waiting there buys nothing and
+  // costs a throttled timer — skip it and fade immediately.
+  if (!document.hidden) await new Promise(r => setTimeout(r, 300));
+  boot.classList.add('gone');                 // opacity 0 + pointer-events: none
+  setTimeout(() => boot.remove(), 900);       // detach after the transition
 }
 
 main().catch(e => {

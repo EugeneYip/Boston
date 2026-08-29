@@ -1,4 +1,5 @@
 import { uiRoot, el, DISTRICT_NAMES } from './HUD.js';
+import { yieldToPaint } from '../core/Yield.js';
 
 /**
  * BOSTON minimap.
@@ -309,7 +310,10 @@ export class MapData {
           }
         }
       }
-      await new Promise(r => setTimeout(r, 0));
+      // Not `setTimeout`: 396/12 = 33 yields, and a hidden tab clamps timers to
+      // >=1/s, so the background bake took over half a minute of wall clock and
+      // woke the tab 33 times. See `src/core/Yield.js`.
+      await yieldToPaint();
     }
     this.rWater = toCanvas(wImg);
     this.rPark = toCanvas(pImg);

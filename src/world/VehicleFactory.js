@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { yieldToPaint } from '../core/Yield.js';
 import Vehicle from '../physics/Vehicle.js';
 import {
   VEHICLE_TYPES, VEHICLE_SPECS, createMaterialKit, buildVehicleVisual,
@@ -109,9 +110,14 @@ export default class VehicleFactory {
 
     // Lofting a body is 30-200 ms. Doing it on demand mid-game is a visible hitch, so
     // pay for every type up front while the loading screen is still on screen.
+    //
+    // The yield below MUST NOT be `setTimeout`. All nine types loft in ~380 ms, but a
+    // hidden tab clamps timers to >=1/s (1/min once hidden five minutes), so nine
+    // `setTimeout(0)` yields measured 2896 ms here and were the whole of the 49 s
+    // `vehicles` init reported on a loaded machine. See `src/core/Yield.js`.
     for (const t of this.types) {
       getVehicleGeometry(t);
-      await new Promise(r => setTimeout(r, 0));    // let the loading bar paint
+      await yieldToPaint();                        // let the loading bar paint
     }
 
     this._onEnter = (v) => { if (v) this.setPlayerVehicle(v); };
