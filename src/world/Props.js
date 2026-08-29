@@ -70,6 +70,8 @@ export class PropBatch {
      * season must go through here, not through `mesh.visible`.
      */
     this.hidden = false;
+    /** Opt in to per-instance LOD for the near tier; see `refresh`. */
+    this.splitNear = false;
   }
 
   /** @param {number} tint per-instance brightness multiplier (weathering variety) */
@@ -169,6 +171,46 @@ export class PropBatch {
       let li = -1;
       for (let k = 0; k < L; k++) { if (d <= this.lods[k].dist * scale) { li = k; break; } }
       if (li < 0) continue;
+
+      // Per-instance LOD for the near tier, where the chunk is far coarser than
+      // the decision needs to be.
+      //
+      // A chunk is 96 m across, so "LOD0 within 30 m" really admits every
+      // instance in any chunk whose CENTRE is within 30 + 67.9 m — up to 120
+      // parked cars at realistic kerb occupancy. That is what forced parked-car
+      // density down to ~24% of natural: the only way to keep the detailed
+      // 3.5k-triangle body affordable was to place fewer cars. Testing each
+      // instance's own distance for the first level costs one hypot over a few
+      // hundred instances in the nearest chunks and lets the near tier be a true
+      // radius, so the street can be properly parked up and still cheap.
+      // Opt-in (`splitNear`) so the other ninety-odd prop types keep the bulk
+      // path unchanged.
+      if (this.splitNear && li === 0 && L > 1) {
+        const r0 = this.lods[0].dist * scale;
+        const r0sq = r0 * r0;
+        const m0 = this.meshes[0], m1 = this.meshes[1];
+        for (let k = 0; k < ch.count; k++) {
+          const src = ch.start + k;
+          const ix = this.mats[src * 16 + 12], iz = this.mats[src * 16 + 14];
+          const ddx = ix - camX, ddz = iz - camZ;
+          const near = (ddx * ddx + ddz * ddz) <= r0sq;
+          const ti = near ? 0 : 1;
+          const tm = near ? m0 : m1;
+          const at2 = this._counts[ti];
+          tm.instanceMatrix.array.set(
+            this.mats.subarray(src * 16, src * 16 + 16), at2 * 16);
+          tm.instanceColor.array.set(
+            this.cols.subarray(src * 3, src * 3 + 3), at2 * 3);
+          this._counts[ti] = at2 + 1;
+          const bb = bounds[ti];
+          if (ix - 3 < bb.x0) bb.x0 = ix - 3;
+          if (ix + 3 > bb.x1) bb.x1 = ix + 3;
+          if (iz - 3 < bb.z0) bb.z0 = iz - 3;
+          if (iz + 3 > bb.z1) bb.z1 = iz + 3;
+        }
+        continue;
+      }
+
       const m = this.meshes[li];
       const at = this._counts[li];
       m.instanceMatrix.array.set(
@@ -683,7 +725,9 @@ export default class Props {
         // out at exactly the authored distance.
         lods[0].dist = Math.min(def.far, def.near * 1.3);
       }
-      this.batcher.batch(name, lods, { receive: def.receive !== false });
+      const bat = this.batcher.batch(name, lods, { receive: def.receive !== false });
+      // Parked cars are the one type dense enough for chunk-granular LOD to hurt.
+      if (name.startsWith('car')) bat.splitNear = true;
     }
   }
 
@@ -956,7 +1000,7 @@ const RATE = {
   manhole: [1.00, 2200], drain: [1.00, 4200], sign: [0.85, 6000],
   pole: [1.00, 900], shelter: [1.00, 90], dock: [1.00, 40], planter: [1.00, 700],
   litter: [0.80, 900], construction: [1.00, 70],
-  attach: [1.00, 24000], signal: [1.00, 1600], parked: [1.00, 11000],
+  attach: [1.00, 24000], signal: [1.00, 1600], parked: [1.00, 30000],
 };
 
 function populate(sys, L, density) {

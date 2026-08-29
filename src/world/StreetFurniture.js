@@ -1800,7 +1800,7 @@ function buildCarFromVehicle(type, bodyHex) {
   // 30/165 keeps ~44 cars at full detail around the camera — which is the range
   // the critic was looking at when it called the old box "the dominant
   // foreground liability" at 3.7 m — and spends the saving on the long tail.
-  return { d0, d1, near: 30, far: 165, cast: true, receive: true };
+  return { d0, d1, near: 38, far: 155, cast: true, receive: true };
 }
 
 /**
