@@ -335,7 +335,13 @@ export default class RoadNetwork {
   nearestEdge(x, z) {
     const cx = Math.floor(x / HASH), cz = Math.floor(z / HASH);
     let best = null;
-    for (let r = 0; r <= 4 && !best; r++) {
+    // Keep expanding until the best hit is provably closer than anything the
+    // next ring could hold. Stopping at the first ring that contains *any*
+    // segment returns whatever happened to be bucketed nearby, which can be
+    // tens of metres wrong — and a wrong answer here silently lets a building
+    // parcel sit on a carriageway.
+    for (let r = 0; r <= 6; r++) {
+      if (best && best.distance <= (r - 1) * HASH) break;
       for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
         if (r > 0 && Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
         const list = this._segHash.get(`${cx + dx},${cz + dz}`); if (!list) continue;
@@ -378,7 +384,12 @@ export default class RoadNetwork {
    * ignoring one edge. Used to size building plots to the real block depth.
    */
   rayToRoad(x, z, dx, dz, maxD, ignoreEdge) {
-    let best = maxD;
+    // `bestT` is the raw hit distance and `best` the usable clearance after
+    // deducting that road's own corridor. Comparing candidates against the
+    // already-deducted value (as this used to) makes a nearer road look further
+    // away than one already found, so the nearest street gets skipped and the
+    // parcel is sized to run straight through it.
+    let bestT = maxD, best = maxD;
     const steps = Math.ceil(maxD / HASH) + 1;
     const tested = new Set();
     for (let s = 0; s <= steps; s++) {
@@ -397,11 +408,21 @@ export default class RoadNetwork {
           if (Math.abs(den) < 1e-9) continue;
           const t = ((a.x - x) * rz - (a.z - z) * rx) / den;
           const u = ((a.x - x) * dz - (a.z - z) * dx) / den;
-          if (t > 0.5 && t < best && u >= 0 && u <= 1) best = t - e.halfRoad - e.walk;
+          if (t > 0.5 && t < bestT && u >= 0 && u <= 1) {
+            bestT = t;
+            best = t - e.halfRoad - e.walk;
+          }
         }
       }
     }
     return Math.max(0, best);
+  }
+
+  /** True where a point is clear of every carriageway. */
+  offCarriageway(x, z, margin = 0.25) {
+    const ne = this.nearestEdge(x, z);
+    if (!ne) return true;
+    return ne.distance >= this.edges[ne.edgeId].halfRoad + margin;
   }
 
   // -- pavement graph -------------------------------------------------------
@@ -559,13 +580,37 @@ export default class RoadNetwork {
           const p0 = this._along(segs, k * w, acc);
           const p1 = this._along(segs, (k + 1) * w, acc);
           const mx = (p0.x + p1.x) / 2, mz = (p0.z + p1.z) / 2;
-          let dx = -(p1.z - p0.z), dz = (p1.x - p0.x);
-          const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
-          if ((dx * (mx - this.sample(e.id, 0.5).x) + dz * (mz - this.sample(e.id, 0.5).z)) < 0) {
-            dx = -dx; dz = -dz;
-          }
-          const reach = this.rayToRoad(mx, mz, dx, dz, cfg.depth * 2 + 12, e.id);
-          const depth = Math.min(cfg.depth, Math.max(0, reach / 2 - 0.6));
+          // Outward is simply `side * right-of-travel`, taken from this very
+          // segment. The old test compared against the edge's midpoint, which on
+          // a street that curves as hard as Atlantic Ave picks the wrong sign
+          // near the ends and builds the parcel back across the carriageway.
+          const rl = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
+          let dx = side * -(p1.z - p0.z) / rl;
+          let dz = side * (p1.x - p0.x) / rl;
+          // Probe from both ends as well as the middle: a parcel on a bend or
+          // near a skew junction can have a corner run into a street the
+          // centre ray never sees.
+          const lim = cfg.depth * 2 + 12;
+          const reach = Math.min(
+            this.rayToRoad(mx, mz, dx, dz, lim, e.id),
+            this.rayToRoad(p0.x, p0.z, dx, dz, lim, e.id),
+            this.rayToRoad(p1.x, p1.z, dx, dz, lim, e.id));
+          let depth = Math.min(cfg.depth, Math.max(0, reach / 2 - 0.6));
+          if (depth < 8) continue;
+          // Final guarantee: pull the parcel back until no corner and no edge
+          // midpoint sits on a carriageway. Roads are mine, so keeping parcels
+          // off them is my job, not the buildings agent's.
+          const clear = (d) => {
+            for (let k = 0; k <= 4; k++) {
+              const t = k / 4;
+              const fx = p0.x + (p1.x - p0.x) * t, fz = p0.z + (p1.z - p0.z) * t;
+              if (!this.offCarriageway(fx + dx * d, fz + dz * d)) return false;
+              if (!this.offCarriageway(fx + dx * d * 0.5, fz + dz * d * 0.5)) return false;
+              if (!this.offCarriageway(fx, fz)) return false;
+            }
+            return true;
+          };
+          while (depth >= 8 && !clear(depth)) depth -= 2.5;
           if (depth < 8) continue;
           // Test the middle of the parcel, not the kerb: a street that runs
           // along the Common has frontage on the pavement but no land behind it.

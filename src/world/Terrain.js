@@ -166,9 +166,15 @@ export default class Terrain {
     // stamp has to reach a full cell past the kerb: every cell that a point on
     // the carriageway can bilinearly sample from must be clamped, or the ground
     // interpolates straight back up through the asphalt.
-    const REACH = CELL * 1.1;
+    const NEAR = CELL * 1.1;
+    // Out past the fine ring the ground mesh is 36 m per quad, so the stamp has
+    // to reach that far or the coarse triangles interpolate back up through the
+    // carriageway (Main Street Charlestown, 19 cm).
+    const FAR = 40;
     for (const e of net.edges) {
       if (e.bridged) continue;
+      const rad = Math.max(Math.abs(e.pts[0].x), Math.abs(e.pts[0].z));
+      const REACH = rad > 1400 ? FAR : NEAR;
       const zA = e.halfRoad + 0.25 + REACH;               // never above the gutter
       const zB = zA + REACH + (e.walk > 0.3 ? e.walk : 0); // never above the kerb top
       const outer = zB + BLEND;
@@ -193,7 +199,9 @@ export default class Terrain {
             const k = j * NX + i2;
             // Lowest wins, so two streets crossing never fight over a cell.
             let cap;
-            if (d <= zA) cap = y - 0.40;
+            // A coarser ring interpolates over a longer span, so it needs more
+            // clearance under the carriageway to stay beneath it.
+            if (d <= zA) cap = y - (REACH > 20 ? 0.75 : 0.40);
             else if (d <= zB) cap = y + 0.02;
             else cap = y + 0.02 + (d - zB) * (1 / BLEND) * Math.max(0, H[k] - y);
             if (cap < H[k]) H[k] = cap;
@@ -242,9 +250,18 @@ export default class Terrain {
   /**
    * One grid patch. `hole` carves out the middle so rings nest without overlap
    * (an overlapping inner/outer terrain ring is a classic z-fighting source).
+   *
+   * `half`, `step` and `hole` must satisfy `2*half % step === 0` and
+   * `(half + hole) % step === 0`, so a vertex lands exactly on the hole
+   * boundary and the ring abuts its neighbour instead of leaving a gap. See
+   * RINGS below — getting this wrong opened a 2 m and a 100 m hole right around
+   * the city, through which you could see the back of the sky dome.
    */
-  _patch(half, step, hole = 0, tile = 24, surf = null) {
+  _patch(half, step, hole = 0, tile = 24, surf = null, skirt = 0) {
     const n = Math.round((half * 2) / step);
+    if (Math.abs((half * 2) / step - n) > 1e-6) {
+      console.warn(`[terrain] ring ${half}/${step} is not grid-aligned`);
+    }
     const pos = [], nrm = [], uv = [], col = [], idx = [];
     const map = new Int32Array((n + 1) * (n + 1)).fill(-1);
     const c = new THREE.Color();
@@ -289,6 +306,33 @@ export default class Terrain {
         idx.push(a, d, b, b, d, e2);
       }
     }
+    // Perimeter skirt. Neighbouring rings meet on the same grid line but sample
+    // the ground at different densities, so the shared edge can differ by a few
+    // centimetres over a 54 m span. A wall hanging down from the edge means any
+    // residual hairline shows ground, never sky.
+    if (skirt > 0) {
+      const edge = [];
+      for (let i = 0; i <= n; i++) edge.push([i, 0]);
+      for (let j = 1; j <= n; j++) edge.push([n, j]);
+      for (let i = n - 1; i >= 0; i--) edge.push([i, n]);
+      for (let j = n - 1; j >= 1; j--) edge.push([0, j]);
+      edge.push(edge[0]);
+      let prevTop = -1, prevBot = -1;
+      for (const [i, j] of edge) {
+        const src = map[j * (n + 1) + i];
+        if (src < 0) { prevTop = -1; continue; }
+        const x = pos[src * 3], y = pos[src * 3 + 1], z = pos[src * 3 + 2];
+        const top = v++;
+        pos.push(x, y, z); nrm.push(0, 1, 0); uv.push(x / tile, z / tile);
+        col.push(col[src * 3], col[src * 3 + 1], col[src * 3 + 2]);
+        const bot = v++;
+        pos.push(x, y - skirt, z); nrm.push(0, 1, 0); uv.push(x / tile, (z - skirt) / tile);
+        col.push(col[src * 3] * 0.7, col[src * 3 + 1] * 0.7, col[src * 3 + 2] * 0.7);
+        if (prevTop >= 0) idx.push(prevTop, prevBot, top, top, prevBot, bot);
+        prevTop = top; prevBot = bot;
+      }
+    }
+
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
@@ -306,16 +350,10 @@ export default class Terrain {
     // large blotchy crackle. Coarser rings tile proportionally larger so the
     // texture does not alias into shimmer at distance.
     const tile = material?.userData?.tileMeters || 4;
-    // 18 m in the core. The stamp reaches 11 m past every kerb, so the mesh
-    // cannot interpolate back up through the carriageway at this spacing —
-    // verified by sampling every road centreline, gutter and pavement line
-    // against the *triangulated* surface, not the raster. 20 m is where it
-    // starts to break through (Seaport Boulevard, 7 cm), so this is the last
-    // safe step. The ground here is almost entirely hidden under road,
-    // pavement and buildings anyway.
-    const core = this._patch(1500, 18, 0, tile, surf);
-    const mid = this._patch(3200, 44, 1500, tile * 4, surf);
-    const far = this._patch(11000, 550, 3200, tile * 40);
+    const [C, M, F] = Terrain.RINGS;
+    const core = this._patch(C.half, C.step, 0, tile, surf, 4);
+    const mid = this._patch(M.half, M.step, M.hole, tile * 4, surf, 8);
+    const far = this._patch(F.half, F.step, F.hole, tile * 40, null, 0);
     for (const g of [core, mid, far]) {
       const m = new THREE.Mesh(g, material);
       m.receiveShadow = true;
@@ -360,5 +398,25 @@ export default class Terrain {
     this.meshes.length = 0;
   }
 }
+
+/**
+ * Nested LOD rings, chosen so the seams are exact.
+ *
+ * Each ring must satisfy `2*half % step === 0` (so the grid is symmetric about
+ * the origin) and `(half + hole) % step === 0` (so a vertex lands exactly on the
+ * hole boundary). Pick these by eye and the rings miss each other: the previous
+ * set left a 2 m gap at 1506 and a 100 m gap at 3200, both full perimeter
+ * rings, through which you could see the back of the sky dome.
+ *
+ *   core 1458 / 18 : the fine ring. 18 m is the coarsest spacing at which the
+ *                    road stamp still keeps the ground out of the carriageway.
+ *   mid  3186 / 36 : covers the rest of the play area.
+ *   far 11151 / 531: horizon filler out past the sky dome's visible ground.
+ */
+Terrain.RINGS = [
+  { half: 1458, step: 18, hole: 0 },
+  { half: 3186, step: 36, hole: 1458 },
+  { half: 11151, step: 531, hole: 3186 },
+];
 
 export { CELL as TERRAIN_CELL, BASE_LAND };
