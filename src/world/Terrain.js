@@ -25,9 +25,13 @@ const BASE_LAND = 3.9;                           // mean height of the filled gr
 
 // --- deterministic value noise ---------------------------------------------
 function hash2(x, y) {
-  let h = x * 374761393 + y * 668265263;
-  h = (h ^ (h >> 13)) * 1274126177;
-  return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+  // Math.imul, not `*`: the float product of two 32-bit constants overflows 2^53
+  // and silently drops the low bits, which correlates the noise along diagonals
+  // and shows up as smeared banding across large flat surfaces.
+  let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1);
+  h = Math.imul(h ^ (h >>> 15), 0x2545f491);
+  h = Math.imul(h ^ (h >>> 13), 0x27d4eb2d);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 function vnoise(x, y) {
   const xi = Math.floor(x), yi = Math.floor(y);
@@ -239,7 +243,7 @@ export default class Terrain {
    * One grid patch. `hole` carves out the middle so rings nest without overlap
    * (an overlapping inner/outer terrain ring is a classic z-fighting source).
    */
-  _patch(half, step, hole = 0) {
+  _patch(half, step, hole = 0, tile = 24, surf = null) {
     const n = Math.round((half * 2) / step);
     const pos = [], nrm = [], uv = [], col = [], idx = [];
     const map = new Int32Array((n + 1) * (n + 1)).fill(-1);
@@ -257,15 +261,23 @@ export default class Terrain {
         const hz = this.groundHeight(x, z + e) - this.groundHeight(x, z - e);
         const nl = Math.hypot(-hx, 2 * e, -hz);
         nrm.push(-hx / nl, 2 * e / nl, -hz / nl);
-        uv.push(x / 24, z / 24);
+        uv.push(x / tile, z / tile);
         // Grass on the flats, dry dirt on steep flanks, silt near the water.
         const slope = Math.min(1, Math.hypot(hx, hz) / (2 * e) * 1.6);
         const wet = 1 - Math.min(1, Math.max(0, (y - 1.2) / 2.4));
         const tint = fbm(x * 0.006, z * 0.006, 3);
+        // Downtown Boston is not built on a lawn. Only parks, the riverbank and
+        // the outskirts get green; everything between the buildings reads as
+        // the grey-brown of yard, gravel and packed dirt it actually is.
+        const green = surf ? surf(x, z) : 1;
+        const gr = 0.118 + slope * 0.20 + wet * 0.09 + tint * 0.055;
+        const gg = 0.152 + slope * 0.13 + wet * 0.05 + tint * 0.070;
+        const gb = 0.076 + slope * 0.08 + wet * 0.06 + tint * 0.030;
+        const dr = 0.108 + slope * 0.10 + tint * 0.048;
         c.setRGB(
-          0.118 + slope * 0.20 + wet * 0.09 + tint * 0.055,
-          0.152 + slope * 0.13 + wet * 0.05 + tint * 0.070,
-          0.076 + slope * 0.08 + wet * 0.06 + tint * 0.030);
+          dr + (gr - dr) * green,
+          (dr * 0.97) + (gg - dr * 0.97) * green,
+          (dr * 0.90) + (gb - dr * 0.90) * green);
         col.push(c.r, c.g, c.b);
       }
     }
@@ -288,14 +300,22 @@ export default class Terrain {
   }
 
   /** Build the nested LOD rings and add them to the scene. */
-  build(scene, material) {
-    // 14 m in the core: the road stamp reaches a full 11 m past every kerb, so
-    // the mesh cannot interpolate back up through the carriageway at this
-    // spacing, and the ground here is almost entirely hidden under road,
+  build(scene, material, surf = null) {
+    // The materials library's convention: uv 1.0 spans `tileMeters` of world
+    // surface. Ignoring it stretched grass over 24 m and turned turf into a
+    // large blotchy crackle. Coarser rings tile proportionally larger so the
+    // texture does not alias into shimmer at distance.
+    const tile = material?.userData?.tileMeters || 4;
+    // 18 m in the core. The stamp reaches 11 m past every kerb, so the mesh
+    // cannot interpolate back up through the carriageway at this spacing —
+    // verified by sampling every road centreline, gutter and pavement line
+    // against the *triangulated* surface, not the raster. 20 m is where it
+    // starts to break through (Seaport Boulevard, 7 cm), so this is the last
+    // safe step. The ground here is almost entirely hidden under road,
     // pavement and buildings anyway.
-    const core = this._patch(1500, 14, 0);
-    const mid = this._patch(3200, 44, 1500);
-    const far = this._patch(11000, 550, 3200);
+    const core = this._patch(1500, 18, 0, tile, surf);
+    const mid = this._patch(3200, 44, 1500, tile * 4, surf);
+    const far = this._patch(11000, 550, 3200, tile * 40);
     for (const g of [core, mid, far]) {
       const m = new THREE.Mesh(g, material);
       m.receiveShadow = true;

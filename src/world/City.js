@@ -48,14 +48,25 @@ export default class City {
     mark('graph');
     this.terrain.stampRoads(this.net);
     mark('stamp');
-    this.terrain.build(scene, this._terrainMaterial(materials));
-    mark('ground');
 
     // --- neighbourhoods ----------------------------------------------------
+    // Baked before the ground mesh, because the terrain needs to know which
+    // parts of the city are park and which are built up so it can stop
+    // painting downtown Boston as a lawn.
     this.districts = new Districts(this.terrain);
     this.districts.bake();
     mark('districts');
-    this.districts.build(scene, materials);
+
+    const URBAN = new Set(['financial', 'backBay', 'beaconHill', 'northEnd',
+                           'seaport', 'southEnd', 'charlestown']);
+    this.terrain.build(scene, this._terrainMaterial(materials), (x, z) => {
+      if (this.districts.inPark(x, z)) return 1;
+      const d = this.districts.districtAt(x, z);
+      if (d === 'park' || d === 'water') return 1;
+      return URBAN.has(d) ? 0.10 : 0.85;
+    });
+    mark('ground');
+    this.districts.build(scene, materials, this.net);
     mark('parks');
 
     this.net.buildSidewalks();
@@ -89,9 +100,17 @@ export default class City {
     ctx.bus.emit('city:ready', this);
   }
 
-  /** Ground material: the materials agent's grass if it has landed, else local. */
+  /**
+   * Ground material.
+   *
+   * Deliberately `dirt`, not `grass`: the terrain is what shows in the gaps
+   * between buildings across the whole built-up city, and a grass texture there
+   * makes Boston look like it was built on a golf course. The lawns are a
+   * separate mesh in Districts, which is where `grass` belongs. Vertex colours
+   * still push the outskirts and riverbanks green.
+   */
   _terrainMaterial(materials) {
-    const src = materials?.get?.('grass');
+    const src = materials?.get?.('dirt');
     let m;
     if (src) {
       m = src.clone();
@@ -125,6 +144,12 @@ export default class City {
       nearestEdge: (x, z) => net.nearestEdge(x, z),
       outgoing: (nodeId) => net.outgoing(nodeId),
       laneCount: (edgeId) => net.edges[edgeId]?.lanes ?? 0,
+      /**
+       * Centreline of the kerbside parking bay, or null where a street has
+       * none (alleys, cobbled lanes, the highways). Every edge also carries
+       * `edge.parking = { width, offset }` for direct placement.
+       */
+      parkingLane: (edgeId, side) => net.parkingLane(edgeId, side),
     };
     this.sidewalks = net.sidewalks;
     this.plots = net.plots;
@@ -180,7 +205,7 @@ export default class City {
   update(dt, ctx) {
     this.roadMesh.update(ctx.camera);
     const sky = ctx.get('sky');
-    this.waterSys.update(dt, sky?.sunDir);
+    this.waterSys.update(dt, sky?.sunDir, sky?.zenithColor, sky?.horizonColor);
   }
 
   dispose() {

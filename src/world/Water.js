@@ -72,6 +72,8 @@ export default class Water {
     this.terrain = terrain;
     this.meshes = [];
     this.time = 0;
+    this._sky = new THREE.Color();
+    this._hor = new THREE.Color();
   }
 
   // -- tessellation ---------------------------------------------------------
@@ -127,9 +129,12 @@ export default class Water {
         nrm[i * 3 + 1] = 1;
         dep[i] = Math.max(0, body.level - this.terrain.groundHeight(x, z));
       }
+      // ShapeUtils works in 2-D with +y up the page; mapping that y to world z
+      // flips the handedness, so a CCW 2-D triangle becomes a downward-facing
+      // one in the XZ plane and gets back-face culled. Reverse the winding.
       const idx = new Uint32Array(tris.length * 3);
       for (let i = 0; i < tris.length; i++) {
-        idx[i * 3] = tris[i][0]; idx[i * 3 + 1] = tris[i][1]; idx[i * 3 + 2] = tris[i][2];
+        idx[i * 3] = tris[i][0]; idx[i * 3 + 1] = tris[i][2]; idx[i * 3 + 2] = tris[i][1];
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -160,11 +165,17 @@ export default class Water {
     });
     const u = {
       uTime: { value: 0 },
-      uDeep: { value: new THREE.Color().setStyle(sea ? '#0b1b1e' : '#0d1a1c') },
-      uShallow: { value: new THREE.Color().setStyle(sea ? '#2c4442' : '#31463a') },
+      uDeep: { value: new THREE.Color().setStyle(sea ? '#14242a' : '#16262421'.slice(0, 7)) },
+      uShallow: { value: new THREE.Color().setStyle(sea ? '#3c5a55' : '#42594a') },
+      // Sky colour for the Fresnel reflection. The scene's IBL is globally
+      // dimmed by the lighting rig, which is right for facades and wrong for a
+      // mirror, so the water reflects the sky explicitly instead of relying on
+      // an environment map it cannot control.
+      uSky: { value: new THREE.Color(0.42, 0.55, 0.74) },
+      uHorizon: { value: new THREE.Color(0.62, 0.66, 0.72) },
       uFoam: { value: new THREE.Color().setStyle('#c9d2cf') },
       uRipple: { value: this.normalTex },
-      uChop: { value: sea ? 1.0 : 0.55 },
+      uChop: { value: sea ? 1.15 : 0.78 },
       uSun: { value: new THREE.Vector3(0.3, 0.6, 0.4) },
       uSunCol: { value: new THREE.Color(1, 0.96, 0.88) },
     };
@@ -193,7 +204,7 @@ export default class Water {
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
           uniform float uTime; uniform float uChop;
-          uniform vec3 uDeep, uShallow, uFoam, uSun, uSunCol;
+          uniform vec3 uDeep, uShallow, uFoam, uSun, uSunCol, uSky, uHorizon;
           uniform sampler2D uRipple;
           varying float vDepth; varying vec3 vWPos; varying float vWave;
           vec3 rip(vec2 p, float sc, vec2 vel) {
@@ -204,16 +215,23 @@ export default class Water {
           vec3 nA = rip(wp, 0.0125, vec2( 0.0062, 0.0031));
           vec3 nB = rip(wp, 0.0305, vec2(-0.0041, 0.0074));
           vec3 nC = rip(wp, 0.0810, vec2( 0.0110,-0.0053));
-          // fade the fine octaves out with distance so the surface does not boil
+          vec3 nD = rip(wp, 0.0041, vec2( 0.0021, 0.0013));   // long swell
+          // Fade the fine octaves with distance so the surface does not boil,
+          // but you can read chop most of the way across the Charles basin, so
+          // this has to reach a lot further than a pond-sized fade would.
           float dist = length(vWPos - cameraPosition);
-          float fine = 1.0 - smoothstep(90.0, 620.0, dist);
-          vec3 nrm = normalize(vec3(
-            (nA.x * 1.0 + nB.x * 0.72 * fine + nC.x * 0.45 * fine) * uChop,
-            2.4,
-            (nA.y * 1.0 + nB.y * 0.72 * fine + nC.y * 0.45 * fine) * uChop));
+          float fine = 1.0 - smoothstep(220.0, 1500.0, dist);
+          vec3 wnrm = normalize(vec3(
+            (nD.x * 0.9 + nA.x * 1.15 + nB.x * 0.85 * fine + nC.x * 0.55 * fine) * uChop,
+            1.25,
+            (nD.y * 0.9 + nA.y * 1.15 + nB.y * 0.85 * fine + nC.y * 0.55 * fine) * uChop));
+          // The ripple normal is built in world space from world-space UVs, but
+          // every lighting chunk downstream — including the environment
+          // reflection — works in view space. Without this rotation the water
+          // reflects nothing and reads as flat matte paint.
           // NB: three declares geometryNormal itself in lights_fragment_begin;
           // only normal and nonPerturbedNormal belong to this chunk.
-          vec3 normal = normalize(nrm);
+          vec3 normal = normalize((viewMatrix * vec4(wnrm, 0.0)).xyz);
           vec3 nonPerturbedNormal = normal;`)
         .replace('#include <roughnessmap_fragment>', `
           float dist2 = length(vWPos - cameraPosition);
@@ -236,22 +254,54 @@ export default class Water {
           // specular glitter: a compressed sun highlight the BRDF alone misses
           vec3 V = normalize(cameraPosition - vWPos);
           vec3 H = normalize(V + uSun);
-          float spec = pow(max(dot(normal, H), 0.0), 420.0);
-          float fres = pow(1.0 - max(dot(normal, V), 0.0), 5.0);
-          totalEmissiveRadiance += uSunCol * spec * 2.6 * max(uSun.y, 0.0)
-            + uSunCol * fres * 0.05 * max(uSun.y, 0.0);`);
+          // Schlick, with water's real F0 of 0.02. At the grazing angles you
+          // actually look across a river basin at, this is most of what you see.
+          float ct = max(dot(wnrm, V), 0.0);
+          float F = 0.02 + 0.98 * pow(1.0 - ct, 5.0);
+          vec3 R = reflect(-V, wnrm);
+          vec3 skyCol = mix(uHorizon, uSky, clamp(R.y * 1.9, 0.0, 1.0));
+          float day = clamp(uSun.y * 2.4 + 0.12, 0.0, 1.0);
+          totalEmissiveRadiance += skyCol * F * 1.55 * day;
+          // Compressed sun glitter the split-sum BRDF alone will not give us.
+          float spec = pow(max(dot(wnrm, H), 0.0), 420.0);
+          totalEmissiveRadiance += uSunCol * spec * 3.4 * max(uSun.y, 0.0);`);
     };
     m.customProgramCacheKey = () => 'bostonWater' + (sea ? 'S' : 'R');
     return m;
   }
 
-  /** @param {number} dt @param {THREE.Vector3} sunDir */
-  update(dt, sunDir) {
+  /**
+   * @param {number} dt
+   * @param {THREE.Vector3} [sunDir]
+   * @param {THREE.Color} [sky] zenith colour, for the Fresnel reflection
+   * @param {THREE.Color} [horizon]
+   */
+  update(dt, sunDir, sky, horizon) {
     this.time += dt;
+    if (!this.meshes.length || !this.meshes[0].material.userData.u) return;
+    if (!sky && sunDir) {
+      // Derive the reflected sky from the sun's elevation so the river tracks
+      // the time of day on its own: cold blue at noon, warm and low at dusk,
+      // near-black with a little skyglow at night.
+      const alt = Math.max(-0.25, sunDir.y);
+      const day = Math.min(1, Math.max(0, (alt + 0.06) / 0.34));
+      const warm = 1 - Math.min(1, Math.max(0, (alt - 0.02) / 0.36));
+      this._sky.setRGB(
+        (0.055 + 0.30 * day) * (1 + warm * 0.85),
+        (0.070 + 0.44 * day) * (1 + warm * 0.20),
+        (0.105 + 0.64 * day));
+      this._hor.setRGB(
+        (0.075 + 0.50 * day) * (1 + warm * 1.25),
+        (0.085 + 0.53 * day) * (1 + warm * 0.42),
+        (0.100 + 0.58 * day));
+      sky = this._sky; horizon = this._hor;
+    }
     for (const mesh of this.meshes) {
       const u = mesh.material.userData.u;
       u.uTime.value = this.time;
       if (sunDir) u.uSun.value.copy(sunDir);
+      if (sky) u.uSky.value.copy(sky);
+      if (horizon) u.uHorizon.value.copy(horizon);
     }
   }
 

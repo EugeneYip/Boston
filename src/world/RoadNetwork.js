@@ -18,12 +18,20 @@ const NODE_SNAP = 7;             // merge graph nodes closer than this
 const END_SNAP = 21;             // pull a dangling endpoint onto a nearby street
 const GRADE_SEP = 4.5;           // vertical clearance that suppresses a crossing
 
-/** Roadway half-width and per-side pavement width, by type. */
+/**
+ * Roadway cross-section by type, per side.
+ *   lane     travel lane width
+ *   park     kerbside parking lane (0 = no kerbside parking)
+ *   shoulder gutter strip between the parking lane and the outer travel lane
+ *   walk     pavement width
+ * Boston streets park on both sides almost everywhere; without an explicit
+ * parking lane a kerbside car has nowhere to sit but the outer travel lane.
+ */
 export const PROFILE = {
-  highway:  { lane: 3.65, shoulder: 2.4, walk: 0.0, kerb: 0.16, speed: 27.0 },
-  arterial: { lane: 3.50, shoulder: 0.7, walk: 3.6, kerb: 0.15, speed: 13.4 },
-  street:   { lane: 3.30, shoulder: 0.5, walk: 2.7, kerb: 0.15, speed: 11.2 },
-  alley:    { lane: 2.60, shoulder: 0.0, walk: 1.0, kerb: 0.10, speed: 6.7 },
+  highway:  { lane: 3.65, park: 0.0, shoulder: 2.4, walk: 0.0, kerb: 0.16, speed: 27.0 },
+  arterial: { lane: 3.50, park: 2.5, shoulder: 0.3, walk: 3.6, kerb: 0.15, speed: 13.4 },
+  street:   { lane: 3.30, park: 2.4, shoulder: 0.2, walk: 2.7, kerb: 0.15, speed: 11.2 },
+  alley:    { lane: 5.00, park: 0.0, shoulder: 0.0, walk: 1.0, kerb: 0.10, speed: 6.7 },
 };
 
 const key = (x, z) => `${Math.floor(x / HASH)},${Math.floor(z / HASH)}`;
@@ -80,11 +88,14 @@ export default class RoadNetwork {
     }
 
     const p = PROFILE[st.type];
-    const halfRoad = (st.width ? st.width / 2 : (st.lanes * p.lane) / 2 + p.shoulder);
+    // Alleys and cobbled lanes are too narrow to park on legally.
+    const park = st.width || st.surface === 'cobble' ? 0 : p.park;
+    const halfRoad = (st.width ? st.width / 2
+                               : (st.lanes * p.lane) / 2 + p.shoulder + park);
     return {
       name: st.name, type: st.type, lanes: st.lanes, oneway: st.oneway || 0,
       surface: st.surface || 'asphalt', mall: !!st.mall, bridged: !!(st.y || st.bridge),
-      halfRoad, walk: st.surface === 'cobble' ? 1.4 : p.walk, kerb: p.kerb,
+      halfRoad, park, walk: st.surface === 'cobble' ? 1.4 : p.walk, kerb: p.kerb,
       speed: p.speed, pts: out, splits: [],
     };
   }
@@ -241,6 +252,9 @@ export default class RoadNetwork {
         oneway: st.oneway, width: st.halfRoad * 2, halfRoad: st.halfRoad,
         walk: st.walk, kerb: st.kerb, speed: st.speed, surface: st.surface,
         mall: st.mall, bridged: st.bridged, pts, length: 0, cum: [0],
+        // Kerbside parking bay, for the props agent to line cars up in.
+        parking: st.park > 0.5
+          ? { width: st.park, offset: st.halfRoad - st.park * 0.5 } : null,
       };
       for (let i = 1; i < pts.length; i++) {
         e.length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
@@ -344,6 +358,20 @@ export default class RoadNetwork {
   }
 
   outgoing(nodeId) { return this._out.get(nodeId) || []; }
+
+  /**
+   * Centreline of the kerbside parking bay, or null where there is none.
+   * Points are in a->b order for side +1 (the right kerb) and b->a for side -1,
+   * so a car placed along it faces the way it would legally have parked.
+   * @param {number} edgeId @param {-1|1} side
+   */
+  parkingLane(edgeId, side = 1) {
+    const e = this.edges[edgeId];
+    if (!e?.parking) return null;
+    const out = this.offsetPolyline(e, side * e.parking.offset);
+    if (side < 0) out.reverse();
+    return out;
+  }
 
   /**
    * Distance from a point along a direction to the next road centreline,

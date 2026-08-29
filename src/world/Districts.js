@@ -23,9 +23,13 @@ const N = Math.round(SPAN / RES) + 1;
 const IDS = ['financial', 'backBay', 'beaconHill', 'northEnd', 'fenway', 'seaport',
              'southEnd', 'charlestown', 'cambridge', 'park', 'water'];
 
-const rnd = (s) => {
-  let h = (s * 374761393) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
+/** 2-D integer hash. A 1-D hash fed `x*31 + z*17` aliases into visible diagonal
+ *  streaks across a lawn the size of Boston Common; mixing the axes separately
+ *  does not. */
+const hash2 = (x, y) => {
+  let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1);
+  h = Math.imul(h ^ (h >>> 15), 0x2545f491);
+  h = Math.imul(h ^ (h >>> 13), 0x27d4eb2d);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
 
@@ -67,8 +71,8 @@ export default class Districts {
     }
     for (const p of PARKS) {
       const pts = toWorld(p.ring);
-      this.parkPolys.push({ name: p.name, kind: p.kind, polygon: pts, points: pts,
-                            ...bounds(pts) });
+      this.parkPolys.push({ name: p.name, kind: p.kind, reserveOnly: !!p.reserveOnly,
+                            polygon: pts, points: pts, ...bounds(pts) });
     }
 
     const T = this.terrain;
@@ -109,10 +113,26 @@ export default class Districts {
     return v ? IDS[v - 1] : 'financial';
   }
 
+  /**
+   * Exact point-in-park test. The district raster is 20 m and the Comm Ave Mall
+   * is only 24 m wide, so raster rounding let parcels — and therefore
+   * buildings — land on the grass. Parcel building asks this a few thousand
+   * times at init, which easily affords the real polygon test.
+   */
+  inPark(x, z) {
+    for (const p of this.parkPolys) {
+      if (x < p.minx || x > p.maxx || z < p.minz || z > p.maxz) continue;
+      if (inPoly(p.polygon, x, z)) return true;
+    }
+    return false;
+  }
+
   /** True where a building must not be placed. */
   isReserved(x, z) {
-    const d = this.districtAt(x, z);
-    return d === 'water' || d === 'park';
+    if (this.inPark(x, z)) return true;
+    const w = this.terrain.waterAt(x, z);
+    if (w !== null && this.terrain.groundHeight(x, z) < w + 0.6) return true;
+    return this.districtAt(x, z) === 'water';
   }
 
   // -- park meshes ----------------------------------------------------------
@@ -152,12 +172,15 @@ export default class Districts {
     return { verts, tris };
   }
 
-  build(scene, materials) {
+  build(scene, materials, net) {
     const T = this.terrain;
+    const grassTile = materials?.get?.('grass')?.userData?.tileMeters || 4;
+    const hardTile = materials?.get?.('concrete')?.userData?.tileMeters || 4;
     const groups = { lawn: [], plaza: [] };
     const c = new THREE.Color();
 
     for (const park of this.parkPolys) {
+      if (park.reserveOnly) continue;      // a no-build corridor, not grass
       const m = this._mesh(park.polygon, park.kind === 'mall' ? 14 : 26);
       if (!m) continue;
       const hard = park.kind === 'plaza';
@@ -169,16 +192,32 @@ export default class Districts {
         pos.push(x, y, z);
         const nv = T.normalAt(x, z);
         nrm.push(nv.x, nv.y, nv.z);
-        uv.push(x / 8, z / 8);
+        uv.push(x / (hard ? hardTile : grassTile), z / (hard ? hardTile : grassTile));
         // mown grass with wear patches along the desire lines
-        const w = rnd(Math.floor(x / 7) * 31 + Math.floor(z / 7) * 17);
-        const w2 = rnd(Math.floor(x / 31) * 7 + Math.floor(z / 31) * 91);
+        const w = hash2(Math.floor(x / 7), Math.floor(z / 7));
+        const w2 = hash2(Math.floor(x / 29) + 613, Math.floor(z / 29) - 271);
         if (hard) c.setRGB(0.30 + w * 0.05, 0.295 + w * 0.05, 0.285 + w * 0.05);
         else c.setRGB(0.085 + w * 0.05 + w2 * 0.06, 0.150 + w * 0.07 + w2 * 0.05,
                       0.055 + w * 0.03 + w2 * 0.03);
         col.push(c.r, c.g, c.b);
       }
-      for (const t of m.tris) idx.push(t[0], t[1], t[2]);
+      // Same 2-D -> XZ handedness flip as the water: reverse the winding or the
+      // lawn faces the ground and is culled.
+      //
+      // Also drop any triangle whose centroid lands on a carriageway. Park
+      // outlines are traced by hand and a stray 40 m puts grass across a live
+      // junction; this makes that class of mistake impossible rather than
+      // relying on every polygon being right.
+      for (const t of m.tris) {
+        if (net) {
+          const cx = (m.verts[t[0]][0] + m.verts[t[1]][0] + m.verts[t[2]][0]) / 3;
+          const cz = (m.verts[t[0]][1] + m.verts[t[1]][1] + m.verts[t[2]][1]) / 3;
+          const ne = net.nearestEdge(cx, cz);
+          if (ne && ne.distance < net.edges[ne.edgeId].halfRoad + 0.3) continue;
+        }
+        idx.push(t[0], t[2], t[1]);
+      }
+      if (!idx.length) continue;
       g.push({ pos, nrm, uv, col, idx, offset: base });
     }
 

@@ -80,10 +80,16 @@ export const STREETS = [
     bb(1640, 222), bb(1770, 200), bb(1880, 168),        // bend into Kenmore
   ], { oneway: 1 }),
   S('Marlborough Street', 'street', 2, bbLong(BB_V.marlborough, 0, 1520, 8), { oneway: -1 }),
-  S('Commonwealth Avenue', 'arterial', 4, [
-    ...bbLong(BB_V.comm, 0, 1520, 8),
-    bb(1640, -16), bb(1750, -44), bb(1850, -86),        // Charlesgate to Kenmore
-  ], { mall: true }),
+  // Comm Ave is two separate one-way carriageways with a 24 m planted mall
+  // between them — the mall is the whole point of the street, and modelling it
+  // as one wide road puts the grass on top of the traffic.
+  S('Commonwealth Avenue Inbound', 'street', 2,
+    bbLong(BB_V.comm + 23, 0, 1520, 8).reverse(), { oneway: 1, mall: true }),
+  S('Commonwealth Avenue Outbound', 'street', 2,
+    bbLong(BB_V.comm - 23, 0, 1520, 8), { oneway: 1, mall: true }),
+  S('Commonwealth Avenue West', 'arterial', 4, [
+    bb(1520, 0), bb(1640, -16), bb(1750, -44), bb(1850, -86),  // Charlesgate to Kenmore
+  ]),
   S('Newbury Street', 'street', 2, bbLong(BB_V.newbury, 0, 1560, 8), { oneway: 1 }),
   S('Boylston Street', 'arterial', 4, [
     [42.35225, -71.06432], [42.35208, -71.06600],
@@ -654,11 +660,22 @@ export const PARKS = [
       bb(-167, -115), bb(-167, 0), bb(-167, 115),
     ],
   },
+  // The mall as a single no-build corridor. The rendered grass has to stop
+  // short of each cross street, but the gaps it leaves are still roadway, so
+  // reservation is continuous and rendering is not.
   {
-    name: 'Commonwealth Avenue Mall', kind: 'mall', ring: [
-      bb(10, 14), bb(1510, 14), bb(1510, -14), bb(10, -14),
-    ],
+    name: 'Commonwealth Avenue Mall corridor', kind: 'mall', reserveOnly: true,
+    ring: [bb(-14, 16), bb(1534, 16), bb(1534, -16), bb(-14, -16)],
   },
+  // One block of mall per city block, stopping short of each cross street so
+  // the grass never runs across a carriageway.
+  ...[0, 190, 380, 570, 760, 950, 1140, 1330, 1520].slice(0, -1).map((u0, i, a) => {
+    const u1 = [190, 380, 570, 760, 950, 1140, 1330, 1520][i];
+    return {
+      name: `Commonwealth Avenue Mall ${i + 1}`, kind: 'mall',
+      ring: [bb(u0 + 12, 12), bb(u1 - 12, 12), bb(u1 - 12, -12), bb(u0 + 12, -12)],
+    };
+  }),
   {
     name: 'Charles River Esplanade', kind: 'lawn', ring: [
       [42.36100, -71.07290], [42.35980, -71.07470], [42.35845, -71.07672],
@@ -680,8 +697,10 @@ export const PARKS = [
     ],
   },
   {
+    // Between Clarendon and Dartmouth, Boylston to St James — not across
+    // Dartmouth, which is a working street.
     name: 'Copley Square', kind: 'plaza',
-    ring: [bb(510, -244), bb(626, -244), bb(626, -320), bb(510, -320)],
+    ring: [bb(404, -248), bb(548, -248), bb(548, -294), bb(404, -294)],
   },
   {
     name: 'Post Office Square', kind: 'formal', ring: [

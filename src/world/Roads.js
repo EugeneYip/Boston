@@ -43,15 +43,27 @@ const C = {
   brick:     [0.235, 0.112, 0.086],
   cobble:    [0.170, 0.166, 0.158],
   verge:     [0.115, 0.126, 0.076],
+  parkbay:   [0.082, 0.084, 0.090],
+  graniteTop:[0.255, 0.251, 0.243],
 };
 
 /** Cheap deterministic hash. Math.sin-based noise costs ~1M trig calls building
  *  the atlas; an integer mix is an order of magnitude faster and tiles better. */
 const rnd = (s) => {
-  let h = (s * 374761393) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  let h = Math.imul(s | 0, 0x27d4eb2d);
+  h = Math.imul(h ^ (h >>> 15), 0x2545f491);
+  h = Math.imul(h ^ (h >>> 13), 0x27d4eb2d);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
+/** 2-D hash. Folding x and z into one integer before hashing aliases into
+ *  diagonal streaks along a straight road, which is exactly where it shows. */
+const hash2 = (x, y) => {
+  let h = Math.imul(x | 0, 0x27d4eb2d) ^ Math.imul(y | 0, 0x165667b1);
+  h = Math.imul(h ^ (h >>> 15), 0x2545f491);
+  h = Math.imul(h ^ (h >>> 13), 0x27d4eb2d);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+const _across = new THREE.Vector3();
 
 // ---------------------------------------------------------------------------
 // Procedural atlases. Four seamless patterns, base colour + normal, so the
@@ -285,8 +297,9 @@ export default class Roads {
     const fwd = e.oneway ? e.lanes : Math.ceil(e.lanes / 2);
     const bwd = e.lanes - fwd;
     const sh = P.shoulder;
-    let L = lw ? -lw / 2 : -(bwd * laneW) - sh;
-    let R = lw ? lw / 2 : (fwd * laneW) + sh;
+    const pk = e.parking ? e.parking.width : 0;
+    let L = lw ? -lw / 2 : -(bwd * laneW) - sh - pk;
+    let R = lw ? lw / 2 : (fwd * laneW) + sh + pk;
     const shift = -(L + R) / 2;
     L += shift; R += shift;
     const half = Math.max(-L, R);
@@ -303,8 +316,14 @@ export default class Roads {
       add(L, R, surfTile, surfTint, e.surface === 'cobble' ? 0.86 : 0.97);
     } else {
       let o = L;
-      if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
       const solid = e.type === 'arterial' || e.type === 'highway';
+      // Kerbside parking bay: slightly darker and dirtier than the running
+      // surface because nothing polishes it, and edged with a worn white line.
+      if (pk > 0.5) {
+        add(o, o + pk - 0.10, T_ASPHALT, C.parkbay, 0.99); o += pk - 0.10;
+        add(o, o + 0.10, T_ASPHALT, C.whiteWorn, 0.72); o += 0.10;
+      }
+      if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
       if (solid) { add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12; }
       // left-hand (b->a) lanes
       for (let k = bwd; k >= 1; k--) {
@@ -329,7 +348,14 @@ export default class Roads {
         if (!isLast) { add(next - 0.06, next + 0.06, T_ASPHALT, C.white, 0.62, 1); o = next + 0.06; }
         else o = next;
       }
-      if (solid && sh > 0.05) { add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12; }
+      if (solid && (sh > 0.05 || pk > 0.5)) {
+        add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12;
+      }
+      if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
+      if (pk > 0.5) {
+        add(o, o + 0.10, T_ASPHALT, C.whiteWorn, 0.72); o += 0.10;
+        add(o, R, T_ASPHALT, C.parkbay, 0.99); o = R;
+      }
       if (o < R - 0.02) add(o, R, T_ASPHALT, C.gutter, 0.99);
     }
 
@@ -342,10 +368,14 @@ export default class Roads {
       for (const side of [-1, 1]) {
         const edge = side < 0 ? L : R;
         const k0 = edge, k1 = edge + side * 0.16;
-        bands.push({ o0: k0, o1: k0, y0: 0, y1: KERB_H, tile: T_ASPHALT,
-                     tint: C.granite, rough: 0.74, vertical: true, side });
+        // Boston kerbs are sawn granite blocks about a metre and a half long.
+        // The face must not be asphalt-textured or it reads as a painted stripe
+        // rather than a kerb; the concrete-slab tile at this scale gives the
+        // block joints, and `vertical` maps the texture up the face properly.
+        bands.push({ o0: k0, o1: k0, y0: 0, y1: KERB_H, tile: T_CONCRETE,
+                     tint: C.granite, rough: 0.74, vertical: true, side, scale: 1.5 });
         bands.push({ o0: side < 0 ? k1 : k0, o1: side < 0 ? k0 : k1, y0: KERB_H, y1: KERB_H,
-                     tile: T_ASPHALT, tint: C.granite, rough: 0.72 });
+                     tile: T_CONCRETE, tint: C.graniteTop, rough: 0.70, scale: 1.5 });
         const w0 = edge + side * 0.16, w1 = edge + side * (0.16 + walk);
         bands.push({ o0: side < 0 ? w1 : w0, o1: side < 0 ? w0 : w1,
                      y0: KERB_H + (side < 0 ? 0.05 : 0.0), y1: KERB_H + (side < 0 ? 0.0 : 0.05),
@@ -395,6 +425,33 @@ export default class Roads {
              dx, dz, rx: -dz, rz: dx, slope: (b.y - a.y) / seg };
   }
 
+  /**
+   * Emit a band, splitting it at chunk boundaries.
+   *
+   * Mass Ave is 3 km long and survives intersection-splitting as a handful of
+   * very long edges. Assigning a whole edge to the chunk containing its
+   * midpoint gave chunks a 1700 m bounding sphere, which made every distance
+   * LOD test pass and every frustum cull fail. Grouping the stations by the
+   * chunk they actually sit in fixes both. Runs overlap by one station and
+   * share identical vertex positions, so the split cannot open a crack.
+   */
+  _stripChunked(frames, band, sec, dashPhase, far) {
+    let start = 0;
+    let key = this._key(frames[0]);
+    for (let i = 1; i <= frames.length; i++) {
+      const k = i < frames.length ? this._key(frames[i]) : null;
+      if (k === key && i < frames.length) continue;
+      const run = frames.slice(start, Math.min(i + 1, frames.length));
+      if (run.length > 1) {
+        const ch = this._chunk(run[0].x, run[0].z);
+        this._strip(far ? ch.far : ch.near, run, band, sec, dashPhase);
+      }
+      start = i; key = k;
+    }
+  }
+
+  _key(f) { return `${Math.floor(f.x / CHUNK)},${Math.floor(f.z / CHUNK)}`; }
+
   /** Emit one band as a strip of quads along the given frames. */
   _strip(bat, frames, band, sec, dashPhase) {
     const tile = TILE_UV[band.tile];
@@ -416,21 +473,32 @@ export default class Roads {
       const x0 = f.x + f.rx * o0, z0 = f.z + f.rz * o0;
       const x1 = f.x + f.rx * o1, z1 = f.z + f.rz * o1;
       // surface normal from the across-vector tilt and the along-slope
-      const ax = f.rx * (o1 - o0), ay = y1 - y0, az = f.rz * (o1 - o0);
-      nrm.set(f.dx, f.slope, f.dz).cross(new THREE.Vector3(ax, ay, az)).normalize();
-      if (nrm.y < 0) nrm.negate();
+      if (band.vertical) {
+        // Kerb face: look back across the carriageway, tilted a little up so it
+        // still catches the sky rather than going flat black in shadow.
+        const sd = band.side || 1;
+        nrm.set(-sd * f.rx, 0.16, -sd * f.rz).normalize();
+      } else {
+        const ax = f.rx * (o1 - o0), ay = y1 - y0, az = f.rz * (o1 - o0);
+        _across.set(ax, ay, az);
+        nrm.set(f.dx, f.slope, f.dz).cross(_across).normalize();
+        if (nrm.y < 0) nrm.negate();
+      }
       let cr = band.tint[0], cg = band.tint[1], cb = band.tint[2];
       if (band.dash) {
         const on = ((f.d + dashPhase) % (DASH_ON + DASH_OFF)) < DASH_ON;
         if (!on) { cr = C.asphalt[0]; cg = C.asphalt[1]; cb = C.asphalt[2]; }
       }
       // age the surface: large-scale patchiness plus per-station wear
-      const w = 0.86 + rnd(Math.floor(f.x / 9) * 13 + Math.floor(f.z / 9) * 31) * 0.3;
+      const w = 0.86 + hash2(Math.floor(f.x / 9), Math.floor(f.z / 9)) * 0.3;
       cr *= w; cg *= w; cb *= w;
+      // A vertical face has no lateral extent, so run the pattern up it instead.
+      const v0 = band.vertical ? y0 / sc : o0 / sc;
+      const v1 = band.vertical ? y1 / sc : o1 / sc;
       const a = bat.vert(x0, f.y + y0, z0, nrm.x, nrm.y, nrm.z, cr, cg, cb,
-        f.d / sc, o0 / sc, tile[0], tile[1], band.rough);
+        f.d / sc, v0, tile[0], tile[1], band.rough);
       const b = bat.vert(x1, f.y + y1, z1, nrm.x, nrm.y, nrm.z, cr, cg, cb,
-        f.d / sc, o1 / sc, tile[0], tile[1], band.rough);
+        f.d / sc, v1, tile[0], tile[1], band.rough);
       if (i > 0) bat.quad(prevA, prevB, b, a);
       prevA = a; prevB = b;
     }
@@ -544,16 +612,16 @@ export default class Roads {
         C.concrete[0], C.concrete[1], C.concrete[2], x / 2.6, z / 2.6, ct[0], ct[1], 0.88));
       for (let k = 1; k < vs.length - 1; k++) bat.i.push(vs[0], vs[k], vs[k + 1]);
       // kerb face around the corner
-      const gt = TILE_UV[T_ASPHALT];
+      const gt = TILE_UV[T_CONCRETE];
       const face = [[ea.r.x, ea.r.z], [c.x, c.z], [eb.l.x, eb.l.z]];
       for (let k = 0; k < face.length - 1; k++) {
         const [x0, z0] = face[k], [x1, z1] = face[k + 1];
         let fx = x1 - x0, fz = z1 - z0; const fl = Math.hypot(fx, fz) || 1;
         const nx = -fz / fl, nz = fx / fl;
-        const a = bat.vert(x0, n.y, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 2.4, 0, gt[0], gt[1], 0.74);
-        const b = bat.vert(x1, n.y, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 2.4, 0, gt[0], gt[1], 0.74);
-        const c2 = bat.vert(x1, n.y + KERB_H, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 2.4, KERB_H / 2.4, gt[0], gt[1], 0.74);
-        const d = bat.vert(x0, n.y + KERB_H, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 2.4, KERB_H / 2.4, gt[0], gt[1], 0.74);
+        const a = bat.vert(x0, n.y, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 1.5, 0, gt[0], gt[1], 0.74);
+        const b = bat.vert(x1, n.y, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 1.5, 0, gt[0], gt[1], 0.74);
+        const c2 = bat.vert(x1, n.y + KERB_H, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 1.5, KERB_H / 1.5, gt[0], gt[1], 0.74);
+        const d = bat.vert(x0, n.y + KERB_H, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 1.5, KERB_H / 1.5, gt[0], gt[1], 0.74);
         bat.quad(a, b, c2, d);
       }
     }
@@ -635,19 +703,18 @@ export default class Roads {
       const coarse = this._frames(e, d0, d1, STEP);
       const fine = this._frames(e, d0, d1, DASH_ON);
       const phase = rnd(e.id) * (DASH_ON + DASH_OFF);
-      const mid = this._at(e, (d0 + d1) / 2);
-      const ch = this._chunk(mid.x, mid.z);
-      const bat = ch.near;
       for (const band of sec.bands) {
-        this._strip(bat, band.dash ? fine : coarse, band, sec, phase);
+        this._stripChunked(band.dash ? fine : coarse, band, sec, phase, false);
       }
       // low-detail version: bare carriageway + pavement, no markings
-      const fbat = ch.far;
       const lo = this._frames(e, d0, d1, STEP * 3);
-      this._strip(fbat, lo, { o0: sec.L, o1: sec.R, tile: T_ASPHALT, tint: C.asphalt,
-                              rough: 0.97, road: true }, sec, 0);
+      this._stripChunked(lo, { o0: sec.L, o1: sec.R, tile: T_ASPHALT, tint: C.asphalt,
+                               rough: 0.97, road: true }, sec, 0, true);
       for (const band of sec.bands) {
-        if (band.tile === T_CONCRETE || band.tile === T_BRICK) this._strip(fbat, lo, band, sec, 0);
+        if (band.vertical) continue;
+        if (band.tile === T_CONCRETE || band.tile === T_BRICK) {
+          this._stripChunked(lo, band, sec, 0, true);
+        }
       }
     }
 
