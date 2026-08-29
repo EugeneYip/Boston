@@ -62,7 +62,7 @@ export default class CaptureHarness {
       // carriageway were all invisible to earlier passes. These are sampled from
       // real road-graph edges that have 8+ buildings within 45 m.
       // Beacon St, Back Bay -- level camera at eye height on a BUILT street.
-      st_backbay:    { pos: [-433.6, 5.22, -61.2], look: [-575.9, 5.66, -13.8],
+      st_backbay:    { pos: [-457.3, 5.29, -53.3], look: [-575.9, 5.66, -13.8],
                         tod: 9.6, fov: 58, eye: 1.65 },
       // Chestnut St, Beacon Hill -- level camera at eye height on a BUILT street.
       st_beaconhill: { pos: [-379.8, 5.19, -193.1], look: [-232.6, 6.12, -221.9],
