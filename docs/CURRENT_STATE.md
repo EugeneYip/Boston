@@ -369,6 +369,40 @@ Last verified: 2026-08-27, commit `06f93d3`.
     brought the median distance-to-junction from ~215 m down to **86 m** — but the real fix
     is to subdivide long pavement strands at, say, 60 m so the graph has decision points.
     *Owner: city (`RoadNetwork.buildSidewalks`), with AI to follow.*
+13. **Static props sit ~0.55 m BELOW the pavement they stand on.** The critic's "peds
+    +1.96 m / traffic shells +1.40 m above ground" reads the discrepancy the wrong way
+    round, and the inference that drove it — *"all static props are perfectly aligned, so
+    `groundHeight()` is the right reference"* — is exactly backwards. Props matching
+    `groundHeight` is not evidence that `groundHeight` is the surface; it is evidence that
+    props are buried.
+
+    `Terrain.stampRoads` deliberately clamps the raster **below** the carriageway ("never
+    above the gutter", "never above the kerb top") so the ground mesh cannot poke through
+    the asphalt. `Roads.js` then builds the road from the *graph polyline* `y` and the
+    pavement from that `+ KERB_H (0.145)`. So near any road, `groundHeight()` is a systematic
+    **0.4–0.6 m below the surface that is actually drawn**, by design.
+
+    Measured by raycasting the real collision geometry at `st_backbay` (origin 2 m above the
+    strand, so no tree canopy), 10 pavement and 3 carriageway probes:
+
+    | reference | vs. rendered surface (median) |
+    |---|---|
+    | pedestrian `y` (sidewalk strand) | **−0.02 m** — correct |
+    | AI car `y` (lane polyline) | **+0.04 m** — correct |
+    | `groundHeight()` at the pavement | **−0.58 m** |
+    | `groundHeight()` at the carriageway | **−0.38 m** |
+
+    Independently, sampling 600 prop instances: `prop.y − groundHeight()` has median
+    **0.00** and min **0.00** — props sit exactly on the raster — while
+    `prop.y − sidewalkStrandY` has median **−0.59 m**. A lamp post at (−142.6, −212.8) is at
+    `y = 8.62` with `groundHeight = 8.62` and the pavement above it at `9.30`.
+
+    So: **do not "fix" peds or traffic against `groundHeight()`** — that would sink them half
+    a metre into the road. `Props.js` already anticipates this at line 495,
+    `L.kerb = 0;   // sidewalk lip above groundHeight; see report — city may raise this`.
+    Either props lift by the local kerb amount, or the city publishes a
+    `city.surfaceHeight(x, z)` that returns the drawn surface rather than the raster.
+    *Owner: props / street furniture, with city to publish the accessor.*
 
 ## Shadow depth, before and after — the number the critic scored
 
