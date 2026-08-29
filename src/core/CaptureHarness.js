@@ -54,6 +54,28 @@ export default class CaptureHarness {
       rain_street:    { pos: [90, 2.4, -40],   look: [-300, 6, -420], tod: 15.2, fov: 58,
                         weather: 'rain', eye: 2.4 },
       bridge:         { pos: [-40, 26, -980],  look: [120, 8, -1500], tod: 8.2,  fov: 52 },
+
+      // ---- Level eye-height street cameras -------------------------------
+      // The critic's single biggest process finding: not one named shot was a
+      // level camera at eye height on a built street, which is why the horizon
+      // step, the triangle overrun, the car shells and buildings standing in the
+      // carriageway were all invisible to earlier passes. These are sampled from
+      // real road-graph edges that have 8+ buildings within 45 m.
+      // Beacon St, Back Bay -- level camera at eye height on a BUILT street.
+      st_backbay:    { pos: [-433.6, 5.22, -61.2], look: [-575.9, 5.66, -13.8],
+                        tod: 9.6, fov: 58, eye: 1.65 },
+      // Chestnut St, Beacon Hill -- level camera at eye height on a BUILT street.
+      st_beaconhill: { pos: [-379.8, 5.19, -193.1], look: [-232.6, 6.12, -221.9],
+                        tod: 16.0, fov: 58, eye: 1.65 },
+      // Hanover St, North End -- level camera at eye height on a BUILT street.
+      st_northend:   { pos: [830.0, 5.16, -873.0], look: [919.9, 4.6, -993.1],
+                        tod: 18.4, fov: 58, eye: 1.65 },
+      // Arlington St, South End -- level camera at eye height on a BUILT street.
+      st_southend:   { pos: [-334.5, 5.03, 577.3], look: [-282.1, 5.14, 717.9],
+                        tod: 11.2, fov: 58, eye: 1.65 },
+      // Summer St, Seaport -- level camera at eye height on a BUILT street.
+      st_seaport:    { pos: [1326.9, 5.14, 593.1], look: [1464.5, 4.77, 652.9],
+                        tod: 20.0, fov: 58, eye: 1.65 },
     };
 
     // Any system id that may write to the camera. `setCamera` stands these down,
@@ -171,7 +193,35 @@ export default class CaptureHarness {
         ];
         const origin = new THREE.Vector3();
         const _dirTmp = new THREE.Vector3();
+        // Exact test first: buildings publish their footprint polygon and height,
+        // so point-in-polygon plus a height check is definitive. The raycast
+        // heuristic below missed `golden_hour` sitting inside a brownstone --
+        // rays escaped through window openings, so it never reached 5 of 6 hits.
+        const specs = engine.systems.get('buildings')?.specs;
+        const insideFootprint = (p) => {
+          if (!Array.isArray(specs)) return null;   // unknown -> fall through
+          for (const b of specs) {
+            if (b.cx === undefined) continue;
+            // Cheap reject before the polygon walk.
+            if (Math.abs(b.cx - p[0]) > 120 || Math.abs(b.cz - p[2]) > 120) continue;
+            const top = (b.base || 0) + (b.h || 0);
+            if (p[1] > top) continue;
+            const poly = b.poly;
+            if (!poly || poly.length < 3) continue;
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+              const xi = poly[i].x, zi = poly[i].z, xj = poly[j].x, zj = poly[j].z;
+              if (((zi > p[2]) !== (zj > p[2])) &&
+                  (p[0] < (xj - xi) * (p[2] - zi) / (zj - zi) + xi)) inside = !inside;
+            }
+            if (inside) return true;
+          }
+          return false;
+        };
+
         const enclosed = (p) => {
+          const exact = insideFootprint(p);
+          if (exact !== null) return exact;
           origin.set(p[0], p[1], p[2]);
           let hits = 0;
           for (const d of dirs) {
