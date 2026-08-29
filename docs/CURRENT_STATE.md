@@ -56,6 +56,13 @@ Last verified: 2026-08-27, commit `06f93d3`.
   Six weather states with 20 s transitions, real precipitation instancing, wetness
   published to `ctx.assets.setWetness()`, and lightning driving a real `DirectionalLight`
   plus `bus.emit('thunder', {distance})` at the correct speed-of-sound delay.
+  Re-swept against **live** auto-exposure (it had been pinned when this was first
+  tuned) — the night glow calibration holds and is now better than it was: **0% of pixels
+  clipped at every hour**, where night previously clipped 2.5–3.1% to pure white. At
+  `tod 23` the sky sits correctly between unlit and lit surfaces — sky p50 **56**, city
+  p10 4.5 (unlit facades), city p99 **143** (lit windows) — rather than being a flat wash.
+  Exposure settles inside one `capture()`: the same shot repeated reads 215.7 → 213.4 →
+  213.4, so shot order does not contaminate a sweep.
 - **Physics** (Rapier), **vehicles**, **audio**, **HUD/minimap/menu**, **profiler**.
 - **Traffic** (`src/ai/Traffic.js`, `Navigation.js`): ~120 kinematic AI cars on the real
   lane graph. IDM car-following, two-phase signals on **108** junctions, priority + a
@@ -119,6 +126,7 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Night rendered as bright as noon *after* the clamp was fixed | A meter with unit gain maps every scene onto the same middle grey by construction — that is what a meter is for. Fixing the clamp therefore made 22:00 render at frame p50 100/255, identical to 09:30. It also silently cancelled the lighting stage: any change to `NIGHT_SKY` was undone by the exposure stage within a second, which is why that constant had been pushed to a non-physical 0.9 chasing a visible result. `AutoExposurePass.setResponse(pivot, gainDown)` now compresses the metered value toward a pivot on the **dark side only** (full gain upwards, so a bright sky still stops down and cannot clip). At `meterGainDown: 0.55` night_neon lands 1.9 stops below its fully-adapted exposure while the four daylight shots move under a quarter of a stop. | `AutoExposurePass.setResponse` + `RenderPipeline.options.meterPivot`/`meterGainDown` |
 | `LensPass` draw rejected with `GL_INVALID_OPERATION` (framebuffer feedback loop) every frame — the whole progressive-tent bloom halo silently missing | The upsample bound `mips[i-1]` as a `supportBuffer` sampler **while rendering into `mips[i-1]`**. Reading and writing one texture in the same draw is a feedback loop; the driver dropped the draw and reported it as a `console.warn`, so it never reached `__boston.errors`. The frame still looked plausible because `mips[0]` kept its plain downsample. The upsample now emits `vec4(col * scatter, scatter)` and the *blender* combines it with the destination (`src + dst*(1-srcA)` = `mix(dst, col, scatter)`), so the finer level is never sampled. Also energy-preserving, unlike the old unbounded `support + col`. Verified: stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten passes, and binding a target as its own sampler still faults on this driver, so the test has not gone blind. | `LensPass.upMat` / `UP_FRAG` |
 | Shadow recovery believed unnecessary because "the HDR probe shows no detail below the clip point" | The probe *was* the frozen meter. With metering live, `probeLuminance()` on the dusk downtown framing reports scene p05 at **-7.36** against an adapted key of -3.11 — 4.2 stops of real rendered detail under a curve that clips at ~5.5. Toe re-enabled at `shadowContrast: 0.62`. Dusk pure-black pixels 7.45% → 1.9%, p05 0.4 → 4.9, with p50/p90/p99 moving under 1.5/255. Note `shadowToeStops` is a **width**: widening it to 9 lifts the deepest shadows *less* (night_neon black 5.4% at 7 stops, 8.9% at 9). Tune the contrast, not the width. | `RenderPipeline.options.shadowContrast` |
+| Hard horizontal seam across the frame; the outer third of view distance kept its raw unfogged colour | `if (d > 0.99999)` in the atmosphere composite classified sky. That epsilon is worth **8108 m** at `near 0.25 / far 12000`, so it acted as a second, invisible far plane: geometry beyond it was treated as sky and skipped aerial perspective. Depth epsilons are distances, not tolerances — always convert one back to metres before trusting it. | `d >= 1.0` in `atmospherePass.glsl.js` + `clouds.glsl.js`, commit `d290e5e` |
 | The `atmosphere` pass reported **zero** cost in every GPU profile | `_passNames` was captured inside `_rebuild`, which runs at init — before the atmosphere stage inserts its pass. `GpuTimer` round-robins over that list and `_instrument` is what makes a pass timable at all, so a pass added later was not merely mis-timed, it was invisible. `_syncPassList()` now re-reads the composer whenever the pass count changes. | `RenderPipeline._syncPassList` |
 | Lateral chromatic aberration much heavier at night than authored | `LensFinalEffect` scales CA by `1 + stopsUnder * 0.22` off the adapted luminance, uncapped. That was harmless only while the meter was frozen at -3.6 (a constant 1.87×); with metering live it reached 2.8× and put ~3 px of fringing in every corner of a night frame. Capped at `apertureMax` 1.9, which leaves the day look unchanged. | `LensFinalEffect` |
 | **41–52 pure-white snow banks standing on a clear August street**, one with a handrail through it | Two independent bugs, both in props. (1) The weather gate worked, but `PropBatch.refresh()` ended with `m.visible = cnt > 0`, which overwrote `setVisible(false)` the next time the camera crossed a chunk boundary. `Props.update` only re-applied the gate `if (this._snow)` — i.e. never in the case that needed it. Suppression is now a durable `PropBatch.hidden` flag that `refresh()` honours. (2) They were authored at `halfRoad - 0.2`, i.e. **inside the carriageway**, which is why they sat mid-road and intersected pavement furniture; a plough throws snow onto the kerb, so they now sit at `halfRoad + 0.34`. Also re-coloured — ploughed city snow is grit-grey at the base, not `ffffff`. Same class of bug hid in `Decals.setWeather`, which showed road **salt** under `overcast`. | `PropBatch.hidden`, `Props._applySnow` |
@@ -212,38 +220,53 @@ Last verified: 2026-08-27, commit `06f93d3`.
    and all three are sitting under the exposure clamp in issue 2. **Judge night from a
    street, or re-frame the shot** — e.g. `pos [-1453.4, 4.85, 401.4] look [-1200, 11, 470]`.
    *Owner: lighting (done what it can without 2) + render (2).*
-4. **A hard horizontal seam across the whole frame, introduced by the `atmosphere` pass.**
-   Distinct from the pure-black horizon gap the critic found (terrain ring ending before
-   the sky dome starts) — this one is a *step in the aerial perspective*, and the two can
-   appear in the same frame.
+4. ~~**A hard horizontal seam across the whole frame from the `atmosphere` pass.**~~
+   **Fixed**, commit `d290e5e`. The render agent's diagnosis was exactly right: the
+   composite classified sky with `if (d > 0.99999)`, and at `near 0.25 / far 12000` that
+   epsilon is reached at **8108 m**, so all geometry past 8.1 km skipped aerial perspective
+   while everything nearer got the full in-scatter. Now `d >= 1.0`: the sky dome writes no
+   depth so sky pixels hold exactly 1.0, the most distant geometry inside the far plane
+   still reads 0.99999983, and the depth texture is `FloatType` — the two cases cannot
+   collide, and there is no second invisible far plane.
 
-   Bisected by rendering every prefix of the live chain into a full-res RGBA8 target and
-   reading it back (`prefixImage(k)`), on `capture({ pos:[1500,380,1900],
-   look:[-200,60,-400], tod:18.2, fov:45 })` at 1280×720. Sampling one column straight
-   down the frame:
+   Verified by A/B on one frame (the epsilon restored at runtime vs the fix), scoring each
+   row by its **median** luminance step across 480 sampled columns together with sign
+   coherence. A content edge such as a roofline moves only the columns it crosses, so its
+   median is ~0; a classification seam moves every column identically. On `overcast_wide`:
 
-   | frame row | after `RenderPass`/`N8AO` | after `atmosphere` |
-   |---|---|---|
-   | 295 – 302 | `107, 88, 68` | `117, 96, 74` — essentially unfogged |
-   | **303** and below | `107, 88, 68` | **`228, 243, 255`** — full in-scatter |
+   | | worst row | median step | coherence | seam rows |
+   |---|---|---|---|---|
+   | epsilon | 368 | **−90.7** | **1.00** | 5 |
+   | `d >= 1.0` | 368 | *gone* | — | 2 |
 
-   The scene buffer is smooth across that boundary; the atmosphere pass creates a ~117/255
-   step at a single row, dead straight across all 1280 columns. Also reproduces at
-   `street_level` (rows 358–363) and worst at `overcast_wide`, where 14 separate seam rows
-   between 225 and 273 are introduced by that one pass.
+   Positive confirmation, not just absence: the fix moves **28–35% of the frame**
+   (`overcast_wide` 35.4%, max delta 125/255; `hero_skyline` 28.4%; `bridge` 30.3%) — the
+   outer third of view distance, which is precisely the region that had been unfogged.
+   The same exact test was applied to the volumetric shaft march and the cloud march's
+   four-tap geometry reject so all three stages agree on what "sky" means.
 
-   **Cause**, in `src/shaders/sky/atmospherePass.glsl.js` (~line 156): `if (d > 0.99999)`
-   treats a pixel as sky and skips aerial perspective entirely. With the camera at
-   `near 0.25 / far 12000`, `d = 0.99999` is reached at about **8.1 km** — so the outer
-   third of the view distance is classified as sky and keeps its raw surface colour, while
-   the pixel one row nearer gets the full in-scatter. The band is simply the strip of
-   ground beyond 8 km. The sky is drawn with no depth write, so its depth is exactly
-   `1.0`; testing `d >= 1.0` (or comparing a reconstructed linear distance against the far
-   plane) separates sky from far geometry without an epsilon. Better still, make the two
-   branches agree in the limit so any residual mismatch is invisible.
-   *Owner: atmosphere. File: `src/shaders/sky/atmospherePass.glsl.js`.*
-   *Confirmed not the render chain: identical result with `fog.enabled = false` and with
-   `clouds.skip = true`, and absent from every prefix up to and including `N8AO`.*
+   **The full-width rows that remain are not this and not atmosphere.** A/B leaves them
+   untouched: `bridge` row 507 55.4 → 53.7 (coherence 1.00 both ways), `rain_street`
+   row 549 26.5 → 25.9, `street_level` row 542, `downtown_dusk` row 477 14.2 → 14.1.
+   These are the horizon itself — the far shore across the Charles is a genuinely straight
+   full-width content edge. Coherence alone does not make a row a defect.
+
+   **The separate pure-black horizon band the critic reported does not reproduce.**
+   Asked to determine ownership: it is not atmosphere, and it appears to be gone. Scanned
+   for rows where >50% of sampled columns are pure black across all 8 named shots and 8
+   extra camera positions/pitches chosen to look out over the edge of the world
+   (`[0,60,0]`, `[0,300,0]`, `[3000,120,0]`, `[0,900,0]` at pitches +2° to −5°):
+   **0 such rows anywhere**, and 0 with the threshold loosened from pure black to
+   luminance < 12.
+
+   The detector is not blind — forcing the composite to emit black (`uMaxRadiance = 0`)
+   makes it report **1068 of 1080 rows**, so a zero on a real frame is a real zero. Most
+   likely already fixed by `45a312f` ("Buildings: fill the perimeter hole"), which is
+   the same shape of defect. Water is no longer a suspect either: all five water bodies
+   are now bounded `MeshStandardMaterial` polygons, not an infinite plane with a failing
+   program. If the critic still sees it, it will need the exact camera to chase.
+   *Owner: not atmosphere. Re-route to city/terrain only if it reappears.*
+
 5. **Water shader fails to compile** — `nonPerturbedNormal` undeclared / `geometryNormal`
    redefined; three r171 renamed this varying. Two programs fail `VALIDATE_STATUS`.
    *Owner: city/materials. File: `src/world/Water.js`.*
