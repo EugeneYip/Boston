@@ -135,6 +135,7 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Night rendered as bright as noon *after* the clamp was fixed | A meter with unit gain maps every scene onto the same middle grey by construction — that is what a meter is for. Fixing the clamp therefore made 22:00 render at frame p50 100/255, identical to 09:30. It also silently cancelled the lighting stage: any change to `NIGHT_SKY` was undone by the exposure stage within a second, which is why that constant had been pushed to a non-physical 0.9 chasing a visible result. `AutoExposurePass.setResponse(pivot, gainDown)` now compresses the metered value toward a pivot on the **dark side only** (full gain upwards, so a bright sky still stops down and cannot clip). At `meterGainDown: 0.55` night_neon lands 1.9 stops below its fully-adapted exposure while the four daylight shots move under a quarter of a stop. | `AutoExposurePass.setResponse` + `RenderPipeline.options.meterPivot`/`meterGainDown` |
 | `LensPass` draw rejected with `GL_INVALID_OPERATION` (framebuffer feedback loop) every frame — the whole progressive-tent bloom halo silently missing | The upsample bound `mips[i-1]` as a `supportBuffer` sampler **while rendering into `mips[i-1]`**. Reading and writing one texture in the same draw is a feedback loop; the driver dropped the draw and reported it as a `console.warn`, so it never reached `__boston.errors`. The frame still looked plausible because `mips[0]` kept its plain downsample. The upsample now emits `vec4(col * scatter, scatter)` and the *blender* combines it with the destination (`src + dst*(1-srcA)` = `mix(dst, col, scatter)`), so the finer level is never sampled. Also energy-preserving, unlike the old unbounded `support + col`. Verified: stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten passes, and binding a target as its own sampler still faults on this driver, so the test has not gone blind. | `LensPass.upMat` / `UP_FRAG` |
 | Shadow recovery believed unnecessary because "the HDR probe shows no detail below the clip point" | The probe *was* the frozen meter. With metering live, `probeLuminance()` on the dusk downtown framing reports scene p05 at **-7.36** against an adapted key of -3.11 — 4.2 stops of real rendered detail under a curve that clips at ~5.5. Toe re-enabled at `shadowContrast: 0.62`. Dusk pure-black pixels 7.45% → 1.9%, p05 0.4 → 4.9, with p50/p90/p99 moving under 1.5/255. Note `shadowToeStops` is a **width**: widening it to 9 lifts the deepest shadows *less* (night_neon black 5.4% at 7 stops, 8.9% at 9). Tune the contrast, not the width. | `RenderPipeline.options.shadowContrast` |
+| Hard horizontal step at the horizon of every **level-camera** frame (rows 540–542 at a 14 m camera) | The composite sampled the sky-view LUT with the raw view ray. `atmSkyViewUv` is the Hillaire parametrisation — `uy = 0.5 - 0.5*sqrt(1-c)` above the horizon, `0.5 + 0.5*sqrt(c)` below — so `duy/dθ` is unbounded exactly at the horizon **and the LUT's own sky/ground boundary sits at uy = 0.5**. In-scatter therefore switched content over a fraction of a degree instead of ramping with depth. At a 14 m camera the boundary lands at `rd.y = -0.0021`, two screen rows below the horizontal; walking `rd.y` from 0 to the old `-0.02` clamp moved `uy` 0.4817 → 0.5534 — seven texels of a 96-tall LUT, straight through it. **A directional, to-infinity LUT is the wrong source for a finite-path term**: aerial perspective depends on the path, not on which side of the horizontal the ray is on. | C1 elevation floor (`SKY_ELEV_FLOOR`) in `atmospherePass.glsl.js`, commit `39e5dc1` |
 | Hard horizontal seam across the frame; the outer third of view distance kept its raw unfogged colour | `if (d > 0.99999)` in the atmosphere composite classified sky. That epsilon is worth **8108 m** at `near 0.25 / far 12000`, so it acted as a second, invisible far plane: geometry beyond it was treated as sky and skipped aerial perspective. Depth epsilons are distances, not tolerances — always convert one back to metres before trusting it. | `d >= 1.0` in `atmospherePass.glsl.js` + `clouds.glsl.js`, commit `d290e5e` |
 | The `atmosphere` pass reported **zero** cost in every GPU profile | `_passNames` was captured inside `_rebuild`, which runs at init — before the atmosphere stage inserts its pass. `GpuTimer` round-robins over that list and `_instrument` is what makes a pass timable at all, so a pass added later was not merely mis-timed, it was invisible. `_syncPassList()` now re-reads the composer whenever the pass count changes. | `RenderPipeline._syncPassList` |
 | Lateral chromatic aberration much heavier at night than authored | `LensFinalEffect` scales CA by `1 + stopsUnder * 0.22` off the adapted luminance, uncapped. That was harmless only while the meter was frozen at -3.6 (a constant 1.87×); with metering live it reached 2.8× and put ~3 px of fringing in every corner of a night frame. Capped at `apertureMax` 1.9, which leaves the day look unchanged. | `LensFinalEffect` |
@@ -259,11 +260,44 @@ Last verified: 2026-08-27, commit `06f93d3`.
    The same exact test was applied to the volumetric shaft march and the cloud march's
    four-tap geometry reject so all three stages agree on what "sky" means.
 
-   **The full-width rows that remain are not this and not atmosphere.** A/B leaves them
-   untouched: `bridge` row 507 55.4 → 53.7 (coherence 1.00 both ways), `rain_street`
-   row 549 26.5 → 25.9, `street_level` row 542, `downtown_dusk` row 477 14.2 → 14.1.
-   These are the horizon itself — the far shore across the Charles is a genuinely straight
-   full-width content edge. Coherence alone does not make a row a defect.
+   **Correction to what this entry first claimed.** The full-width rows left over after
+   this fix were written up as "the horizon itself, a content edge". That was wrong for
+   most of them. They were a *second, independent* horizon defect in the same pass — the
+   in-scatter step recorded in the row above — which this A/B could not see, because both
+   of its arms shared it. `street_level` row 542 and `downtown_dusk` row 477 are now
+   fixed as well. The lesson: **an A/B only clears the variable you toggled.** Two defects
+   can sit on the same row, and fixing the first makes the second look like leftover
+   content.
+
+   **Second horizon defect — also fixed**, commit `39e5dc1`: in-scatter stepped across
+   the horizon of every level camera. Measured old-vs-fixed on the same frame, median
+   row step with sign coherence over 480 columns:
+
+   | shot | before | after |
+   |---|---|---|
+   | `st_backbay` | row 545, **+20.5**, coh 0.79 | −1.3, coh 0.25 |
+   | `st_beaconhill` | row 548, **+21.0**, coh 0.90 | +2.4, coh 0.38 |
+   | `st_northend` | row 539, **+12.9**, coh 0.69 | +1.6, coh 0.27 |
+   | `st_southend` | row 543, **+8.5**, coh 0.61 | −1.0, coh 0.18 |
+   | `street_level` | row 542, **+23.7**, coh 0.90 | +1.8, coh 0.28 |
+   | `downtown_dusk` | row 477, **+14.9**, coh 0.64 | −1.9, coh 0.23 |
+   | `st_backbay` @ tod 18.5 | row 545, **+40.1**, coh 0.91 | +1.4, coh 0.11 |
+
+   Every one drops to zero seam rows. Dusk was the worst case and gains the most. A
+   column through `st_backbay` went from a cliff — rows 536–543 holding ~`88,104,128`
+   then falling to `52,60,88` — to a smooth ~1/255-per-row drift. The fix does not
+   flatten the depth cue: removing in-scatter entirely still moves the frame 22.6/255
+   above the horizon, while old → fixed moves it only 3.5/255 above and 7.7/255 below.
+   `st_seaport` has no horizon in frame and never had it.
+
+   **`overcast_wide` is the one shot this does not clean up, and it is not atmosphere.**
+   Replacing the whole composite with a passthrough still leaves 3 full-width rows at
+   **coherence 0.98**, so they are already in the scene buffer when the pass receives it.
+   Those are the two `Terrain._patch` ring gaps (core ends 1506 / mid starts 1508, and
+   mid ends 3200 / far starts 3300) showing the sky dome's back face at 9 km — already
+   routed to city. The pass raises their contrast because the gap pixels sit at 9 km
+   while the terrain either side is ~2 km, so they receive very different aerial
+   perspective; that difference disappears once the gap is closed.
 
    **The separate pure-black horizon band the critic reported does not reproduce.**
    Asked to determine ownership: it is not atmosphere, and it appears to be gone. Scanned
