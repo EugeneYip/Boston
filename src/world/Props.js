@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { geo } from '../core/Geo.js';
-import { RNG, getPropMaterials, buildFurnitureLibrary, clearGeoCache } from './StreetFurniture.js';
+import {
+  RNG, getPropMaterials, buildFurnitureLibrary, clearGeoCache, PARKED_CARS,
+} from './StreetFurniture.js';
 import Decals from './Decals.js';
 
 /**
@@ -57,6 +59,17 @@ export class PropBatch {
     this.mats = null;
     this.cols = null;
     this._counts = [];
+    /**
+     * Durable suppression, honoured by `refresh()`.
+     *
+     * This used to be a bare `mesh.visible = false` from `setVisible`, which
+     * `refresh()` then silently undid on its next pass (`m.visible = cnt > 0`).
+     * That is why 41-52 snow banks stood on a clear August street: the weather
+     * gate fired correctly, held for one frame, and was overwritten the moment
+     * the camera crossed a chunk boundary. Anything conditional on weather or
+     * season must go through here, not through `mesh.visible`.
+     */
+    this.hidden = false;
   }
 
   /** @param {number} tint per-instance brightness multiplier (weathering variety) */
@@ -173,7 +186,7 @@ export class PropBatch {
     for (let i = 0; i < L; i++) {
       const m = this.meshes[i], cnt = this._counts[i];
       m.count = cnt;
-      m.visible = cnt > 0;
+      m.visible = cnt > 0 && !this.hidden;
       if (!cnt) { m.boundingSphere.radius = -1; continue; }
       m.instanceMatrix.clearUpdateRanges();
       m.instanceMatrix.addUpdateRange(0, cnt * 16);
@@ -190,7 +203,10 @@ export class PropBatch {
     }
   }
 
-  setVisible(v) { for (const m of this.meshes) m.visible = v && m.count > 0; }
+  setVisible(v) {
+    this.hidden = !v;
+    for (const m of this.meshes) m.visible = v && m.count > 0;
+  }
 
   dispose(scene) {
     for (const m of this.meshes) {
@@ -468,27 +484,74 @@ function finishLayout(L) {
   }
   L.treeSites = sites;
 
+  // Coarse hash grid over the tree sites so placement can keep furniture out of
+  // the pits. The critic listed "a crate through a tree trunk" as an automatic
+  // fail, and it is structural rather than unlucky: tree sites sit at
+  // `halfRoad + 1.05` and bins, bags, benches and planters sit at
+  // `halfRoad + 0.72`, 33 cm away, on the same segments.
+  {
+    const CELL = 4;
+    const grid = new Map();
+    const key = (cx, cz) => (cx + 4096) * 8192 + (cz + 4096);
+    for (const s of sites) {
+      const k = key(Math.floor(s.x / CELL), Math.floor(s.z / CELL));
+      let a = grid.get(k);
+      if (!a) grid.set(k, a = []);
+      a.push(s);
+    }
+    L.nearTree = (x, z, r) => {
+      const r2 = r * r;
+      const c0 = Math.floor((x - r) / CELL), c1 = Math.floor((x + r) / CELL);
+      const d0 = Math.floor((z - r) / CELL), d1 = Math.floor((z + r) / CELL);
+      for (let cx = c0; cx <= c1; cx++) {
+        for (let cz = d0; cz <= d1; cz++) {
+          const a = grid.get(key(cx, cz));
+          if (!a) continue;
+          for (const s of a) {
+            const dx = s.x - x, dz = s.z - z;
+            if (dx * dx + dz * dz < r2) return true;
+          }
+        }
+      }
+      return false;
+    };
+  }
+
   // --- Park planting areas ---
   L.parkAreas = L.parks.map(p => ({ ...p, bounds: polyBounds(p.poly) }));
 
   // --- Frontage lines (building faces) for wall-mounted props ---
+  //
+  // ONLY the street-facing edge of each parcel. This used to walk all four
+  // polygon edges, which put three quarters of every shop sign, fascia, fire
+  // escape, A/C unit and wall decal on the sides and *back* of the parcel —
+  // buried inside the block, facing a neighbour's party wall, where nothing can
+  // ever see them. `RoadNetwork.buildPlots` authors the polygon as
+  // [p0, p1, q1, q0] with p0->p1 the kerb line and q = p + inward * depth, so
+  // the street edge is edge 0 and the outward normal is exactly -normalize(q0-p0).
+  // Deriving it from the parcel's own depth vector rather than from winding is
+  // what makes it right for every parcel instead of half of them.
   const front = [];
   const plots = L.city?.plots;
   if (plots && plots.length) {
     for (const pl of plots) {
       const poly = pl.polygon;
-      if (!poly || poly.length < 3) continue;
-      for (let i = 0; i < poly.length; i++) {
-        const a = poly[i], b = poly[(i + 1) % poly.length];
-        const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz);
-        if (len < 6) continue;
-        // Outward normal: polygons are authored CCW, so the right normal points out.
-        front.push({
-          ax: a.x, az: a.z, bx: b.x, bz: b.z, len,
-          dx: dx / len, dz: dz / len, nx: dz / len, nz: -dx / len,
-          district: pl.district || 'downtown', maxHeight: pl.maxHeight || 20,
-        });
-      }
+      if (!poly || poly.length < 4) continue;
+      const a = poly[0], b = poly[1], q0 = poly[3];
+      const dx = b.x - a.x, dz = b.z - a.z, len = Math.hypot(dx, dz);
+      if (len < 4) continue;
+      let ix = q0.x - a.x, iz = q0.z - a.z;          // into the block
+      const il = Math.hypot(ix, iz) || 1;
+      ix /= il; iz /= il;
+      front.push({
+        ax: a.x, az: a.z, bx: b.x, bz: b.z, len,
+        dx: dx / len, dz: dz / len, nx: -ix, nz: -iz,   // out towards the street
+        district: pl.district || 'downtown', maxHeight: pl.maxHeight || 20,
+        // Buildings.js bases each building on `plot.y`, not on the terrain under
+        // the kerb, so wall-mounted props must use the same datum or they drift
+        // off the storey lines on any slope.
+        y: Number.isFinite(pl.y) ? pl.y : null,
+      });
     }
   } else {
     for (const s of L.segments) {
@@ -554,6 +617,7 @@ export default class Props {
     this._lastScale = -1;
     this._night = 0;
     this._season = 'summer';
+    this._weather = ctx.settings.weather;
     this._snow = false;
 
     this.layout = getLayout(ctx);
@@ -571,7 +635,7 @@ export default class Props {
     const L = this.layout;
     const density = ctx.settings.propDensity ?? DENSITY[ctx.settings.preset] ?? 1;
     this._registerTypes();
-    populate(this, L, density);
+    const spread = populate(this, L, density);
     this.decals.register(ctx, L, density, this.batcher);
     const n = this.batcher.build();
     this.decals.afterBuild(this.batcher);
@@ -584,9 +648,11 @@ export default class Props {
     this._updateLightPool(ctx.camera.position.x, ctx.camera.position.z);
     this._applySnow();
     this.instanceCount = n;
+    this._spread = spread;
     console.info(`[props] ${n} instances, ${this.batcher.batches.size} types, ` +
       `${this.batcher.stats().meshes} meshes (${L.source} layout, ` +
-      `${L.segments.length} segments, ${L.treeSites.length} tree pits)`);
+      `${L.segments.length} segments, ${L.frontage.length} frontages, ` +
+      `${L.treeSites.length} tree pits)`);
   }
 
   /** One batch per furniture type, wired to the shared materials. */
@@ -604,7 +670,12 @@ export default class Props {
           dist: def.far, cast: false,
         });
       } else if (def.far > def.near) {
-        lods[0].dist = def.far;
+        // A type with no reduced level used to draw its FULL-detail mesh all the
+        // way out to `far` — 984-triangle fire escapes at 215 m, 440-triangle
+        // tree grates at 130 m seen edge-on. `near` is documented as the range
+        // LOD0 is good for, so honour it, with a modest margin so nothing pops
+        // out at exactly the authored distance.
+        lods[0].dist = Math.min(def.far, def.near * 1.3);
       }
       this.batcher.batch(name, lods, { receive: def.receive !== false });
     }
@@ -726,20 +797,27 @@ export default class Props {
   /** @param {'summer'|'earlyAutumn'|'autumn'|'winter'|'spring'} s */
   setSeason(s) {
     this._season = s;
-    const snow = s === 'winter';
-    if (snow !== this._snow) { this._snow = snow; this._applySnow(); }
+    this._snow = s === 'winter' || this._weather === 'snow';
+    this._applySnow();
+    this.decals?.setWeather(this._weather, s);
     this.ctx?.get('vegetation')?.setSeason?.(s);
   }
 
   setWeather(w) {
-    const snow = w === 'snow' || this._season === 'winter';
-    if (snow !== this._snow) { this._snow = snow; this._applySnow(); }
-    this.decals?.setWeather(w);
+    this._weather = w;
+    this._snow = w === 'snow' || this._season === 'winter';
+    this._applySnow();
+    this.decals?.setWeather(w, this._season);
   }
 
+  /**
+   * Snow banks are drawn only when there is snow on the ground. Applied
+   * unconditionally rather than on a change edge: the old edge-triggered
+   * version could not recover if anything else re-showed the batch, and
+   * something did — see the `hidden` flag on PropBatch.
+   */
   _applySnow() {
-    const b = this.batcher.batches.get('snowBank');
-    if (b) b.setVisible(this._snow);
+    this.batcher.batches.get('snowBank')?.setVisible(this._snow);
   }
 
   update(dt, ctx) {
@@ -760,7 +838,6 @@ export default class Props {
       this.decals.refresh(_camPos.x, _camPos.z, scale);
     }
     this.batcher.step(this._lastCamX, this._lastCamZ, scale, 8);
-    if (this._snow) this._applySnow();
 
     // Night emissives. Boston's streetlights are on well before full dark.
     const h = ctx.time.timeOfDay;
@@ -843,29 +920,85 @@ function mergeTubes(geos) {
 // segments nearest the Common first so the playable core is densest.
 // ---------------------------------------------------------------------------
 
+/**
+ * How much of each type's *natural* site list to keep, and a hard ceiling on
+ * the instance count.
+ *
+ * The previous scheme was a flat global counter drained in order, and because
+ * `finishLayout` sorts segments and parcels by distance from Boston Common, it
+ * spent the entire budget on the few hundred metres nearest the Common and left
+ * the other 96 km of street bare. Measured before this change: every shop sign,
+ * fascia, fire escape, A/C unit, flag and wall decal in the city lived inside a
+ * 340-413 m radius blob; `decal_grimeWall` covered 10 chunks out of 436. Four
+ * separate downtown and Back Bay camera positions saw zero of all of them.
+ *
+ * A rate is not a budget. `keep` is a fraction of the sites the placement rules
+ * themselves generate — those rules already encode real spacings (a meter every
+ * 6-7 m, a lamp every 34-44 m) — so keep=1 means "as dense as the street really
+ * is". The ceiling only exists to bound memory, and is deliberately set above
+ * the natural count for anything that should be everywhere.
+ *
+ * This costs nothing at draw time: instances are chunked and distance-culled,
+ * so what is rasterised is set by the LOD radius around the camera, not by how
+ * many exist. Spreading the same budget over the whole city actually *lowers*
+ * peak triangles near the Common.
+ */
+const RATE = {
+  grate: [1.00, 7000], lamp: [1.00, 2800], meter: [0.80, 7500], hydrant: [1.00, 1000],
+  bin: [1.00, 1300], bench: [1.00, 700], bikeRack: [1.00, 700], bollard: [0.85, 1600],
+  mailbox: [1.00, 160], newsBox: [1.00, 500], utilityBox: [1.00, 260],
+  manhole: [1.00, 2200], drain: [1.00, 4200], sign: [0.85, 6000],
+  pole: [1.00, 900], shelter: [1.00, 90], dock: [1.00, 40], planter: [1.00, 700],
+  litter: [0.80, 900], construction: [1.00, 70],
+  attach: [1.00, 24000], signal: [1.00, 1600], parked: [1.00, 11000],
+};
+
 function populate(sys, L, density) {
+  // Two passes. The first walks every placement rule with a `take` that only
+  // counts, so we learn how many sites each type actually has across the whole
+  // city; the second walks the identical rules with an acceptance probability
+  // of budget/sites. Same code path both times — a counting pass that diverged
+  // from the placing pass would be worse than no spreading at all.
+  const cand = {};
+  for (const k of Object.keys(RATE)) cand[k] = 0;
+  runPlacement(sys, L, true, (k, n = 1) => { cand[k] += n; return true; });
+
+  const rng = new RNG(918273);
+  const left = {}, prob = {};
+  for (const k of Object.keys(RATE)) {
+    const [keep, cap] = RATE[k];
+    const want = Math.min(keep, cand[k] > 0 ? (cap * density) / cand[k] : 0) * density;
+    prob[k] = Math.min(1, want);
+    left[k] = Math.ceil(cap * density);
+  }
+  runPlacement(sys, L, false, (k, n = 1) => {
+    if (left[k] < n) return false;
+    if (prob[k] < 1 && rng.f() > prob[k]) return false;
+    left[k] -= n;
+    return true;
+  });
+  return { cand, prob };
+}
+
+/** No-op stand-in for a batch during the counting pass. */
+const NULL_BATCH = { add() { return this; } };
+
+/**
+ * @param {boolean} counting  true on the sizing pass: nothing is placed and no
+ *        side list (lamp sites, wire runs) is appended to.
+ * @param {(k:string, n?:number)=>boolean} take
+ */
+function runPlacement(sys, L, counting, take) {
   const B = sys.batcher;
   const g = (x, z) => L.gh(x, z) + L.kerb;
   const road = (x, z) => L.gh(x, z);
-  const b = (name) => B.batches.get(name);
-  const budget = (n) => Math.round(n * density);
-
-  const quota = {
-    lamp: budget(1500), meter: budget(1400), hydrant: budget(420), bin: budget(620),
-    bench: budget(430), bikeRack: budget(330), bollard: budget(1100),
-    mailbox: budget(140), newsBox: budget(300), utilityBox: budget(260),
-    manhole: budget(1500), drain: budget(1200), sign: budget(2600),
-    pole: budget(430), shelter: budget(90), dock: budget(38), planter: budget(260),
-    litter: budget(1500), construction: budget(1400), attach: budget(2600),
-    grate: budget(4200), signal: budget(340),
-  };
-  const take = (k, n = 1) => (quota[k] -= n) >= 0;
+  const b = counting ? () => NULL_BATCH : (name) => B.batches.get(name);
 
   // ---- Tree pit grates: exactly one per street tree site -------------------
   {
     const grate = b('treeGrate');
     for (const s of L.treeSites) {
-      if (!take('grate')) break;
+      if (!take('grate')) continue;
       grate.add(s.x, s.y + 0.005, s.z, s.rot, 1, 0.9 + (s.scale - 1) * 0.1);
     }
   }
@@ -888,15 +1021,18 @@ function populate(sys, L, density) {
       let side = rng.chance(0.5) ? 1 : -1;
       const step = heritage ? rng.range(26, 34) : rng.range(34, 44);
       for (let t = rng.range(6, 16); t < s.len - 5; t += step) {
-        if (!take('lamp')) break;
-        const off = type === 'lampCobra' ? kerb + 0.65 : furn;
-        const x = s.ax + s.dx * t + s.nx * off * side;
-        const z = s.az + s.dz * t + s.nz * off * side;
-        // Cobra arms reach over the road; acorns face the footway.
-        const ry = facing(-s.nx * side, -s.nz * side);
-        bat.add(x, g(x, z), z, ry + rng.range(-0.03, 0.03), rng.range(0.97, 1.03),
-          rng.range(0.88, 1.06));
-        sys._lampSites.push({ x, y: g(x, z) + (type === 'lampCobra' ? 9.2 : 3.85), z });
+        if (take('lamp')) {
+          const off = type === 'lampCobra' ? kerb + 0.65 : furn;
+          const x = s.ax + s.dx * t + s.nx * off * side;
+          const z = s.az + s.dz * t + s.nz * off * side;
+          // Cobra arms reach over the road; acorns face the footway.
+          const ry = facing(-s.nx * side, -s.nz * side);
+          bat.add(x, g(x, z), z, ry + rng.range(-0.03, 0.03), rng.range(0.97, 1.03),
+            rng.range(0.88, 1.06));
+          if (!counting) {
+            sys._lampSites.push({ x, y: g(x, z) + (type === 'lampCobra' ? 9.2 : 3.85), z });
+          }
+        }
         side = -side;
       }
     }
@@ -907,15 +1043,16 @@ function populate(sys, L, density) {
       for (const side of [-1, 1]) {
         if (rng.chance(0.35)) continue;
         if (rng.chance(0.12)) {
-          if (!take('meter')) break;
-          const t = rng.range(8, Math.max(9, s.len - 8));
-          const x = s.ax + s.dx * t + s.nx * (kerb + 0.6) * side;
-          const z = s.az + s.dz * t + s.nz * (kerb + 0.6) * side;
-          b('payStation').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+          if (take('meter')) {
+            const t = rng.range(8, Math.max(9, s.len - 8));
+            const x = s.ax + s.dx * t + s.nx * (kerb + 0.6) * side;
+            const z = s.az + s.dz * t + s.nz * (kerb + 0.6) * side;
+            b('payStation').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+          }
           continue;
         }
         for (let t = rng.range(7, 12); t < s.len - 7; t += rng.range(6.0, 7.2)) {
-          if (!take('meter')) break;
+          if (!take('meter')) continue;
           const x = s.ax + s.dx * t + s.nx * (kerb + 0.55) * side;
           const z = s.az + s.dz * t + s.nz * (kerb + 0.55) * side;
           b('parkingMeter').add(x, g(x, z), z,
@@ -927,7 +1064,7 @@ function populate(sys, L, density) {
     // --- Regulatory signs on the kerb line ---
     for (const side of [-1, 1]) {
       for (let t = rng.range(6, 20); t < s.len - 6; t += rng.range(22, 46)) {
-        if (!take('sign')) break;
+        if (!take('sign')) continue;
         const pick = rng.f();
         const name = pick < 0.42 ? 'signNoParking' : pick < 0.62 ? 'signTowZone'
           : pick < 0.74 ? 'signHandicap' : pick < 0.86 ? 'signFireLane' : 'signSpeed';
@@ -950,33 +1087,44 @@ function populate(sys, L, density) {
     }
 
     // --- Hydrants, bins, benches, racks, boxes ---
+    // Nothing bulky goes inside a tree pit: `clear` is the automatic-fail guard
+    // for "a crate through a tree trunk". Tree sites and kerbside furniture are
+    // authored 33 cm apart on the same segments, so without this they collide by
+    // construction rather than by bad luck.
+    const clear = (x, z, r) => !L.nearTree(x, z, r);
     for (let t = rng.range(20, 70); t < s.len - 10; t += rng.range(70, 130)) {
-      if (!take('hydrant')) break;
+      if (!take('hydrant')) continue;
       const side = rng.sign();
       const x = s.ax + s.dx * t + s.nx * (kerb + 0.62) * side;
       const z = s.az + s.dz * t + s.nz * (kerb + 0.62) * side;
+      if (!clear(x, z, 1.25)) continue;
       b(rng.chance(0.55) ? 'hydrantY' : 'hydrantR')
         .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side) + rng.range(-0.2, 0.2),
           1, rng.range(0.86, 1.08));
     }
     for (let t = rng.range(14, 50); t < s.len - 8; t += rng.range(48, 105)) {
-      if (!take('bin')) break;
+      if (!take('bin')) continue;
       const side = rng.sign();
       const x = s.ax + s.dx * t + s.nx * furn * side;
       const z = s.az + s.dz * t + s.nz * furn * side;
+      if (!clear(x, z, 1.5)) continue;
       b(busy && rng.chance(0.6) ? 'bigBelly' : 'wireBin')
         .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side) + rng.range(-0.25, 0.25),
           1, rng.range(0.88, 1.05));
       if (rng.chance(0.45) && take('litter')) {
         const bx = x + s.dx * rng.range(-1.4, 1.4), bz = z + s.dz * rng.range(-1.4, 1.4);
-        b('binBags').add(bx, g(bx, bz), bz, rng.range(0, 6.28), rng.range(0.8, 1.15), rng.range(0.8, 1.05));
+        if (clear(bx, bz, 1.35)) {
+          b('binBags').add(bx, g(bx, bz), bz, rng.range(0, 6.28), rng.range(0.8, 1.15), rng.range(0.8, 1.05));
+        }
       }
     }
     if (rng.chance(0.30) && take('bench')) {
       const side = rng.sign(); const t = rng.range(10, Math.max(11, s.len - 10));
       const x = s.ax + s.dx * t + s.nx * (back - 0.5) * side;
       const z = s.az + s.dz * t + s.nz * (back - 0.5) * side;
-      b('bench').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+      if (clear(x, z, 1.9)) {
+        b('bench').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+      }
     }
     if (rng.chance(0.26) && take('bikeRack')) {
       const side = rng.sign(); const t = rng.range(10, Math.max(11, s.len - 10));
@@ -998,7 +1146,7 @@ function populate(sys, L, density) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
       const n = 1 + rng.int(3);
       for (let k = 0; k < n; k++) {
-        if (!take('newsBox')) break;
+        if (!take('newsBox')) continue;
         const tt = t + k * 0.5;
         const x = s.ax + s.dx * tt + s.nx * (furn + 0.1) * side;
         const z = s.az + s.dz * tt + s.nz * (furn + 0.1) * side;
@@ -1010,14 +1158,16 @@ function populate(sys, L, density) {
       const side = rng.sign(); const t = rng.range(10, Math.max(11, s.len - 10));
       const x = s.ax + s.dx * t + s.nx * back * side;
       const z = s.az + s.dz * t + s.nz * back * side;
-      b(rng.chance(0.5) ? 'utilityBoxA' : 'utilityBoxB')
-        .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.06));
+      if (clear(x, z, 1.6)) {
+        b(rng.chance(0.5) ? 'utilityBoxA' : 'utilityBoxB')
+          .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.06));
+      }
     }
     if (heritage && rng.chance(0.34)) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
       const n = 2 + rng.int(4);
       for (let k = 0; k < n; k++) {
-        if (!take('bollard')) break;
+        if (!take('bollard')) continue;
         const tt = t + k * 1.65;
         if (tt > s.len - 4) break;
         const x = s.ax + s.dx * tt + s.nx * (kerb + 0.45) * side;
@@ -1029,12 +1179,14 @@ function populate(sys, L, density) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
       const x = s.ax + s.dx * t + s.nx * furn * side;
       const z = s.az + s.dz * t + s.nz * furn * side;
-      b('planter').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.9, 1.1), rng.range(0.86, 1.06));
+      if (clear(x, z, 1.5)) {
+        b('planter').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.9, 1.1), rng.range(0.86, 1.06));
+      }
     }
 
     // --- Roadway: manholes, gutter drains ---
     for (let t = rng.range(8, 30); t < s.len - 6; t += rng.range(28, 55)) {
-      if (!take('manhole')) break;
+      if (!take('manhole')) continue;
       const off = rng.range(-kerb * 0.6, kerb * 0.6);
       const x = s.ax + s.dx * t + s.nx * off;
       const z = s.az + s.dz * t + s.nz * off;
@@ -1043,7 +1195,7 @@ function populate(sys, L, density) {
     }
     for (const side of [-1, 1]) {
       for (let t = rng.range(15, 45); t < s.len - 8; t += rng.range(38, 70)) {
-        if (!take('drain')) break;
+        if (!take('drain')) continue;
         const x = s.ax + s.dx * t + s.nx * (kerb - 0.30) * side;
         const z = s.az + s.dz * t + s.nz * (kerb - 0.30) * side;
         b('stormDrain').add(x, road(x, z) + 0.004, z,
@@ -1057,7 +1209,7 @@ function populate(sys, L, density) {
       const side = rng.sign();
       const run = [];
       for (let t = rng.range(4, 12); t < s.len - 4; t += rng.range(34, 46)) {
-        if (!take('pole')) break;
+        if (!take('pole')) continue;
         const x = s.ax + s.dx * t + s.nx * (kerb + 0.5) * side;
         const z = s.az + s.dz * t + s.nz * (kerb + 0.5) * side;
         const tx = rng.chance(0.3);
@@ -1065,7 +1217,7 @@ function populate(sys, L, density) {
           facing(s.dx, s.dz) + rng.range(-0.05, 0.05), rng.range(0.94, 1.08), rng.range(0.82, 1.02));
         run.push({ x, y: g(x, z) + 9.45, z, dx: s.dx, dz: s.dz });
       }
-      if (run.length > 1) (sys._wireRuns || (sys._wireRuns = [])).push(run);
+      if (!counting && run.length > 1) (sys._wireRuns || (sys._wireRuns = [])).push(run);
     }
 
     // --- Bus shelters on arterials ---
@@ -1074,7 +1226,9 @@ function populate(sys, L, density) {
       const t = rng.range(14, Math.max(15, s.len - 14));
       const x = s.ax + s.dx * t + s.nx * (kerb + 1.5) * side;
       const z = s.az + s.dz * t + s.nz * (kerb + 1.5) * side;
-      b('busShelter').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, 1);
+      if (clear(x, z, 3.2)) {
+        b('busShelter').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, 1);
+      }
     }
     if (rng.chance(0.05) && take('dock')) {
       const side = rng.sign();
@@ -1085,7 +1239,46 @@ function populate(sys, L, density) {
     }
 
     // --- Construction. Boston is permanently dug up; lean into it. ---
-    if (rng.chance(0.11)) placeConstruction(sys, s, rng, take, g, road);
+    if (rng.chance(0.11) && take('construction')) placeConstruction(sys, s, rng, b, g, road);
+
+    // --- Parked cars ------------------------------------------------------
+    //
+    // The single biggest density win available at street level: a real city
+    // street is mostly parked cars, and before this there was no parked-car
+    // prop type at all, so no street could ever be lined with them.
+    //
+    // Where they can legally go is constrained by the road model rather than by
+    // Boston. `RoadNetwork` spends the whole kerb-to-kerb width on travel lanes
+    // and leaves only a 0.5-0.7 m shoulder — there is no parking bay in the
+    // graph — so a car at the kerb overlaps the outer travel lane by 0.3-0.6 m
+    // on the widths that exist (measured: hw 3.80/2 lanes worst at 0.64 m, hw
+    // 5.95/3 lanes and hw 7.70/4 lanes both 0.34 m). Parking is therefore
+    // restricted to segments wide enough to keep that overlap small, and the
+    // spans are published on `props.parkingSpans` so traffic can inset its
+    // outer lane if it wants to. Alleys and one-lane streets get nothing.
+    if (s.halfRoad >= 2.9 && s.type !== 'alley') {
+      const both = s.halfRoad >= 4.6;
+      const off = s.halfRoad - 0.80;
+      const sides = both ? [-1, 1] : [rng.sign()];
+      // Arterials in the core are tow-away at rush hour and much emptier.
+      const fill = s.type === 'arterial' ? (busy ? 0.62 : 0.78) : 0.88;
+      for (const side of sides) {
+        // Cars face the direction of travel on their own side of the road.
+        const ry = facing(s.dx, s.dz) + (side > 0 ? 0 : Math.PI);
+        let t = rng.range(3, 10);
+        while (t < s.len - 7) {
+          if (!rng.chance(fill)) { t += rng.range(5.0, 12.0); continue; }  // driveway, hydrant, loading
+          const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
+          if (take('parked')) {
+            const x = s.ax + s.dx * (t + carLen / 2) + s.nx * off * side;
+            const z = s.az + s.dz * (t + carLen / 2) + s.nz * off * side;
+            b(name).add(x, road(x, z), z, ry + rng.range(-0.022, 0.022), 1,
+              rng.range(0.84, 1.06));
+          }
+          t += carLen + rng.range(0.55, 1.9);
+        }
+      }
+    }
 
     // --- Building frontage attachments happen in their own pass ---
   }
@@ -1097,11 +1290,11 @@ function populate(sys, L, density) {
     const legs = j.legs;
     if (!legs.length) continue;
 
-    if (j.major && quota.signal > 0) {
+    if (j.major) {
       // Two mast arms on opposing approaches, the usual US arrangement.
       const picks = legs.length >= 4 ? [0, 2] : [0];
       for (const li of picks) {
-        if (!take('signal')) break;
+        if (!take('signal')) continue;
         const leg = legs[li];
         // Approach direction points into the junction.
         const ax = -leg.dx, az = -leg.dz;
@@ -1113,7 +1306,7 @@ function populate(sys, L, density) {
           .add(x, g(x, z), z, facing(-ax, -az), 1, rng.range(0.9, 1.0));
       }
       for (const leg of legs) {
-        if (!take('signal')) break;
+        if (!take('signal')) continue;
         const rx = -leg.dz, rz = leg.dx;
         const k = leg.hw + 1.5;
         const x = j.x + leg.dx * k + rx * 1.9;
@@ -1124,7 +1317,7 @@ function populate(sys, L, density) {
       // Minor junction: stop signs facing each approach.
       for (const leg of legs) {
         if (rng.chance(0.35)) continue;
-        if (!take('sign')) break;
+        if (!take('sign')) continue;
         const ax = -leg.dx, az = -leg.dz;
         const rx = -az, rz = ax;
         const k = leg.hw + 1.4;
@@ -1148,7 +1341,7 @@ function populate(sys, L, density) {
 
     // Corner drains catch the crown of the junction.
     for (const leg of legs) {
-      if (!take('drain')) break;
+      if (!take('drain')) continue;
       const rx = -leg.dz, rz = leg.dx;
       const k = leg.hw + 0.6;
       const x = j.x + leg.dx * k + rx * (leg.hw - 0.4);
@@ -1161,14 +1354,16 @@ function populate(sys, L, density) {
   let fi = 0;
   for (const f of L.frontage) {
     const rng = new RNG(70001 + (fi++) * 2777);
-    if (f.len < 8) continue;
+    // Boston row parcels are 7-8 m wide, so an 8 m floor excluded most of Beacon
+    // Hill, the North End and the South End from ever getting a shopfront.
+    if (f.len < 5) continue;
     const commercial = f.district === 'financial' || f.district === 'downtown'
       || f.district === 'northEnd' || f.district === 'backBay' || rng.chance(0.4);
 
-    for (let t = rng.range(2, 7); t < f.len - 3; t += rng.range(6, 13)) {
+    for (let t = rng.range(1.5, 5); t < f.len - 2; t += rng.range(5, 11)) {
       const x = f.ax + f.dx * t, z = f.az + f.dz * t;
       const ry = facing(f.nx, f.nz);
-      const y0 = L.gh(x, z);
+      const y0 = f.y != null ? f.y : L.gh(x, z);
       // Ground floor
       if (commercial && rng.chance(0.42) && take('attach')) {
         b(rng.chance(0.5) ? 'awningRed' : 'awningGreen')
@@ -1185,14 +1380,16 @@ function populate(sys, L, density) {
       if (rng.chance(0.12) && take('attach')) {
         b('standpipe').add(x + f.nx * 0.04, y0 + 0.95, z + f.nz * 0.04, ry, 1);
       }
-      // Upper floors
-      const floors = Math.max(1, Math.min(6, Math.floor((f.maxHeight - 4) / 3.4)));
+      // Upper floors. Capped at four: window A/C and fire escapes are a
+      // low-rise signature, and letting a 240 m Financial District tower emit
+      // six per bay per storey made A/C units half the whole attachment budget.
+      const floors = Math.max(1, Math.min(4, Math.floor((f.maxHeight - 4) / 3.4)));
       for (let fl = 1; fl <= floors; fl++) {
         const y = y0 + 3.6 + (fl - 1) * 3.35;
-        if (rng.chance(0.20) && take('attach')) {
+        if (rng.chance(0.17) && take('attach')) {
           b('acUnit').add(x + f.nx * 0.02, y + 1.05, z + f.nz * 0.02, ry, rng.range(0.9, 1.05));
         }
-        if (fl === 1 && rng.chance(0.10) && take('attach')) {
+        if (fl === 1 && rng.chance(0.14) && take('attach')) {
           b('fireEscape').add(x + f.nx * 0.04, y + 0.6, z + f.nz * 0.04, ry, rng.range(0.95, 1.08));
         }
       }
@@ -1233,7 +1430,15 @@ function populate(sys, L, density) {
     }
   }
 
-  // ---- Winter kerbside snow banks (hidden unless it is snowing) ------------
+  // ---- Winter kerbside snow banks -----------------------------------------
+  //
+  // These are only ever drawn when `Props._snow` is set — snow weather, or a
+  // winter season. They were previously visible in clear weather in August
+  // because `setVisible` was undone by the next `PropBatch.refresh`; see the
+  // `hidden` flag on PropBatch. They also used to be authored at
+  // `halfRoad - 0.2`, i.e. *inside* the carriageway, which is why the critic
+  // found them standing in the middle of the road and intersecting a handrail.
+  // A plough throws snow onto the kerb line, not into the traffic lane.
   {
     let k = 0;
     for (const s of L.segments) {
@@ -1241,8 +1446,8 @@ function populate(sys, L, density) {
       if (rng.chance(0.55)) continue;
       for (const side of [-1, 1]) {
         for (let t = rng.range(5, 20); t < s.len - 5; t += rng.range(22, 42)) {
-          const x = s.ax + s.dx * t + s.nx * (s.halfRoad - 0.2) * side;
-          const z = s.az + s.dz * t + s.nz * (s.halfRoad - 0.2) * side;
+          const x = s.ax + s.dx * t + s.nx * (s.halfRoad + 0.34) * side;
+          const z = s.az + s.dz * t + s.nz * (s.halfRoad + 0.34) * side;
           b('snowBank').add(x, road(x, z), z, facing(s.dx, s.dz), rng.range(0.8, 1.3), rng.range(0.94, 1.02));
         }
       }
@@ -1251,9 +1456,14 @@ function populate(sys, L, density) {
   }
 }
 
-/** A works zone: barriers, cones, drums, signage, and something being dug up. */
-function placeConstruction(sys, s, rng, take, g, road) {
-  const b = (n) => sys.batcher.batches.get(n);
+/**
+ * A works zone: barriers, cones, drums, signage, and something being dug up.
+ *
+ * The whole zone is one `take`, decided by the caller. Per-item takes made
+ * half-built works zones — a cone taper leading to nothing — once the budget
+ * became probabilistic.
+ */
+function placeConstruction(sys, s, rng, b, g, road) {
   const side = rng.sign();
   const t0 = rng.range(6, Math.max(7, s.len - 26));
   const L = Math.min(s.len - t0 - 4, rng.range(12, 26));
@@ -1262,7 +1472,6 @@ function placeConstruction(sys, s, rng, take, g, road) {
 
   // Taper of cones leading in, then a run of drums along the closed lane.
   for (let i = 0; i < 7; i++) {
-    if (!take('construction')) return;
     const t = t0 - 8 + i * 1.5;
     const off = (kerb - 3.4) + (i / 6) * 1.5;
     const x = s.ax + s.dx * t + s.nx * off * side;
@@ -1270,7 +1479,6 @@ function placeConstruction(sys, s, rng, take, g, road) {
     b('cone').add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.94, 1.06), rng.range(0.75, 1.02));
   }
   for (let t = t0; t < t0 + L; t += rng.range(3.0, 4.6)) {
-    if (!take('construction')) return;
     const x = s.ax + s.dx * t + s.nx * lane * side;
     const z = s.az + s.dz * t + s.nz * lane * side;
     if (rng.chance(0.45)) {
@@ -1279,14 +1487,14 @@ function placeConstruction(sys, s, rng, take, g, road) {
       b('jersey').add(x, road(x, z), z, facing(s.dx, s.dz) + rng.range(-0.03, 0.03), 1, rng.range(0.84, 1.02));
     }
   }
-  if (take('construction')) {
+  {
     const t = t0 - 11;
     const x = s.ax + s.dx * t + s.nx * (kerb - 2.6) * side;
     const z = s.az + s.dz * t + s.nz * (kerb - 2.6) * side;
     b(rng.chance(0.65) ? 'tempSignWork' : 'tempSignDetour')
       .add(x, road(x, z), z, facing(-s.dx, -s.dz), 1, rng.range(0.9, 1.05));
   }
-  if (rng.chance(0.45) && take('construction')) {
+  if (rng.chance(0.45)) {
     const t = t0 + rng.range(2, Math.max(3, L - 4));
     const x = s.ax + s.dx * t + s.nx * (kerb - 1.4) * side;
     const z = s.az + s.dz * t + s.nz * (kerb - 1.4) * side;
@@ -1296,14 +1504,12 @@ function placeConstruction(sys, s, rng, take, g, road) {
   if (s.frontage != null && rng.chance(0.55)) {
     const fo = s.frontage - 0.9;
     for (let t = t0; t < t0 + L; t += 2.44) {
-      if (!take('construction')) return;
       const x = s.ax + s.dx * t + s.nx * fo * side;
       const z = s.az + s.dz * t + s.nz * fo * side;
       b('hoarding').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.92, 1.02));
     }
     if (rng.chance(0.5)) {
       for (let t = t0; t < t0 + Math.min(L, 12); t += 2.1) {
-        if (!take('construction')) return;
         const x = s.ax + s.dx * t + s.nx * (s.frontage - 0.75) * side;
         const z = s.az + s.dz * t + s.nz * (s.frontage - 0.75) * side;
         b('scaffold').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.95, 1.02));

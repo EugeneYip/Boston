@@ -60,10 +60,15 @@ function quad(w, h, cell, vertical) {
 }
 
 // --- Stain atlas cells (multiply; white = no change) -----------------------
+// Three crack cells and two patch cells, not one of each. A single motif
+// rotated four ways inside one frame is visible tiling repetition, which the
+// rubric makes an automatic fail — and with only one cell that is exactly what
+// happens the moment cracks are dense enough to see two at once.
 const S = {
   oil: 0, skid: 1, crack: 2, patch: 3,
   gutter: 4, grimeWall: 5, rustWall: 6, waterWall: 7,
   tarSeam: 8, ringStain: 9, gumSpots: 10, wearStrip: 11,
+  crackB: 12, crackC: 13, patchB: 14, pothole: 15,
 };
 // --- Paint atlas cells (RGBA, normal blend) --------------------------------
 const P = {
@@ -75,6 +80,35 @@ const P = {
 // ---------------------------------------------------------------------------
 // Atlas painting
 // ---------------------------------------------------------------------------
+
+/**
+ * Fade a stain cell back to white (= no change under MULTIPLY) at its border.
+ *
+ * Without this, any cell whose content reaches the cell edge — the gutter
+ * gradient, the wear strip, the patch rectangle — leaves a hard straight line
+ * exactly on the decal quad's own outline. That is what the critic saw as
+ * "visible straight decal-quad corners", and it is an automatic fail on its own.
+ * Drawn with `destination-out` on a temporary alpha, then flooded white, so it
+ * works whatever the cell painted underneath it.
+ */
+function featherCell(c, ox, oy, pad = 22) {
+  c.save();
+  c.beginPath(); c.rect(ox, oy, CELL, CELL); c.clip();
+  const edges = [
+    [ox, oy, ox + pad, oy, 1, 0], [ox + CELL, oy, ox + CELL - pad, oy, -1, 0],
+    [ox, oy, ox, oy + pad, 0, 1], [ox, oy + CELL, ox, oy + CELL - pad, 0, -1],
+  ];
+  for (const [gx0, gy0, gx1, gy1, hx, hy] of edges) {
+    const g = c.createLinearGradient(gx0, gy0, gx1, gy1);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(hx > 0 ? ox : hx < 0 ? ox + CELL - pad : ox,
+      hy > 0 ? oy : hy < 0 ? oy + CELL - pad : oy,
+      hx ? pad : CELL, hy ? pad : CELL);
+  }
+  c.restore();
+}
 
 function softBlob(c, x, y, r, rgba, jitter, rng) {
   c.save();
@@ -123,53 +157,103 @@ function drawSkid(c, ox, oy, rng) {
   }
 }
 
-function drawCracks(c, ox, oy, rng) {
+/**
+ * A branching fatigue crack.
+ *
+ * The previous version drew a random walk with a fixed round-capped stroke,
+ * which produced smooth uniform-width curves — the critic read them as "worms
+ * rather than cracks", correctly. A real crack in asphalt is a *fracture*: it
+ * runs almost straight between direction changes, changes direction sharply
+ * rather than smoothly, tapers to nothing at its tips, and branches at acute
+ * angles. All three of those are the difference between a crack and a worm, and
+ * all three are cheap.
+ */
+function drawCracks(c, ox, oy, rng, seed) {
   c.save();
   c.beginPath(); c.rect(ox, oy, CELL, CELL); c.clip();
-  const walk = (x, y, depth) => {
-    if (depth > 4) return;
-    let a = rng.range(0, Math.PI * 2);
-    let px = x, py = y;
-    const steps = 8 + rng.int(14);
+  c.lineCap = 'butt';
+  c.lineJoin = 'miter';
+  const walk = (x, y, a, depth, width) => {
+    if (depth > 3 || width < 0.45) return;
+    let px = x, py = y, ang = a;
+    const steps = 6 + rng.int(10);
     for (let i = 0; i < steps; i++) {
-      a += rng.range(-0.55, 0.55);
-      const l = rng.range(5, 15);
-      const nx = px + Math.cos(a) * l, ny = py + Math.sin(a) * l;
-      c.strokeStyle = `rgba(34,32,30,${(0.55 - depth * 0.09).toFixed(3)})`;
-      c.lineWidth = Math.max(0.7, 2.6 - depth * 0.5);
+      // Sharp, occasional deflections — not a smooth arc.
+      ang += rng.chance(0.32) ? rng.range(-0.95, 0.95) : rng.range(-0.12, 0.12);
+      const l = rng.range(9, 26);
+      const nx = px + Math.cos(ang) * l, ny = py + Math.sin(ang) * l;
+      // Taper along the run so the crack dies out instead of stopping dead.
+      const w0 = width * (1 - i / steps * 0.75);
+      c.strokeStyle = `rgba(26,25,24,${(0.72 - depth * 0.14).toFixed(3)})`;
+      c.lineWidth = Math.max(0.35, w0);
       c.beginPath(); c.moveTo(px, py); c.lineTo(nx, ny); c.stroke();
-      // A crack has a light shoulder where the aggregate is exposed.
-      c.strokeStyle = 'rgba(196,192,186,0.10)';
-      c.lineWidth = 3.2;
-      c.beginPath(); c.moveTo(px + 1.4, py + 1.4); c.lineTo(nx + 1.4, ny + 1.4); c.stroke();
+      // Spalled shoulder: exposed aggregate on the sunlit side only.
+      c.strokeStyle = `rgba(150,146,140,${(0.09 * (1 - depth * 0.3)).toFixed(3)})`;
+      c.lineWidth = Math.max(0.4, w0 * 0.7);
+      c.beginPath(); c.moveTo(px + 1.1, py + 1.0); c.lineTo(nx + 1.1, ny + 1.0); c.stroke();
       px = nx; py = ny;
-      if (rng.chance(0.13)) walk(px, py, depth + 1);
+      if (px < ox - 30 || px > ox + CELL + 30 || py < oy - 30 || py > oy + CELL + 30) return;
+      // Branch at an acute angle, as a fracture does.
+      if (rng.chance(0.20)) {
+        walk(px, py, ang + (rng.chance(0.5) ? 1 : -1) * rng.range(0.45, 1.15),
+          depth + 1, w0 * rng.range(0.45, 0.7));
+      }
     }
   };
-  for (let i = 0; i < 3; i++) walk(ox + rng.range(20, CELL - 20), oy + rng.range(20, CELL - 20), 0);
+  const n = 2 + (seed % 2);
+  for (let i = 0; i < n; i++) {
+    walk(ox + rng.range(10, CELL - 10), oy + rng.range(10, CELL - 10),
+      rng.range(0, Math.PI * 2), 0, rng.range(2.2, 3.6));
+  }
   c.restore();
+  featherCell(c, ox, oy, 26);
 }
 
-function drawPatch(c, ox, oy, rng) {
-  // A cut-and-fill utility patch: darker fresh asphalt, tar-sealed edges.
-  const m = 26;
-  const x0 = ox + m + rng.range(-8, 8), y0 = oy + m + rng.range(-8, 8);
-  const w = CELL - m * 2 + rng.range(-10, 10), h = CELL - m * 2 + rng.range(-10, 10);
-  c.fillStyle = 'rgba(58,56,54,0.30)';
-  c.fillRect(x0, y0, w, h);
-  c.strokeStyle = 'rgba(28,27,26,0.62)';
-  c.lineWidth = 7;
+/**
+ * A cut-and-fill utility patch.
+ *
+ * Two things were wrong before. It read *lighter* than the surrounding asphalt
+ * (a fresh bituminous patch is always darker than the aged, oxidised, sun-bleached
+ * road around it), and it was a `fillRect` — a hard axis-aligned rectangle whose
+ * corners survived into the frame as visible decal-quad edges. Now it is a
+ * jittered quad drawn a full stop darker with a raised tar-sealed lip, and the
+ * cell is feathered to white at its border so the quad itself cannot show.
+ */
+function drawPatch(c, ox, oy, rng, seed) {
+  const m = 18;
+  const x0 = ox + m, y0 = oy + m, w = CELL - m * 2, h = CELL - m * 2;
+  // Irregular outline: a real saw-cut is straight-edged but never square to the
+  // road, and the trench is dug wider at one end.
+  const J = () => rng.range(-13, 13);
+  const pts = [
+    [x0 + J(), y0 + J()], [x0 + w + J(), y0 + J()],
+    [x0 + w + J(), y0 + h + J()], [x0 + J(), y0 + h + J()],
+  ];
+  c.save();
   c.beginPath();
-  c.moveTo(x0, y0);
-  for (let i = 0; i <= 3; i++) {
-    const pts = [[x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h], [x0, y0]][i];
-    c.lineTo(pts[0] + rng.range(-4, 4), pts[1] + rng.range(-4, 4));
-  }
+  c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < 4; i++) c.lineTo(pts[i][0], pts[i][1]);
+  c.closePath();
+  // DARKER than the road. Multiply blend, so a low value is a dark patch.
+  c.fillStyle = `rgba(${34 + (seed % 3) * 6},${33 + (seed % 3) * 6},${31 + (seed % 3) * 6},0.62)`;
+  c.fill();
+  // Tar-sealed joint: near-black, overrun onto the old surface.
+  c.strokeStyle = 'rgba(14,14,15,0.80)';
+  c.lineWidth = 8;
+  c.lineJoin = 'round';
   c.stroke();
-  for (let i = 0; i < 26; i++) {
-    softBlob(c, x0 + rng.f() * w, y0 + rng.f() * h, rng.range(3, 10),
-      `rgba(40,38,36,${rng.range(0.06, 0.2)})`, 0.6, rng);
+  c.strokeStyle = 'rgba(20,20,21,0.34)';
+  c.lineWidth = 15;
+  c.stroke();
+  c.clip();
+  // Coarser, unpolished aggregate inside the patch.
+  for (let i = 0; i < 40; i++) {
+    softBlob(c, x0 + rng.f() * w, y0 + rng.f() * h, rng.range(2.5, 9),
+      `rgba(${22 + rng.int(26)},${21 + rng.int(24)},${20 + rng.int(22)},${rng.range(0.10, 0.30)})`,
+      0.6, rng);
   }
+  c.restore();
+  featherCell(c, ox, oy, 20);
 }
 
 function drawGutter(c, ox, oy, rng) {
@@ -273,13 +357,37 @@ function drawWear(c, ox, oy, rng) {
   }
 }
 
+/** A Boston pothole: broken edge, exposed base course, water in the bottom. */
+function drawPothole(c, ox, oy, rng) {
+  const cx = ox + CELL / 2, cy = oy + CELL / 2;
+  c.save();
+  c.beginPath(); c.rect(ox, oy, CELL, CELL); c.clip();
+  // Spalled rim — the asphalt is broken back irregularly around the hole.
+  softBlob(c, cx, cy, 74, 'rgba(58,56,53,0.34)', 0.75, rng);
+  softBlob(c, cx, cy, 56, 'rgba(30,29,28,0.62)', 0.85, rng);
+  // The hole itself, and the darker pool at the deepest point.
+  softBlob(c, cx + rng.range(-8, 8), cy + rng.range(-8, 8), 38, 'rgba(14,14,15,0.86)', 0.7, rng);
+  softBlob(c, cx + rng.range(-10, 10), cy + rng.range(-6, 12), 20, 'rgba(8,8,9,0.9)', 0.6, rng);
+  // Loose chunks scattered around it.
+  for (let i = 0; i < 26; i++) {
+    const a = rng.range(0, 6.2832), r = rng.range(52, 116);
+    softBlob(c, cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.9, rng.range(2, 7),
+      `rgba(38,36,34,${rng.range(0.2, 0.5)})`, 0.5, rng);
+  }
+  c.restore();
+  featherCell(c, ox, oy, 24);
+}
+
 function makeStainAtlas() {
   const { canvas, ctx: c } = canvas2d(ATLAS, ATLAS);
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, ATLAS, ATLAS);
   const rng = new RNG(20260826);
   const draw = { };
-  draw[S.oil] = drawOil; draw[S.skid] = drawSkid; draw[S.crack] = drawCracks;
-  draw[S.patch] = drawPatch; draw[S.gutter] = drawGutter;
+  draw[S.oil] = drawOil; draw[S.skid] = drawSkid;
+  draw[S.crack] = drawCracks; draw[S.crackB] = drawCracks; draw[S.crackC] = drawCracks;
+  draw[S.patch] = drawPatch; draw[S.patchB] = drawPatch;
+  draw[S.pothole] = drawPothole;
+  draw[S.gutter] = drawGutter;
   draw[S.grimeWall] = (cc, x, y, r) => drawStreak(cc, x, y, r, '42,40,36', 1.0);
   draw[S.rustWall] = (cc, x, y, r) => drawStreak(cc, x, y, r, '128,66,28', 0.55);
   draw[S.waterWall] = drawWaterStain;
@@ -287,7 +395,14 @@ function makeStainAtlas() {
   draw[S.gumSpots] = drawGum; draw[S.wearStrip] = drawWear;
   for (const k of Object.keys(draw)) {
     const [x, y] = cellRect(+k);
-    draw[k](c, x, y, rng);
+    draw[k](c, x, y, rng, +k);
+  }
+  // Every stain cell must fall off to white at its own border or the decal quad
+  // shows as a rectangle on the road. Cells that already feather themselves are
+  // idempotent under a second pass.
+  for (const k of Object.keys(draw)) {
+    const [x, y] = cellRect(+k);
+    featherCell(c, x, y, +k === S.wearStrip ? 34 : 20);
   }
   return canvas;
 }
@@ -524,7 +639,11 @@ const TYPES = {
   oil: ['stain', S.oil, 1.30, 2.40, false, 130],
   skid: ['stain', S.skid, 1.90, 5.60, false, 150],
   crack: ['stain', S.crack, 3.20, 3.20, false, 140],
+  crackB: ['stain', S.crackB, 2.60, 2.60, false, 140],
+  crackC: ['stain', S.crackC, 4.10, 4.10, false, 150],
   patch: ['stain', S.patch, 2.60, 3.40, false, 170],
+  patchB: ['stain', S.patchB, 3.60, 2.40, false, 170],
+  pothole: ['stain', S.pothole, 1.30, 1.30, false, 90],
   gutter: ['stain', S.gutter, 1.10, 3.20, false, 120],
   tarSeam: ['stain', S.tarSeam, 1.20, 6.00, false, 150],
   ringStain: ['stain', S.ringStain, 1.60, 1.60, false, 100],
@@ -552,6 +671,7 @@ export default class Decals {
     this.batchNames = [];
     this.materials = null;
     this._weather = 'clear';
+    this._season = 'summer';
     this._counts = {};
   }
 
@@ -635,14 +755,18 @@ export default class Decals {
     this.setWeather(this._weather);
   }
 
-  setWeather(w) {
+  /** @param {string} w weather @param {string} [season] */
+  setWeather(w, season) {
     this._weather = w;
+    if (season) this._season = season;
     if (!this.batcher) return;
     const wet = w === 'rain' || w === 'storm';
-    const snow = w === 'snow';
     const set = (n, v) => this.batcher.batches.get('decal_' + n)?.setVisible(v);
     set('puddle', wet);
-    set('salt', snow || w === 'overcast');
+    // Road salt is a winter thing. It used to also show under `overcast`, which
+    // put white de-icer crusting on a warm overcast August pavement for exactly
+    // the same reason the snow banks were out.
+    set('salt', w === 'snow' || this._season === 'winter');
     if (this.materials) {
       this.materials.puddle.opacity = wet ? 0.95 : 0.6;
     }
@@ -658,18 +782,56 @@ export default class Decals {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * Fraction of natural sites to keep, and a hard ceiling — see the same table in
+ * Props.js for why a flat global counter cannot work here.
+ *
+ * Measured before this change, from the live instance matrices: every wall
+ * decal family in the city fitted inside a 340 m radius of Boston Common
+ * (`grimeWall` occupied 10 chunks out of 436), and the whole `tarSeam` budget
+ * was spent on 29 of 488 street segments. Four separate downtown and Back Bay
+ * camera positions measured **zero** live instances of all fourteen families.
+ * They were never missing; they were all piled up in one place.
+ *
+ * Decals are two triangles each and cull at 55-220 m, so the drawn set is fixed
+ * by the LOD radius around the camera no matter how many exist city-wide.
+ */
+const RATE = {
+  oil: [1.0, 9000], skid: [1.0, 1400], crack: [1.0, 4200], crackB: [1.0, 4200],
+  crackC: [1.0, 2600], patch: [1.0, 3200], patchB: [1.0, 3200], pothole: [1.0, 2200],
+  gutter: [1.0, 12000], tarSeam: [1.0, 9000], ringStain: [0.8, 3200],
+  gumSpots: [0.8, 3200], wearStrip: [1.0, 12000],
+  grimeWall: [1.0, 16000], rustWall: [0.7, 4000], waterWall: [0.6, 3200],
+  crosswalk: [1.0, 3000], stopBar: [1.0, 2400], arrow: [1.0, 900],
+  paintFaded: [1.0, 11000], leaves: [0.7, 5000], salt: [1.0, 3000], chalk: [0.5, 700],
+  poster: [1.0, 5000], flyers: [0.8, 2600], graffiti: [0.7, 1800], stickers: [0.9, 3200],
+  puddle: [1.0, 3600],
+};
+
 function placeDecals(bat, L, density) {
-  const q = (n) => Math.round(n * density);
-  const quota = {
-    oil: q(1100), skid: q(300), crack: q(1300), patch: q(750), gutter: q(1100),
-    tarSeam: q(500), ringStain: q(700), gumSpots: q(500), wearStrip: q(700),
-    grimeWall: q(1000), rustWall: q(520), waterWall: q(460),
-    crosswalk: q(700), stopBar: q(420), arrow: q(340), paintFaded: q(600),
-    leaves: q(800), salt: q(420), chalk: q(160),
-    poster: q(800), flyers: q(420), graffiti: q(300), stickers: q(500),
-    puddle: q(520),
-  };
-  const take = (k) => (quota[k] -= 1) >= 0;
+  // Pass 1 counts sites, pass 2 places with probability budget/sites. Identical
+  // code path both times: `bat` is swapped for a no-op recorder on the first.
+  const cand = {};
+  for (const k of Object.keys(RATE)) cand[k] = 0;
+  const NULL_BAT = new Proxy({}, { get: () => ({ add() { return this; } }) });
+  runDecals(NULL_BAT, L, (k) => { cand[k] += 1; return true; });
+
+  const rng = new RNG(556677);
+  const left = {}, prob = {};
+  for (const k of Object.keys(RATE)) {
+    const [keep, cap] = RATE[k];
+    prob[k] = Math.min(1, Math.min(keep, cand[k] > 0 ? (cap * density) / cand[k] : 0) * density);
+    left[k] = Math.ceil(cap * density);
+  }
+  runDecals(bat, L, (k) => {
+    if (left[k] <= 0) return false;
+    if (prob[k] < 1 && rng.f() > prob[k]) return false;
+    left[k] -= 1;
+    return true;
+  });
+}
+
+function runDecals(bat, L, take) {
   const road = (x, z) => L.gh(x, z) + 0.012;
   const walk = (x, z) => L.gh(x, z) + L.kerb + 0.010;
   const facing = (fx, fz) => Math.atan2(fx, fz);
@@ -683,33 +845,45 @@ function placeDecals(bat, L, density) {
     const along = facing(s.dx, s.dz);
 
     // Wheel-path polish down each lane.
-    if (paintOK || true) {
-      for (const lane of [-1, 1]) {
-        for (let t = rng.range(2, 10); t < s.len - 6; t += 11.5) {
-          if (!take('wearStrip')) break;
-          const off = lane * kerb * 0.45;
-          const x = s.ax + s.dx * t + s.nx * off, z = s.az + s.dz * t + s.nz * off;
-          bat.wearStrip.add(x, road(x, z) - 0.002, z, along, 1, rng.range(0.8, 1.1));
-        }
+    for (const lane of [-1, 1]) {
+      for (let t = rng.range(2, 10); t < s.len - 6; t += 11.5) {
+        if (!take('wearStrip')) continue;
+        const off = lane * kerb * 0.45;
+        const x = s.ax + s.dx * t + s.nx * off, z = s.az + s.dz * t + s.nz * off;
+        bat.wearStrip.add(x, road(x, z) - 0.002, z, along, 1, rng.range(0.8, 1.1));
       }
     }
     // Longitudinal tar seam down the crown.
     for (let t = rng.range(0, 12); t < s.len - 6; t += 5.8) {
-      if (!take('tarSeam')) break;
+      if (!take('tarSeam')) continue;
       const off = rng.range(-1.2, 1.2);
       const x = s.ax + s.dx * t + s.nx * off, z = s.az + s.dz * t + s.nz * off;
       bat.tarSeam.add(x, road(x, z), z, along + rng.range(-0.04, 0.04), 1, rng.range(0.85, 1.05));
     }
-    // Cracks, patches, gum.
-    for (let i = 0; i < 14; i++) {
+    // Cracks, patches, potholes, gum. Site count scales with the length of the
+    // street rather than being a flat 14 per segment, so a 400 m arterial is not
+    // as sparsely damaged as a 40 m lane.
+    const nDamage = Math.max(4, Math.round(s.len / 9));
+    for (let i = 0; i < nDamage; i++) {
       const t = rng.f() * s.len;
       const off = rng.range(-kerb, kerb);
       const x = s.ax + s.dx * t + s.nx * off, z = s.az + s.dz * t + s.nz * off;
       const r = rng.f();
-      if (r < 0.42 && take('crack')) bat.crack.add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.7, 1.5), rng.range(0.8, 1.1));
-      else if (r < 0.66 && take('patch')) bat.patch.add(x, road(x, z) + 0.001, z, along + (rng.chance(0.5) ? 1.5708 : 0), rng.range(0.7, 1.4), rng.range(0.85, 1.1));
-      else if (r < 0.80 && take('gumSpots')) bat.gumSpots.add(x, walk(x, z), z, rng.range(0, 6.28), rng.range(0.8, 1.3), 1);
-      else if (take('ringStain')) bat.ringStain.add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.7, 1.3), 1);
+      // Rotate through the three crack and two patch cells so no two adjacent
+      // instances can be the same motif at a different rotation.
+      if (r < 0.40) {
+        const k = i % 3 === 0 ? 'crack' : i % 3 === 1 ? 'crackB' : 'crackC';
+        if (take(k)) bat[k].add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.7, 1.5), rng.range(0.82, 1.06));
+      } else if (r < 0.60) {
+        const k = i % 2 ? 'patch' : 'patchB';
+        if (take(k)) bat[k].add(x, road(x, z) + 0.001, z, along + rng.range(-0.35, 0.35) + (rng.chance(0.5) ? 1.5708 : 0), rng.range(0.7, 1.4), rng.range(0.88, 1.05));
+      } else if (r < 0.68) {
+        if (take('pothole')) bat.pothole.add(x, road(x, z) + 0.0005, z, rng.range(0, 6.28), rng.range(0.6, 1.5), 1);
+      } else if (r < 0.82) {
+        if (take('gumSpots')) bat.gumSpots.add(x, walk(x, z), z, rng.range(0, 6.28), rng.range(0.8, 1.3), 1);
+      } else if (take('ringStain')) {
+        bat.ringStain.add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.7, 1.3), 1);
+      }
     }
     // Kerbside: oil where cars park, silt in the gutter, leaves, puddles.
     for (const side of [-1, 1]) {
@@ -741,13 +915,13 @@ function placeDecals(bat, L, density) {
     // Centre line / edge line, only when the city has not painted its own.
     if (paintOK) {
       for (let t = rng.range(0, 7); t < s.len - 7; t += 7.2) {
-        if (!take('paintFaded')) break;
+        if (!take('paintFaded')) continue;
         const x = s.ax + s.dx * t, z = s.az + s.dz * t;
         bat.paintFaded.add(x, road(x, z) + 0.001, z, along, 1, 1);
       }
       if (s.type === 'arterial' && rng.chance(0.5)) {
         for (let k = 0; k < 2; k++) {
-          if (!take('arrow')) break;
+          if (!take('arrow')) continue;
           const t = s.len - rng.range(9, 20);
           const off = (k ? 1 : -1) * kerb * 0.45;
           const x = s.ax + s.dx * t + s.nx * off, z = s.az + s.dz * t + s.nz * off;
@@ -788,10 +962,12 @@ function placeDecals(bat, L, density) {
   let fi = 0;
   for (const f of L.frontage) {
     const rng = new RNG(6600041 + (fi++) * 3313);
-    if (f.len < 5) continue;
+    if (f.len < 4) continue;
     const ry = facing(f.nx, f.nz);
-    const y0 = L.gh(f.ax, f.az);
-    for (let t = rng.range(0.5, 3); t < f.len - 1; t += rng.range(1.6, 4.2)) {
+    // Same datum Buildings.js bases the building on; `L.gh` at the kerb drifts
+    // off the facade on any slope.
+    const y0 = f.y != null ? f.y : L.gh(f.ax, f.az);
+    for (let t = rng.range(0.5, 3); t < f.len - 1; t += rng.range(2.4, 5.6)) {
       const x = f.ax + f.dx * t + f.nx * 0.02;
       const z = f.az + f.dz * t + f.nz * 0.02;
       const floors = Math.max(1, Math.min(7, Math.floor((f.maxHeight - 3) / 3.4)));

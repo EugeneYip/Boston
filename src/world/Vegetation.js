@@ -219,6 +219,13 @@ function drawHedge(c, ox, oy, rng) {
 
 function drawCanopy(c, ox, oy, rng) {
   // The distant billboard: a lumpy, gap-toothed mass, not a green circle.
+  //
+  // Tone matters as much as shape here. The near tree resolves to the leaf
+  // cluster cells, which are ~40% transparent gap and carry their own interior
+  // shadow, so the crown reads dark; a solid billboard of the same hue reads
+  // several stops lighter and the LOD change shows as a colour pop from dark
+  // green to pale. The mass is therefore built dark, lit only on its upper
+  // left, and bitten through in the same proportion as the near cards.
   c.save();
   c.beginPath(); c.rect(ox, oy, CELL, CELL); c.clip();
   c.translate(ox + CELL / 2, oy + CELL / 2);
@@ -227,22 +234,31 @@ function drawCanopy(c, ox, oy, rng) {
     const r = Math.pow(rng.f(), 0.5) * CELL * 0.44;
     const x = Math.cos(a) * r, y = Math.sin(a) * r * 0.92 - CELL * 0.03;
     const rr = rng.range(9, 30) * (1 - r / (CELL * 0.55) * 0.35);
-    const g = rng.range(0.55, 1.15);
-    c.fillStyle = `rgb(${(52 * g) | 0},${(84 * g) | 0},${(38 * g) | 0})`;
+    // Sunlit top-left, shadowed underside — a flat fill is the giveaway.
+    const lit = 0.55 + 0.45 * Math.max(0, (-x * 0.5 - y) / (CELL * 0.5));
+    const g = rng.range(0.5, 0.85) * lit;
+    c.fillStyle = `rgb(${(46 * g) | 0},${(72 * g) | 0},${(32 * g) | 0})`;
     c.beginPath(); c.arc(x, y, rr, 0, 6.2832); c.fill();
   }
-  // Bite gaps out of the silhouette so it never reads as a disc.
+  // Bite gaps out of the silhouette so it never reads as a disc, and punch a
+  // few holes through the middle so sky shows through as it does on a real tree.
   c.globalCompositeOperation = 'destination-out';
-  for (let i = 0; i < 46; i++) {
+  for (let i = 0; i < 58; i++) {
     const a = rng.range(0, 6.2832);
-    const r = CELL * rng.range(0.30, 0.52);
+    const r = CELL * rng.range(0.26, 0.54);
     c.beginPath();
-    c.arc(Math.cos(a) * r, Math.sin(a) * r * 0.92, rng.range(8, 30), 0, 6.2832);
+    c.arc(Math.cos(a) * r, Math.sin(a) * r * 0.92, rng.range(8, 32), 0, 6.2832);
+    c.fill();
+  }
+  for (let i = 0; i < 16; i++) {
+    c.beginPath();
+    c.arc(rng.range(-CELL * 0.3, CELL * 0.3), rng.range(-CELL * 0.3, CELL * 0.3),
+      rng.range(4, 13), 0, 6.2832);
     c.fill();
   }
   c.restore();
   // Trunk stub so the billboard meets the ground.
-  c.fillStyle = '#4a3d2c';
+  c.fillStyle = '#3a2f22';
   c.fillRect(ox + CELL / 2 - 7, oy + CELL * 0.72, 14, CELL * 0.28);
 }
 
@@ -332,9 +348,25 @@ class Mesh3 {
 const _a = new THREE.Vector3(), _b = new THREE.Vector3();
 const _u = new THREE.Vector3(), _w = new THREE.Vector3(), _nv = new THREE.Vector3();
 
-/** Tapered limb from a to b; UV covers the bark cell exactly once. */
-function limb(M, ax, ay, az, bx, by, bz, r0, r1, sides, cell, w0, w1, col) {
-  const [u0, v0, u1, v1] = cellUV(cell);
+/**
+ * Tapered limb from a to b.
+ *
+ * `vSpan` maps a sub-band of the bark cell instead of the whole cell. The trunk
+ * used to be four stacked limbs each mapping the identical 256 px bark tile from
+ * v0 to v1, so the same knot pattern appeared four or five times up one trunk —
+ * the critic measured exactly that ("the tree bark texture repeats ~5 times
+ * identically over one trunk"), and visible tiling repetition is an automatic
+ * fail. Handing each segment its own slice of the cell, plus mirroring U on
+ * alternate segments, removes the repeat without another texel of atlas.
+ */
+function limb(M, ax, ay, az, bx, by, bz, r0, r1, sides, cell, w0, w1, col, vSpan, mirror) {
+  let [u0, v0, u1, v1] = cellUV(cell);
+  if (vSpan) {
+    const dv = v1 - v0;
+    v1 = v0 + dv * vSpan[1];
+    v0 = v0 + dv * vSpan[0];
+  }
+  if (mirror) { const t = u0; u0 = u1; u1 = t; }
   _a.set(ax, ay, az); _b.set(bx, by, bz);
   _u.subVectors(_b, _a);
   const len = _u.length() || 0.001;
@@ -400,6 +432,13 @@ function card(M, cx, cy, cz, dirx, diry, dirz, w, h, roll, cell, ccx, ccy, ccz, 
   emit(0); emit(1); emit(2);
   emit(0); emit(2); emit(3);
 }
+
+/** Species catalogue. Heights and canopy ratios are real for Boston plantings. */
+/**
+ * Bole radius as a fraction of `SPECIES.trunk * height`. See `boleR` in
+ * buildTree: the raw product is 8-10x life size.
+ */
+const TRUNK_R = 0.13;
 
 /** Species catalogue. Heights and canopy ratios are real for Boston plantings. */
 const SPECIES = {
@@ -478,16 +517,33 @@ function buildTree(name, variant, lod, seed) {
   const segs = lod === 0 ? 4 : 2;
   const clearH = H * S.clear;
 
+  /**
+   * Bole radius at the base.
+   *
+   * `S.trunk` was being taken as a straight proportion of tree height, which
+   * measured out at a **4.14 m thick trunk on a 14.5 m London plane** and an
+   * 11.47 m trunk on a 25 m elm — eight to ten times life size. That single
+   * number is most of why the vegetation read as "blobby broccoli": every tree
+   * was a canopy balanced on a concrete column, and it is also why the bark
+   * tiling was so conspicuous, because the tile was stretched over a five-metre
+   * cylinder. A street tree's DBH is roughly H/40 to H/25, so a 14.5 m plane is
+   * about 0.45-0.6 m thick, not four metres.
+   */
+  const boleR = S.trunk * H * TRUNK_R;
+
   // Trunk: stacked limbs, each mapping one bark tile, with a slight sweep.
   let px = 0, pz = 0;
   const sweepA = rng.range(0, 6.28), sweep = rng.range(0.02, 0.10);
   for (let i = 0; i < segs; i++) {
     const y0 = (i / segs) * clearH, y1 = ((i + 1) / segs) * clearH;
     const nx2 = Math.cos(sweepA) * sweep * y1, nz2 = Math.sin(sweepA) * sweep * y1;
-    const r0 = S.trunk * H * (1 - 0.30 * (y0 / H));
-    const r1 = S.trunk * H * (1 - 0.30 * (y1 / H));
+    const r0 = boleR * (1 - 0.30 * (y0 / H));
+    const r1 = boleR * (1 - 0.30 * (y1 / H));
+    // One bark cell stretched across the WHOLE trunk, one slice per segment, so
+    // the grain never repeats up the bole. Alternate segments mirror in U as
+    // well, which also breaks the seam line the cylinder wrap leaves.
     limb(M, px, y0, pz, nx2, y1, nz2, r0 * (i === 0 ? 1.22 : 1), r1, sides, S.bark,
-      0.0, 0.03 * (i + 1), barkCol);
+      0.0, 0.03 * (i + 1), barkCol, [i / segs, (i + 1) / segs], (i & 1) === 1);
     px = nx2; pz = nz2;
   }
 
@@ -501,8 +557,9 @@ function buildTree(name, variant, lod, seed) {
     const bx = px + Math.cos(a) * reach * (0.4 + S.vase);
     const bz = pz + Math.sin(a) * reach * (0.4 + S.vase);
     const by = clearH + (cY - clearH) * lift + cRad * 0.25;
-    const r = S.trunk * H * 0.55 * rng.range(0.7, 1.0);
-    limb(M, px, clearH, pz, bx, by, bz, r, r * 0.35, lod === 0 ? 5 : 4, S.bark, 0.05, 0.22, barkCol);
+    const r = boleR * 0.62 * rng.range(0.7, 1.0);
+    limb(M, px, clearH, pz, bx, by, bz, r, r * 0.35, lod === 0 ? 5 : 4, S.bark, 0.05, 0.22,
+      barkCol, [rng.range(0, 0.55), rng.range(0.6, 1)], (i & 1) === 0);
     tips.push([bx, by, bz]);
     if (lod === 0) {
       for (let k = 0; k < 2; k++) {
@@ -510,39 +567,67 @@ function buildTree(name, variant, lod, seed) {
         const ex = bx + Math.cos(a2) * cRad * rng.range(0.25, 0.55);
         const ez = bz + Math.sin(a2) * cRad * rng.range(0.25, 0.55);
         const ey = by + cRad * rng.range(0.1, 0.55);
-        limb(M, bx, by, bz, ex, ey, ez, r * 0.34, r * 0.14, 4, S.bark, 0.22, 0.45, barkCol);
+        limb(M, bx, by, bz, ex, ey, ez, r * 0.34, r * 0.14, 4, S.bark, 0.22, 0.45,
+          barkCol, [rng.range(0, 0.6), rng.range(0.65, 1)], (k & 1) === 1);
         tips.push([ex, ey, ez]);
       }
     }
   }
 
-  // Foliage cards on and inside the canopy shell.
+  // Foliage cards.
+  //
+  // Distributing them uniformly on one spherical shell is what makes procedural
+  // trees read as broccoli: the silhouette closes into a smooth circle and every
+  // tree in the row has the same outline. A real broadleaf crown is a handful of
+  // distinct lobes with sky between them, and its edge is ragged with individual
+  // shoots standing proud of the mass. So: cards cluster around 3-5 lobe centres
+  // rather than one, and a quarter of them are thrown past the crown radius at
+  // reduced size to break the outline. Same card count, same triangles.
   const n = S.cards[lod];
   const cw = cRad * (lod === 0 ? 0.72 : 1.05);
+  const nLobe = 3 + rng.int(3);
+  const lobes = [];
+  for (let i = 0; i < nLobe; i++) {
+    const la = (i / nLobe) * 6.2832 + rng.range(-0.5, 0.5);
+    const lr = cRad * rng.range(0.28, 0.62);
+    lobes.push([
+      Math.cos(la) * lr,
+      cY + rng.range(-0.34, 0.40) * cRad * S.squash,
+      Math.sin(la) * lr,
+      rng.range(0.55, 1.0),                 // this lobe's own radius fraction
+    ]);
+  }
   for (let i = 0; i < n; i++) {
     // Bias placement towards a branch tip so foliage grows off the structure.
     const tip = tips[rng.int(tips.length)];
+    const lo = lobes[i % nLobe];
+    const edge = rng.chance(0.26);          // an outlier shoot on the silhouette
     const a = rng.range(0, 6.2832);
     const el = Math.acos(1 - 2 * rng.f());
-    const rr = cRad * Math.pow(rng.range(0.35, 1.0), 0.55);
-    let x = Math.sin(el) * Math.cos(a) * rr;
-    let z = Math.sin(el) * Math.sin(a) * rr;
-    let y = cY + Math.cos(el) * rr * S.squash;
-    x = x * 0.6 + tip[0] * 0.55;
-    z = z * 0.6 + tip[2] * 0.55;
-    y = y * 0.62 + tip[1] * 0.42;
+    const rr = cRad * lo[3] * (edge
+      ? rng.range(1.02, 1.34)
+      : Math.pow(rng.range(0.22, 0.95), 0.55));
+    let x = lo[0] + Math.sin(el) * Math.cos(a) * rr;
+    let z = lo[2] + Math.sin(el) * Math.sin(a) * rr;
+    let y = lo[1] + Math.cos(el) * rr * S.squash;
+    x = x * 0.72 + tip[0] * 0.42;
+    z = z * 0.72 + tip[2] * 0.42;
+    y = y * 0.70 + tip[1] * 0.34;
     if (y < clearH * 0.85) y = clearH * 0.85 + rng.f() * cRad * 0.3;
     let dx = x, dy = (y - cY) * 1.2, dz = z;
     const dl = Math.hypot(dx, dy, dz) || 1;
     dx /= dl; dy /= dl; dz /= dl;
-    const h = cw * rng.range(0.66, 1.15);
+    // Outliers are small: a big card thrown wide reads as a lump, a small one
+    // reads as a shoot.
+    const sz = edge ? rng.range(0.34, 0.6) : rng.range(0.8, 1.25);
+    const h = cw * sz * rng.range(0.82, 1.18);
     const wgt = 0.35 + 0.65 * Math.min(1, rr / cRad);
     if (S.weep) {
       // Willow strands hang: card is tall, vertical, normal horizontal.
       card(M, x, y - h * 0.35, z, dx, 0, dz, cw * 0.62, cw * 2.3, 0,
         S.leaf, 0, cY, 0, 0.9 + rng.f() * 0.35, leafCol, 1);
     } else {
-      card(M, x, y, z, dx, dy, dz, cw * rng.range(0.8, 1.25), h, rng.range(-0.5, 0.5),
+      card(M, x, y, z, dx, dy, dz, cw * sz, h, rng.range(-0.5, 0.5),
         S.leaf, 0, cY, 0, wgt, leafCol, 1);
     }
   }
@@ -850,9 +935,137 @@ function pointInPoly(x, z, poly) {
   return inside;
 }
 
+/**
+ * Planting outside the two parks: tree pits, front areaways, hedged railings.
+ *
+ * Every ground-vegetation type — shrub, ivy, hedge, flower bed, grass tuft —
+ * used to be placed only inside `L.parkAreas`, which is the Common and the
+ * Public Garden and nothing else. Measured across four downtown and Back Bay
+ * camera positions, all five `veg_*` types had **zero** live instances: they
+ * were not broken, they were simply confined to two polygons a kilometre away.
+ *
+ * Boston's residential streets are not bare. A Back Bay or South End brownstone
+ * has a railed areaway with a shrub or two and often ivy up the basement wall;
+ * Beacon Hill has boxwood in front of the railings; every street tree sits in a
+ * pit with weedy ground cover in it. That is what this places, and it is what
+ * the eye reads at 3 m as "a street somebody lives on".
+ */
+function placeStreetPlanting(o, g) {
+  const { L, density, shrubB, shrubB2, flowerB, hedgeB, grassB } = o;
+
+  // --- Tree pits: ground cover round the base of every street tree ---------
+  {
+    const rng = new RNG(313377);
+    const cap = Math.round(11000 * density);
+    let n = 0;
+    for (const s of L.treeSites) {
+      if (n >= cap) break;
+      const k = 1 + rng.int(3);
+      for (let i = 0; i < k && n < cap; i++) {
+        const a = rng.range(0, 6.2832), r = rng.range(0.22, 0.66);
+        const x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r;
+        grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.55, 1.05),
+          rng.range(0.7, 1.05));
+        n++;
+      }
+      if (rng.chance(0.16) && n < cap) {
+        const a = rng.range(0, 6.2832);
+        const x = s.x + Math.cos(a) * 0.5, z = s.z + Math.sin(a) * 0.5;
+        flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.45, 0.8), rng.range(0.85, 1.1));
+        n++;
+      }
+    }
+  }
+
+  // --- Front areaways and railing hedges along the building line -----------
+  //
+  // Offsets are from the facade towards the street: the areaway of a brownstone
+  // is about a metre deep, and the railing sits at its outer edge.
+  {
+    const cap = {
+      shrub: Math.round(9000 * density), hedge: Math.round(9000 * density),
+      ivy: Math.round(3500 * density), flower: Math.round(3000 * density),
+    };
+    const used = { shrub: 0, hedge: 0, ivy: 0, flower: 0 };
+    let fi = 0;
+    for (const f of L.frontage) {
+      if (f.len < 4) continue;
+      const rng = new RNG(880011 + (fi++) * 6151);
+      const d = f.district;
+      // Row-house districts plant their front areaways; the Financial District
+      // and the Seaport do not have front areaways to plant.
+      const planted = d === 'backBay' ? 0.62 : d === 'beaconHill' ? 0.58
+        : d === 'southEnd' ? 0.55 : d === 'charlestown' ? 0.5
+          : d === 'northEnd' ? 0.16 : d === 'fenway' || d === 'cambridge' ? 0.34 : 0.10;
+      if (!rng.chance(planted)) continue;
+      const y0 = f.y != null ? f.y : g(f.ax, f.az);
+
+      // A clipped hedge run along the railing line, on most planted frontages.
+      if (rng.chance(0.45) && used.hedge < cap.hedge) {
+        const off = rng.range(0.85, 1.45);
+        const t0 = rng.range(0.3, 1.4), t1 = Math.min(f.len - 0.3, t0 + rng.range(2.5, f.len));
+        for (let t = t0; t < t1 && used.hedge < cap.hedge; t += 1.16) {
+          const x = f.ax + f.dx * t + f.nx * off, z = f.az + f.dz * t + f.nz * off;
+          hedgeB.add(x, g(x, z), z, Math.atan2(f.dx, f.dz), rng.range(0.9, 1.06),
+            rng.range(0.86, 1.06));
+          used.hedge++;
+        }
+      }
+      // Shrubs in the areaway itself.
+      const nS = 1 + rng.int(3);
+      for (let i = 0; i < nS && used.shrub < cap.shrub; i++) {
+        const t = rng.range(0.4, Math.max(0.5, f.len - 0.4));
+        const off = rng.range(0.35, 1.05);
+        const x = f.ax + f.dx * t + f.nx * off, z = f.az + f.dz * t + f.nz * off;
+        (rng.chance(0.62) ? shrubB : shrubB2)
+          .add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.6, 1.25), rng.range(0.8, 1.1));
+        used.shrub++;
+      }
+      // Ivy hugging the basement wall.
+      if (rng.chance(0.20) && used.ivy < cap.ivy) {
+        const t = rng.range(0.4, Math.max(0.5, f.len - 0.4));
+        const x = f.ax + f.dx * t + f.nx * 0.24, z = f.az + f.dz * t + f.nz * 0.24;
+        shrubB2.add(x, y0, z, rng.range(0, 6.2832), rng.range(0.7, 1.15), rng.range(0.75, 1.0));
+        used.ivy++;
+      }
+      // A window box or a pot of geraniums by the stoop.
+      if (rng.chance(0.24) && used.flower < cap.flower) {
+        const t = rng.range(0.4, Math.max(0.5, f.len - 0.4));
+        const off = rng.range(0.30, 0.85);
+        const x = f.ax + f.dx * t + f.nx * off, z = f.az + f.dz * t + f.nz * off;
+        flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.5, 0.95), rng.range(0.9, 1.15));
+        used.flower++;
+      }
+    }
+  }
+
+  // --- Weeds in the verge, where a wide pavement leaves a strip ------------
+  {
+    const cap = Math.round(6000 * density);
+    let n = 0, si = 0;
+    for (const s of L.segments) {
+      if (n >= cap) break;
+      if (s.type === 'alley') continue;
+      const rng = new RNG(447711 + (si++) * 2129);
+      if (!rng.chance(0.42)) continue;
+      const side = rng.sign();
+      for (let t = rng.range(3, 14); t < s.len - 4 && n < cap; t += rng.range(2.2, 7.5)) {
+        const off = s.halfRoad + rng.range(0.12, 0.45);   // the crack at the kerb
+        const x = s.ax + s.dx * t + s.nx * off * side;
+        const z = s.az + s.dz * t + s.nz * off * side;
+        grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.4, 0.85),
+          rng.range(0.62, 0.95));
+        n++;
+      }
+    }
+  }
+}
+
 function placeVegetation(o) {
   const { L, density, treeBatches, parkBatches, shrubB, shrubB2, flowerB, hedgeB, grassB } = o;
   const g = (x, z) => L.gh(x, z);
+
+  placeStreetPlanting(o, g);
 
   // ---- Street trees: exactly the sites the tree pits were cut for ----------
   const maxTrees = Math.round(5200 * density);

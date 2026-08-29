@@ -1277,15 +1277,19 @@ function buildUtilityBox(hex) {
 /** Cast-iron manhole cover, sitting 15mm proud of the asphalt like a real one. */
 function buildManhole() {
   const g = new GeoSet();
-  g.add('metal', lathe([[0.36, 0], [0.36, 0.014], [0.335, 0.022], [0.0, 0.024]], 20), '#3f423f');
-  // Pick-hole bosses and a raised rim ring.
-  g.add('metal', new THREE.TorusGeometry(0.28, 0.012, 4, 18), '#4a4d4a', { p: [0, 0.026, 0], r: [Math.PI / 2, 0, 0] });
-  g.add('metal', new THREE.TorusGeometry(0.16, 0.010, 4, 14), '#4a4d4a', { p: [0, 0.026, 0], r: [Math.PI / 2, 0, 0] });
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
+  g.add('metal', lathe([[0.36, 0], [0.36, 0.014], [0.335, 0.022], [0.0, 0.024]], 16), '#3f423f');
+  // Pick-hole bosses and a raised rim ring. Two 4x18 tori were 288 of this
+  // prop's 472 triangles for two beads 12 mm thick on something lying flat on
+  // the road — a ring of segments reads identically and costs a tenth.
+  g.add('metal', new THREE.RingGeometry(0.265, 0.295, 16, 1), '#4a4d4a',
+    { p: [0, 0.026, 0], r: [-Math.PI / 2, 0, 0] });
+  g.add('metal', new THREE.RingGeometry(0.150, 0.172, 12, 1), '#4a4d4a',
+    { p: [0, 0.026, 0], r: [-Math.PI / 2, 0, 0] });
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
     g.add('metal', box(0.10, 0.008, 0.03), '#494c49', { p: [Math.cos(a) * 0.22, 0.028, Math.sin(a) * 0.22], r: [0, -a, 0] });
   }
-  return { d0: g.build(0.25), near: 60, far: 150, cast: false, receive: true };
+  return { d0: g.build(0.25), near: 62, far: 150, cast: false, receive: true };
 }
 
 /** Kerb-inlet storm drain: the throat under the kerb plus a grate in the gutter. */
@@ -1502,15 +1506,20 @@ function buildUtilityPole(withTransformer) {
 function buildTreeGrate() {
   const g = new GeoSet();
   const R = 0.78;
-  g.add('metal', new THREE.RingGeometry(0.20, R, 24, 1), '#3a3d3a', { p: [0, 0.03, 0], r: [-Math.PI / 2, 0, 0] });
-  g.add('metal', new THREE.TorusGeometry(R, 0.022, 4, 24), '#43463f', { p: [0, 0.026, 0], r: [Math.PI / 2, 0, 0] });
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
+  // 6,295 of these lie flat on the pavement, so they are the most numerous prop
+  // in the city and are seen almost edge-on. The 4x24 torus rim alone was 192 of
+  // the original 440 triangles; a flat ring rim is indistinguishable from any
+  // angle you actually see a tree pit from.
+  g.add('metal', new THREE.RingGeometry(0.20, R, 16, 1), '#3a3d3a', { p: [0, 0.03, 0], r: [-Math.PI / 2, 0, 0] });
+  g.add('metal', new THREE.RingGeometry(R - 0.03, R + 0.02, 16, 1), '#43463f',
+    { p: [0, 0.034, 0], r: [-Math.PI / 2, 0, 0] });
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
     g.add('rough', box(0.02, 0.012, R - 0.22), '#22241f',
       { p: [Math.cos(a) * (R + 0.20) / 2, 0.037, Math.sin(a) * (R + 0.20) / 2], r: [0, -a, 0] });
   }
-  g.add('rough', cyl(0.20, 0.20, 0.06, 14), '#33302a', { p: [0, 0.0, 0] });
-  return { d0: g.build(0.3), near: 55, far: 130, cast: false, receive: true };
+  g.add('rough', cyl(0.20, 0.20, 0.06, 10), '#33302a', { p: [0, 0.0, 0] });
+  return { d0: g.build(0.3), near: 58, far: 130, cast: false, receive: true };
 }
 
 /** Concrete planter with a shrub. */
@@ -1519,8 +1528,28 @@ function buildPlanter() {
   g.add('rough', lathe([[0.46, 0], [0.48, 0.06], [0.44, 0.10], [0.40, 0.62],
     [0.44, 0.70], [0.42, 0.74], [0.38, 0.72]], 14), C.concrete);
   g.add('rough', cyl(0.37, 0.37, 0.06, 12), '#3a3126', { p: [0, 0.66, 0] });
-  g.add('rough', sph(0.42, 8, 6), '#3f5c30', { p: [0, 0.86, 0], s: [1, 0.7, 1] });
-  g.add('rough', sph(0.26, 7, 5), '#4a6a37', { p: [0.18, 0.98, -0.1], s: [1, 0.8, 1] });
+  // Planting. One squashed sphere reads as a green ball on a pot from three
+  // metres away — the critic called this out by name — so the mass is built
+  // from eight small overlapping lobes at four tones with a few bare stems
+  // showing through. Same triangle order, completely different silhouette.
+  {
+    const r = new RNG(5150);
+    const tone = ['#33501f', '#436828', '#2a4419', '#4d7530'];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + r.range(-0.4, 0.4);
+      const rr = r.range(0.10, 0.30);
+      const s = r.range(0.13, 0.23);
+      g.add('rough', sph(s, 6, 4), tone[i & 3], {
+        p: [Math.cos(a) * rr, 0.72 + r.range(0.02, 0.30), Math.sin(a) * rr],
+        s: [r.range(0.9, 1.5), r.range(0.7, 1.1), r.range(0.9, 1.4)],
+      });
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = r.range(0, 6.28);
+      g.add('rough', box(0.014, 0.30, 0.014), '#4a4230',
+        { p: [Math.cos(a) * 0.14, 0.80, Math.sin(a) * 0.14], r: [r.range(-0.2, 0.2), a, r.range(-0.25, 0.25)] });
+    }
+  }
   const d0 = g.build(0.4);
   const l = new GeoSet();
   l.add('rough', cyl(0.40, 0.46, 0.72, 7), C.concrete, { p: [0, 0.36, 0] });
@@ -1559,7 +1588,20 @@ function buildFireEscape() {
   // Drop ladder hanging off the lower balcony
   for (const sx of [-1, 1]) g.add('metal', box(0.028, 2.3, 0.028), C.rust, { p: [0.85 + sx * 0.21, -1.15, 0.85] });
   for (let i = 0; i < 8; i++) g.add('metal', box(0.44, 0.02, 0.02), '#4d4038', { p: [0.85, -0.2 - i * 0.28, 0.85] });
-  return { d0: g.build(0.4), near: 95, far: 215, cast: true };
+
+  // At 984 triangles this was the most expensive prop in the library, and with
+  // no second level it drew every one of them out to 215 m, where the whole bay
+  // is a few pixels of rusty lattice. LOD1 keeps the two decks, the guard line
+  // and the stair diagonal — the only parts that read at that range — for 8% of
+  // the cost.
+  const l = new GeoSet();
+  for (const y of [0, 3.4]) {
+    l.add('metal', box(W, 0.06, D), C.rust, { p: [0, y, D / 2] });
+    l.add('metal', box(W, 0.95, 0.05), C.rust, { p: [0, y + 0.48, D] });
+  }
+  l.add('metal', box(0.78, 0.06, 3.5), '#4d4038', { p: [-0.75, 1.85, 0.62], r: [-1.24, 0, 0] });
+  l.add('metal', box(0.48, 2.3, 0.05), C.rust, { p: [0.85, -1.15, 0.85] });
+  return { d0: g.build(0.4), d1: l.build(0.4), near: 78, far: 215, cast: true };
 }
 
 /** Fabric awning over a storefront. */
@@ -1647,16 +1689,151 @@ function buildBinBags() {
   return { d0, d1: l.build(0.35), near: 45, far: 120, cast: true };
 }
 
-/** Snow bank pushed up against the kerb. Winter only. */
+/**
+ * Snow bank ploughed up against the kerb. Winter/snow only — see
+ * `Props._applySnow`, which is the thing that must actually keep these off a
+ * clear August street.
+ *
+ * Ploughed snow in a city is never white. It is grit-grey within a day and
+ * black at the road edge where the plough dragged it through the gutter, so the
+ * bank is authored as a dirty gradient: soiled at the base, only the crown near
+ * white.
+ */
 function buildSnowBank() {
   const g = new GeoSet();
   const r = new RNG(8181);
-  for (let i = 0; i < 6; i++) {
-    const s = r.range(0.5, 0.95);
-    g.add('rough', sph(s, 7, 5), i % 3 === 0 ? '#b9bbb8' : '#dfe2e2',
-      { p: [r.range(-1.6, 1.6), s * 0.42, r.range(-0.25, 0.25)], s: [r.range(1.0, 1.6), r.range(0.5, 0.8), 1] });
+  for (let i = 0; i < 7; i++) {
+    const s = r.range(0.34, 0.62);
+    const y = s * 0.40;
+    // Lower lumps are road-grimed; only the top of the bank keeps any white.
+    const hex = y < 0.16 ? '#7d7c78' : y < 0.24 ? '#a3a49f' : '#c6c8c4';
+    g.add('rough', sph(s, 6, 4), hex,
+      { p: [r.range(-1.5, 1.5), y, r.range(-0.16, 0.16)], s: [r.range(1.1, 1.7), r.range(0.42, 0.66), 0.9] });
   }
-  return { d0: g.build(0.6), near: 115, far: 115, cast: true, receive: true };
+  return { d0: g.build(0.6), near: 90, far: 90, cast: true, receive: true };
+}
+
+// ---------------------------------------------------------------------------
+// Parked cars
+//
+// A real city street is mostly parked cars; without them no amount of signage
+// or litter makes a street read as inhabited. These are STATIC SHELLS, not
+// vehicles: no physics body, no simulation, no wheels that turn. They exist to
+// line the kerb, so the budget goes on silhouette and proportion and nothing
+// else. LOD0 is ~380 triangles and LOD1 ~90, both instanced, so a fully parked
+// street costs a few tens of thousands of triangles rather than millions.
+//
+// Real overall dimensions, because scale is what sells a vehicle at 3 m:
+// a Camry is 4.88 x 1.84 x 1.45, a RAV4 4.60 x 1.86 x 1.69, a Civic hatch
+// 4.52 x 1.80 x 1.41, an F-150 5.89 x 2.03 x 1.95, a Transit 5.53 x 2.06 x 2.10.
+// ---------------------------------------------------------------------------
+
+/** Wheel + tyre pointing along local X, at (x, y, z). */
+function carWheel(g, x, y, z, r, w) {
+  // Open-ended tyre barrel + one outward face: half the triangles of a capped
+  // cylinder and the inner face is never visible on a kerbside car anyway.
+  g.add('rough', cyl(r, r, w, 9, true), '#17181a', { p: [x, y, z], r: [0, 0, Math.PI / 2] });
+  g.add('rough', cyl(r * 0.62, r * 0.62, w * 0.5, 7), '#8e9295',
+    { p: [x + Math.sign(x) * w * 0.28, y, z], r: [0, 0, Math.PI / 2] });
+}
+
+/**
+ * @param {object} S  shape: L length, W width, H roof height, cab [z0,z1],
+ *                    glassY, bonnet height, wheelbase, wheel radius, roofBox
+ * @param {string} body sRGB body colour
+ */
+function buildCarShell(S, body) {
+  const g = new GeoSet();
+  const { L, W, H, cabZ0, cabZ1, sill, shoulder, wb, wr } = S;
+  const dark = '#1a1c1e';
+
+  // --- Lower body: two stacked slabs so the section tucks under at the sills.
+  g.add('paint', box(W * 0.94, sill, L * 0.985), body, { p: [0, wr + 0.10, 0] });
+  g.add('paint', box(W, shoulder, L), body, { p: [0, wr + 0.10 + sill / 2 + shoulder / 2, 0] });
+  const beltY = wr + 0.10 + sill / 2 + shoulder;      // top of the body side
+
+  // --- Cabin: narrower and inset, which is what stops a car reading as a brick.
+  const cabH = H - beltY;
+  const cabL = cabZ1 - cabZ0, cabC = (cabZ0 + cabZ1) / 2;
+  g.add('paint', box(W * 0.90, cabH, cabL), body, { p: [0, beltY + cabH / 2, cabC] });
+  // Roof panel, very slightly crowned by being a hair wider than the pillars.
+  g.add('paint', box(W * 0.86, 0.035, cabL * 0.96), body, { p: [0, H, cabC] });
+
+  // --- Glass. Side lights, windscreen and backlight as thin inset panes.
+  const gy = beltY + cabH * 0.52, gh = cabH * 0.74;
+  for (const sx of [-1, 1]) {
+    g.add('glass', box(0.015, gh, cabL * 0.90), '#20282c', { p: [sx * W * 0.451, gy, cabC] });
+  }
+  g.add('glass', box(W * 0.80, gh * 1.02, 0.02), '#242c30',
+    { p: [0, gy, cabZ1 + 0.02], r: [-0.50, 0, 0] });
+  g.add('glass', box(W * 0.76, gh * 0.95, 0.02), '#242c30',
+    { p: [0, gy, cabZ0 - 0.02], r: [0.42, 0, 0] });
+
+  // --- Bonnet and boot decks, stepped down from the belt line.
+  g.add('paint', box(W * 0.93, 0.05, (L / 2 - cabZ1) * 0.94), body,
+    { p: [0, beltY + 0.02, (cabZ1 + L / 2) / 2] });
+  g.add('paint', box(W * 0.93, 0.05, (L / 2 + cabZ0) * 0.94), body,
+    { p: [0, beltY + 0.01, (cabZ0 - L / 2) / 2] });
+
+  // --- Bumpers, lamps, plate, mirrors.
+  g.add('rough', box(W * 0.98, 0.20, 0.07), dark, { p: [0, wr + 0.18, L / 2 - 0.02] });
+  g.add('rough', box(W * 0.98, 0.20, 0.07), dark, { p: [0, wr + 0.18, -L / 2 + 0.02] });
+  for (const sx of [-1, 1]) {
+    g.add('paint', box(0.30, 0.13, 0.05), '#d8dbdd', { p: [sx * W * 0.30, wr + 0.42, L / 2 - 0.01] });
+    g.add('paint', box(0.26, 0.15, 0.05), '#7a1a18', { p: [sx * W * 0.31, wr + 0.44, -L / 2 + 0.01] });
+    g.add('paint', box(0.10, 0.07, 0.16), body, { p: [sx * W * 0.55, gy - 0.02, cabZ1 - 0.10] });
+  }
+  g.add('paint', box(0.30, 0.14, 0.02), '#c8c9c2', { p: [0, wr + 0.20, -L / 2 - 0.01] });
+  g.add('rough', box(W * 0.62, 0.16, 0.04), dark, { p: [0, wr + 0.36, L / 2 + 0.005] });
+
+  // --- Wheels, set in real arches.
+  for (const sz of [1, -1]) for (const sx of [-1, 1]) {
+    carWheel(g, sx * (W / 2 - 0.09), wr, sz * wb / 2, wr, 0.20);
+  }
+
+  // --- LOD1: the silhouette only. Two slabs, a cabin and four dark blocks.
+  const l = new GeoSet();
+  l.add('paint', box(W, sill + shoulder, L), body, { p: [0, wr + 0.10 + (sill + shoulder) / 2, 0] });
+  l.add('paint', box(W * 0.88, cabH, cabL), body, { p: [0, beltY + cabH / 2, cabC] });
+  l.add('glass', box(W * 0.89, cabH * 0.7, cabL * 0.92), '#242c30', { p: [0, gy, cabC] });
+  for (const sz of [1, -1]) for (const sx of [-1, 1]) {
+    l.add('rough', box(0.20, wr * 2, wr * 2), '#17181a', { p: [sx * (W / 2 - 0.09), wr, sz * wb / 2] });
+  }
+  // LOD0 out to 85 m: at 424 triangles a parked car is cheap, and the 84-triangle
+  // LOD1 has no wheels, so anything closer than about a block reading as a
+  // coloured brick is the worst possible trade. Measured cost of the wider band
+  // at a street camera: ~45k triangles of parked cars in frustum.
+  return { d0: g.build(0.55), d1: l.build(0.55), near: 85, far: 220, cast: true, receive: true };
+}
+
+/** The parked fleet. Shapes and colours in roughly US-market proportion. */
+const CAR_SHAPES = {
+  sedan: { L: 4.78, W: 1.84, H: 1.46, cabZ0: -1.20, cabZ1: 0.62, sill: 0.34, shoulder: 0.24, wb: 2.78, wr: 0.325 },
+  hatch: { L: 4.28, W: 1.79, H: 1.47, cabZ0: -1.30, cabZ1: 0.50, sill: 0.34, shoulder: 0.22, wb: 2.60, wr: 0.315 },
+  suv: { L: 4.62, W: 1.88, H: 1.70, cabZ0: -1.34, cabZ1: 0.66, sill: 0.42, shoulder: 0.26, wb: 2.69, wr: 0.365 },
+  wagon: { L: 4.80, W: 1.85, H: 1.56, cabZ0: -1.72, cabZ1: 0.58, sill: 0.36, shoulder: 0.24, wb: 2.75, wr: 0.335 },
+  pickup: { L: 5.60, W: 2.00, H: 1.86, cabZ0: -0.20, cabZ1: 1.30, sill: 0.50, shoulder: 0.30, wb: 3.35, wr: 0.400 },
+  van: { L: 5.30, W: 1.99, H: 2.06, cabZ0: -2.10, cabZ1: 1.20, sill: 0.52, shoulder: 0.34, wb: 3.10, wr: 0.375 },
+};
+
+/**
+ * @returns {Array<[string, object]>} [batchName, def] — one batch per
+ * shape/colour pair. Eight batches is sixteen extra meshes, which is nothing
+ * against a 1200-draw budget, and it buys real colour variety for free (a
+ * per-instance tint would also tint the glass and the tyres).
+ */
+function buildParkedCars() {
+  return [
+    ['carSedanW', buildCarShell(CAR_SHAPES.sedan, '#c8c9c6')],
+    ['carSedanK', buildCarShell(CAR_SHAPES.sedan, '#1e2023')],
+    ['carHatchR', buildCarShell(CAR_SHAPES.hatch, '#7d2320')],
+    ['carHatchS', buildCarShell(CAR_SHAPES.hatch, '#8d9195')],
+    ['carSuvB', buildCarShell(CAR_SHAPES.suv, '#243447')],
+    ['carSuvK', buildCarShell(CAR_SHAPES.suv, '#33363a')],
+    ['carWagonG', buildCarShell(CAR_SHAPES.wagon, '#2f4038')],
+    ['carPickupW', buildCarShell(CAR_SHAPES.pickup, '#b9bab5')],
+    ['carVanW', buildCarShell(CAR_SHAPES.van, '#cfd0cb')],
+  ];
 }
 
 /** Hanging shop sign on a scrolled bracket. */
@@ -1762,8 +1939,22 @@ export function buildFurnitureLibrary() {
   put('shopSignB', buildShopSign('#5c1f22'));
   put('storeFasciaA', buildStoreFascia('#26302c'));
   put('storeFasciaB', buildStoreFascia('#3a2622'));
+  for (const [k, v] of buildParkedCars()) put(k, v);
   return L;
 }
+
+/**
+ * Parked-car shells as [batchName, bodyLength], repeated in rough US fleet
+ * proportion so a straight `pick()` gives a believable mix (silver/white/black
+ * sedans and small SUVs dominate; one pickup and one van per sixteen cars).
+ * The length is what the placer steps the kerb by, so it must be the real one.
+ */
+export const PARKED_CARS = [
+  ['carSedanW', 4.78], ['carSedanK', 4.78], ['carHatchS', 4.28], ['carSuvK', 4.62],
+  ['carSedanW', 4.78], ['carSuvB', 4.62], ['carHatchR', 4.28], ['carSedanK', 4.78],
+  ['carWagonG', 4.80], ['carHatchS', 4.28], ['carSuvK', 4.62], ['carPickupW', 5.60],
+  ['carSedanW', 4.78], ['carVanW', 5.30], ['carSuvB', 4.62], ['carHatchR', 4.28],
+];
 
 export { C as PROP_COLOURS };
 
