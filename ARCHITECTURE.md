@@ -52,7 +52,18 @@ export default class TrafficSystem {
 ## Performance budget (hard limits, enforced by the critic)
 - **60 fps at 1920x1080** on Apple Silicon integrated GPU.
 - **< 1200 draw calls** per frame. Use `InstancedMesh` / merged geometry aggressively.
-- **< 3.5M triangles** rendered per frame. LOD everything past 150m.
+- **< 3.5M triangles in the CAMERA pass** per frame. LOD everything past 150m.
+  Shadow-cascade re-submission is budgeted separately at **< 2.5M**, so total
+  `renderer.info.render.triangles` may reach ~6M without being over budget.
+  This distinction matters: `renderer.info` counts every pass, so a raw reading
+  is *not* comparable to the camera budget. Two agents independently reported
+  a "triangle overrun" from the raw number and reached opposite conclusions
+  about the cause. Measured at `st_beaconhill`: 4.78M reported = 2.81M camera
+  (356 draws, inside budget) + 1.97M shadows.
+  To separate them, set `renderer.shadowMap.autoUpdate = false`, render once to
+  an offscreen target and read `info` for that render alone. **Never toggle
+  `shadowMap.enabled` or `light.castShadow`** — both change shader defines and
+  recompile every material in the scene.
 - **< 1.5 GB** GPU memory. Textures procedural or <= 1024px, always with mipmaps.
 - No per-frame allocations in `update()`. Reuse scratch vectors (module-scope `_v3`).
 
