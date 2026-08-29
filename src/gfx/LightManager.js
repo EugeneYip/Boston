@@ -813,9 +813,15 @@ export default class LightManager {
     const cull = Math.min(drawDist * 0.25, 190);
     const cull2 = cull * cull;
 
+    const dayOff = this.night < 0.02;
     for (let i = 0, n = this._count; i < n; i++) {
       const fl = this._flags[i];
       if (!(fl & F_ENABLED)) continue;
+      // A clock-driven source contributes nothing in daylight, so it must not
+      // hold one of the fifteen pool slots either — otherwise the whole pool is
+      // occupied by dark street lamps and a headlight that was switched on by
+      // hand gets no real light.
+      if (dayOff && (fl & F_AUTONIGHT)) continue;
       const g = this._gain[i];
       if (g <= 0.01) continue;
 
@@ -875,7 +881,18 @@ export default class LightManager {
       light.position.set(this._px[i], this._py[i], this._pz[i]);
       light.color.setRGB(this._cr[i], this._cg[i], this._cb[i]);
       light.distance = this._range[i];
-      const target = this._power[i] * this._gain[i] * (this._type[i] === T_WINDOW ? night : 1);
+      // Clock gate. The additive proxies have always done this — POOL_VERT and
+      // GLOW_VERT multiply the instance gain by `uNight` unless the source opted
+      // out (iColor.a < 0) — but the real pooled lights did not, so the fifteen
+      // Point/SpotLights burned at a summed intensity of ~1010 at EVERY hour.
+      // Measured identical at 03:00, 09:00, noon, 15:00, 19:30 and 22:00: sodium
+      // street lamps 7-8 m over the carriageway lighting the road at high noon,
+      // worth +6.1 mean output luminance inside the shadow mask at 09:30 — more
+      // than the entire hemisphere fill, spent making daylight flatter and
+      // tinting it orange. F_AUTONIGHT is cleared the moment an owner calls
+      // setEnabled(), so a light that is driven by hand is unaffected.
+      const clock = (this._flags[i] & F_AUTONIGHT) ? night : 1;
+      const target = this._power[i] * this._gain[i] * clock;
       light.intensity += (target - light.intensity) * Math.min(1, dt * 9);
       if (light.isSpotLight) {
         light.target.position.set(

@@ -55,8 +55,29 @@ export const bostonUniforms = {
   // fraction of it; the sky IBL is genuinely directional, so it may take most.
   // Letting either go to zero is what produces flat-black shadow, which reads as
   // broken rather than dark.
-  bostonSkyOcc:      { value: 0.45 },
-  bostonIblOcc:      { value: 0.80 },
+  // Driven from the clock by `Lighting._update` — see DAY_SKY_OCC / NIGHT_SKY_OCC.
+  bostonSkyOcc:      { value: 0.55 },
+  // The environment's SPECULAR half turned out to be the largest single thing
+  // filling a daylight shadow once its diffuse half was cut: measured inside the
+  // Hanover St 09:30 umbra, killing `environmentIntensity` outright took 12.5 of
+  // 50.7 mean luminance while killing only its diffuse contribution took 3.9 —
+  // so ~8.6 was broad rough-specular sky sitting in the shade. Occluding it
+  // harder by real sky visibility is the physical fix.
+  bostonIblOcc:      { value: 0.90 },
+  /**
+   * Extra scale on the *diffuse* sky IBL only.
+   *
+   * `scene.environmentIntensity` scales both `getIBLIrradiance` (diffuse) and
+   * `getIBLRadiance` (specular), and the two want opposite things here: the
+   * specular is what puts a sky in wet asphalt and glass and should stay strong,
+   * while the diffuse is the same skylight the HemisphereLight already delivers,
+   * so counting it at full strength lights every shadow twice. Measured at
+   * Hanover St 09:30, mean output luminance inside the shadow mask: 60.4 with
+   * everything on, 47.7 with the environment off and 56.3 with the hemisphere
+   * off — i.e. the *diffuse* environment was three times the hemisphere and the
+   * single largest thing filling shadows back in.
+   */
+  bostonIblDiffuse:  { value: 1 },
 };
 
 /* -------------------------------------------------------------------------- */
@@ -81,6 +102,7 @@ uniform float bostonProbeMix;
 uniform float bostonProbeBounce;
 uniform float bostonSkyOcc;
 uniform float bostonIblOcc;
+uniform float bostonIblDiffuse;
 
 const vec2 bostonPoisson[ 16 ] = vec2[ 16 ](
 	vec2( -0.6116, 0.5288 ), vec2( 0.1449, 0.8556 ), vec2( -0.1108, 0.1730 ), vec2( 0.6994, 0.4677 ),
@@ -210,7 +232,6 @@ export function installLightingShaders() {
   const pars = C.shadowmap_pars_fragment;
 
   const GEOM = `vec3 geometryViewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );`;
-  const AMBIENT = `vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );`;
   const GET_SHADOW = `float getShadow( sampler2D shadowMap,`;
   // Locate the directional block by its unique first and last lines: the shipped
   // three build strips blank lines, so matching the whole block verbatim is brittle.
@@ -221,7 +242,7 @@ export function installLightingShaders() {
   const DIR_BLOCK = h >= 0 && t >= 0 ? begin.slice(h, t + DIR_TAIL.length) : null;
 
   const need = [
-    begin.includes(GEOM), !!DIR_BLOCK, begin.includes(AMBIENT),
+    begin.includes(GEOM), !!DIR_BLOCK,
     pars.includes(GET_SHADOW), end.includes('RE_IndirectDiffuse( irradiance'),
   ];
   if (need.some(v => !v)) {
@@ -241,9 +262,42 @@ float bostonViewDepth = - geometryPosition.z;
 vec3 bostonWorldPos = cameraPosition + geometryPosition * mat3( viewMatrix );
 vec3 bostonWorldNrm = geometryNormal * mat3( viewMatrix );
 float bostonSkyVis = 1.0;
+vec3 bostonBounce = vec3( 0.0 );
 float bostonDirW = 1.0;
-float bostonDirSh = 1.0;`);
+float bostonDirSh = 1.0;
 
+// Sample the irradiance volume here, where the world position is in hand, but
+// APPLY it in lights_fragment_end -- see the note there.
+if ( bostonProbeMix > 0.0 ) {
+	vec4 bProbe = bostonProbeSample( bostonWorldPos );
+	bostonSkyVis = mix( 1.0, bProbe.a, bostonProbeMix );
+	// Ground/wall bounce: strongest on downward-facing and vertical surfaces.
+	bostonBounce = bProbe.rgb * bostonProbeBounce *
+		( 0.45 + 0.55 * ( 1.0 - max( bostonWorldNrm.y, 0.0 ) ) ) * bostonProbeMix;
+}`);
+
+  /*
+   * `UNROLLED_LOOP_INDEX` is the light's index in `directionalLights[]`, NOT a
+   * cascade number, so this only works while cascade i lands at index i.
+   *
+   * That holds because `WebGLLights.setup` sorts the light array with
+   * `shadowCastingAndTexturingLightsFirst` before assigning indices, and
+   * Array.prototype.sort is stable — so every shadow-casting light precedes every
+   * non-casting one, and our cascades keep their relative order. Verified live by
+   * reading the uploaded `directionalLights[i].color` cache off a linked program:
+   * indices 0/1/2 carry the sun colour with the 2048/2048/1536 maps in order, and
+   * Weather's always-resident lightning `DirectionalLight` (intensity 0, so
+   * colour (0,0,0)) lands at index 3 even though it sits at `scene.children[5]`,
+   * ahead of the `csm` group at [7]. An index past `bostonCsmCount` gets weight
+   * 1.0 and no cascade shadow, which is the correct treatment for a genuine
+   * non-cascade directional light.
+   *
+   * Two things would break it, both worth knowing before adding a light:
+   *  - another *shadow-casting* DirectionalLight registered before the cascades;
+   *  - `setCastShadows(false)`, which makes the sort a no-op among equals and
+   *    lets a non-casting light sort ahead of the cascades. Harmless today only
+   *    because that path is gated on the key light being essentially black.
+   */
   b = b.replace(DIR_BLOCK, /* glsl */`		bostonDirW = bostonCascadeWeight( float( UNROLLED_LOOP_INDEX ), bostonViewDepth );
 
 		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
@@ -268,23 +322,36 @@ float bostonDirSh = 1.0;`);
 			RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
 		}`);
 
-  b = b.replace(AMBIENT, AMBIENT + /* glsl */`
-
-	if ( bostonProbeMix > 0.0 ) {
-		vec4 bProbe = bostonProbeSample( bostonWorldPos );
-		bostonSkyVis = mix( 1.0, bProbe.a, bostonProbeMix );
-		irradiance *= mix( 1.0, bostonSkyVis, bostonSkyOcc );
-		// Ground/wall bounce: strongest on downward-facing and vertical surfaces.
-		irradiance += bProbe.rgb * bostonProbeBounce *
-			( 0.45 + 0.55 * ( 1.0 - max( bostonWorldNrm.y, 0.0 ) ) ) * bostonProbeMix;
-	}`);
-
   C.lights_fragment_begin = b;
 
-  // --- end: sky IBL and its specular must respect probe visibility ----------
+  /*
+   * --- end: occlude the indirect terms, then add the bounce -----------------
+   *
+   * This MUST happen here and not next to `getAmbientLightIrradiance`, which is
+   * where it used to live. Three builds `irradiance` in three steps inside
+   * lights_fragment_begin:
+   *
+   *     vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );  <-- old anchor
+   *     irradiance += getLightProbeIrradiance( ... );
+   *     for ( hemisphere lights ) irradiance += getHemisphereLightIrradiance( ... );
+   *
+   * The old injection sat on the first line, so `bostonSkyOcc` only ever scaled
+   * the AmbientLight term -- and this game has no AmbientLight, so the whole
+   * uniform was a measured no-op while reading 0.45 in the dev overlay. The
+   * HemisphereLight, which is the entire controlled ambient, was never occluded
+   * at all: a courtyard, a tunnel and an open plaza all received identical
+   * skylight, which is exactly the flat-ambient wash the volume exists to stop.
+   *
+   * By lights_fragment_end, `irradiance` carries ambient + light probe +
+   * hemisphere + lightmap, and `iblIrradiance` carries the environment. Occlude
+   * first, then add the bounce -- the bounce is the *fill* for occluded points
+   * and must not be occluded by its own visibility term.
+   */
   C.lights_fragment_end = /* glsl */`
 #if defined( RE_IndirectDiffuse )
-	iblIrradiance *= mix( 1.0, bostonSkyVis, bostonIblOcc );
+	irradiance *= mix( 1.0, bostonSkyVis, bostonSkyOcc );
+	irradiance += bostonBounce;
+	iblIrradiance *= bostonIblDiffuse * mix( 1.0, bostonSkyVis, bostonIblOcc );
 #endif
 #if defined( RE_IndirectSpecular )
 	radiance *= mix( 1.0, bostonSkyVis, bostonIblOcc * 0.9 );
@@ -355,7 +422,17 @@ export default class CascadedShadows {
     this.lambda = lambda;
     this.splitNear = 3.0;         // splits are computed from here, not camera.near
     this.blendFraction = 0.14;    // of each cascade's own depth range
-    this.casterHeadroom = 260;    // metres of caster kept in front of each cascade
+    /**
+     * Metres of caster kept up-sun of each cascade.
+     *
+     * This is not a slack figure, it is a geometric one: a caster of height h
+     * casts into a receiver from at most `h / sin(altitude)` away measured along
+     * the light axis, so `back = r + casterHeadroom / |toSun.y|` is exactly right
+     * when `casterHeadroom` is the tallest thing in the city. Boston's is 200
+     * Clarendon at 241 m, so 260 has ~8% of headroom and there is nothing to
+     * reclaim here — checked, because it looks like a tunable and is not.
+     */
+    this.casterHeadroom = 260;
 
     this.group = new THREE.Group();
     this.group.name = 'csm';
@@ -540,6 +617,25 @@ export default class CascadedShadows {
     bostonUniforms.bostonCsmFadeA.value = far * 0.86;
     bostonUniforms.bostonCsmFadeB.value = far;
     this._dirty = false;
+  }
+
+  /**
+   * Distance from the camera beyond which an object cannot cast into any
+   * cascade, in metres. Published so a system that owns a large always-resident
+   * caster set can gate `castShadow` on it per frame instead of guessing.
+   *
+   * Three culls shadow casters with `_frustum.intersectsObject`, which is a
+   * bounding-SPHERE test against the cascade's ortho box. Cascade 0's box is only
+   * ~2r wide (56 m at `high`) but `back + r` deep, so any mesh with a large
+   * bounding sphere — a merged sector of a city, say — intersects that thin slab
+   * almost wherever the camera stands, and is re-submitted in full to every
+   * cascade. Distance gating is the cheap way out; a tighter caster granularity
+   * is the thorough one.
+   *
+   * @returns {number}
+   */
+  shadowReach() {
+    return this.maxDistance + this.casterHeadroom / Math.max(0.18, Math.abs(this._dir.y));
   }
 
   /** Cascade extents in metres — dev overlay / debugging. */

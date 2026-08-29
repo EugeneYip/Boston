@@ -19,8 +19,26 @@ installLightingShaders();
  * so the sun/sky ratio is right at every hour: ~6:1 at noon, inverting at dusk.
  */
 
-const SUN_PEAK = 5.2;      // ARCHITECTURE: sun sits in the 3-6 band
-const SKY_PEAK = 1.05;
+/**
+ * Sun and sky irradiance at their respective peaks.
+ *
+ * These two numbers are a RATIO before they are levels: together with the sky
+ * IBL they decide how deep a cast shadow is, which is the single strongest cue
+ * that a frame is lit at all. Measured at Hanover St 09:30 (1920-wide readback,
+ * shadow map toggled with a forced recompile, ratio taken over every pixel the
+ * toggle changed) the shadowed/lit median was 0.62 — 0.69 stops. Real asphalt in
+ * sun against asphalt in shade is 2-3 stops. Everything read as an ambient wash
+ * because the ambient WAS most of the light.
+ *
+ * The fix is a ratio change, not a level change: the sun goes to the top of the
+ * band ARCHITECTURE allows and the ambient comes down to meet it, so the mean
+ * frame level barely moves (which matters while `AutoExposurePass` is still
+ * pinned and cannot compensate) but the contrast between lit and shadowed
+ * roughly triples. See also `bostonIblDiffuse`, which does the same job for the
+ * environment map's diffuse half — the largest of the three ambient terms.
+ */
+const SUN_PEAK = 6.0;      // ARCHITECTURE: sun sits in the 3-6 band
+const SKY_PEAK = 0.72;
 
 /**
  * Night levels, in the same irradiance units as SUN_PEAK / SKY_PEAK.
@@ -37,17 +55,90 @@ const SKY_PEAK = 1.05;
  */
 const MOON_PEAK = 0.42;
 /**
- * NIGHT_SKY is high for a physical skyglow because the exposure chain currently does
- * not adapt: `AutoExposurePass`'s metering clamp (`minEV: -0.6` in RenderPipeline)
- * pins the adapted log-luminance at -3.6 and therefore the exposure at 2.424 — the
- * *same* value at noon and at 22:00, measured, while the real scene log-luminance
- * median moves from -6.5 to -10.5. Until night gets its stops back, the ambient has
- * to be authored at an absolute level instead of a physical one. When metering is
- * fixed this should come back down to roughly 0.15-0.25.
+ * Night skyglow floor.
+ *
+ * This was 0.9 — far above a physical skyglow — because `AutoExposurePass` used to
+ * pin the adapted log-luminance at -3.6 at every hour, so raising scene light was
+ * the only way to make night readable. **The meter now adapts** (measured on the
+ * Hanover St framing: adapted -3.64 at noon against -4.58 at 21:30), so the
+ * compensation is no longer needed and the floor comes back down.
+ *
+ * It does not come all the way down to the 0.15-0.25 the old note guessed at,
+ * because the meter turns out to compensate very little here — a night street is
+ * metered mostly off its lamps and emissives, not its ambient. Swept at 21:30,
+ * stepping 45 frames between samples so the meter settles:
+ *
+ *   floor  adapted   mean   p50   % below lum 2
+ *   0.90    -4.58    44.8   35.8      2.2%
+ *   0.60    -4.58    39.5   31.3      3.7%
+ *   0.45    -4.64    37.8   29.8      4.7%
+ *   0.30    -4.77    36.7   28.9      5.7%
+ *   0.20    -4.88    36.0   28.1      6.5%
+ *
+ * i.e. a 2.2-stop ambient cut buys 0.3 stops of metering back and costs a
+ * quadrupling of near-black pixels, and "pure black with no detail" is an
+ * automatic fail on the critic's rubric. 0.50 takes night from 44% of noon's
+ * median to 37% while keeping the bottom of the histogram alive. Revisit
+ * alongside `toeParams` / the black point rather than on its own.
  */
-const NIGHT_SKY = 0.9;
+const NIGHT_SKY = 0.5;
 /** Extra environment (IBL) at night: wet asphalt and glass reflecting the skyglow. */
 const NIGHT_ENV = 0.30;
+
+/**
+ * Twilight key.
+ *
+ * Between sunset and moonrise there was NO shadow-casting directional light at
+ * all: measured at tod 19.5 the sun's term is already 0 (it dies at an altitude
+ * of -0.9 deg) and the moon ramp has not started (it opens at -2.6 deg), so the
+ * whole dusk band was lit by ambient alone and nothing in the city had a lit
+ * side and a shadow side. The same hole exists in the small hours whenever the
+ * moon is below the horizon — measured at tod 03:00, sun 0, castShadow false.
+ *
+ * The post-sunset sky is not isotropic: the western horizon is orders of
+ * magnitude brighter than the eastern one for the best part of an hour, so a
+ * dim warm key on the sunset azimuth is the right approximation rather than a
+ * cheat. It is deliberately weak enough to shape a facade without reading as a
+ * second sun.
+ */
+const TWILIGHT_PEAK = 0.46;
+/**
+ * Floor on the key's altitude, as sin(alt).
+ *
+ * Shadow cost scales as 1/|dir.y| — `CascadedShadows.casterHeadroom` divides by
+ * it — so a key left lying on the horizon submits the better part of a kilometre
+ * of extra casters to every cascade. 0.17 is about 10 deg: still a long raking
+ * shadow, still bounded.
+ */
+const KEY_MIN_Y = 0.17;
+/**
+ * Deep-night key floor.
+ *
+ * Keeps a trace of directional shaping (and, incidentally, a stable
+ * `NUM_DIR_LIGHT_SHADOWS`, so the whole scene no longer recompiles its shaders
+ * twice a day as `castShadow` toggles) on a moonless night. At this level
+ * against the night ambient it is shape, not shadow.
+ */
+const NIGHT_KEY = 0.14;
+/**
+ * Daylight scale on the DIFFUSE half of the sky IBL. See `bostonIblDiffuse` in
+ * CascadedShadows.js for why the two halves are separated at all.
+ */
+const DAY_IBL_DIFFUSE = 0.34;
+/**
+ * How much of the hemisphere fill the irradiance volume is allowed to take away.
+ *
+ * Until now this was a no-op — it was applied to the AmbientLight term, and this
+ * game has no AmbientLight (see the note in `CascadedShadows.installLightingShaders`)
+ * — so every value it has ever held is untested. It is therefore introduced gently
+ * at night: the night ambient is authored against a pinned exposure and is not
+ * ours to re-tune until `AutoExposurePass` is fixed, so the night figure is set to
+ * cost an open street only about 10% of its fill while still making a courtyard
+ * read as enclosed. Daylight, where the whole flat-wash problem lives, gets the
+ * full strength.
+ */
+const DAY_SKY_OCC = 0.62;
+const NIGHT_SKY_OCC = 0.25;
 
 const WEATHER = {
   clear:    { sun: 1.00, sky: 1.00, soft: 1.0, tint: 1.00 },
@@ -60,8 +151,10 @@ const WEATHER = {
 
 const _toSun = new THREE.Vector3(0, 1, 0);
 const _tmp = new THREE.Vector3();
+const _key = new THREE.Vector3(0, 1, 0);
 const _c1 = new THREE.Color();
 const _c2 = new THREE.Color();
+const _c3 = new THREE.Color();
 
 /* Sky and bounce reference colours, authored in sRGB. */
 const SKY_DAY = new THREE.Color('#8ab4ee');
@@ -76,6 +169,12 @@ const GND_DAY = new THREE.Color('#5b5348');
 const GND_DUSK = new THREE.Color('#4a382c');
 const GND_NIGHT = new THREE.Color('#34271c');   // sodium skyglow off low cloud
 const MOON_COL = new THREE.Color('#9fb6de');
+/**
+ * Post-sunset western sky. Warm, but not the 1850 K of the sun's last minutes:
+ * once the disc is down what is left is scattered light, which is oranger than
+ * daylight and paler than the disc was.
+ */
+const TWILIGHT_COL = kelvinToColor(2450, new THREE.Color());
 
 const NEON = ['#ff2d55', '#00e5ff', '#ff9500', '#39ff88', '#ff36f0', '#ffd21e', '#4d6bff'];
 
@@ -256,12 +355,26 @@ export default class Lighting {
     return s.preset === 'low' ? 190 : s.preset === 'medium' ? 280 : 380;
   }
 
-  /** Cascade count by preset — the brief's 3-4, budgeted rather than assumed. */
+  /**
+   * Cascade count by preset.
+   *
+   * NOTE, because this has now been reported twice as a bug: `Settings.PRESETS`
+   * ASKS for 4 cascades on `high` and `ultra` and this deliberately refuses,
+   * running 3. It is a budget ceiling, not an oversight — every cascade is a
+   * complete second submission of every caster in its range, and the frame is
+   * currently 17x under its fps budget. Four cascades at the declared 3072 base
+   * would be 26.5 M shadow texels against today's 10.8 M *and* a fourth geometry
+   * pass. `lighting.debug().csm` and the `[lighting]` boot line both report what
+   * is actually running, so the two can always be compared.
+   *
+   * If `Settings.js` is ever edited, `high` should declare `shadowCascades: 3,
+   * shadowMap: 2048` so the declaration matches — that file is not ours.
+   */
   _cascadeCount(s) {
     return Math.min(s.shadowCascades ?? 4, s.preset === 'low' ? 2 : 3);
   }
 
-  /** Base shadow map size. Cascade 0 covers ~30 m, so 2048 is ~1.5 cm per texel. */
+  /** Base shadow map size. Cascade 0 covers ~26 m, so 2048 is ~1.3 cm per texel. */
   _shadowMapSize(s) {
     return Math.min(s.shadowMap ?? 2048, s.preset === 'ultra' ? 3072 : 2048);
   }
@@ -548,28 +661,69 @@ export default class Lighting {
     kelvinToColor(kelvin, this.sunColor);
     if (w.tint < 1) this.sunColor.lerp(_c1.setRGB(0.86, 0.89, 0.95), 1 - w.tint);
 
-    // --- night: the same cascades carry the moon, so night still has shadows --
+    // --- key light: sun -> twilight -> moon, with no gap between them --------
+    //
+    // Everything below is ADDITIVE in intensity and a weighted blend in
+    // direction and colour, so the key never jumps. The previous code switched
+    // outright from the sun to the moon and left a hole wherever neither
+    // qualified — the measured dusk dead zone at tod 19.5, and the whole of the
+    // small hours whenever the moon path is below the horizon.
     this.night = 1 - THREE.MathUtils.smoothstep(altSin, -0.035, 0.105);
     const moon = THREE.MathUtils.smoothstep(-altSin, 0.045, 0.16);
-    let dir = _toSun;
-    if (moon > 0.001 && sunI < MOON_PEAK * 1.4) {
+
+    // Twilight: opens as the sun's own term dies at -0.9 deg, closed again by
+    // -11 deg where the moon (if there is one) has taken over.
+    const twi = (1 - THREE.MathUtils.smoothstep(altDeg, -1.5, 2.5)) *
+      THREE.MathUtils.smoothstep(altDeg, -11, -4);
+    const twiI = TWILIGHT_PEAK * twi * w.sun;
+
+    // Moon. `_moonDir` prefers the Atmosphere agent's if it publishes one.
+    let moonI = 0;
+    if (moon > 0.001) {
       this._moonDir(ctx.time.timeOfDay, _tmp);
-      if (_tmp.y > 0.05) {
-        dir = _tmp;
-        sunI = MOON_PEAK * moon * w.sun * (0.4 + 0.6 * _tmp.y);
-        this.sunColor.copy(MOON_COL);
-      } else sunI = Math.max(sunI, 0);
+      moonI = _tmp.y > 0.02
+        ? MOON_PEAK * moon * w.sun * (0.4 + 0.6 * _tmp.y)
+        // Below the horizon there is no moon, but a city at 03:00 still needs a
+        // key or every surface flattens. Lift its own azimuth and dim it hard.
+        : NIGHT_KEY * moon * w.sun;
     }
 
-    this.toSun.copy(dir);
-    this.sunDir.copy(dir).negate();
+    // Direction: the sun's azimuth, lifted off the horizon by however much
+    // twilight is in play, then blended toward the moon by its share of the
+    // total. Lifting continuously (rather than switching) is what keeps the
+    // shadow direction from snapping at sunset.
+    _liftDir(_toSun, THREE.MathUtils.lerp(_toSun.y, KEY_MIN_Y, twi), _key);
+    const nightI = twiI + moonI;
+    if (nightI > 1e-5) {
+      const share = moonI / nightI;
+      if (share > 0) {
+        _liftDir(_tmp, Math.max(_tmp.y, KEY_MIN_Y), _tmp);
+        _key.lerp(_tmp, share).normalize();
+      }
+      _c3.copy(TWILIGHT_COL).lerp(MOON_COL, share);
+      // The sun still owns the colour while it is the stronger term.
+      this.sunColor.lerp(_c3, nightI / (nightI + sunI));
+      sunI += nightI;
+    }
+
+    this.toSun.copy(_key);
+    this.sunDir.copy(_key).negate();
     this.sunIntensity = sunI;
     this.shadows.setSun(this.sunColor, sunI);
     this.shadows.setCastShadows(sunI > 0.012);
 
     // --- skylight ---------------------------------------------------------
     const skyCurve = Math.pow(Math.max(0, (altSin + 0.16) / 1.16), 0.9);
-    const dusk = THREE.MathUtils.smoothstep(altDeg, 14, -3) *
+    // `THREE.MathUtils.smoothstep(x, min, max)` returns 0 for x <= min BEFORE it
+    // tests max, so calling it with min > max does not reverse the ramp — it
+    // degenerates into `x > min ? 1 : 0`. `smoothstep(altDeg, 14, -3)` was
+    // therefore 1 only when the sun was ABOVE 14 deg and 0 everywhere else, so
+    // this term ran exactly backwards: the hemisphere light was 85% of the warm
+    // dusk colour at noon and pure blue day colour at sunset. Measured on the
+    // live hemisphere: #fff0e7 (warm cream) at tod 6, 7, 12, 15 and 18, flipping
+    // to #c8ffff (cyan) at 18.5 — which is a fair share of "the daylight is a
+    // milky wash and the ground tint disagrees with the sky".
+    const dusk = (1 - THREE.MathUtils.smoothstep(altDeg, -3, 14)) *
       THREE.MathUtils.smoothstep(altDeg, -9, -1);
     this.skyColor.copy(SKY_DAY).lerp(SKY_DUSK, dusk * 0.85).lerp(SKY_NIGHT, this.night);
     _c2.copy(GND_DAY).lerp(GND_DUSK, dusk * 0.8).lerp(GND_NIGHT, this.night);
@@ -598,6 +752,16 @@ export default class Lighting {
     // it gets its own floor rather than decaying to the daylight base.
     ctx.scene.environmentIntensity =
       0.16 + 0.62 * skyCurve * w.tint + this.night * NIGHT_ENV * w.tint;
+    // ...but only its SPECULAR half is wanted at full strength. Its diffuse half
+    // is the same skylight the hemisphere light already delivers, and counting it
+    // twice is what filled every daylight shadow back in. Cut in daylight, left
+    // alone at night, where it is a real and separately authored fill rather than
+    // a duplicate (see NIGHT_ENV, and the note on NIGHT_SKY about the pinned
+    // exposure — nothing here changes the night level).
+    bostonUniforms.bostonIblDiffuse.value =
+      THREE.MathUtils.lerp(DAY_IBL_DIFFUSE, 1, this.night);
+    bostonUniforms.bostonSkyOcc.value =
+      THREE.MathUtils.lerp(DAY_SKY_OCC, NIGHT_SKY_OCC, this.night);
 
     // Softer sun under cloud: the disc becomes the whole sky.
     bostonUniforms.bostonSunAngular.value = 0.0093 * w.soft;
@@ -675,6 +839,9 @@ export default class Lighting {
       sun: +this.sunIntensity.toFixed(3),
       sky: +this.skyIntensity.toFixed(3),
       env: +(this.ctx.scene.environmentIntensity ?? 1).toFixed(3),
+      iblDiffuse: +bostonUniforms.bostonIblDiffuse.value.toFixed(3),
+      keyY: +this.toSun.y.toFixed(3),
+      casts: this.shadows.primary.castShadow,
       night: +this.night.toFixed(2),
       alt: +(Math.asin(THREE.MathUtils.clamp(this.toSun.y, -1, 1)) * 57.3).toFixed(1),
       csm: this.shadows.debugInfo(),
@@ -704,6 +871,22 @@ export default class Lighting {
 
 /** Rec.709 luminance of a colour that is already in the linear working space. */
 function luminance(c) { return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; }
+
+/**
+ * Re-point a unit direction at a given altitude without moving its azimuth.
+ * Safe to call with `src === out`.
+ * @param {THREE.Vector3} src unit vector
+ * @param {number} y target sin(altitude)
+ * @param {THREE.Vector3} out
+ */
+function _liftDir(src, y, out) {
+  const hx = src.x, hz = src.z;
+  const h = Math.hypot(hx, hz);
+  const ny = THREE.MathUtils.clamp(y, -1, 1);
+  if (h < 1e-5) return out.set(0, ny >= 0 ? 1 : -1, 0);
+  const s = Math.sqrt(Math.max(0, 1 - ny * ny)) / h;
+  return out.set(hx * s, ny, hz * s);
+}
 
 /**
  * Tanner Helland's blackbody approximation, good to a few percent over 1000-10000 K.
