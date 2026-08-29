@@ -44,7 +44,7 @@ export const bostonUniforms = {
   bostonCsmFadeB:    { value: 1e6 },
   bostonPcfTaps:     { value: 12 },
   bostonPcss:        { value: 1 },
-  bostonSunAngular:  { value: 0.0093 },   // tan of the sun's angular radius, x2 for softness
+  bostonSunAngular:  { value: 0.0047 },   // tan of the sun's angular radius; Lighting drives it
   bostonProbeTex:    { value: null },
   bostonProbeOrigin: { value: new THREE.Vector3() },
   bostonProbeInvExt: { value: new THREE.Vector3(1, 1, 1) },

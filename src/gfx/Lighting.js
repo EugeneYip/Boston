@@ -764,7 +764,17 @@ export default class Lighting {
       THREE.MathUtils.lerp(DAY_SKY_OCC, NIGHT_SKY_OCC, this.night);
 
     // Softer sun under cloud: the disc becomes the whole sky.
-    bostonUniforms.bostonSunAngular.value = 0.0093 * w.soft;
+    // Penumbra width. This was 0.0093 — twice the sun's real angular radius,
+    // "for softness" — and the critic measured the result as a tree shadow soft
+    // over ~40 px at 5 m. Doubling it does not read as a softer sun, it reads as
+    // an out-of-focus shadow map, and it costs shadow depth: everything inside
+    // the penumbra is a partially-lit pixel. Swept at Hanover St 09:30, median
+    // shadowed/lit over every pixel the shadow map changes:
+    //   0.0093 -> 0.98 stops   0.0062 -> 1.04   0.0047 -> 1.10   0.0033 -> 1.16
+    // 0.0047 is the physical figure (tan of the sun's 0.266 deg angular radius),
+    // so that is where it stops. `w.soft` still opens it 3-6x under cloud, which
+    // is where a genuinely soft shadow belongs.
+    bostonUniforms.bostonSunAngular.value = 0.0047 * w.soft;
 
     // --- artificial ---------------------------------------------------------
     this.manager.update(dt, ctx, this.night);

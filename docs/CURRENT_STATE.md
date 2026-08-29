@@ -43,11 +43,15 @@ Last verified: 2026-08-27, commit `06f93d3`.
   Financial District street camera: 28 parked cars, 14/14 decal families live, shop
   signage / fascias / fire escapes / A/C units / standpipes all non-zero, 88 ground
   plants. Every one of those was **0** before.
-- **Lighting**: 3 cascades @ 2048/2048/1536, 1,500 street lamps, 2,226 emissive sources.
+- **Lighting**: 3 cascades @ 2048/2048/1536, ~2,300 street lamps, ~3,000 emissive sources.
   Hemisphere colours are normalised to unit luminance so `skyIntensity` is a real
   irradiance at every hour (see §Resolved). Both additive proxy meshes carry real instance
   bounds and frustum-cull; the halo minimum size is derived from the live viewport, so it
   is a fixed 1.1 px at any resolution or FOV rather than a constant tuned for one canvas.
+  **Cast shadows are now 2.5 stops deep in the umbra** and the artificial lights obey the
+  world clock (see §Resolved). There is a **shadow-casting key light at every hour of the
+  day** — sun, then a twilight key on the sunset azimuth, then the moon, blended
+  additively so no hour is lit by ambient alone.
 - **Atmosphere**: the `atmosphere` pass is on and stays on (`render.validate()` → `ok:
   true`). Raymarched volumetric clouds now render at every hour — ~33% sky cover at
   `clear`, radiance 0.12 pre-dawn / 4.5 at noon / 25.6 at golden hour / 0.035 at
@@ -119,6 +123,11 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Lit windows bloomed into one glowing slab per facade | `uWinBright` 4.2 sat two stops above the tone curve's shoulder at the pipeline's fixed exposure — measured 6.7% of a night street frame pinned at 255, mullions bloomed shut. | `WIN_BRIGHT = 1.5` in `Lighting.js`; clipping 6.7% → 0.1% |
 | Cold boot 45 s | Per-pixel JS texture synthesis without `willReadFrequently`, redundant full-size octaves | materials 12,782→653 ms, props 12,672→600 ms |
 | **Buildings do not rasterise — the whole city renders FLAT** | `BuildingKit.installPatch` defined `onBeforeCompile` as an **own accessor**, shadowing the `Material.prototype` accessor `CascadedShadows.installLightingShaders` installs. That prototype hook is the only thing injecting the shared `boston*` uniforms — one of which is `bostonProbeTex`, a **`sampler3D`** declared unconditionally by the patched `shadowmap_pars_fragment` chunk. Never receiving it, three never assigned it a texture unit, so it kept the default **unit 0** — the same unit the facade's `sampler2DArray` atlas lands on. The driver then rejected every building draw with `GL_INVALID_OPERATION: glDrawElements: Two textures of different types use the same sampler location`. Geometry, transforms, attributes, material flags and the compiled shader were all correct; the draw call simply never executed. Only buildings/landmarks were hit because every other system assigns `onBeforeCompile` normally and so goes through the prototype setter. | `BuildingKit.installPatch`, commit `d3de1e3` |
+| **The irradiance volume never occluded the ambient — `bostonSkyOcc` was a measured no-op** | The probe block was injected onto three's `vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );` line. That is the FIRST of three statements that build `irradiance`; the light probe and then the whole `NUM_HEMI_LIGHTS` loop are added *after* it. So `irradiance *= mix(1.0, bostonSkyVis, bostonSkyOcc)` scaled the AmbientLight term only — and this game has no `AmbientLight` anywhere, so the multiply hit zero. The HemisphereLight, which is the entire controlled ambient, was never occluded at all: a courtyard, a tunnel and an open plaza all received identical skylight, which is precisely what the volume exists to prevent. Every value `bostonSkyOcc` has ever held was untested. | `CascadedShadows.installLightingShaders`: the probe is *sampled* at the `geometryViewDir` anchor and *applied* in `lights_fragment_end`, where `irradiance` carries ambient + probe + hemisphere + lightmap. Occlude first, then add the bounce — the bounce is the fill for occluded points and must not be occluded by its own visibility term. |
+| **Shadows only 0.58-0.7 stops deep — "the whole frame is a milky wash"** | Not one bug: the ambient simply outweighed the sun. Decomposed by ablation inside the 09:30 shadow mask (mean output luminance, 1920×1080): everything on **60.4**, environment off **47.7**, bounce off **55.6**, street lamps off **54.3**, hemisphere off **47.9**. The *diffuse* half of the sky IBL was ~3× the hemisphere light and the largest single term, and it is the same skylight the HemisphereLight already delivers — counted twice. Its *specular* half was worth another ~8.6 on its own. | Ratio, not level: `SUN_PEAK` 5.2 → **6.0** (top of ARCHITECTURE's 3-6 band), `SKY_PEAK` 1.05 → **0.72**, a new `bostonIblDiffuse` uniform scaling `iblIrradiance` alone to **0.34** in daylight (specular untouched, so wet asphalt and glass keep their sky), `bostonIblOcc` 0.80 → **0.90**, and `bostonSkyOcc` made real. Frame mean is unchanged (77.2 → 73.9) while the contrast roughly doubles. |
+| **15 point/spot lights burned at Σ~1026 intensity at every hour, including noon and 03:00** | The additive proxies had always been clock-gated — `POOL_VERT`/`GLOW_VERT` multiply the instance gain by `uNight` unless the source opts out — but `LightManager._applyPools` applied that gate only to `T_WINDOW`. Every street lamp's *real* `PointLight` therefore burned at full sodium intensity at high noon, and the fifteen pool slots were permanently occupied by lamps that could not be seen. | `_applyPools` reads `F_AUTONIGHT` (which `setEnabled()` already clears for hand-driven lights) and multiplies by `night`; `_select` skips clock-gated sources below `night < 0.02` so the pool is free for anything switched on by hand. Measured settled: Σ **0** at 06:00-18:00, 195 at 19:00, 1026 at 20:00-03:00. |
+| **No shadow-casting directional light at all through dusk, or in the small hours** | The sun's term dies at an altitude of −0.9°, the moon ramp opens at −2.6°, and the moon branch additionally required the moon to be above the horizon. Measured: tod 19.5 → `sunIntensity` 0, `castShadow` false; tod 03:00 → the same, because the fallback moon path is below the horizon then. Whole bands of the day were lit by ambient alone, with nothing having a lit side and a shadow side. | `Lighting._update` now blends sun → twilight → moon **additively**, with the direction lifted continuously toward `KEY_MIN_Y` so nothing snaps and the cascade frusta stay bounded. Measured after: a casting key at every hour, `sunIntensity` ≥ 0.14, key altitude ≥ 0.066. |
+| The daylight ambient was tinted warm and the dusk ambient cyan — backwards | `THREE.MathUtils.smoothstep(x, min, max)` tests `x <= min` **before** `x >= max`, so calling it with `min > max` does not reverse the ramp, it degenerates to `x > min ? 1 : 0`. `smoothstep(altDeg, 14, -3)` was therefore 1 only when the sun was *above* 14° — so the hemisphere light was 85% of the warm `SKY_DUSK` colour at noon and pure blue `SKY_DAY` at sunset. Measured on the live light: `#fff0e7` at tod 6/7/12/15/18, flipping to `#c8ffff` at 18.5. | `Lighting._update`: `(1 - smoothstep(altDeg, -3, 14)) * smoothstep(altDeg, -9, -1)`. **Never call `MathUtils.smoothstep` with `min > max`.** |
 | Roofs read as bare pale planes from every elevated shot | The always-resident LOD-2 shell lidded its parapet (`cap` at `ty + parapet - 0.46`), putting that surface up to **0.9 m above** the LOD-0 roof deck. The shell is drawn even where a detailed chunk is loaded, so its lid covered every real roof in the city and hid all the roof furniture underneath. | `Facades.buildShell`, deck now caps at the shell drop plane with a proper inner parapet face |
 | Skyline is a wall of same-height slabs | `plot.maxHeight` is **one flat number per district** (every Financial District parcel carries 240 m) and `makeSpec` did `storeys = max(storeys, floor(fit * 0.62))`, giving every tower the same fraction of the same number: 479 buildings inside one 20 m band with a hard gap from 100–140 m. Height now comes from a power law under a per-district ceiling (`Facades.DISTRICT_HEIGHT`), gated on parcel area and distance to Boston's two real tower clusters (`TOWER_CORES`). Caps stay under the landmarks so 200 Clarendon (241 m) and the Prudential (229 m) stay outliers. Result is monotonic: 5900 / 513 / 136 / 125 / 149 / 63 / 34 / 19 / 3 by 20 m bucket. | `Facades.makeSpec`, commit `9ed0f06` (swept in) |
 | Every tower ends in the same flat parapet line at distance | The rooftop antenna mast — a **silhouette** element — was emitted at `lod === 0` only, so it was dropped exactly when the top edge became the only readable thing about a tower. Now emits for `lod < 2` and is mirrored into `shellRoofKit` off the same keyed hash. | `Facades.roofClutter` / `shellRoofKit`, commit `35c42fe` |
@@ -202,24 +211,29 @@ Last verified: 2026-08-27, commit `06f93d3`.
    physical value now. At `meterGainDown: 0.55` a two-stop cut to the night ambient will
    darken the frame by roughly 0.9 stops instead of being silently cancelled — so make the
    change in small steps and re-read `probeLuminance()` rather than the frame alone.
-3. **Night on a street now works; `night_neon` specifically is still dark.** A/B of the
-   night ambient fix alone, same build, 1920×1080 `high`, full-frame pixel readback:
+3. **Night is now genuinely night; how far down `NIGHT_SKY` should go is still open.**
+   With the exposure clamp gone (issue 2) the night floor came down from the 0.9 that was
+   compensating for it. Swept at Hanover St 21:30, 1920x1080 `high`, 45 frames of settling
+   between samples so the meter converges, full-frame readback:
 
-   | | mean | p50 | p90 | % below lum 2 | % below lum 8 |
-   |---|---:|---:|---:|---:|---:|
-   | Marlborough St 22:00, before | 26.2 | 10.0 | 89.1 | 33.1% | 46.1% |
-   | Marlborough St 22:00, **after** | **39.4** | **20.9** | 106.2 | **19.4%** | **29.9%** |
-   | `night_neon` 22:00, before | 5.8 | 1.7 | 16.4 | 50.9% | 68.0% |
-   | `night_neon` 22:00, **after** | 7.3 | 2.1 | 17.4 | 48.9% | 65.3% |
+   | `NIGHT_SKY` | adapted log2 L | mean | p50 | % below lum 2 |
+   |---|---:|---:|---:|---:|
+   | 0.90 (old) | −4.58 | 44.8 | 35.8 | 2.2% |
+   | 0.60 | −4.58 | 39.5 | 31.3 | 3.7% |
+   | **0.50 (now)** | — | **42.1** | **33.2** | **3.5%** |
+   | 0.45 | −4.64 | 37.8 | 29.8 | 4.7% |
+   | 0.30 | −4.77 | 36.7 | 28.9 | 5.7% |
+   | 0.20 | −4.88 | 36.0 | 28.1 | 6.5% |
 
-   A night street reads as a night city — brick, stoops, cornices, warm sodium halos, pools
-   on the pavement, lane markings. `night_neon` barely moves because that specific camera is
-   parked in the middle of Boston Common with **no street lamp within 186 m** (checked
-   against every registered source; geographically correct — the Common has no roads through
-   it), so the frame is carried entirely by ambient, the night sky and a skyline 400 m away,
-   and all three are sitting under the exposure clamp in issue 2. **Judge night from a
-   street, or re-frame the shot** — e.g. `pos [-1453.4, 4.85, 401.4] look [-1200, 11, 470]`.
-   *Owner: lighting (done what it can without 2) + render (2).*
+   Note what the meter does **not** do: a 2.2-stop ambient cut moves the adapted
+   log-luminance by only **0.3 stops**, because a night street is metered off its lamps,
+   emissives and sky rather than off its ambient. So the render agent's `meterGainDown:
+   0.55` estimate does not apply to this particular knob — the cut lands almost entirely on
+   the frame, and the cost is a quadrupling of near-black pixels against a rubric that
+   automatically fails "pure black with no detail". 0.50 takes night from 44% of noon's
+   median to **37%** while keeping the bottom of the histogram alive. Going further is a
+   joint decision with `toeParams` / the black point, not a lighting-only one.
+   *Owner: lighting + render, together.*
 4. ~~**A hard horizontal seam across the whole frame from the `atmosphere` pass.**~~
    **Fixed**, commit `d290e5e`. The render agent's diagnosis was exactly right: the
    composite classified sky with `if (d > 0.99999)`, and at `near 0.25 / far 12000` that
@@ -308,6 +322,100 @@ Last verified: 2026-08-27, commit `06f93d3`.
     is to subdivide long pavement strands at, say, 60 m so the graph has decision points.
     *Owner: city (`RoadNetwork.buildSidewalks`), with AI to follow.*
 
+## Shadow depth, before and after — the number the critic scored
+
+Same build, 1920x1080, `high`, Hanover St `pos [996.9, 4.73, -1109.2] look [1030.3, 4.73,
+-1159.1] fov 55`, clear. "Before" is the pre-`3e36934` lighting reconstructed **at
+runtime** (`SUN_PEAK` 5.2, `SKY_PEAK` 1.05, `bostonIblDiffuse` 1, `bostonSkyOcc` 0 — which
+is what it effectively was, `bostonIblOcc` 0.80, `bostonSunAngular` 0.0093, street lamps
+burning in daylight) so both halves come from one build and one frame of geometry. Ratio is
+shadowed/lit over every pixel the shadow map changes, exactly as the critic measured it.
+
+| | 09:30 before | 09:30 after | 12:00 before | 12:00 after |
+|---|---:|---:|---:|---:|
+| pixels changed by shadowing | 57.8% | 55.9% | 21.2% | 22.5% |
+| mean darkening (of 255) | 34.0 | **49.2** | 13.8 | **17.0** |
+| shadowed/lit p50 | 0.611 | **0.464** | 0.884 | **0.854** |
+| **stops, p50** | 0.71 | **1.11** | 0.18 | **0.23** |
+| shadowed/lit p05 (umbra) | 0.341 | **0.172** | 0.388 | **0.259** |
+| **stops, p05 (umbra)** | 1.55 | **2.54** | 1.37 | **1.95** |
+| frame mean | 77.2 | 73.9 | 83.5 | 79.9 |
+| % below lum 2 | 0.03 | 0.11 | 0.01 | 0.08 |
+
+**The deep umbra is now 2.5 stops** — inside the 2-3 stops real asphalt gives — and the
+frame mean barely moved, which was the point: this is a sun/ambient *ratio* change, not a
+level change, so it does not fight the exposure meter.
+
+Read the p50 with care. It is taken over every pixel the shadow map touches, so it is
+dominated by **penumbra**, not umbra — which is why it lags the p05 and why halving
+`bostonSunAngular` moves it at all. The p05 is the physically meaningful figure.
+
+Street lamps, settled 40 frames at each hour (`Sigma` over every live `PointLight` +
+`SpotLight`):
+
+| tod | 03:00 | 06:00 | 09:00 | 12:00 | 15:00 | 18:00 | 19:00 | 19:30 | 20:00 | 22:00 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| lamps on | 15 | **0** | **0** | **0** | **0** | **0** | 15 | 15 | 15 | 15 |
+| Sigma intensity | 1026 | **0** | **0** | **0** | **0** | **0** | 195 | 989 | 1026 | 1026 |
+| key intensity | 0.14 | 4.37 | 5.87 | 6.06 | 5.87 | 4.37 | 1.66 | 0.45 | 0.52 | 0.27 |
+| casts shadows | yes | yes | yes | yes | yes | yes | yes | yes | yes | yes |
+
+Was `15 / 1026` at **every** one of those hours. Forcing them back on at noon costs
+**+1.84 mean frame luminance** (81.3 → 83.1) for light nobody can see. The bottom two rows
+are the dusk/small-hours dead zone closed — there is now a shadow-casting key at every hour.
+
+## What the shadow cascades actually re-submit — measured, not estimated
+
+Claimed elsewhere: "the whole always-resident city is submitted to every cascade, and
+`Buildings._buildShell`'s `castShadow = true` on 54 sector meshes is the largest remaining
+perf lever." Half right. Analytic frustum test at `night_neon`, replicating three's own
+`_frustum.intersectsObject` (a bounding-**sphere** test against each cascade's ortho box):
+
+| cascade | refresh | radius | shell sectors in | shell tris | other casters in | other tris |
+|---|---|---:|---:|---:|---:|---:|
+| 0 | every frame | 32 m | 5 of 54 | 184,706 | 4 | 885,386 |
+| 1 | every 2nd | 115 m | 5 of 54 | 184,706 | 4 | 885,386 |
+| 2 | every 3rd | 466 m | 11 of 54 | 361,888 | 4 | 885,386 |
+
+Amortised over the refresh intervals that is **~2.02 M triangles per frame** of shadow
+submission against a reported 8.34 M for the whole frame. But the shell is only **~400 k of
+it (20%)**. The other 1.6 M is **three unnamed LOD-0 chunk meshes** (345 k + 291 k + 227 k
+tris, bounding spheres 103–129 m) which sit on top of the camera and must cast — they are
+the only shadows at a range the player can resolve.
+
+The real inefficiency is granularity, not the flag. A 600 m shell sector's bounding sphere
+is **~430 m** in radius, while cascade 0's ortho box is only **64 m** wide (and `back + r`
+deep along the sun). Five sectors therefore pass a test that their actual geometry would
+fail almost everywhere. `CascadedShadows.shadowReach()` is published for whoever wants to
+distance-gate, but note that distance gating removes only far sectors, and three's frustum
+test already rejects most of those — the sectors that hurt are the *near* ones.
+
+**Do not expect fps from turning the shell's `castShadow` off.** The prize is ~400 k tris a
+frame, ~5% of what is submitted, in a project that has twice measured removing 1.55 M
+triangles as making the frame *slower*. If it is done anyway, do it for correctness (a
+52 cm shadow texel at 380 m is mush) and measure with `measureFps`, not by assumption.
+
+## Weather's intensity-0 `DirectionalLight` is not dead — leave it alone
+
+Reported twice now as "a dead `DirectionalLight` with intensity 0 consuming a
+`NUM_DIR_LIGHTS` slot". It is `Weather.js`'s lightning `bolt` (`#d6e4ff`, at
+`(300, 900, -300)` until a strike moves it), and `_strike()` drives it to
+`amp * atten * 26`. It is deliberately always resident because toggling a light's
+`visible` changes the light count and recompiles every material in the scene — which would
+happen *during* a lightning flash.
+
+It also does **not** disturb cascade indexing, which is the thing worth knowing.
+`bostonCascadeWeight` keys off `UNROLLED_LOOP_INDEX`, i.e. the light's index in
+`directionalLights[]`, so a stray directional light ahead of the cascades would mis-band
+every one of them. Three's `WebGLLights.setup` sorts with
+`shadowCastingAndTexturingLightsFirst` before assigning indices, and `Array.sort` is
+stable, so the casting cascades always land at 0..n-1. Verified by reading the uploaded
+`directionalLights[i].color` cache off a linked program: 0/1/2 carry the sun colour with
+the 2048/2048/1536 maps in order and the bolt is index 3 with colour `(0,0,0)` — even
+though it sits at `scene.children[5]`, ahead of the `csm` group at `[7]`. Confirmed a
+second way by giving the three cascades red/green/blue and killing all ambient: the near
+band is red, i.e. cascade 0.
+
 ## Geometry really is free here — one more datum
 Hiding the **entire** `buildings` root at `hero_skyline` (1920×1080 `high`) removed 1.55 M
 triangles and made the frame **slower**, not faster: 7–8 fps with buildings, **3.5–5 fps
@@ -387,6 +495,8 @@ you will collect a page of `hidden: true`.
 | 5 | Merge the final two `EffectPass`es / drop sharpen taps when TAA is off | up to 25 ms, unproven | `RenderPipeline._rebuild` |
 | 6 | ~~Build Traffic, Pedestrians, Player~~ **Done.** All four systems (`traffic`, `peds`, `player`, `cameraRig`) are live. A/B at 1080p/`high` on the verify server: **7.3 → 6.9 fps**, +281 draws, +1.03M tris for the whole AI layer. **Pedestrians are effectively free** (2 draws, 76k tris, ~0.6 ms CPU); ~95% of the cost is traffic. Traffic is the first thing to trim if the triangle budget gets tight — lower `MAX_DETAIL`/`SHELL_SHADOW_CAP` in `Traffic.js` | the "density & life" rubric axis | `src/ai/`, `src/gameplay/` |
 | 7 | Surface `measureFps` in the DevOverlay instead of `engine.perf` | stops future misdiagnosis | `src/ui/DevOverlay.js` |
+| 8 | **`Settings.PRESETS.high` should declare `shadowCascades: 3, shadowMap: 2048`.** It asks for 4 @ 3072; `Lighting._cascadeCount`/`_shadowMapSize` deliberately cap it at 3 @ 2048 and that cap is correct — 4 @ 3072 is 26.5 M shadow texels against today's 10.8 M *plus* a fourth full geometry pass, on a frame that is far under its fps budget. Reconcile by fixing the **declaration**, not the runtime. `lighting.debug().csm` and the `[lighting]` boot line both print what actually runs | correctness | `src/core/Settings.js` |
+| 9 | Shadow penumbra is now `bostonSunAngular = 0.0047`, the sun's real angular radius, having been 2x that "for softness". If shadow edges ever need to be softer, open `WEATHER[].soft` for the cloudy states — do **not** re-inflate the clear-sky figure; it costs shadow depth (median shadow depth measured 0.98 stops at 0.0093, 1.04 at 0.0062, 1.10 at 0.0047) | — | `src/gfx/Lighting.js` |
 
 **Correction to `PERF_REPORT.md` §5 — "~16.5 ms is `lightGlows`" is an artefact of the
 toggle, not a measurement of overdraw.** §5 derives the figure by subtracting `lightPools`
