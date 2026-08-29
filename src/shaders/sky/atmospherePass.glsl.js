@@ -84,7 +84,10 @@ float cloudShadow(vec3 p) {
 void main() {
   float d = texture2D(uDepth, vUv).x;
   vec3 rd = viewRay(vUv);
-  float dist = (d > 0.99999) ? uMaxShaft : min(sceneDist(vUv, d), uMaxShaft);
+  // Exact sky test, for the same reason as the composite below. Shafts are
+  // clamped to uMaxShaft either way, so this changes no pixel today; it stops
+  // the two stages disagreeing about what "sky" means the moment it does.
+  float dist = (d >= 1.0) ? uMaxShaft : min(sceneDist(vUv, d), uMaxShaft);
   if (dist < 1.0 || uSunDir.y < -0.06) { gl_FragColor = vec4(0.0); return; }
 
   int N = int(uSteps);
@@ -153,7 +156,20 @@ void main() {
   float d = texture2D(uDepth, vUv).x;
   vec3 rd = viewRay(vUv);
 
-  if (d > 0.99999) {
+  // Sky vs geometry, tested exactly. The sky dome writes no depth, so sky
+  // pixels keep the cleared value of exactly 1.0 and nothing else ever reaches
+  // it: at near 0.25 / far 12000 the most distant geometry inside the far
+  // plane still reads 0.99999983, and the depth texture is FloatType, so the
+  // two cases never collide.
+  //
+  // This was 'd > 0.99999', and that epsilon is worth 8108 m of view distance
+  // (solve 0.5 + 0.5*((f+n)/(f-n) - 2fn/((f-n)t)) = 0.99999). Everything beyond
+  // 8.1 km was therefore classified as sky and skipped aerial perspective
+  // entirely, while everything nearer got the full in-scatter — a dead-straight
+  // 117/255 step across every column of the frame at whatever screen row the
+  // 8.1 km isosurface happened to cross. An epsilon here is not a tolerance,
+  // it is a second, invisible far plane.
+  if (d >= 1.0) {
     // The cloud buffer is only re-marched every few frames and is rendered
     // with a wider frustum than the camera, so it is sampled through the
     // view-projection it was actually marched with rather than through vUv.

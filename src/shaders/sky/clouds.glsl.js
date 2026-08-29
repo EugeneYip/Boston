@@ -226,7 +226,12 @@ void main() {
                          texture2D(uDepth, duv + vec2( dt.x, -dt.y)).x),
                      max(texture2D(uDepth, duv + vec2(-dt.x,  dt.y)).x,
                          texture2D(uDepth, duv + vec2( dt.x,  dt.y)).x));
-    if (dmax < 0.99999) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+    // All four taps are geometry, so nothing of the deck is visible here.
+    // Exact, not epsilon: with '< 0.99999' this kept marching over geometry
+    // beyond 8.1 km, which is both wasted work and the opposite half of the
+    // aerial-perspective seam — the composite has to agree with this test
+    // about which pixels are sky.
+    if (dmax < 1.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
   }
 
   vec3 rd = viewRay(ndc);
