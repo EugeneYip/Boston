@@ -323,6 +323,11 @@ function makeSegment(ax, az, bx, bz, opts) {
     halfRoad: opts.halfRoad, type: opts.type, oneway: !!opts.oneway,
     frontage: opts.frontage ?? null,
     district: opts.district || 'downtown',
+    edgeId: opts.edgeId ?? null,
+    // Kerbside parking bay published by the city: { width, offset }, where
+    // offset is the lateral distance from the road centreline to the middle of
+    // the bay. Null on streets too narrow to have one.
+    parking: opts.parking ?? null,
   };
 }
 
@@ -415,6 +420,7 @@ function fromCityGraph(ctx, city) {
       {
         halfRoad: w / 2, type: e.type, oneway: e.oneway,
         frontage: null, district: districtFor((a.x + b.x) / 2, (a.z + b.z) / 2),
+        edgeId: e.id, parking: e.parking || null,
       }));
   }
 
@@ -1243,37 +1249,37 @@ function runPlacement(sys, L, counting, take) {
 
     // --- Parked cars ------------------------------------------------------
     //
-    // The single biggest density win available at street level: a real city
-    // street is mostly parked cars, and before this there was no parked-car
-    // prop type at all, so no street could ever be lined with them.
+    // The single biggest density win at street level: a real city street is
+    // mostly parked cars, and before this there was no parked-car prop type at
+    // all, so no street could ever be lined with them.
     //
-    // Where they can legally go is constrained by the road model rather than by
-    // Boston. `RoadNetwork` spends the whole kerb-to-kerb width on travel lanes
-    // and leaves only a 0.5-0.7 m shoulder — there is no parking bay in the
-    // graph — so a car at the kerb overlaps the outer travel lane by 0.3-0.6 m
-    // on the widths that exist (measured: hw 3.80/2 lanes worst at 0.64 m, hw
-    // 5.95/3 lanes and hw 7.70/4 lanes both 0.34 m). Parking is therefore
-    // restricted to segments wide enough to keep that overlap small, and the
-    // spans are published on `props.parkingSpans` so traffic can inset its
-    // outer lane if it wants to. Alleys and one-lane streets get nothing.
-    if (s.halfRoad >= 2.9 && s.type !== 'alley') {
-      const both = s.halfRoad >= 4.6;
-      const off = s.halfRoad - 0.80;
-      const sides = both ? [-1, 1] : [rng.sign()];
+    // They sit in the city's own kerbside parking bay. This used to be a
+    // heuristic (`halfRoad >= 2.9`, cars pushed 0.80 m off the kerb) because the
+    // road graph spent its whole width on travel lanes and left a car no legal
+    // place to stand — measured overlap with the outer lane was up to 0.64 m.
+    // The city now publishes `edge.parking = { width, offset }` on 463 of 526
+    // edges, so a car goes exactly where a bay is and nowhere else, and the
+    // travel lanes are clear by construction.
+    if (s.parking && s.type !== 'alley') {
+      const off = s.parking.offset;
       // Arterials in the core are tow-away at rush hour and much emptier.
-      const fill = s.type === 'arterial' ? (busy ? 0.62 : 0.78) : 0.88;
-      for (const side of sides) {
+      const fill = s.type === 'arterial' ? (busy ? 0.66 : 0.82) : 0.90;
+      for (const side of [-1, 1]) {
         // Cars face the direction of travel on their own side of the road.
-        const ry = facing(s.dx, s.dz) + (side > 0 ? 0 : Math.PI);
-        let t = rng.range(3, 10);
-        while (t < s.len - 7) {
+        // NOTE the extra half turn: `facing` aims the model's local +Z along the
+        // street, but a VehicleModels body is lofted with its FRONT at -Z
+        // (measured: head lamp anchors at z -2.31, tail lamps at +2.34). Without
+        // this every parked car in the city faces backwards, tail lights first.
+        const ry = facing(s.dx, s.dz) + (side > 0 ? Math.PI : 0);
+        let t = rng.range(2, 8);
+        while (t < s.len - 6) {
           if (!rng.chance(fill)) { t += rng.range(5.0, 12.0); continue; }  // driveway, hydrant, loading
           const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
           if (take('parked')) {
             const x = s.ax + s.dx * (t + carLen / 2) + s.nx * off * side;
             const z = s.az + s.dz * (t + carLen / 2) + s.nz * off * side;
             b(name).add(x, road(x, z), z, ry + rng.range(-0.022, 0.022), 1,
-              rng.range(0.84, 1.06));
+              rng.range(0.86, 1.06));
           }
           t += carLen + rng.range(0.55, 1.9);
         }

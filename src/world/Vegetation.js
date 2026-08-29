@@ -437,6 +437,12 @@ function card(M, cx, cy, cz, dirx, diry, dirz, w, h, roll, cell, ccx, ccy, ccz, 
 /**
  * Bole radius as a fraction of `SPECIES.trunk * height`. See `boleR` in
  * buildTree: the raw product is 8-10x life size.
+ *
+ * Sanity check after scaling, as trunk diameter over tree height: London plane
+ * H/24, honey locust H/33, red maple H/28, linden H/29, pin oak H/26 — the band
+ * a real street tree sits in. The three park specimens needed their own
+ * constants brought down as well (elm was left at H/16, beech H/14, willow
+ * H/13), since a fat trunk on a big tree is much more conspicuous.
  */
 const TRUNK_R = 0.13;
 
@@ -468,17 +474,17 @@ const SPECIES = {
     cards: [98, 28], branches: 6, vase: 0.05,
   },
   americanElm: {
-    h: [17, 24], trunk: 0.24, clear: 0.40, canopyR: 0.52, squash: 0.72,
+    h: [17, 24], trunk: 0.16, clear: 0.40, canopyR: 0.52, squash: 0.72,
     bark: V.bark, barkCol: '#7a6c56', leaf: V.leafBroad, leafCol: '#54763a',
     cards: [128, 36], branches: 7, vase: 0.70,
   },
   copperBeech: {
-    h: [14, 20], trunk: 0.28, clear: 0.14, canopyR: 0.50, squash: 1.05,
+    h: [14, 20], trunk: 0.20, clear: 0.14, canopyR: 0.50, squash: 1.05,
     bark: V.barkDark, barkCol: '#8f8478', leaf: V.leafBroadB, leafCol: '#6a3a3f',
     cards: [136, 38], branches: 6, vase: 0.05,
   },
   weepingWillow: {
-    h: [12, 17], trunk: 0.30, clear: 0.22, canopyR: 0.56, squash: 0.62,
+    h: [12, 17], trunk: 0.20, clear: 0.22, canopyR: 0.56, squash: 0.62,
     bark: V.bark, barkCol: '#6e5f45', leaf: V.willow, leafCol: '#8aa855',
     cards: [110, 32], branches: 7, vase: 0.55, weep: true,
   },

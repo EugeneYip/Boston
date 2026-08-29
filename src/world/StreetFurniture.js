@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+// Read-only: parked cars reuse the vehicle body loft rather than duplicating it.
+// VehicleModels imports nothing but three, so there is no cycle.
+import { getVehicleGeometry, VEHICLE_SPECS } from './VehicleModels.js';
 
 /**
  * Street furniture: the procedural geometry library for everything bolted to a
@@ -1728,112 +1731,99 @@ function buildSnowBank() {
 // 4.52 x 1.80 x 1.41, an F-150 5.89 x 2.03 x 1.95, a Transit 5.53 x 2.06 x 2.10.
 // ---------------------------------------------------------------------------
 
-/** Wheel + tyre pointing along local X, at (x, y, z). */
-function carWheel(g, x, y, z, r, w) {
-  // Open-ended tyre barrel + one outward face: half the triangles of a capped
-  // cylinder and the inner face is never visible on a kerbside car anyway.
-  g.add('rough', cyl(r, r, w, 9, true), '#17181a', { p: [x, y, z], r: [0, 0, Math.PI / 2] });
-  g.add('rough', cyl(r * 0.62, r * 0.62, w * 0.5, 7), '#8e9295',
-    { p: [x + Math.sign(x) * w * 0.28, y, z], r: [0, 0, Math.PI / 2] });
-}
-
 /**
- * @param {object} S  shape: L length, W width, H roof height, cab [z0,z1],
- *                    glassY, bonnet height, wheelbase, wheel radius, roofBox
- * @param {string} body sRGB body colour
+ * Slot for each material bucket VehicleModels hands back, so a real car body
+ * drops straight into the prop pipeline's shared surface/sign/glass materials.
  */
-function buildCarShell(S, body) {
-  const g = new GeoSet();
-  const { L, W, H, cabZ0, cabZ1, sill, shoulder, wb, wr } = S;
-  const dark = '#1a1c1e';
-
-  // --- Lower body: two stacked slabs so the section tucks under at the sills.
-  g.add('paint', box(W * 0.94, sill, L * 0.985), body, { p: [0, wr + 0.10, 0] });
-  g.add('paint', box(W, shoulder, L), body, { p: [0, wr + 0.10 + sill / 2 + shoulder / 2, 0] });
-  const beltY = wr + 0.10 + sill / 2 + shoulder;      // top of the body side
-
-  // --- Cabin: narrower and inset, which is what stops a car reading as a brick.
-  const cabH = H - beltY;
-  const cabL = cabZ1 - cabZ0, cabC = (cabZ0 + cabZ1) / 2;
-  g.add('paint', box(W * 0.90, cabH, cabL), body, { p: [0, beltY + cabH / 2, cabC] });
-  // Roof panel, very slightly crowned by being a hair wider than the pillars.
-  g.add('paint', box(W * 0.86, 0.035, cabL * 0.96), body, { p: [0, H, cabC] });
-
-  // --- Glass. Side lights, windscreen and backlight as thin inset panes.
-  const gy = beltY + cabH * 0.52, gh = cabH * 0.74;
-  for (const sx of [-1, 1]) {
-    g.add('glass', box(0.015, gh, cabL * 0.90), '#20282c', { p: [sx * W * 0.451, gy, cabC] });
-  }
-  g.add('glass', box(W * 0.80, gh * 1.02, 0.02), '#242c30',
-    { p: [0, gy, cabZ1 + 0.02], r: [-0.50, 0, 0] });
-  g.add('glass', box(W * 0.76, gh * 0.95, 0.02), '#242c30',
-    { p: [0, gy, cabZ0 - 0.02], r: [0.42, 0, 0] });
-
-  // --- Bonnet and boot decks, stepped down from the belt line.
-  g.add('paint', box(W * 0.93, 0.05, (L / 2 - cabZ1) * 0.94), body,
-    { p: [0, beltY + 0.02, (cabZ1 + L / 2) / 2] });
-  g.add('paint', box(W * 0.93, 0.05, (L / 2 + cabZ0) * 0.94), body,
-    { p: [0, beltY + 0.01, (cabZ0 - L / 2) / 2] });
-
-  // --- Bumpers, lamps, plate, mirrors.
-  g.add('rough', box(W * 0.98, 0.20, 0.07), dark, { p: [0, wr + 0.18, L / 2 - 0.02] });
-  g.add('rough', box(W * 0.98, 0.20, 0.07), dark, { p: [0, wr + 0.18, -L / 2 + 0.02] });
-  for (const sx of [-1, 1]) {
-    g.add('paint', box(0.30, 0.13, 0.05), '#d8dbdd', { p: [sx * W * 0.30, wr + 0.42, L / 2 - 0.01] });
-    g.add('paint', box(0.26, 0.15, 0.05), '#7a1a18', { p: [sx * W * 0.31, wr + 0.44, -L / 2 + 0.01] });
-    g.add('paint', box(0.10, 0.07, 0.16), body, { p: [sx * W * 0.55, gy - 0.02, cabZ1 - 0.10] });
-  }
-  g.add('paint', box(0.30, 0.14, 0.02), '#c8c9c2', { p: [0, wr + 0.20, -L / 2 - 0.01] });
-  g.add('rough', box(W * 0.62, 0.16, 0.04), dark, { p: [0, wr + 0.36, L / 2 + 0.005] });
-
-  // --- Wheels, set in real arches.
-  for (const sz of [1, -1]) for (const sx of [-1, 1]) {
-    carWheel(g, sx * (W / 2 - 0.09), wr, sz * wb / 2, wr, 0.20);
-  }
-
-  // --- LOD1: the silhouette only. Two slabs, a cabin and four dark blocks.
-  const l = new GeoSet();
-  l.add('paint', box(W, sill + shoulder, L), body, { p: [0, wr + 0.10 + (sill + shoulder) / 2, 0] });
-  l.add('paint', box(W * 0.88, cabH, cabL), body, { p: [0, beltY + cabH / 2, cabC] });
-  l.add('glass', box(W * 0.89, cabH * 0.7, cabL * 0.92), '#242c30', { p: [0, gy, cabC] });
-  for (const sz of [1, -1]) for (const sx of [-1, 1]) {
-    l.add('rough', box(0.20, wr * 2, wr * 2), '#17181a', { p: [sx * (W / 2 - 0.09), wr, sz * wb / 2] });
-  }
-  // LOD0 out to 85 m: at 424 triangles a parked car is cheap, and the 84-triangle
-  // LOD1 has no wheels, so anything closer than about a block reading as a
-  // coloured brick is the worst possible trade. Measured cost of the wider band
-  // at a street camera: ~45k triangles of parked cars in frustum.
-  return { d0: g.build(0.55), d1: l.build(0.55), near: 85, far: 220, cast: true, receive: true };
-}
-
-/** The parked fleet. Shapes and colours in roughly US-market proportion. */
-const CAR_SHAPES = {
-  sedan: { L: 4.78, W: 1.84, H: 1.46, cabZ0: -1.20, cabZ1: 0.62, sill: 0.34, shoulder: 0.24, wb: 2.78, wr: 0.325 },
-  hatch: { L: 4.28, W: 1.79, H: 1.47, cabZ0: -1.30, cabZ1: 0.50, sill: 0.34, shoulder: 0.22, wb: 2.60, wr: 0.315 },
-  suv: { L: 4.62, W: 1.88, H: 1.70, cabZ0: -1.34, cabZ1: 0.66, sill: 0.42, shoulder: 0.26, wb: 2.69, wr: 0.365 },
-  wagon: { L: 4.80, W: 1.85, H: 1.56, cabZ0: -1.72, cabZ1: 0.58, sill: 0.36, shoulder: 0.24, wb: 2.75, wr: 0.335 },
-  pickup: { L: 5.60, W: 2.00, H: 1.86, cabZ0: -0.20, cabZ1: 1.30, sill: 0.50, shoulder: 0.30, wb: 3.35, wr: 0.400 },
-  van: { L: 5.30, W: 1.99, H: 2.06, cabZ0: -2.10, cabZ1: 1.20, sill: 0.52, shoulder: 0.34, wb: 3.10, wr: 0.375 },
+const CAR_SLOT = {
+  paint: 'paint', glass: 'glass', glassDark: 'glass', chrome: 'chrome',
+  trimDark: 'rough', trim: 'rough', under: 'rough', tire: 'rough',
+  interior: 'rough', lensRed: 'paint', lensClear: 'chrome', gap: 'rough',
+};
+/** Non-body colours. The body colour comes from the vehicle's own palette. */
+const CAR_COL = {
+  glass: '#20272b', glassDark: '#161b1e', chrome: '#b9bdc0', trimDark: '#1d1f21',
+  trim: '#26292b', under: '#141517', tire: '#17181a', interior: '#101113',
+  lensRed: '#7a1a18', lensClear: '#c9ccce', gap: '#131416',
 };
 
 /**
- * @returns {Array<[string, object]>} [batchName, def] — one batch per
- * shape/colour pair. Eight batches is sixteen extra meshes, which is nothing
- * against a 1200-draw budget, and it buys real colour variety for free (a
- * per-instance tint would also tint the glass and the tyres).
+ * A parked car, built from the *real* vehicle body loft.
+ *
+ * The first version of this was a hand-rolled stack of boxes: 424 triangles,
+ * no wheel arches, no glazing worth the name. That was invisible as a problem
+ * while there were zero parked cars in the game; the moment the kerbs filled
+ * up it became the closest object to the camera on every street shot, and the
+ * critic called it "the dominant foreground liability" at 3.7 m.
+ *
+ * The fix is not to model another car. `VehicleModels.getVehicleGeometry`
+ * already lofts a proper body with wheel arches, fascias, a greenhouse and
+ * baked wheels at three levels of detail, and it caches per type — so a parked
+ * car and a moving car now share one geometry build. We take **LOD1** (the
+ * mid tier: arch lips, fascias, real glass, wheels baked in, five material
+ * buckets) for close range and **LOD2** (the two-bucket coarse shell traffic
+ * already instances) for distance, and feed both through `GeoSet` so they come
+ * out as one merged geometry per level on the shared prop materials.
+ *
+ * Nothing in VehicleModels is modified or duplicated, and because `GeoSet.add`
+ * copies through `toNonIndexed()`, `disposeSharedGeometry()` staying under
+ * VehicleFactory's control is safe.
+ */
+function buildCarFromVehicle(type, bodyHex) {
+  const src = getVehicleGeometry(type);
+  const level = (lod) => {
+    const set = new GeoSet();
+    let any = false;
+    for (const [key, geom] of src.lods[lod].geos) {
+      if (!geom) continue;
+      set.add(CAR_SLOT[key] || 'rough', geom, key === 'paint' ? bodyHex : (CAR_COL[key] || '#26292b'));
+      any = true;
+    }
+    return any ? set.build(0.55) : null;
+  };
+  const d0 = level(1);
+  const d1 = level(2);
+  if (!d0) return null;
+  // LOD ranges are measured, not guessed. The mid tier is ~3.5k triangles and
+  // the shell ~430, and `PropBatch` selects per 96 m chunk, so the near band is
+  // coarse: at `near` 95 a North End street had 133 cars at full detail and
+  // 349 shells — 622k triangles of parked car in one frustum, which is more
+  // than every other prop in the game put together. Swept on a live scene:
+  //
+  //   near/far   car triangles   full-detail / shell
+  //    95 / 260      622k             133 / 349
+  //    42 / 260      369k              53 / 429
+  //    30 / 180      267k              44 / 264
+  //    30 / 165      ~230k             44 / ~200
+  //    22 / 150      176k              28 / 182
+  //
+  // 30/165 keeps ~44 cars at full detail around the camera — which is the range
+  // the critic was looking at when it called the old box "the dominant
+  // foreground liability" at 3.7 m — and spends the saving on the long tail.
+  return { d0, d1, near: 30, far: 165, cast: true, receive: true };
+}
+
+/**
+ * The parked fleet. Body colours come from each vehicle type's own palette in
+ * VehicleModels, so the parked cars and the moving cars are drawn from the same
+ * paints instead of drifting apart.
  */
 function buildParkedCars() {
-  return [
-    ['carSedanW', buildCarShell(CAR_SHAPES.sedan, '#c8c9c6')],
-    ['carSedanK', buildCarShell(CAR_SHAPES.sedan, '#1e2023')],
-    ['carHatchR', buildCarShell(CAR_SHAPES.hatch, '#7d2320')],
-    ['carHatchS', buildCarShell(CAR_SHAPES.hatch, '#8d9195')],
-    ['carSuvB', buildCarShell(CAR_SHAPES.suv, '#243447')],
-    ['carSuvK', buildCarShell(CAR_SHAPES.suv, '#33363a')],
-    ['carWagonG', buildCarShell(CAR_SHAPES.wagon, '#2f4038')],
-    ['carPickupW', buildCarShell(CAR_SHAPES.pickup, '#b9bab5')],
-    ['carVanW', buildCarShell(CAR_SHAPES.van, '#cfd0cb')],
+  const pal = (type, i) => {
+    const c = VEHICLE_SPECS[type]?.def?.colors;
+    return (c && c.length) ? c[i % c.length] : '#9a9da0';
+  };
+  const want = [
+    ['carSedanA', 'sedan', 0], ['carSedanB', 'sedan', 2], ['carSedanC', 'sedan', 4],
+    ['carSuvA', 'suv', 0], ['carSuvB', 'suv', 1], ['carSuvC', 'suv', 3],
+    ['carVanA', 'van', 0], ['carPickupA', 'pickup', 0], ['carSportsA', 'sports', 0],
   ];
+  const out = [];
+  for (const [name, type, ci] of want) {
+    const def = buildCarFromVehicle(type, pal(type, ci));
+    if (def) out.push([name, def]);
+  }
+  return out;
 }
 
 /** Hanging shop sign on a scrolled bracket. */
@@ -1943,18 +1933,20 @@ export function buildFurnitureLibrary() {
   return L;
 }
 
+
 /**
  * Parked-car shells as [batchName, bodyLength], repeated in rough US fleet
- * proportion so a straight `pick()` gives a believable mix (silver/white/black
- * sedans and small SUVs dominate; one pickup and one van per sixteen cars).
- * The length is what the placer steps the kerb by, so it must be the real one.
+ * proportion so a straight pick gives a believable mix. The length is read from
+ * the vehicle's own spec rather than restated here, because the placer steps the
+ * kerb by it and a wrong number either overlaps cars or leaves gaps.
  */
-export const PARKED_CARS = [
-  ['carSedanW', 4.78], ['carSedanK', 4.78], ['carHatchS', 4.28], ['carSuvK', 4.62],
-  ['carSedanW', 4.78], ['carSuvB', 4.62], ['carHatchR', 4.28], ['carSedanK', 4.78],
-  ['carWagonG', 4.80], ['carHatchS', 4.28], ['carSuvK', 4.62], ['carPickupW', 5.60],
-  ['carSedanW', 4.78], ['carVanW', 5.30], ['carSuvB', 4.62], ['carHatchR', 4.28],
+const PARKED_MIX = [
+  ['carSedanA', 'sedan'], ['carSuvA', 'suv'], ['carSedanB', 'sedan'], ['carSuvB', 'suv'],
+  ['carSedanC', 'sedan'], ['carSuvC', 'suv'], ['carSedanA', 'sedan'], ['carVanA', 'van'],
+  ['carSedanB', 'sedan'], ['carSuvA', 'suv'], ['carPickupA', 'pickup'], ['carSedanC', 'sedan'],
+  ['carSuvB', 'suv'], ['carSportsA', 'sports'], ['carSedanA', 'sedan'], ['carSuvC', 'suv'],
 ];
+export const PARKED_CARS = PARKED_MIX.map(([n, t]) => [n, VEHICLE_SPECS[t]?.def?.L ?? 4.8]);
 
 export { C as PROP_COLOURS };
 
