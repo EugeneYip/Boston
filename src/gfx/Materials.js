@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import TextureFactory, { RECIPES } from './TextureFactory.js';
+import EnvProbe from './EnvProbe.js';
 import { makeRoadMaterial } from '../world/Roads.js';
 
 /**
@@ -50,13 +51,22 @@ const SPEC = {
   concrete_stained: { normalScale: 0.9, ao: 1.0, wet: true },
 
   /* --- glass -----------------------------------------------------------
-   * Deliberately NOT wetness-driven. assets.setWetness() lerps roughness to
-   * 0.06 and multiplies colour by up to 0.58; on a curtain wall (already
-   * roughness 0.02-0.08) that only darkens the tower by 40% for no gain, and
-   * vertical glass sheds water anyway. window_lit is an interior, water is
-   * already water. Everything else outdoors sets wetnessRough/wetnessColor. */
-  glass_tower:      { normalScale: 0.35, ao: 0.4, env: 1.25 },
-  glass_dark:       { normalScale: 0.35, ao: 0.4, env: 1.1 },
+   * Deliberately NOT wetness-driven. assets.setWetness() darkens and smooths a
+   * surface; on a curtain wall (already roughness 0.02-0.08) that only darkens
+   * the tower for no gain, and vertical glass sheds water anyway. window_lit is
+   * an interior, water is already water. Everything else outdoors sets
+   * wetnessRough/wetnessColor.
+   *
+   * `env` is load-bearing beyond this file: `Buildings.init` copies
+   * `glass_tower.envMapIntensity` onto `building_glass`, which is the material
+   * on 200 Clarendon, the Pru and every curtain wall in the city. It is 2.0
+   * rather than 1.0 because that glass is authored as a near-dielectric
+   * (metalness 0.02, F0 = 0.04) while the Hancock's glazing is a *coated*
+   * mirror — roughly 20-25% reflectance at normal incidence, not 4%. Scaling
+   * the IBL is the approximation that reaches it without touching a material
+   * this file does not own. */
+  glass_tower:      { normalScale: 0.35, ao: 0.4, env: 2.0 },
+  glass_dark:       { normalScale: 0.35, ao: 0.4, env: 1.7 },
   window_lit:       { normalScale: 0.3, ao: 0.4, env: 0.9, nightEmissive: 1.35,
                       emissive: 0xffffff },
 
@@ -116,10 +126,56 @@ function makeFallback() {
   return m;
 }
 
+/**
+ * Wetness response, by material family.
+ *
+ * `rough` is the roughness a fully soaked surface converges to; `darken` is how
+ * much of its dry albedo survives being flooded. Both are stamped into
+ * `userData` (see `_stampWetness`) and consumed by `Assets.setWetness`, which is
+ * a dumb lerp — the policy lives here, in the material library, so it also
+ * reaches materials authored in `src/world/`.
+ *
+ * The physics, because the old constants had it backwards. A water film fills
+ * the pores of a rough surface; light that enters the film is trapped by total
+ * internal reflection and comes back out attenuated, so **wet asphalt gets
+ * darker** — real dry asphalt sits near 0.10 diffuse reflectance and drops to
+ * ~0.04-0.05 when soaked. What comes back is a *specular* layer, not a brighter
+ * diffuse one. And a wet road is not a mirror: only standing water is, and
+ * standing water is a puddle. A sheet of rain-damp asphalt measures around
+ * 0.2-0.3 roughness, which is why the target here is 0.26 and not 0.06.
+ */
+const WETNESS = [
+  [/asphalt|road|tarmac|carriageway/i,        { rough: 0.26, darken: 0.58 }],
+  [/sidewalk|pavement|concrete|granite|stone|kerb|curb/i, { rough: 0.30, darken: 0.48 }],
+  [/cobble|brick|brownstone|limestone|slate|masonry|facade/i, { rough: 0.29, darken: 0.46 }],
+  // Vegetation and cloth soak rather than sheet. They darken hard and gain only
+  // a weak sheen; lerping a leaf to 0.26 turns a park into a hall of mirrors.
+  [/veg|foliage|leaf|leaves|plant|tree|bark|shrub|grass|hedge|ivy/i,
+                                              { rough: 0.55, darken: 0.34 }],
+  [/char|ped|cloth|skin|hair/i,               { rough: 0.62, darken: 0.24 }],
+  [/dirt|soil|earth|mud|gravel|sand/i,        { rough: 0.42, darken: 0.55 }],
+  [/metal|steel|chrome|copper|alu|tire|tyre|rubber/i, { rough: 0.20, darken: 0.28 }],
+  [/glass|window/i,                           { rough: 0.06, darken: 0.10 }],
+];
+/** Anything the table does not name. Derived from its own dry roughness. */
+const WET_DEFAULT = { rough: null, darken: 0.45 };
+
+/** Ceiling on an adopted material's authored `envMapIntensity` (see _applyEnv). */
+const ENV_MAX = 2.4;
+
 export default class Materials {
   static id = 'materials';
   static label = 'Material library';
-  static deps = ['assets', 'render'];
+  /**
+   * `sky` is a dependency for **ordering**, not for data: `Sky.lateUpdate`
+   * reassigns `scene.environment` to its own sky-only PMREM whenever the sun
+   * moves, so the reflection probe has to run after it or the two thrash the
+   * texture — and because `envMapCubeUVHeight` is part of the program cache key,
+   * thrashing it would recompile every lit material in the city, twice a frame.
+   * Sky depends only on `render`, so this adds no cycle; it just moves Sky one
+   * slot earlier in boot.
+   */
+  static deps = ['assets', 'render', 'sky'];
 
   constructor() {
     this._mats = new Map();
@@ -128,6 +184,9 @@ export default class Materials {
     this._warned = new Set();
     this._lastNight = -1;
     this._scroll = 0;
+    this._adoptTimer = 1e9;
+    this._lastEnvI = -1;
+    this._lastWet = -1;
   }
 
   async init(ctx) {
@@ -138,6 +197,12 @@ export default class Materials {
     // around 55 MB of VRAM instead of 210 MB, with the same art.
     const scale = { low: 0.5, medium: 0.75, high: 1, ultra: 1 }[ctx.settings.preset] ?? 1;
     this.factory = new TextureFactory({ scale, seed: 20240826 });
+
+    // The reflection probe is allocated FIRST so `probe.texture` already exists
+    // when the materials below are constructed. Handing a material its envMap at
+    // construction costs nothing; assigning one later is what forces a recompile.
+    this.probe = new EnvProbe({ preset: ctx.settings.preset });
+    this.probe.init(ctx);
 
     const t0 = performance.now();
     // Only the road atlas is built eagerly. Everything else is generated on the
@@ -160,7 +225,109 @@ export default class Materials {
     // Anything generated after boot costs a ~150 ms hitch on the frame that
     // asks for it. Every consumer should resolve its materials in init(), so
     // surface it loudly rather than letting it hide as a stutter.
-    ctx.bus.on('engine:ready', () => { this._booted = true; });
+    ctx.bus.on('engine:ready', () => {
+      this._booted = true;
+      // The city exists now, so the probe finally has something to reflect.
+      // Doing the whole cube here, before the first presented frame, means the
+      // one recompile wave caused by `envMapCubeUVHeight` changing (336x256 sky
+      // PMREM -> the probe's) lands during boot instead of mid-game.
+      this.probe.refreshNow(ctx);
+      this.adopt(ctx);
+      ctx.scene.environment = this.probe.texture;
+      console.info(`[materials] env probe ${this.probe.size}^2 cube -> ` +
+        `${this.probe.pmremRT.width}x${this.probe.pmremRT.height} PMREM, ` +
+        `${this._adopted} materials on it`);
+    });
+    ctx.bus.on('quality:changed', () => {
+      if (this.probe.setQuality(ctx.settings.preset)) this.adopt(ctx, true);
+    });
+    ctx.bus.on('weather:set', () => this.probe?.invalidate());
+  }
+
+  /**
+   * Put every registered material on the probe.
+   *
+   * Two things happen here, and the second one is the reason this exists at all.
+   *
+   * 1. `material.envMap = probe.texture`. Materials that lean on
+   *    `scene.environment` instead have their `envMapIntensity` **overwritten**
+   *    by `scene.environmentIntensity` every frame — see the block quoted in
+   *    EnvProbe.js. Every authored reflectance in this project (glass 2.0, water
+   *    2.1, chrome 1.3, car glass 2.4, road 0.55) was being collapsed to one
+   *    global scalar. Adoption restores them.
+   * 2. The wetness response is stamped from the `WETNESS` table, so materials
+   *    built in `src/world/` get the same physics as the ones built here.
+   *
+   * Costs no recompile: `scene.environment` and every adopted `envMap` are the
+   * same texture object, so the `envMapCubeUVHeight` program parameter does not
+   * change.
+   */
+  adopt(ctx, force = false) {
+    const tex = this.probe?.texture;
+    if (!tex) return 0;
+    let n = 0;
+    for (const m of ctx.assets.materials.values()) {
+      this._stampWetness(m);
+      if (!m.isMeshStandardMaterial) continue;      // Physical extends Standard
+      if (m.userData.noEnvProbe) continue;
+      if (m.envMap === tex && !force) { n++; continue; }
+      if (m.userData.envBase === undefined) {
+        m.userData.envBase = THREE.MathUtils.clamp(m.envMapIntensity ?? 1, 0, ENV_MAX);
+      }
+      m.envMap = tex;
+      n++;
+    }
+    this._adopted = n;
+    this._lastEnvI = -1;                            // force an intensity refresh
+    return n;
+  }
+
+  /**
+   * Give a material its wet-surface targets, once.
+   *
+   * `Assets.setWetness` used to lerp *every* wet surface to roughness 0.06 and
+   * only 58% of its albedo. On a flat carriageway a roughness of 0.06 is a
+   * mirror, and the brightest thing a horizontal mirror can see is the sky —
+   * which is why rain turned Boylston Street into a sheet of white ice, the
+   * single most wrong thing in the critic's rain frame. Measured on 234k road
+   * pixels at Beacon St, exposure pinned: dry mean luminance 30.1, wet **69.9**.
+   * Water is supposed to make asphalt darker, not 2.3x brighter.
+   */
+  _stampWetness(m) {
+    const ud = m.userData;
+    if (ud.wetnessRough === undefined || ud.wetRough !== undefined) return;
+    const key = `${m.name || ''}|${ud.family || ''}`;
+    let spec = WET_DEFAULT;
+    for (const [re, s] of WETNESS) { if (re.test(key)) { spec = s; break; } }
+    const dry = ud.wetnessRough;
+    ud.wetRough = spec.rough ?? Math.max(0.24, dry * 0.32);
+    ud.wetDarken = spec.darken;
+  }
+
+  /**
+   * Fold the world clock's environment level back into every adopted material.
+   *
+   * `Lighting` drives `scene.environmentIntensity` (0.16 at night to ~0.78 at
+   * noon) and that is the *only* thing an unadopted material sees. An adopted
+   * one keeps its own `envMapIntensity`, so the day/night curve has to be
+   * multiplied in by hand or the city would reflect a noon sky at midnight.
+   */
+  _applyEnv(ctx) {
+    const envI = ctx.scene.environmentIntensity ?? 1;
+    const wet = ctx.assets.wetness || 0;
+    if (Math.abs(envI - this._lastEnvI) < 0.002 && Math.abs(wet - this._lastWet) < 0.01) return;
+    this._lastEnvI = envI; this._lastWet = wet;
+    const tex = this.probe?.texture;
+    for (const m of ctx.assets.materials.values()) {
+      const base = m.userData.envBase;
+      if (base === undefined || m.envMap !== tex) continue;
+      // A water film is a fresh dielectric layer over a surface that had none,
+      // so a wet street does pick up more of the environment. Kept modest: the
+      // darker albedo below it is what has to dominate, or we are back to a
+      // white road by another route.
+      const boost = m.userData.wetRough !== undefined ? 1 + wet * 0.35 : 1;
+      m.envMapIntensity = base * envI * boost;
+    }
   }
 
   /** Force-build a set of materials up front, e.g. before a level transition. */
@@ -226,6 +393,9 @@ export default class Materials {
         roughness: s.roughness ?? maps.roughScalar,
         metalness: s.metalness ?? maps.metalScalar,
         envMapIntensity: s.env ?? 1.0,
+        // Handed in at construction so the material compiles with USE_ENVMAP
+        // already set and never needs a mid-game recompile. See EnvProbe.js.
+        envMap: this.probe?.texture ?? null,
         side: s.side ?? THREE.FrontSide,
         transparent: !!s.transparent,
       };
@@ -271,12 +441,14 @@ export default class Materials {
 
     mat.userData.tileMeters = recipe?.tile ?? 1;
     mat.userData.tileMetersY = recipe?.tileY ?? recipe?.tile ?? 1;
+    mat.userData.envBase = s.env ?? 1.0;
     if (s.scroll) mat.userData.scrollSpeed = s.scroll;
     if (s.nightEmissive) mat.userData.nightEmissive = s.nightEmissive;
-    // Rain hook — Assets.setWetness() lerps these toward wet values.
+    // Rain hook — Assets.setWetness() lerps toward the targets stamped here.
     if (s.wet) {
       mat.userData.wetnessRough = mat.roughness;
       mat.userData.wetnessColor = mat.color.clone();
+      this._stampWetness(mat);
     }
     this._mats.set(name, mat);
     void ctx;
@@ -303,6 +475,9 @@ export default class Materials {
     m.userData.tileMeters = 2.4;
     m.userData.wetnessRough = m.roughness;
     m.userData.wetnessColor = m.color.clone();
+    m.userData.envBase = m.envMapIntensity;
+    m.envMap = this.probe?.texture ?? null;
+    this._stampWetness(m);
     this._mats.set('road_atlas', m);
     this._atlas = null;                        // free the 4 MB float composite
   }
@@ -377,8 +552,10 @@ export default class Materials {
       clearcoatNormalMap: coat.normalMap,
       clearcoatNormalScale: V2(0.22),
       envMapIntensity: 1.25,
+      envMap: this.probe?.texture ?? null,
     }));
     m.userData.tileMeters = 0.35;
+    m.userData.envBase = 1.25;
     this._carPaints.set(key, m);
     if (!this._mats.has('car_paint')) this._mats.set('car_paint', m);
     return m;
@@ -409,6 +586,28 @@ export default class Materials {
   }
 
   /**
+   * Runs after `Sky.lateUpdate` (see `static deps`) so the probe, not the
+   * sky-only PMREM, is what `scene.environment` holds when the composer renders.
+   */
+  lateUpdate(dt, ctx) {
+    if (!this.probe) return;
+    this.probe.update(dt, ctx);
+    if (this.probe.texture) ctx.scene.environment = this.probe.texture;
+    this._applyEnv(ctx);
+    // Materials keep arriving after boot (vehicles, missions, streamed props).
+    // Sweeping the registry is a walk over ~40 entries; twice a second is free
+    // and means nothing is ever left on the stale sky-only environment.
+    this._adoptTimer += dt;
+    if (this._booted && this._adoptTimer > 0.5) {
+      this._adoptTimer = 0;
+      if (ctx.assets.materials.size !== this._adoptSeen) {
+        this._adoptSeen = ctx.assets.materials.size;
+        this.adopt(ctx);
+      }
+    }
+  }
+
+  /**
    * The factory deliberately stays resident after init so an on-demand build
    * does not have to regenerate the 512^2 noise bank. That is ~25 MB of JS
    * heap, not VRAM, and it is released here.
@@ -416,6 +615,8 @@ export default class Materials {
   dispose() {
     // Textures and materials are owned by ctx.assets, which disposes them.
     this._mats.clear(); this._maps.clear(); this._carPaints.clear();
+    this.probe?.dispose();
+    this.probe = null;
     this.factory?.release();
   }
 }
