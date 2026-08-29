@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RNG, canvas2d, texFromCanvas, fbm, normalFromHeight } from './StreetFurniture.js';
+import { KERB_H } from './Props.js';
 
 /**
  * Decals — oil, skid marks, cracks, patches, gutter debris, puddles, road paint,
@@ -841,6 +842,10 @@ function runDecals(bat, L, take) {
   let si = 0;
   for (const s of L.segments) {
     const rng = new RNG(4400021 + (si++) * 8161);
+    // Road decals must lie on the DRAWN carriageway, not on the terrain raster,
+    // which `Terrain.stampRoads` clamps 0.4-1.7 m below it. See `L.surfaceY`.
+    const road = (x, z) => L.surfaceY(s, x, z) + 0.012;
+    const walk = (x, z) => L.surfaceY(s, x, z) + KERB_H + 0.010;
     const kerb = s.halfRoad;
     const along = facing(s.dx, s.dz);
 
@@ -935,6 +940,7 @@ function runDecals(bat, L, take) {
   let ji = 0;
   for (const j of L.junctions) {
     const rng = new RNG(5500033 + (ji++) * 4133);
+    const road = j.y != null ? () => j.y + 0.012 : (x, z) => L.gh(x, z) + 0.012;
     for (const leg of j.legs) {
       const k = leg.hw + 2.6;
       const x = j.x + leg.dx * k, z = j.z + leg.dz * k;

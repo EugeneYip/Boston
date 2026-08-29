@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { geo } from '../core/Geo.js';
 import { RNG, canvas2d, texFromCanvas, fbm, normalFromHeight } from './StreetFurniture.js';
-import { PropBatcher, getLayout, layoutStale } from './Props.js';
+import { PropBatcher, getLayout, layoutStale, KERB_H } from './Props.js';
 
 /**
  * Vegetation — Boston's street trees, the Common and the Public Garden.
@@ -967,17 +967,19 @@ function placeStreetPlanting(o, g) {
     for (const s of L.treeSites) {
       if (n >= cap) break;
       const k = 1 + rng.int(3);
+      // `s.y` is the tree site's own height, already resolved against the drawn
+      // pavement rather than the clamped terrain raster.
       for (let i = 0; i < k && n < cap; i++) {
         const a = rng.range(0, 6.2832), r = rng.range(0.22, 0.66);
         const x = s.x + Math.cos(a) * r, z = s.z + Math.sin(a) * r;
-        grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.55, 1.05),
+        grassB.add(x, s.y, z, rng.range(0, 6.2832), rng.range(0.55, 1.05),
           rng.range(0.7, 1.05));
         n++;
       }
       if (rng.chance(0.16) && n < cap) {
         const a = rng.range(0, 6.2832);
         const x = s.x + Math.cos(a) * 0.5, z = s.z + Math.sin(a) * 0.5;
-        flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.45, 0.8), rng.range(0.85, 1.1));
+        flowerB.add(x, s.y, z, rng.range(0, 6.2832), rng.range(0.45, 0.8), rng.range(0.85, 1.1));
         n++;
       }
     }
@@ -1059,8 +1061,8 @@ function placeStreetPlanting(o, g) {
         const off = s.halfRoad + rng.range(0.12, 0.45);   // the crack at the kerb
         const x = s.ax + s.dx * t + s.nx * off * side;
         const z = s.az + s.dz * t + s.nz * off * side;
-        grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.4, 0.85),
-          rng.range(0.62, 0.95));
+        grassB.add(x, L.surfaceY(s, x, z) + KERB_H, z, rng.range(0, 6.2832),
+          rng.range(0.4, 0.85), rng.range(0.62, 0.95));
         n++;
       }
     }
@@ -1082,7 +1084,7 @@ function placeVegetation(o) {
     const b = pair[i & 1];
     // Street trees are pruned, stunted and unevenly watered; the height spread
     // has to be wide or the street reads as a nursery row.
-    b.add(s.x, s.y - 0.05, s.z, s.rot, s.scale, 0.86 + ((i * 37) % 23) / 100,
+    b.add(s.x, s.y - 0.02, s.z, s.rot, s.scale, 0.86 + ((i * 37) % 23) / 100,
       s.lean, s.lean * 0.8);
   }
 

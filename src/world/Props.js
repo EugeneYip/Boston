@@ -25,6 +25,13 @@ import Decals from './Decals.js';
  */
 
 /** Spatial chunk edge, metres. Also the granularity of LOD selection. */
+/**
+ * Pavement lip above the carriageway. Mirrors `KERB_H` in Roads.js, which is
+ * what actually builds the kerb; duplicated rather than imported so props does
+ * not take a hard dependency on a file it does not own.
+ */
+export const KERB_H = 0.145;
+
 export const CHUNK = 96;
 const CHUNK_R = CHUNK * 0.7072;   // half-diagonal, for conservative chunk distance
 
@@ -366,6 +373,10 @@ function makeSegment(ax, az, bx, bz, opts) {
     frontage: opts.frontage ?? null,
     district: opts.district || 'downtown',
     edgeId: opts.edgeId ?? null,
+    // Road SURFACE height at each trimmed end, from the road graph polyline —
+    // which is what Roads.js actually builds the carriageway from. This is NOT
+    // `groundHeight()`; see `surfaceY` below.
+    ay: opts.ay ?? null, by: opts.by ?? null,
     // Kerbside parking bay published by the city: { width, offset }, where
     // offset is the lateral distance from the road centreline to the middle of
     // the bay. Null on streets too narrow to have one.
@@ -463,6 +474,7 @@ function fromCityGraph(ctx, city) {
         halfRoad: w / 2, type: e.type, oneway: e.oneway,
         frontage: null, district: districtFor((a.x + b.x) / 2, (a.z + b.z) / 2),
         edgeId: e.id, parking: e.parking || null,
+        ay: R.sample(e.id, t)?.y ?? null, by: R.sample(e.id, 1 - t)?.y ?? null,
       }));
   }
 
@@ -481,7 +493,10 @@ function fromCityGraph(ctx, city) {
     }
     if (!legs.length) continue;
     junctions.push({
-      x: n.x, z: n.z, major: deg >= 4, district: districtFor(n.x, n.z), legs,
+      // `n.y` is the road graph's own surface height at the node — the same
+      // datum Roads.js builds the junction from, not the clamped raster.
+      x: n.x, z: n.z, y: Number.isFinite(n.y) ? n.y : null,
+      major: deg >= 4, district: districtFor(n.x, n.z), legs,
     });
   }
   return finishLayout({ source: 'city', segments, junctions, parks, gh, districtFor, city });
@@ -489,6 +504,31 @@ function fromCityGraph(ctx, city) {
 
 /** Shared tail: derive tree sites, park areas and the frontage list. */
 function finishLayout(L) {
+  /**
+   * Height of the DRAWN road surface at a point on (or beside) a segment.
+   *
+   * `groundHeight()` is not it. `Terrain.stampRoads` deliberately clamps the
+   * terrain raster *below* the carriageway so ground cannot poke up through
+   * asphalt, and `Roads.js` then builds the road from the graph polyline `y`
+   * and the pavement from that plus `KERB_H`. So near any road the raster sits
+   * 0.4-1.7 m below what is actually rendered (measured on eight sampled edges:
+   * `roads.sample().y - groundHeight()` = 0.40 / 0.40 / 0.40 / 0.41 / 0.41 /
+   * 0.48 / 0.59 / 1.66).
+   *
+   * Placing kerbside furniture at `groundHeight()` therefore buries it. It read
+   * as "perfectly aligned" for a long time only because it was being checked
+   * against the same clamped raster that caused the problem.
+   *
+   * Interpolates the surface along the segment chord. Falls back to the raster
+   * where a segment has no road graph behind it (the synthesised grid).
+   */
+  L.surfaceY = (s, x, z) => {
+    if (s.ay == null || s.by == null) return L.gh(x, z);
+    const t = s.len ? ((x - s.ax) * s.dx + (z - s.az) * s.dz) / s.len : 0;
+    const u = t < 0 ? 0 : t > 1 ? 1 : t;
+    return s.ay + (s.by - s.ay) * u;
+  };
+
   L.groundHeight = L.gh;
   L.districtAt = L.districtFor;
   L.inPark = (x, z) => L.parks.some(p => pointInPoly(x, z, p.poly));
@@ -520,7 +560,7 @@ function finishLayout(L) {
         const z = s.az + s.dz * t + s.nz * off * side;
         if (L.inPark(x, z)) continue;
         sites.push({
-          x, z, y: L.gh(x, z) + L.kerb,
+          x, z, y: L.surfaceY(s, x, z) + KERB_H,
           species: SPECIES[(rng.int(100) * 7 + sIdx) % SPECIES.length],
           scale: rng.range(0.78, 1.32),
           rot: rng.range(0, Math.PI * 2),
@@ -1057,6 +1097,12 @@ function runPlacement(sys, L, counting, take) {
   let si = 0;
   for (const s of L.segments) {
     const rng = new RNG(50021 + (si++) * 3607);
+    // Shadow the raster-based helpers with surface-based ones for the whole of
+    // this segment's placement: `road` is the drawn carriageway, `g` the drawn
+    // pavement. Everything kerbside was previously buried ~0.4 m — see
+    // `L.surfaceY`.
+    const road = (x, z) => L.surfaceY(s, x, z);
+    const g = (x, z) => L.surfaceY(s, x, z) + KERB_H;
     const d = s.district;
     const heritage = d === 'beaconHill' || d === 'backBay' || d === 'park' || d === 'northEnd';
     const busy = d === 'financial' || d === 'downtown' || s.type === 'arterial';
@@ -1342,6 +1388,9 @@ function runPlacement(sys, L, counting, take) {
     const rng = new RNG(90001 + (ji++) * 5171);
     const legs = j.legs;
     if (!legs.length) continue;
+    // Same surface-vs-raster correction as the segment loop.
+    const road = j.y != null ? () => j.y : (x, z) => L.gh(x, z);
+    const g = j.y != null ? () => j.y + KERB_H : (x, z) => L.gh(x, z) + L.kerb;
 
     if (j.major) {
       // Two mast arms on opposing approaches, the usual US arrangement.
