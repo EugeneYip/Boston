@@ -340,6 +340,17 @@ export default class CaptureHarness {
         rawPos[1] = groundedPos;
         const freed = api.unstick(rawPos, rawLook);
         api.setCamera(freed.pos, rawLook, fov ?? s.fov);
+        // A capture into a degenerate drawing buffer is not a dark shot, it is no
+        // shot at all -- readPixels comes back empty and every measurement taken
+        // from it is fiction. Engine.resize() now floors the size, so re-asserting
+        // it here recovers a pane that collapsed after boot without firing a
+        // resize event.
+        const gl0 = engine.renderer.getContext();
+        if (gl0.drawingBufferWidth < 2 || gl0.drawingBufferHeight < 2) {
+          console.warn('[capture] drawing buffer was '
+            + `${gl0.drawingBufferWidth}x${gl0.drawingBufferHeight}; forcing a resize.`);
+          engine.resize();
+        }
         // Warm up: lets IBL, LOD and temporal effects settle.
         api.step(warmup);
         // Then wait for streaming to ACTUALLY finish rather than assuming a frame

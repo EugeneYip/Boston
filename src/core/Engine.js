@@ -90,8 +90,16 @@ export default class Engine {
   }
 
   resize() {
-    const w = this.container.clientWidth || window.innerWidth;
-    const h = this.container.clientHeight || window.innerHeight;
+    let w = this.container.clientWidth || window.innerWidth;
+    let h = this.container.clientHeight || window.innerHeight;
+    // A preview pane that is collapsed, hidden or simply not laid out yet reports
+    // 0 for both, and 0 propagates: every render target becomes 0x0, the composer
+    // chain has nothing to draw into, and readPixels returns an empty buffer. That
+    // does not look like a sizing bug from the outside -- it looks like the GPU has
+    // stopped working, and it cost most of a session's visual verification before
+    // it was understood. Fall back to a real size so a headless or collapsed pane
+    // still renders something measurable.
+    if (!(w > 1) || !(h > 1)) { w = 1280; h = 720; }
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.bus.emit('resize', { w, h });
