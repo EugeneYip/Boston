@@ -488,7 +488,6 @@ export default class CascadedShadows {
     this.lights = [];
     this._splits = new Float32Array(MAX_CASCADES);
     this._radius = new Float32Array(MAX_CASCADES);
-    this._interval = new Uint8Array([1, 2, 3, 4]);   // render cascade i every n frames
     this._dir = new THREE.Vector3(0, 1, 0);
     this._lastCam = new THREE.Vector3(1e9, 1e9, 1e9);
     this._frame = 0;
@@ -519,6 +518,16 @@ export default class CascadedShadows {
       l.shadow.radius = 1;
       l.shadow.autoUpdate = false;    // we drive needsUpdate ourselves
       l.shadow.needsUpdate = true;
+      // Published so a caster owner can tell WHICH cascade is asking for its
+      // geometry. Three passes the shadow camera to `Object3D.onBeforeShadow`,
+      // and that is the only per-cascade hook there is: `object.layers` is
+      // tested against the VIEW camera in `WebGLShadowMap.renderObject`, not the
+      // shadow camera, so layers cannot separate cascades. `csmTexel` (world
+      // metres per shadow texel, refreshed every frame in `update`) is the
+      // number that decides whether a piece of relief can survive the sampling
+      // at all. See `Buildings._stepChunk` for the one consumer.
+      l.shadow.camera.userData.csmIndex = i;
+      l.shadow.camera.userData.csmTexel = 0;
       l.target.matrixAutoUpdate = true;
       this.group.add(l, l.target);
       this.lights.push(l);
@@ -562,8 +571,20 @@ export default class CascadedShadows {
     if (!this.enabled || !camera.isPerspectiveCamera) return;
     this._frame++;
 
-    // A direction change invalidates every cascade's snap, so force a full refresh.
-    if (toSun.dot(this._dir) < 0.99995) { this._dir.copy(toSun); this._dirty = true; }
+    /*
+     * A direction change rotates the texel snap grid, so a cascade's snapped
+     * centre is no longer ON that grid — but it does NOT invalidate anything.
+     * A cascade that is not refreshed keeps BOTH its map and its `shadow.matrix`
+     * (three only updates the matrix inside `updateMatrices`, which only runs
+     * when the shadow renders), so the pair stays self-consistent and the next
+     * scheduled refresh re-snaps it against the new direction. This used to set
+     * `_dirty`, which forced every cascade to re-render together: at the clock's
+     * 40x rate the sun crosses 0.573° about every 200 frames, so the whole city
+     * was re-submitted to all three cascades three times a second for nothing.
+     * Measured at `night_neon`: 3.01 M triangles on that frame against a 2.26 M
+     * steady state. `_dir` is still tracked here — `shadowReach` reads it.
+     */
+    if (toSun.dot(this._dir) < 0.99995) this._dir.copy(toSun);
 
     camera.updateMatrixWorld();
     _camPos.setFromMatrixPosition(camera.matrixWorld);
@@ -598,6 +619,30 @@ export default class CascadedShadows {
 
     camera.getWorldDirection(_fwd);
 
+    /*
+     * Cascade refresh schedule — DE-PHASED, and that is the whole point.
+     *
+     * This used to be `frame % interval[i] === 0` with intervals 1/2/3/4, which
+     * refreshes cascade i every i+1 frames. Every interval divides frame 0, so
+     * lcm(1,2,3) = 6: one frame in six re-submitted EVERY cascade at once and
+     * cost three times the median. Measured at `night_neon`, that spike frame
+     * was 3.55 M shadow triangles against a 2.5 M budget while the median frame
+     * was 1.12 M — the budget was blown by the scheduling, not by the content.
+     *
+     * Round-robin instead: cascade 0 every frame (it is the one the camera
+     * actually moves through), and the rest take one frame slot each, so no two
+     * far cascades can ever land together. `_cascadeCount` caps at 3, so the
+     * period is 2 and cascades 1 and 2 both still refresh every OTHER frame —
+     * exactly as often as the old schedule refreshed cascade 1, and MORE often
+     * than it refreshed cascade 2. Nothing gets staler; the peak halves.
+     *
+     * `_dirty` — a camera teleport, or a rebuild from `setQuality` — still
+     * forces all of them in one frame. That is correctness on a hard cut, it
+     * costs 3.0 M on that single frame, and it must not be spread out. A sun
+     * direction change no longer sets it; see the note in `update`.
+     */
+    const period = Math.max(2, this.count - 1);
+
     for (let i = 0; i < this.count; i++) {
       const n = i === 0 ? near : this._splits[i - 1];
       const f = this._splits[i];
@@ -617,7 +662,8 @@ export default class CascadedShadows {
       const res = l.shadow.mapSize.x;
       const texel = (2 * r) / res;
 
-      const due = this._dirty || (this._frame % this._interval[i]) === 0;
+      const due = this._dirty || i === 0 ||
+        (this._frame % period) === ((i - 1) % period);
       if (due) {
         _center.copy(_camPos).addScaledVector(_fwd, cz);
 
@@ -658,6 +704,9 @@ export default class CascadedShadows {
       bostonUniforms.bostonCsmBands.value[i] = (this._splits[i] - n) * this.blendFraction;
       bostonUniforms.bostonCsmTexel.value[i] = texel;
       bostonUniforms.bostonCsmDepth.value[i] = depthRange;
+      // Same number, delivered to the CPU side: a caster owner reached from
+      // `onBeforeShadow` gets the shadow camera and nothing else.
+      l.shadow.camera.userData.csmTexel = texel;
     }
 
     bostonUniforms.bostonCsmCount.value = this.count;

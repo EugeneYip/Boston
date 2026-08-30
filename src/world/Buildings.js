@@ -417,6 +417,86 @@ function pushPlot(out, id, poly, d, core, frontDirs, r) {
 
 const _v = new THREE.Vector3();
 
+/* -------------------------------------------------------------------------- */
+/* Shadow LOD                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * World metres per shadow texel above which LOD-0 facade relief stops existing.
+ *
+ * The detail LOD-0 carries over the shell is bays, sills, cornices, areaways and
+ * shopfront recesses: 0.2 - 0.4 m of projection. A cascade whose texel is wider
+ * than that cannot represent any of it — the depth buffer it writes is identical
+ * either way — and the PCF disc then blurs over 1.4 more texels on top.
+ *
+ * Measured at `high`: cascade texels are 0.03 / 0.11 / 0.61 m at `night_neon`
+ * and 0.03 / 0.10 / 0.56 m at `st_beaconhill`, so this threshold selects the far
+ * cascade only and leaves both near cascades — the ones that carry every shadow
+ * the player reads on a facade — completely untouched. It is deliberately set
+ * BELOW the far cascade and far ABOVE cascade 1, not between them by a hair.
+ */
+const SHADOW_DETAIL_TEXEL = 0.30;
+
+/** True when this cascade is too coarse to resolve LOD-0 relief. */
+function coarseCascade(shadowCamera) {
+  const t = shadowCamera.userData.csmTexel;
+  return t !== undefined && t > SHADOW_DETAIL_TEXEL;
+}
+
+/*
+ * Per-cascade caster substitution.
+ *
+ * Three re-submits every caster to every cascade, and `object.layers` is tested
+ * against the VIEW camera inside `WebGLShadowMap.renderObject`, so layers cannot
+ * separate cascades. `Object3D.onBeforeShadow` / `onAfterShadow` can: three
+ * calls them per object PER CASCADE, immediately around the draw, with the
+ * shadow camera in hand. `drawRange` is read inside `renderBufferDirect`, so
+ * setting it there is honoured with no upload and no state invalidation.
+ *
+ * The pair below swaps the LOD-0 chunk meshes for their shell twins in the far
+ * cascade only. Measured at `st_beaconhill`: 457 k triangles out, 21 k of
+ * unmasked shell back in. The shell is inset 0.25 m in plan and dropped 0.30 m
+ * at every cap (`Facades.buildShell`) — under half a texel at that cascade's
+ * 0.56-0.61 m sampling, i.e. below the resolution the cascade has. Comparing
+ * cascade 2's depth map before and after, the occluder silhouette moves on
+ * 0.89% of its occupied texels; cascades 0 and 1 come back bit-identical inside
+ * the scene's own frame-to-frame noise.
+ *
+ * The one difference you CAN find is a bonus rather than a loss. LOD 0 and LOD 1
+ * cut real holes in the wall for windows and fill them with a glass mesh that
+ * carries `castShadow = false`, so the detailed mesh let sunlight through every
+ * window it had; the shell's wall is solid. The far cascade's building shadows
+ * are therefore now solid, which is both what a real building does and what
+ * every building past the LOD-0 radius has always done here. It shows up as the
+ * far cascade being very slightly DARKER, never brighter.
+ *
+ * Both hooks must be restored before the camera pass, which is why the restore
+ * lives in `onAfterShadow` and not at the end of the frame: three builds the
+ * camera render list BEFORE `shadowMap.render`, but reads `drawRange` at draw
+ * time, so a range left wide open here would corrupt the visible frame.
+ */
+function detailBeforeShadow(renderer, object, camera, shadowCamera) {
+  if (coarseCascade(shadowCamera)) object.geometry.setDrawRange(0, 0);
+}
+function detailAfterShadow(renderer, object) {
+  object.geometry.setDrawRange(0, Infinity);
+}
+/**
+ * The shell is masked wherever an LOD-0 chunk covers it (`_refreshShellMask`),
+ * so the far cascade has to get those spans BACK the moment the detailed mesh
+ * stops casting, or the buildings nearest the camera would cast nothing at all
+ * past the second split. `mask` holds every index — kept run first, dropped runs
+ * appended — precisely so that "unmask" is a draw-range widen and never an
+ * index-buffer swap, which would need an upload three has not scheduled.
+ */
+function shellBeforeShadow(renderer, object, camera, shadowCamera) {
+  if (coarseCascade(shadowCamera)) object.geometry.setDrawRange(0, Infinity);
+}
+function shellAfterShadow(renderer, object) {
+  const rec = object.userData.sector;
+  object.geometry.setDrawRange(0, rec && rec.masked ? rec.drawCount : Infinity);
+}
+
 /**
  * Every generic building in Boston: parcels -> specs -> three levels of merged
  * geometry, streamed around the camera.
@@ -818,10 +898,15 @@ export default class Buildings {
       mesh.matrixAutoUpdate = false;
       mesh.updateMatrix();
       mesh.name = 'shell';
+      mesh.onBeforeShadow = shellBeforeShadow;
+      mesh.onAfterShadow = shellAfterShadow;
       this.root.add(mesh);
-      this.sectors.set(key, {
+      const rec = {
         mesh, spans, full: g.index, mask: null, masked: false,
-      });
+        drawCount: Infinity,
+      };
+      mesh.userData.sector = rec;
+      this.sectors.set(key, rec);
     }
     this._maskDirty = true;
     this._maskSig = 1;
@@ -842,6 +927,11 @@ export default class Buildings {
    * Only LOD 0 is masked. An LOD-1 chunk mesh carries `castShadow = false`
    * (`_stepChunk`), so at that range the shell is the only thing casting the
    * building's shadow and dropping it would put holes in the cascade.
+   *
+   * The mask is a CAMERA-and-near-cascade state. The far cascade takes the
+   * dropped spans back for the duration of its own pass (`shellBeforeShadow`),
+   * because that is where the detailed mesh stands down — see the shadow-LOD
+   * block at the top of this file.
    *
    * Nothing about the image changes: `Facades.buildShell` insets the shell 0.25 m
    * and drops every cap 0.30 m precisely so it is strictly inside its LOD-0 twin,
@@ -870,6 +960,7 @@ export default class Buildings {
           g.setIndex(rec.full);
           g.setDrawRange(0, Infinity);
           rec.masked = false;
+          rec.drawCount = Infinity;
         }
         continue;
       }
@@ -880,25 +971,39 @@ export default class Buildings {
       }
       const dst = rec.mask.array;
       let n = 0;
-      // Coalesce runs of kept chunks so this is a handful of typed-array
-      // `set()` calls rather than a per-index copy.
-      let runStart = -1, runEnd = -1;
-      for (const sp of rec.spans) {
-        if (covered.has(sp.key)) {
-          if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
-          runStart = -1;
-        } else if (runStart < 0) { runStart = sp.start; runEnd = sp.start + sp.count; }
-        else runEnd = sp.start + sp.count;
-      }
-      if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
+      // Coalesce runs of chunks so this is a handful of typed-array `set()`
+      // calls rather than a per-index copy.
+      //
+      // PARTITION, not a filter: the kept spans go first and the dropped ones
+      // are appended behind them, so `mask` is a permutation of the whole index
+      // buffer rather than a prefix of it. `drawRange = (0, n)` is then the
+      // masked shell and `(0, Infinity)` the complete one, off ONE uploaded
+      // attribute. That is what lets the far cascade take the complete shell
+      // back inside `onBeforeShadow` — swapping `geometry.index` there would
+      // reference a buffer three has not uploaded for this draw.
+      const emit = (wanted) => {
+        let runStart = -1, runEnd = -1;
+        for (const sp of rec.spans) {
+          if (covered.has(sp.key) !== wanted) {
+            if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
+            runStart = -1;
+          } else if (runStart < 0) { runStart = sp.start; runEnd = sp.start + sp.count; }
+          else runEnd = sp.start + sp.count;
+        }
+        if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
+      };
+      emit(false);            // spans no detailed chunk covers — the visible shell
+      const kept = n;
+      emit(true);             // the covered spans, parked past the draw range
       if (rec.mask.clearUpdateRanges) {
         rec.mask.clearUpdateRanges();
         rec.mask.addUpdateRange(0, n);
       }
       rec.mask.needsUpdate = true;
       g.setIndex(rec.mask);
-      g.setDrawRange(0, n);
+      g.setDrawRange(0, kept);
       rec.masked = true;
+      rec.drawCount = kept;
     }
   }
 
@@ -931,6 +1036,12 @@ export default class Buildings {
     if (go) {
       const m = new THREE.Mesh(go, this.matOpaque);
       m.castShadow = lod === 0;
+      if (lod === 0) {
+        // Cast into the near cascades at full detail; hand the far cascade back
+        // to the shell, which is already resident under this mesh.
+        m.onBeforeShadow = detailBeforeShadow;
+        m.onAfterShadow = detailAfterShadow;
+      }
       m.receiveShadow = true;
       m.position.fromArray(go.userData.origin);
       m.matrixAutoUpdate = false; m.updateMatrix();
