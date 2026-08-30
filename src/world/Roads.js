@@ -263,6 +263,29 @@ class Batch {
 
 const TILE_UV = [[0, 0], [0.5, 0], [0, 0.5], [0.5, 0.5]];
 
+/**
+ * Give a world-space merged mesh a meaningful sort key.
+ *
+ * three's opaque sort projects each mesh's *origin* to clip space. Geometry
+ * baked in world space on a mesh left at (0,0,0) therefore projects to the same
+ * point as every other such mesh, the sort falls through to creation order, and
+ * front-to-back ordering is lost across the whole frame — which is the worst
+ * case for overdraw on a tile-based GPU. Re-centre the geometry on its own
+ * bounding box and put that centre on the mesh instead.
+ */
+function recenter(geometry, mesh) {
+  geometry.computeBoundingBox();
+  const c = new THREE.Vector3();
+  geometry.boundingBox.getCenter(c);
+  geometry.translate(-c.x, -c.y, -c.z);
+  geometry.computeBoundingSphere();
+  mesh.position.copy(c);
+  mesh.updateMatrix();            // matrixAutoUpdate is off on all of these
+  geometry.userData.origin = c;
+  return c;
+}
+
+
 export default class Roads {
   constructor(net, terrain) {
     this.net = net; this.terrain = terrain;
@@ -732,13 +755,17 @@ export default class Roads {
       const near = new THREE.Mesh(ch.near.geometry(), this.material);
       near.receiveShadow = true; near.castShadow = false;
       near.matrixAutoUpdate = false; near.name = 'road_' + ch.key;
+      const c = recenter(near.geometry, near);
       scene.add(near);
       const far = new THREE.Mesh(ch.far.geometry(), this.material);
       far.receiveShadow = true; far.matrixAutoUpdate = false;
       far.visible = false; far.name = 'roadLod_' + ch.key;
+      recenter(far.geometry, far);
       scene.add(far);
       ch.nearMesh = near; ch.farMesh = far;
-      ch.center = near.geometry.boundingSphere.center.clone();
+      // World-space centre and radius for the LOD test: the geometry's own
+      // bounding sphere is local now, so keep the world centre explicitly.
+      ch.center = c.clone();
       ch.radius = near.geometry.boundingSphere.radius;
       this.meshes.push(near, far);
       tris += ch.near.i.length / 3;
@@ -827,6 +854,7 @@ export default class Roads {
     this.decals = new THREE.Mesh(g, m);
     this.decals.renderOrder = 2;
     this.decals.matrixAutoUpdate = false;
+    recenter(g, this.decals);
     this.decals.receiveShadow = true;
     this._detailMat = m;
   }

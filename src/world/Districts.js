@@ -35,6 +35,29 @@ const hash2 = (x, y) => {
 
 function toWorld(ring) { return ring.map(([la, lo]) => geo(la, lo)); }
 
+/**
+ * Give a world-space merged mesh a meaningful sort key.
+ *
+ * three's opaque sort projects each mesh's *origin* to clip space. Geometry
+ * baked in world space on a mesh left at (0,0,0) therefore projects to the same
+ * point as every other such mesh, the sort falls through to creation order, and
+ * front-to-back ordering is lost across the whole frame — which is the worst
+ * case for overdraw on a tile-based GPU. Re-centre the geometry on its own
+ * bounding box and put that centre on the mesh instead.
+ */
+function recenter(geometry, mesh) {
+  geometry.computeBoundingBox();
+  const c = new THREE.Vector3();
+  geometry.boundingBox.getCenter(c);
+  geometry.translate(-c.x, -c.y, -c.z);
+  geometry.computeBoundingSphere();
+  mesh.position.copy(c);
+  mesh.updateMatrix();            // matrixAutoUpdate is off on all of these
+  geometry.userData.origin = c;
+  return c;
+}
+
+
 function inPoly(pts, x, z) {
   let inside = false;
   for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
@@ -258,6 +281,7 @@ export default class Districts {
       mesh.receiveShadow = true;
       mesh.matrixAutoUpdate = false;
       mesh.name = 'park_' + kind;
+      recenter(geom, mesh);
       scene.add(mesh);
       this.meshes.push(mesh);
       this._owned = this._owned || [];

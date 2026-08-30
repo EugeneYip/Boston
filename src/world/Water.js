@@ -17,6 +17,29 @@ import { WATER } from '../data/boston-geo.js';
 
 const MAX_EDGE = 34;        // triangle subdivision target, metres
 
+/**
+ * Give a world-space merged mesh a meaningful sort key.
+ *
+ * three's opaque sort projects each mesh's *origin* to clip space. Geometry
+ * baked in world space on a mesh left at (0,0,0) therefore projects to the same
+ * point as every other such mesh, the sort falls through to creation order, and
+ * front-to-back ordering is lost across the whole frame — which is the worst
+ * case for overdraw on a tile-based GPU. Re-centre the geometry on its own
+ * bounding box and put that centre on the mesh instead.
+ */
+function recenter(geometry, mesh) {
+  geometry.computeBoundingBox();
+  const c = new THREE.Vector3();
+  geometry.boundingBox.getCenter(c);
+  geometry.translate(-c.x, -c.y, -c.z);
+  geometry.computeBoundingSphere();
+  mesh.position.copy(c);
+  mesh.updateMatrix();            // matrixAutoUpdate is off on all of these
+  geometry.userData.origin = c;
+  return c;
+}
+
+
 /** Fast deterministic hash — the ripple bake is a quarter-million pixels. */
 const rnd = (s) => {
   let h = (s * 374761393) | 0;
@@ -147,6 +170,7 @@ export default class Water {
       const mesh = new THREE.Mesh(g, mat);
       mesh.name = 'water_' + body.name;
       mesh.matrixAutoUpdate = false;
+      recenter(g, mesh);
       mesh.renderOrder = 1;
       mesh.receiveShadow = false;
       scene.add(mesh);
