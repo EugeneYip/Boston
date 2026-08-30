@@ -376,12 +376,21 @@ export default class CaptureHarness {
         while (!api.settled() && guard < 600) { api.step(4); guard += 4; }
         const streamed = guard;
         await settle(60);
+        // Re-assert the freeze. capture() froze time on entry, but Menu's unpause
+        // path (`Menu.js:661`) restores timeScale from its own saved value whenever
+        // it closes, and anything that reopens the menu between then and here puts
+        // the clock back to 40 game-seconds per real-second. A caller that then
+        // benches or reads pixels is measuring a moving sun: that is the entire
+        // source of the ~18% luminance drift between captures minutes apart which
+        // a critic pass previously wrote off as unavoidable auto-exposure noise.
+        api.freeze(true);
         const stats = api.step(6);
         if (!api.settled()) {
           console.warn(`[capture] streaming did not settle in ${guard} frames; `
             + 'the shot may contain LOD-2 shell where detail was expected.');
         }
         return { shot: shot || 'custom', weather: w, streamed,
+                 timeScale: engine.settings.timeScale,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
       },
       /**
