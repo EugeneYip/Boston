@@ -37,6 +37,15 @@ npm install
 # 2. Parse-check every source file (fast, catches truncated/half-written files)
 node tools/parsecheck.mjs
 
+# 2b. Scope-check every source file. parsecheck runs esbuild's PARSER, which only
+#     proves a file is syntactically well-formed -- a bare identifier is legal
+#     syntax, so esbuild assumes it is a global and says nothing. parsecheck
+#     therefore reported "OK -- all 80 files parse cleanly" on a tree whose boot
+#     died instantly with `ReferenceError: tile is not defined at Terrain.build`,
+#     and the shared dev server was dead for a long stretch. This catches that
+#     class. It is static, so booting the app is still the authoritative gate.
+node tools/scopecheck.mjs
+
 # 3. Run the dev server (port 5273, strict)
 npm run dev
 
@@ -57,6 +66,19 @@ await window.__boston.capture({ shot: 'street_level' })   // park camera + rende
 window.__boston.shotNames()           // the 8 named review viewpoints
 ```
 The browser console must be **clean** — zero errors.
+
+**Booting is not optional before you claim something works.** Neither parsecheck nor
+scopecheck can see a conditional or cross-module runtime failure. `bootReport.failed`
+must be `[]` and `window.__boston.glFaults` must be `[]`.
+
+If the Browser pane is hidden, `document.hidden` is true, `requestAnimationFrame` is
+throttled to zero and `measureFps()` **refuses by design**. Do not report an rAF-based
+number in that state; drive frames synchronously instead and force GPU completion:
+```js
+const b = window.__boston, r = b.engine.renderer, gl = r.getContext();
+function bench(n){const s=[];for(let i=0;i<n;i++){const t=performance.now();b.step(1/60);gl.finish();s.push(performance.now()-t);}s.sort((a,c)=>a-c);return s[Math.floor(s.length/2)];}
+```
+Keep any single evaluation under ~40 `step()` calls; ~190 exceeds the tool timeout.
 
 ## Non-negotiable rules
 1. **Y up. 1 unit = 1 metre. +X east, −Z north. Origin = Boston Common.** Place every
