@@ -1,1 +1,7 @@
-{"version":"0.0.1","configurations":[{"name":"boston","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":5273}]}
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "boston", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5273 },
+    { "name": "boston-verify", "runtimeExecutable": "npm", "runtimeArgs": ["run", "verify"], "port": 5290 }
+  ]
+}
