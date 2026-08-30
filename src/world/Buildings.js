@@ -6,6 +6,7 @@ import {
   MeshBuf, GlassBuf, rng, hash2, polyCentroid,
 } from './BuildingKit.js';
 import { makeSpec, buildBuilding } from './Facades.js';
+import { corridorHalf } from './RoadNetwork.js';
 import { isReserved } from '../data/landmarks.js';
 
 const CHUNK = 170;        // metres — LOD 0/1 streaming granularity
@@ -163,16 +164,19 @@ function inPoly(x, z, poly) {
 /* Road corridor clipping                                                     */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Half-width of the strip no building may enter: carriageway + kerb + footway.
+/*
+ * `corridorHalf` — half-width of the strip no building may enter: carriageway +
+ * kerb + footway — is IMPORTED from RoadNetwork.js, which is the file that lays
+ * the frontage line down in the first place. It used to be redeclared here with
+ * the kerb inlined as 0.16. The two agreed, but a generator and its downstream
+ * clip disagreeing about where the street ends is precisely the bug that put
+ * buildings on the pavement, so there is now exactly one definition.
  *
- * Deliberately the *same* offset `RoadNetwork.buildPlots` lays its frontage
- * line on, and not a metre more. Clipping at exactly the back of the pavement
- * leaves a correct parcel untouched and still lets the building meet the
- * footway — Boston's streetwalls are continuous and a setback here would trade
- * one automatic fail for another.
+ * We clip at exactly the back of the pavement and not a metre more: that leaves
+ * a correct parcel untouched and still lets the building meet the footway —
+ * Boston's streetwalls are continuous, and a setback here would trade one
+ * automatic fail for another.
  */
-function corridorHalf(e) { return e.halfRoad + 0.16 + (e.walk || 0); }
 
 /** Tolerance, metres. Below this an "intrusion" is chord slop, not a building. */
 const CLIP_EPS = 0.02;
@@ -244,7 +248,16 @@ function clipHalfPlane(poly, nx, nz, c) {
     if (da < -0.05) cut = true;
     if (da >= -CLIP_EPS) out.push(A);
     if ((da >= -CLIP_EPS) !== (db >= -CLIP_EPS)) {
-      const t = da / (da - db);
+      // The crossing test straddles -CLIP_EPS rather than 0, so A and B can sit
+      // on opposite sides of it with (da - db) arbitrarily small: da = -0.0199
+      // and db = -0.0201 register a crossing but divide by 2e-4. Unclamped that
+      // put vertices ~1e11 m out, which silently poisons the bounding radius,
+      // frustum culling and collider streaming rather than throwing. Observed:
+      // 43 buildings with radius up to 7.7e11 when the road corridor tolerance
+      // was raised above CLIP_EPS. The intersection must lie on segment AB, so
+      // clamp it there and fall back to A when the edge is parallel to the cut.
+      const den = da - db;
+      const t = Math.abs(den) < 1e-9 ? 0 : Math.min(1, Math.max(0, da / den));
       out.push({ x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t });
     }
   }
