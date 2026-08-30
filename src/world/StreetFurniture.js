@@ -162,14 +162,33 @@ export function boxProjectUV(geo, scale = 0.7) {
 }
 
 /**
- * Surface parameters per authoring slot: [roughness, metalness]. These are baked
- * into a per-vertex `aSurf` attribute and read by a two-line patch on the shared
- * material, which is what lets a bollard's painted steel, its galvanised base and
- * its concrete pad live in ONE draw call instead of three. Draw calls are the
- * binding constraint on a prop system, not triangles.
+ * Surface parameters per authoring slot:
+ * `[roughness, metalness, clearcoat = 0, envScale = 1]`.
+ *
+ * All four are baked into a per-vertex `aSurf` attribute and read by a short
+ * patch on the shared material, which is what lets a bollard's painted steel,
+ * its galvanised base and its concrete pad live in ONE draw call instead of
+ * three. Draw calls are the binding constraint on a prop system, not triangles.
+ *
+ * The last two channels exist because car paint is the one prop surface that
+ * needs a lacquer. `prop_surf` is a `MeshPhysicalMaterial` carrying
+ * `clearcoat: 1.0`, but that is only a SCALE: the shader multiplies it by
+ * `aSurf.z`, which is 0 for every class except `carPaint`. A bin, a bench and a
+ * bollard therefore keep exactly the shading they had — three's clearcoat term
+ * is `outgoing * (1 - clearcoat*Fcc) + coat * clearcoat`, so at clearcoat 0 it
+ * is the identity — and the batch is still one draw call. Setting the lacquer on
+ * the material instead would have lacquered all 33k props.
+ *
+ * `envScale` is the same idea for `envMapIntensity`: raising it on the material
+ * would raise it for every prop, so the per-class boost rides in `aSurf.w`.
  */
 const SURF = {
   paint: [0.46, 0.18],
+  // Automotive paint under a lacquer. Real clearcoat sits at 0.05-0.15 and the
+  // base below it must not read matte, hence the drop from the `paint` class.
+  // envScale matches the 1.25 `envBase` that `Materials.carPaint` gives MOVING
+  // cars, so a parked car and a driving one of the same colour agree.
+  carPaint: [0.34, 0.05, 1.0, 1.25],
   metal: [0.40, 0.88],
   rough: [0.88, 0.00],
   chrome: [0.16, 1.00],
@@ -182,7 +201,8 @@ const SURF = {
 };
 /** Authoring slot -> the material bucket it actually renders in. */
 const SLOT_MAT = {
-  paint: 'surf', metal: 'surf', rough: 'surf', chrome: 'surf', rusty: 'surf',
+  paint: 'surf', carPaint: 'surf', metal: 'surf', rough: 'surf', chrome: 'surf',
+  rusty: 'surf',
   sign: 'sign', glass: 'glass',
   lamp: 'emitNight',            // dusk-to-dawn: luminaires, shelter strips
   lampRed: 'emit', lampGreen: 'emit',   // always on: signal lenses, LEDs
@@ -215,9 +235,13 @@ export class GeoSet {
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
 
     const sp = SURF[slot] || [0.7, 0.0];
-    const surf = new Float32Array(n * 2);
-    for (let i = 0; i < n; i++) { surf[i * 2] = sp[0]; surf[i * 2 + 1] = sp[1]; }
-    g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 2));
+    const cc = sp[2] ?? 0, env = sp[3] ?? 1;
+    const surf = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) {
+      surf[i * 4] = sp[0]; surf[i * 4 + 1] = sp[1];
+      surf[i * 4 + 2] = cc; surf[i * 4 + 3] = env;
+    }
+    g.setAttribute('aSurf', new THREE.BufferAttribute(surf, 4));
 
     if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
     for (const k of Object.keys(g.attributes)) if (!KEEP_ATTRS.includes(k)) g.deleteAttribute(k);
@@ -782,23 +806,51 @@ export function getPropMaterials(ctx) {
   };
 
   /**
-   * Read the per-vertex `aSurf` attribute as (roughness, metalness). Two lines of
-   * GLSL replace what would otherwise be three separate materials — and therefore
-   * three draw calls — on almost every prop in the city.
+   * Read the per-vertex `aSurf` attribute as
+   * (roughness, metalness, clearcoat, envScale). A handful of lines of GLSL
+   * replace what would otherwise be a separate material — and therefore a
+   * separate draw call — per surface class on almost every prop in the city.
+   *
+   * The clearcoat and envScale channels are what let ONE batched material carry
+   * lacquered car paint next to a rubbish bin. Both are pure scales on values
+   * the material already supplies, and both are 0 / 1 for every class but
+   * `carPaint`, so every other prop compiles to arithmetic that cancels:
+   *
+   *   clearcoat 0 -> `outgoingLight * (1 - 0*Fcc) + coat*0` == outgoingLight
+   *   envScale  1 -> radiance and irradiance untouched
+   *
+   * A `MeshPhysicalMaterial` at the default `ior` 1.5 / `specularIntensity` 1 /
+   * `specularColor` white also resolves `material.specularColor` to exactly the
+   * `mix(vec3(0.04), diffuse, metalness)` a `MeshStandardMaterial` uses, so the
+   * upgrade itself does not move a single non-paint pixel either.
    */
   const patchSurf = (m) => {
     m.onBeforeCompile = (shader) => {
       shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nattribute vec2 aSurf;\nvarying vec2 vSurf;')
+        .replace('#include <common>', '#include <common>\nattribute vec4 aSurf;\nvarying vec4 vSurf;')
         .replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvSurf = aSurf;');
       shader.fragmentShader = shader.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying vec2 vSurf;')
+        .replace('#include <common>', '#include <common>\nvarying vec4 vSurf;')
         .replace('#include <roughnessmap_fragment>',
           '#include <roughnessmap_fragment>\n\troughnessFactor *= vSurf.x;')
         .replace('#include <metalnessmap_fragment>',
-          '#include <metalnessmap_fragment>\n\tmetalnessFactor = vSurf.y;');
+          '#include <metalnessmap_fragment>\n\tmetalnessFactor = vSurf.y;')
+        // `lights_physical_fragment` is where `material.clearcoat` is seeded from
+        // the uniform; scale it there and every downstream term follows.
+        .replace('#include <lights_physical_fragment>',
+          '#include <lights_physical_fragment>\n'
+          + '\t#ifdef USE_CLEARCOAT\n\t\tmaterial.clearcoat *= vSurf.z;\n\t#endif')
+        // `lights_fragment_maps` is where the probe is sampled. Scaling here is
+        // identical to a per-class `envMapIntensity` without a second material.
+        .replace('#include <lights_fragment_maps>',
+          '#include <lights_fragment_maps>\n'
+          + '\t#if defined( RE_IndirectDiffuse ) && defined( USE_ENVMAP ) && defined( ENVMAP_TYPE_CUBE_UV )\n'
+          + '\t\tiblIrradiance *= vSurf.w;\n\t#endif\n'
+          + '\t#if defined( RE_IndirectSpecular ) && defined( USE_ENVMAP )\n'
+          + '\t\tradiance *= vSurf.w;\n'
+          + '\t\t#ifdef USE_CLEARCOAT\n\t\t\tclearcoatRadiance *= vSurf.w;\n\t\t#endif\n\t#endif');
     };
-    m.customProgramCacheKey = () => 'propSurf';
+    m.customProgramCacheKey = () => 'propSurfV2';
     return m;
   };
 
@@ -815,11 +867,17 @@ export function getPropMaterials(ctx) {
 
   const M = {
     // The workhorse: every opaque prop surface. Albedo from vertex colour,
-    // roughness/metalness from aSurf, grain from the shared detail maps.
-    surf: A.material('prop_surf', () => patchSurf(wet(new THREE.MeshStandardMaterial({
+    // roughness/metalness/clearcoat/env from aSurf, grain from the shared
+    // detail maps. Physical rather than Standard ONLY so the clearcoat lobe
+    // exists to be switched on per class; `clearcoat`/`envMapIntensity` here are
+    // ceilings that `aSurf.z`/`aSurf.w` scale, and every class except `carPaint`
+    // scales them to nothing. clearcoatRoughness is left unmapped so the
+    // highlight is a clean sharp lobe rather than the fbm grain the base carries.
+    surf: A.material('prop_surf', () => patchSurf(wet(new THREE.MeshPhysicalMaterial({
       map: grimeTex, roughnessMap: roughTex, normalMap: normTex,
       normalScale: new THREE.Vector2(0.45, 0.45),
       roughness: 1.0, metalness: 1.0, vertexColors: true,
+      clearcoat: 1.0, clearcoatRoughness: 0.06,
     })))),
     // Retroreflective sign faces off the shared atlas.
     sign: A.material('prop_sign', () => wet(new THREE.MeshStandardMaterial({
@@ -1736,7 +1794,10 @@ function buildSnowBank() {
  * drops straight into the prop pipeline's shared surface/sign/glass materials.
  */
 const CAR_SLOT = {
-  paint: 'paint', glass: 'glass', glassDark: 'glass', chrome: 'chrome',
+  // `carPaint`, not `paint`: the `paint` class is also the hydrant bonnet, the
+  // bench slat, the BigBelly shell and the bollard, and none of those is
+  // lacquered. Only the body loft goes on the glossy class.
+  paint: 'carPaint', glass: 'glass', glassDark: 'glass', chrome: 'chrome',
   trimDark: 'rough', trim: 'rough', under: 'rough', tire: 'rough',
   interior: 'rough', lensRed: 'paint', lensClear: 'chrome', gap: 'rough',
 };
