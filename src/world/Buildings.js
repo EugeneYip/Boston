@@ -650,6 +650,11 @@ export default class Buildings {
    * Beacon Hill lanes really have) and only drop the bow if that is still not
    * enough: an empty pavement is a tech-demo tell, but so is a missing bowfront.
    * `spec` is shared by LOD 0, LOD 1 and the shell, so all three stay identical.
+   *
+   * Bays are measured here too. A bay over the *pavement* is authentic — every
+   * South End block has them — but its cornice carries roughly half a metre past
+   * the bay face, and reaching the carriageway with it would trade the Boston
+   * read for a building standing in the road.
    */
   _fitOrnament(spec) {
     const near = this._roadIndex?.nearestEdge;
@@ -657,7 +662,10 @@ export default class Buildings {
     let bow = (spec.bow && !spec.shop) ? 0.95 + spec.rnd(6001) * 0.5 : 0;
     const runOf = (rise) => Math.max(3, Math.round(rise / 0.175)) * 0.30 + 0.08;
     let run = (spec.hasStoop && spec.stoopH > 0.5) ? runOf(spec.stoopH) : 0;
-    const want = bow + run;
+    // `bayFront` carries a cornice `St.cornice * 0.45 + (St.cornice * 0.9 + 0.2)/2`
+    // past the bay face; 0.55 covers the deepest cornice in the catalogue.
+    const bayTip = spec.bay ? spec.bayProj + 0.55 : 0;
+    const want = Math.max(bow + run, bayTip);
     if (want <= 0) return;
 
     // How far each street face may project before its tip is on a carriageway.
@@ -689,6 +697,12 @@ export default class Buildings {
       run = runOf(spec.stoopH);
     }
     if (bow + run > avail && bow > 0) { spec.bow = false; bow = 0; }
+    if (spec.bay && bayTip > avail) {
+      const pr = avail - 0.55;
+      // Below ~0.35 m it is a moulding, not a bay; drop it rather than fake it.
+      if (pr >= 0.35) spec.bayProj = pr;
+      else { spec.bay = false; spec.bayProj = 0; }
+    }
     this._clipStats.trimmed++;
   }
 

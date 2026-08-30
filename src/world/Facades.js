@@ -33,7 +33,7 @@ const STYLES = {
     trim: 'trim_stone', roof: 'roof_tar',
     tone: [[1.00, 0.92, 0.82], [0.88, 0.80, 0.72], [1.06, 0.98, 0.88], [0.80, 0.74, 0.70]],
     winKind: 1, winW: 1.22, winH: 2.20, sillH: 0.78, reveal: 0.20,
-    bow: 0.55, mansard: 0.62, stoop: 1.0, basement: true, shop: 0.05,
+    bow: 0.42, bay: 0.62, mansard: 0.62, stoop: 1.0, basement: true, shop: 0.05,
     cornice: 0.46, stringCourse: true, arched: 0.45, chimneys: 2,
     facStrip: 'fac_brownstone',
   },
@@ -44,7 +44,7 @@ const STYLES = {
     trim: 'trim_stone', roof: 'roof_tar',
     tone: [[1.00, 0.94, 0.90], [0.90, 0.84, 0.80], [1.08, 1.00, 0.94], [0.96, 0.94, 0.92]],
     winKind: 0, winW: 1.02, winH: 1.86, sillH: 0.82, reveal: 0.14,
-    bow: 0.14, mansard: 0.10, stoop: 0.85, basement: true, shop: 0.10,
+    bow: 0.08, bay: 0.20, mansard: 0.10, stoop: 0.85, basement: true, shop: 0.10,
     cornice: 0.24, shutters: 0.72, fanlight: true, dormers: 0.55,
     purple: 0.10, gaslamp: 0.8, bootScraper: true, chimneys: 2,
     facStrip: 'fac_brick',
@@ -56,7 +56,7 @@ const STYLES = {
     trim: 'trim_stone', roof: 'roof_tar',
     tone: [[0.94, 0.88, 0.84], [0.84, 0.80, 0.78], [1.04, 0.96, 0.88], [0.98, 0.96, 0.92]],
     winKind: 1, winW: 1.08, winH: 1.90, sillH: 0.86, reveal: 0.16,
-    bow: 0.04, mansard: 0.05, stoop: 0.15, shop: 0.78, awning: 0.70,
+    bow: 0.04, bay: 0.16, mansard: 0.05, stoop: 0.15, shop: 0.78, awning: 0.70,
     cornice: 0.38, fireEscape: 0.82, waterTank: 0.30, laundry: 0.45, chimneys: 1,
     facStrip: 'fac_brick',
   },
@@ -67,7 +67,7 @@ const STYLES = {
     trim: 'trim_stone', roof: 'roof_tar',
     tone: [[0.98, 0.92, 0.88], [0.88, 0.82, 0.80], [1.06, 0.98, 0.90], [0.94, 0.88, 0.82]],
     winKind: 1, winW: 1.16, winH: 2.06, sillH: 0.80, reveal: 0.18,
-    bow: 0.62, mansard: 0.36, stoop: 0.95, basement: true, shop: 0.14,
+    bow: 0.30, bay: 0.78, mansard: 0.36, stoop: 0.95, basement: true, shop: 0.14,
     cornice: 0.40, stringCourse: true, chimneys: 2,
     facStrip: 'fac_brick',
   },
@@ -122,7 +122,7 @@ const STYLES = {
     trim: 'wood_white', roof: 'slate',
     tone: [[1.00, 0.99, 0.96], [0.96, 0.92, 0.84], [0.86, 0.90, 0.94]],
     winKind: 0, winW: 1.02, winH: 1.78, sillH: 0.84, reveal: 0.13,
-    bow: 0.25, mansard: 0, stoop: 0.9, porch: true, hipRoof: true,
+    bow: 0.10, bay: 0.66, mansard: 0, stoop: 0.9, porch: true, hipRoof: true,
     cornice: 0.30, shutters: 0.35, chimneys: 1,
     facStrip: 'fac_brick',
   },
@@ -133,7 +133,7 @@ const STYLES = {
     trim: 'trim_stone', roof: 'roof_gravel',
     tone: [[0.90, 0.86, 0.84], [1.00, 0.99, 0.96], [0.94, 0.94, 0.92], [0.98, 0.92, 0.86]],
     winKind: 1, winW: 1.62, winH: 2.30, sillH: 0.82, reveal: 0.22,
-    bow: 0, mansard: 0.08, stoop: 0, shop: 0.85, awning: 0.35,
+    bow: 0, bay: 0.12, mansard: 0.08, stoop: 0, shop: 0.85, awning: 0.35,
     cornice: 0.46, fireEscape: 0.2, chimneys: 0,
     facStrip: 'fac_stone',
   },
@@ -290,6 +290,69 @@ const ROOF_PATCH = ['roof_tar', 'roof_gravel', 'concrete', 'metal_rust', 'paint_
  */
 const ROOF_UNIT_SCALE = (area) => Math.min(2.4, 0.90 + area / 700);
 
+/* -------------------------------------------------------------------------- */
+/* Keeping ornament on the building                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Pull a point back inside a polygon along the ray from its centroid.
+ *
+ * Every roof item — bulkhead, HVAC unit, duct, vent, water tank, dish, skylight,
+ * mast, chimney — used to be placed uniformly inside the deck's **axis-aligned
+ * bounding box**. That is only the roof for a parcel whose sides happen to run
+ * north/south. Boston's do not: Back Bay runs 14 deg off the cardinals, the North
+ * End runs every which way, and a corridor clip leaves trapezoids. Measured over
+ * a 425-building sample, 71,001 emitted vertices sat outside their own footprint,
+ * the worst by **18.65 m** — packaged air-conditioning units and antenna masts
+ * hanging in mid-air beside the roofline. The always-resident LOD-2 shell placed
+ * them the same way, so they were in every distant frame as well.
+ *
+ * Clamping rather than re-rolling is deliberate: the position stays a pure
+ * function of the same hash keys, so LOD 0, LOD 1 and the shell still resolve the
+ * identical item at the identical spot, which is what stops roofs reshuffling as
+ * you approach. `pad` keeps the item's own half-size clear of the parapet.
+ *
+ * Results land in `_fitX` / `_fitZ` — module scope, because this runs inside the
+ * streaming build and must not allocate.
+ */
+let _fitX = 0, _fitZ = 0;
+function fitInPoly(poly, cx, cz, x, z, pad) {
+  const vx = x - cx, vz = z - cz;
+  // Slide along centroid -> target until the point is `pad` clear of every edge
+  // *line*. Perpendicular clearance, not ray length: a ray can leave a long thin
+  // roof through the far end while running within centimetres of a long side.
+  let t = 1;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    let nx = b.z - a.z, nz = -(b.x - a.x);
+    const L = Math.hypot(nx, nz);
+    if (L < 1e-9) continue;
+    nx /= L; nz /= L;
+    let d0 = (cx - a.x) * nx + (cz - a.z) * nz;
+    let dv = vx * nx + vz * nz;
+    if (d0 < 0) { d0 = -d0; dv = -dv; }        // make the normal point inward
+    if (dv >= -1e-9) continue;                 // moving away from this edge
+    const lim = (pad - d0) / dv;
+    if (lim < t) t = lim;
+  }
+  if (!(t > 0)) t = 0;
+  _fitX = cx + vx * t; _fitZ = cz + vz * t;
+}
+
+/** Distance from `(cx,cz)` to the nearest edge line — how big an item may be. */
+function inRadius(poly, cx, cz) {
+  let best = Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    const ex = b.x - a.x, ez = b.z - a.z;
+    const L = Math.hypot(ex, ez);
+    if (L < 1e-9) continue;
+    const d = Math.abs((cx - a.x) * (ez / L) - (cz - a.z) * (ex / L));
+    if (d < best) best = d;
+  }
+  return Number.isFinite(best) ? best : 0;
+}
+
 /**
  * Rooftop masts, shared by every tier so the distant shell puts the same mast in
  * the same place at the same height as the detailed mesh.
@@ -437,8 +500,50 @@ export function makeSpec(plot, baseY, seed) {
     front.add(best);
   }
 
+  /* ---- Per-building setback jitter ------------------------------------ *
+   * `754747a` put every facade on the frontage line and it worked — 86.6% of
+   * buildings now address the street — but it over-corrected: the streetwall
+   * came out flush to a 0.03 m per-street standard deviation. No real block is
+   * that regular. Houses step, corner buildings hold the line, and the ones that
+   * step back put an areaway in the gap.
+   *
+   * Only the FRONT edge moves, and only backwards. Moving the whole footprint
+   * would open a slot between party walls; moving the front edge shortens the
+   * flanks instead, so the row keeps its shared sides and gains a step at the
+   * street corner — which is what a real row does. Backwards only, because
+   * forwards is the pavement.
+   */
+  let setbackJit = 0;
+  if (front.size && front.size < poly.length) {
+    let mx = 0, mz = 0, nf = 0;
+    for (const i of front) {
+      const p0 = poly[i], p1 = poly[(i + 1) % poly.length];
+      mx += (p0.x + p1.x) * 0.5; mz += (p0.z + p1.z) * 0.5; nf++;
+    }
+    mx /= nf; mz /= nf;
+    // One component correlated over ~40 m, so a run of houses shares a building
+    // line; one per house; and a rare deeper step.
+    const blk = hash2(Math.round(mx / 41) | 0, Math.round(mz / 41) | 0);
+    const own = hash2(seed | 0, 3307);
+    const deep = hash2(seed | 0, 3308) < 0.10 ? 0.55 + hash2(seed | 0, 3309) * 0.95 : 0;
+    setbackJit = Math.min(0.10 + blk * 0.55 + own * 0.45 + deep,
+      0.22 * Math.min(w, d));            // never eat a small parcel
+    const ox = new Float64Array(poly.length), oz = new Float64Array(poly.length);
+    for (const i of front) {
+      const j = (i + 1) % poly.length;
+      const p0 = poly[i], p1 = poly[j];
+      const ex = p1.x - p0.x, ez = p1.z - p0.z;
+      const L = Math.hypot(ex, ez) || 1;
+      const inx = (-ez / L) * setbackJit, inz = (ex / L) * setbackJit;
+      ox[i] += inx; oz[i] += inz; ox[j] += inx; oz[j] += inz;
+    }
+    // New point objects, never a mutation: `poly` may alias the city's own parcel
+    // ring, which props, traffic and the minimap all read.
+    poly = poly.map((p, i) => ({ x: p.x + ox[i], z: p.z + oz[i] }));
+  }
+
   const spec = {
-    poly, base: baseY, style: styleName, S: St,
+    poly, base: baseY, style: styleName, S: St, setbackJit,
     storeys, storeyH, groundH, h, area, seed,
     wallSurf, wallCol, trimSurf: St.trim,
     trimCol: [0.98 + r() * 0.06, 0.97 + r() * 0.05, 0.94 + r() * 0.06],
@@ -468,6 +573,16 @@ export function makeSpec(plot, baseY, seed) {
   };
   spec.hasStoop = r() < (St.stoop || 0) && !spec.shop;
   if (spec.hasStoop) spec.base += 0;    // stoop rises from grade, mass starts above
+
+  // Square/canted bay, and the areaway that fills the setback in front of it.
+  // Keyed off `spec.rnd`, never the sequential `r()`, so adding them leaves every
+  // pre-existing roll in this function bit-for-bit unchanged — and so LOD 0,
+  // LOD 1 and `Buildings._fitOrnament` all resolve the same bay.
+  spec.bay = !spec.bow && !spec.shop && (St.bay || 0) > 0 && w * d > 40
+    && spec.rnd(8100) < St.bay;
+  spec.bayProj = spec.bay ? 0.72 + spec.rnd(8101) * 0.42 : 0;
+  spec.bayFromGround = spec.bay && !St.basement;
+  spec.areaway = setbackJit > 0.42 && !spec.shop && !!St.basement;
 
   // Roof surface, tone and re-covered field. Keyed off `spec.rnd` rather than the
   // sequential `r()` so every tier — LOD 0, LOD 1 and the always-resident shell —
@@ -871,6 +986,12 @@ function entrance(mb, gb, e, u, y0, spec, lod) {
   const rot = Math.atan2(e.nx, e.nz);
   const dw = 1.12, dh = 2.35;
   const dep = 0.42;
+  // The entablature over the door is dw + 0.86 wide and the gaslamp hangs another
+  // 0.5 m past it, so a doorway placed at the midpoint of a short wall — a bow
+  // segment is ~1.1 m — used to push its own surround off the end of the facade.
+  const halfSpan = lod === 0 ? 1.10 : dw * 0.5 + 0.30;
+  if (e.L < halfSpan * 2 + 0.1) return;
+  u = Math.min(Math.max(u, halfSpan), e.L - halfSpan);
   const u0 = u - dw * 0.5, u1 = u + dw * 0.5;
   const dy0 = y0 + rise;
 
@@ -990,6 +1111,49 @@ function entrance(mb, gb, e, u, y0, spec, lod) {
   }
 }
 
+/**
+ * The areaway: granite kerb and iron rail along the property line, with the
+ * basement light-well behind it.
+ *
+ * This is what a Boston rowhouse actually puts in front of itself, and it is why
+ * the setback jitter does not read as a suburban gap. A house pulled 0.8 m back
+ * off the pavement with nothing in the gap looks like a mistake; the same house
+ * with a rail on the line and its stoop bridging the well looks like Marlborough
+ * Street. The rail is broken for the steps, which is where a real one stops too.
+ */
+function areaway(mb, e, spec, gapU, gapW) {
+  const off = Math.max(0.22, spec.setbackJit - 0.14);
+  const rot = Math.atan2(e.nx, e.nz);
+  // `_buildSpecs` sets `base = ground - 0.25` so nothing can float; grade is
+  // therefore 0.25 m up. The forecourt is RAISED 0.12 m rather than sunk: a sunk
+  // well would need a hole in the terrain, which belongs to another system, and
+  // a floor at grade would z-fight the ground mesh.
+  const g = spec.base + 0.25;
+  const IRON = [0.20, 0.20, 0.21];
+  const runs = [[0.07, Math.min(gapU - gapW * 0.5, e.L - 0.07)],
+                [Math.max(gapU + gapW * 0.5, 0.07), e.L - 0.07]];
+  for (const [r0, r1] of runs) {
+    const L = r1 - r0;
+    if (L < 0.7) continue;
+    const c = P(e, (r0 + r1) * 0.5, 0, off);
+    // Granite retaining kerb on the property line, buried 0.24 m, showing 0.12 m.
+    mb.box(c[0], g - 0.06, c[2], L, 0.36, 0.30, rot, 'granite', [0.74, 0.73, 0.70]);
+    // The forecourt slab behind it.
+    mb.quadAuto(P(e, r0, g + 0.12, 0.02), P(e, r1, g + 0.12, 0.02),
+      P(e, r1, g + 0.12, off), P(e, r0, g + 0.12, off),
+      0, 1, 0, [0, 0, L / 2, 0, L / 2, off / 2, 0, off / 2],
+      [0.66, 0.65, 0.62], 'granite');
+    // Iron rail on the kerb: the single most recognisable thing on a Back Bay
+    // frontage after the bow itself.
+    mb.box(c[0], g + 1.02, c[2], L, 0.07, 0.07, rot, 'metal_dark', IRON);
+    const n = Math.max(1, Math.round(L / 1.35));
+    for (let i = 0; i <= n; i++) {
+      const pp = P(e, r0 + (L * i) / n, 0, off);
+      mb.box(pp[0], g + 0.58, pp[2], 0.05, 1.00, 0.05, rot, 'metal_dark', IRON);
+    }
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Fire escapes — the North End's signature                                   */
 /* -------------------------------------------------------------------------- */
@@ -997,7 +1161,13 @@ function entrance(mb, gb, e, u, y0, spec, lod) {
 function fireEscape(mb, e, u, spec, lod) {
   const y0 = spec.base + spec.groundH;
   const rot = Math.atan2(e.nx, e.nz);
-  const pw = 2.30, pd = 1.05;
+  // A 2.30 m platform on a 1.1 m bow segment or a narrow North End frontage used
+  // to hang half a metre past the corner of the building. Fit it to the wall it
+  // is bolted to, and centre it there.
+  const pd = 1.05;
+  const pw = Math.min(2.30, e.L - 0.24);
+  if (pw < 0.9) return;
+  u = Math.min(Math.max(u, pw * 0.5 + 0.12), e.L - pw * 0.5 - 0.12);
   const proj = pd * 0.5 + 0.06;
   const surf = spec.rnd(4001) < 0.4 ? 'metal_rust' : 'metal_dark';
   const col = surf === 'metal_rust' ? [0.9, 0.85, 0.8] : [0.30, 0.31, 0.32];
@@ -1021,14 +1191,15 @@ function fireEscape(mb, e, u, spec, lod) {
         const sp = P(e, u + side * pw * 0.5, 0, proj);
         mb.box(sp[0], py + 0.55, sp[2], 0.035, 1.05, pd, rot, surf, col);
       }
-      // stair stringers to the platform above
+      // stair stringers to the platform above, kept inside the platform's own width
       const sy = py + spec.storeyH;
-      const sx = P(e, u + pw * 0.28, 0, proj);
+      const stairU = Math.min(u + pw * 0.28, u + pw * 0.5 - 0.33);
+      const sx = P(e, stairU, 0, proj);
       const run = spec.storeyH;
       mb.box(sx[0], (py + sy) * 0.5 + 0.30, sx[2], 0.06, run * 1.02, 0.10, rot, surf, col);
       for (let st = 0; st < 4; st++) {
         const t = st / 4;
-        const stp = P(e, u + pw * 0.28, 0, proj + (t - 0.5) * pd * 0.55);
+        const stp = P(e, stairU, 0, proj + (t - 0.5) * pd * 0.55);
         mb.box(stp[0], py + 0.16 + t * (spec.storeyH - 0.2), stp[2], 0.62, 0.04, 0.22,
           rot, surf, col);
       }
@@ -1039,14 +1210,19 @@ function fireEscape(mb, e, u, spec, lod) {
   }
   // drop ladder hanging over the street
   if (lod === 0) {
-    const lp = P(e, u + pw * 0.28, 0, proj);
+    const lp = P(e, Math.min(u + pw * 0.28, u + pw * 0.5 - 0.28), 0, proj);
     mb.box(lp[0], y0 - 1.35, lp[2], 0.52, 2.7, 0.06, rot, surf, col);
   }
-  // laundry line strung off the escape
+  // Laundry line strung off the escape. The far end used to be pinned a flat
+  // 4.6 m along the edge; a North End frontage is 7 m and the escape sits at its
+  // middle, so on nearly every tenement the line and five shirts ran a metre or
+  // more past the corner of the building and hung in open sky.
   if (spec.laundry && lod === 0) {
     const ly = y0 + spec.storeyH * 1.1;
+    const far = Math.min(u + 4.6, e.L - 0.15);
+    if (far - (u - pw * 0.5) < 1.6) return;
     const a = P(e, u - pw * 0.5, ly, proj);
-    const b = P(e, u + 4.6, ly + 0.5, 0.25);
+    const b = P(e, far, ly + 0.5, 0.25);
     mb.box((a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, (a[2] + b[2]) * 0.5,
       Math.hypot(b[0] - a[0], b[2] - a[2]), 0.03, 0.03,
       Math.atan2(b[0] - a[0], b[2] - a[2]) + Math.PI / 2, 'metal_dark', [0.4, 0.4, 0.4]);
@@ -1088,14 +1264,25 @@ function roofClutter(mb, poly, y, spec, lod) {
   if (w < 3 || d < 3) return;
   const area = w * d;
   const inset = 1.3;
+  const ctr = polyCentroid(poly);
+  // `ROOF_UNIT_SCALE` reads the *bounding box*, which on a rotated Back Bay
+  // parcel is nearly twice the roof. That grew a 3.4 m packaged unit on a 7.6 m
+  // rowhouse deck, and no amount of repositioning makes an item that is wider
+  // than the roof sit on it. Cap every footprint by the deck's own inradius.
+  const rin = Math.max(0.3, inRadius(poly, ctr.x, ctr.z));
+  const lim = Math.max(0.45, rin * 1.32 - 0.34);
   const rx = () => minX + inset + r() * Math.max(0.1, w - inset * 2);
   const rz = () => minZ + inset + r() * Math.max(0.1, d - inset * 2);
+  /** Draw a bbox position (same keys as ever) and pull it onto the actual deck. */
+  const site = (pad) => { const sx = rx(), sz = rz(); fitInPoly(poly, ctr.x, ctr.z, sx, sz, pad); };
 
   // roof access bulkhead — every flat roof in the city has one
   kk = 0;
   if (area > 55) {
-    const bw = 2.0 + r() * 1.1, bd = 2.2 + r() * 1.2, bh = 2.35 + r() * 0.5;
-    const bx = rx(), bz = rz();
+    const bw = Math.min(2.0 + r() * 1.1, lim), bd = Math.min(2.2 + r() * 1.2, lim),
+          bh = 2.35 + r() * 0.5;
+    site(Math.hypot(bw + 0.18, bd + 0.18) * 0.5);
+    const bx = _fitX, bz = _fitZ;
     mb.box(bx, y + bh * 0.5, bz, bw, bh, bd, r() * 3.14, 'brick_dark', [0.86, 0.82, 0.80]);
     mb.box(bx, y + bh + 0.06, bz, bw + 0.18, 0.12, bd + 0.18, 0, 'metal_dark', [0.4, 0.4, 0.4]);
   }
@@ -1108,9 +1295,11 @@ function roofClutter(mb, poly, y, spec, lod) {
     ? Math.min(7, Math.max(1, Math.floor(area / 140) + (r() < 0.5 ? 1 : 0)))
     : Math.min(4, Math.max(1, Math.floor(area / 200)));
   for (let i = 0; i < hn; i++) {
-    const uw = (1.1 + r() * 1.5) * usc, ud = (0.9 + r() * 1.1) * usc,
+    const uw = Math.min((1.1 + r() * 1.5) * usc, lim),
+          ud = Math.min((0.9 + r() * 1.1) * usc, lim),
           uh = (0.75 + r() * 0.7) * Math.min(1.7, usc);
-    const ux = rx(), uz = rz();
+    site(Math.hypot(uw + 0.3, ud + 0.3) * 0.5);
+    const ux = _fitX, uz = _fitZ;
     const rot = r() < 0.5 ? 0 : Math.PI / 2;
     mb.box(ux, y + uh * 0.5 + 0.12, uz, uw, uh, ud, rot, 'metal_panel', [0.85, 0.86, 0.88]);
     mb.box(ux, y + 0.06, uz, uw + 0.3, 0.12, ud + 0.3, rot, 'metal_dark', [0.35, 0.35, 0.35]);
@@ -1126,9 +1315,10 @@ function roofClutter(mb, poly, y, spec, lod) {
   // reads as a shape rather than a speck at LOD 1 distance, so keep it there.
   kk = 120;
   if (lod < 2 && area > 120) {
-    const dx0 = rx(), dz0 = rz();
-    const len = (2 + r() * 5) * usc;
-    mb.box(dx0, y + 0.55, dz0, len, 0.42 * usc, 0.42 * usc, r() < 0.5 ? 0 : Math.PI / 2,
+    const dx0raw = rx(), dz0raw = rz();
+    const len = Math.min((2 + r() * 5) * usc, rin * 1.7);
+    fitInPoly(poly, ctr.x, ctr.z, dx0raw, dz0raw, len * 0.52);
+    mb.box(_fitX, y + 0.55, _fitZ, len, 0.42 * usc, 0.42 * usc, r() < 0.5 ? 0 : Math.PI / 2,
       'metal_panel', [0.8, 0.82, 0.84]);
   }
   // vent stacks
@@ -1136,13 +1326,16 @@ function roofClutter(mb, poly, y, spec, lod) {
   const vn = lod === 0 ? 2 + Math.floor(r() * 4) : 2;
   for (let i = 0; i < vn; i++) {
     const vh = 0.5 + r() * 1.5;
-    mb.box(rx(), y + vh * 0.5, rz(), 0.16, vh, 0.16, 0, 'metal_dark', [0.45, 0.44, 0.42]);
+    site(0.2);
+    mb.box(_fitX, y + vh * 0.5, _fitZ, 0.16, vh, 0.16, 0, 'metal_dark', [0.45, 0.44, 0.42]);
   }
   // rooftop water tank on a steel cradle
   kk = 170;
   if (spec.waterTank && area > 90 && lod === 0) {
-    const tx = rx(), tz = rz();
-    const legH = 1.9, tr = 1.5, th = 2.8;
+    const tr = Math.min(1.5, rin * 0.62);
+    site(tr * 1.18);
+    const tx = _fitX, tz = _fitZ;
+    const legH = 1.9, th = 2.8;
     for (const [ox, oz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
       mb.box(tx + ox * tr * 0.6, y + legH * 0.5, tz + oz * tr * 0.6, 0.12, legH, 0.12,
         0, 'metal_dark', [0.35, 0.34, 0.33]);
@@ -1168,7 +1361,8 @@ function roofClutter(mb, poly, y, spec, lod) {
   if (lod === 0) {
     const dn = Math.floor(r() * 3);
     for (let i = 0; i < dn; i++) {
-      const dx0 = rx(), dz0 = rz();
+      site(0.65);
+      const dx0 = _fitX, dz0 = _fitZ;
       mb.box(dx0, y + 0.55, dz0, 0.08, 1.1, 0.08, 0, 'metal_dark', [0.5, 0.5, 0.5]);
       const dr = 0.34 + r() * 0.22;
       const dish = [];
@@ -1181,9 +1375,12 @@ function roofClutter(mb, poly, y, spec, lod) {
     }
     // skylights
     if (r() < 0.45 && area > 80) {
-      const sx = rx(), sz = rz();
-      mb.box(sx, y + 0.20, sz, 1.2, 0.34, 0.9, 0, 'metal_dark', [0.35, 0.35, 0.36]);
-      mb.box(sx, y + 0.40, sz, 1.05, 0.06, 0.76, 0, 'spandrel', [0.75, 0.85, 0.95], 0.12);
+      const kw = Math.min(1.2, lim), kd = Math.min(0.9, lim);
+      site(Math.hypot(kw, kd) * 0.5);
+      const sx = _fitX, sz = _fitZ;
+      mb.box(sx, y + 0.20, sz, kw, 0.34, kd, 0, 'metal_dark', [0.35, 0.35, 0.36]);
+      mb.box(sx, y + 0.40, sz, kw * 0.88, 0.06, kd * 0.84, 0, 'spandrel',
+        [0.75, 0.85, 0.95], 0.12);
     }
   }
   // Rooftop mast. This is a SILHOUETTE element, not clutter: masts and the
@@ -1194,25 +1391,46 @@ function roofClutter(mb, poly, y, spec, lod) {
   // tower ended in the same flat parapet line.
   kk = 240;
   if (lod < 2 && area > 240 && r() < mastChance(spec)) {
-    const mx = rx(), mz = rz();
+    site(0.4);
+    const mx = _fitX, mz = _fitZ;
     const mh = mastHeight(spec, r());
     mb.box(mx, y + mh * 0.5, mz, 0.16, mh, 0.16, 0, 'metal_dark', [0.4, 0.4, 0.42]);
     mb.box(mx, y + mh * 0.62, mz, 0.62, 0.07, 0.62, 0, 'metal_dark', [0.4, 0.4, 0.42]);
     mb.box(mx, y + mh, mz, 0.42, 0.06, 0.42, 0, 'metal_dark', [0.4, 0.4, 0.42]);
   }
   // chimneys — kept at every LOD, they define a rowhouse roofline
-  kk = 260;
   const cn = spec.S.chimneys || 0;
+  const csc = chimneyScale(rin);
   for (let i = 0; i < cn; i++) {
-    const cx = minX + inset + (i + 0.5) / cn * Math.max(0.2, w - inset * 2);
-    const cz = minZ + d * (0.18 + r() * 0.1);
-    const ch = 1.5 + r() * 1.3;
-    mb.box(cx, y + ch * 0.5, cz, 0.85, ch, 0.62, 0, 'brick_dark', [0.88, 0.84, 0.82]);
-    mb.box(cx, y + ch + 0.06, cz, 0.98, 0.12, 0.75, 0, 'trim_stone', [0.85, 0.84, 0.8]);
+    chimneySite(poly, ctr, minX, minZ, w, d, inset, i, cn, r0, csc);
+    const ch = 1.5 + r0(261 + i * 2) * 1.3;
+    mb.box(_fitX, y + ch * 0.5, _fitZ, 0.85 * csc, ch, 0.62 * csc, 0,
+      'brick_dark', [0.88, 0.84, 0.82]);
+    mb.box(_fitX, y + ch + 0.06, _fitZ, 0.98 * csc, 0.12, 0.75 * csc, 0,
+      'trim_stone', [0.85, 0.84, 0.8]);
     if (lod === 0) {
-      mb.box(cx, y + ch + 0.38, cz, 0.62, 0.55, 0.22, 0, 'terracotta', [0.9, 0.62, 0.45]);
+      mb.box(_fitX, y + ch + 0.38, _fitZ, 0.62 * csc, 0.55, 0.22 * csc, 0,
+        'terracotta', [0.9, 0.62, 0.45]);
     }
   }
+}
+
+/** A chimney narrow enough for the ridge it stands on. */
+function chimneyScale(rin) { return Math.min(1, rin / 0.63); }
+
+/**
+ * Chimney i of n, on the deck rather than in its bounding box.
+ *
+ * Explicitly keyed (`260 + 2i`, `261 + 2i`) instead of walking a running counter.
+ * The shell used to key its chimneys `261 + 3i` / `262 + 3i` against the detailed
+ * tiers' `260 + i*2`, so a chimney was in a different place and a different height
+ * in the shell than in the mesh drawn over it — visible as a doubled chimney
+ * wherever an LOD-1 chunk left the shell showing through.
+ */
+function chimneySite(poly, ctr, minX, minZ, w, d, inset, i, cn, r0, csc) {
+  const cx = minX + inset + (i + 0.5) / cn * Math.max(0.2, w - inset * 2);
+  const cz = minZ + d * (0.18 + r0(260 + i * 2) * 0.1);
+  fitInPoly(poly, ctr.x, ctr.z, cx, cz, Math.hypot(0.98, 0.75) * 0.5 * csc);
 }
 
 /**
@@ -1331,19 +1549,27 @@ function hipRoof(mb, poly, y, spec) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Bowfronts                                                                  */
+/* Bowfronts and bays                                                         */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Replace the middle of a street edge with a shallow arc. Back Bay and the
- * South End are unreadable without this.
+ * Replace part of a street edge with a shallow arc. Back Bay and the South End
+ * are unreadable without this.
+ *
+ * `t0..t1` is the span of the frontage the bow occupies. It used to be pinned at
+ * 0.16..0.84 — dead centre, leaving 1.3 m of flat wall at each end of an 8.3 m
+ * frontage. That is narrower than the front door, so on every bowfront in the
+ * city the doorway, its pilasters, its 1.98 m entablature and its stoop were
+ * emitted across a 1.15 m arc segment and overhung it at both ends. A real Back
+ * Bay rowhouse is a bow **beside** an entry bay, not a bow with a door punched
+ * through the middle of it, so the arc is now pushed to one end and the entry
+ * bay gets the ~2.9 m of flat wall it actually needs.
  */
-function bowPolyline(a, b, proj) {
+function bowPolyline(a, b, proj, t0, t1) {
   const dx = b.x - a.x, dz = b.z - a.z;
   const L = Math.hypot(dx, dz);
   const ux = dx / L, uz = dz / L;
   const nx = uz, nz = -ux;
-  const t0 = 0.16, t1 = 0.84;
   const pts = [a];
   const segs = 5;
   for (let i = 0; i <= segs; i++) {
@@ -1353,6 +1579,102 @@ function bowPolyline(a, b, proj) {
   }
   pts.push(b);
   return pts;
+}
+
+/**
+ * Where the bow (or the square bay) sits on a frontage, and where the door goes.
+ *
+ * Keyed off the spec hash so LOD 0, LOD 1 and `_fitOrnament` all agree, and so
+ * neighbouring houses mirror each other the way real paired rowhouses do.
+ * @returns {{t0:number, t1:number, entryLeft:boolean}}
+ */
+function frontLayout(spec, L) {
+  // Below ~6.5 m there is no room for both, so the projection stays central and
+  // the door takes what is left.
+  const wide = L > 6.4;
+  const entryLeft = wide && spec.rnd(6003) < 0.5;
+  const share = Math.min(0.66, Math.max(0.40, 1 - 3.05 / L));
+  if (!wide) return { t0: 0.5 - share * 0.5, t1: 0.5 + share * 0.5, entryLeft: false, wide };
+  return entryLeft
+    ? { t0: 1 - share - 0.04, t1: 0.96, entryLeft, wide }
+    : { t0: 0.04, t1: share + 0.04, entryLeft, wide };
+}
+
+/**
+ * A square or canted bay: the South End and Back Bay signature, and the single
+ * biggest Boston authenticity miss the critic found — those rows had none at all.
+ *
+ * Built as a shallow prism bonded to the wall: a mini-facade on the front plane
+ * (real reveals, sills and lintels, from the same `frontStorey` walk as the rest
+ * of the building) and two blind returns with a recessed light in each. The main
+ * facade skips the span the bay covers, so this is close to triangle-neutral —
+ * it moves the wall forward rather than adding a second one in front of it.
+ *
+ * Everything is anchored to `[u0,u1]` of the wall it grows from, so no part of it
+ * can leave the frontage.
+ */
+function bayFront(mb, gb, e, u0, u1, y0, y1, spec, lod) {
+  const St = spec.S;
+  const pr = spec.bayProj;
+  const W = u1 - u0;
+  if (W < 1.5 || y1 - y0 < 1.6 || pr < 0.2) return;
+  const rot = Math.atan2(e.nx, e.nz);
+
+  // Front plane and the two returns, as ordinary edge frames so the outward
+  // normals come out right without a special case anywhere downstream.
+  const fa = { x: e.ax + e.dx * u0 + e.nx * pr, z: e.az + e.dz * u0 + e.nz * pr };
+  const fb = { x: e.ax + e.dx * u1 + e.nx * pr, z: e.az + e.dz * u1 + e.nz * pr };
+  const wa = { x: e.ax + e.dx * u0, z: e.az + e.dz * u0 };
+  const wb = { x: e.ax + e.dx * u1, z: e.az + e.dz * u1 };
+  const ef = edgeFrame(fa, fb);
+  const el = edgeFrame(wa, fa);        // left return, faces -e.d
+  const er = edgeFrame(fb, wb);        // right return, faces +e.d
+
+  // A bay carries two or three lights; force the rhythm rather than inheriting
+  // the parent's bay width, which would put a single window on a 3 m front.
+  const lights = W > 2.7 ? 3 : 2;
+  const bs = Object.create(spec);
+  bs.S = Object.create(St);
+  bs.S.bayW = W / lights;
+  bs.S.winW = Math.min(St.winW, (W / lights) * 0.74);
+  bs.arched = false;
+  bs.shutters = false;
+
+  let y = y0, s = spec.bayFromGround ? 0 : 1;
+  while (y < y1 - 0.4) {
+    // Storey lines must match the flanking facade or the bay's windows sit half a
+    // metre off its neighbours'.
+    const yy = Math.min(y + (s === 0 ? spec.groundH : spec.storeyH), y1);
+    frontStorey(mb, gb, ef, 0, ef.L, y, yy, bs, s, lod);
+    for (const cheek of [el, er]) {
+      band(mb, cheek, 0, cheek.L, y, yy, spec.wallSurf, spec.wallCol, spec.uOff, 0);
+      if (lod === 0 && cheek.L > 0.55) {
+        // A narrow light in the return. Glass costs no shadow triangles.
+        gb.pane(P(cheek, 0.18, y + St.sillH, -0.10), P(cheek, cheek.L - 0.18, y + St.sillH, -0.10),
+          P(cheek, cheek.L - 0.18, Math.min(yy - 0.42, y + St.sillH + St.winH), -0.10),
+          P(cheek, 0.18, Math.min(yy - 0.42, y + St.sillH + St.winH), -0.10),
+          [cheek.nx, 0, cheek.nz], [cheek.dx, 0, cheek.dz],
+          cheek.L, St.winH, 2.4, hash2(spec.seed + 611, s * 91), spec.lit, St.winKind,
+          [0.88, 0.87, 0.83]);
+      }
+    }
+    y = yy; s++;
+  }
+
+  // Cap: a cornice band carried round the bay, then a lid so you cannot see in
+  // from a roof camera.
+  const cd = Math.max(0.22, St.cornice || 0.3);
+  const cp = P(ef, ef.L * 0.5, 0, cd * 0.45);
+  mb.box(cp[0], y1 - 0.22, cp[2], ef.L + 0.20, 0.44, cd * 0.9 + 0.2,
+    rot, spec.trimSurf, spec.trimCol);
+  mb.quadAuto([wa.x, y1, wa.z], [wb.x, y1, wb.z], [fb.x, y1, fb.z], [fa.x, y1, fa.z],
+    0, 1, 0, [0, 0, W, 0, W, pr, 0, pr], spec.roofCol, spec.roofSurf);
+  // Bracketed soffit under an oriel — this is what makes it read as carried
+  // rather than as a box glued to the wall.
+  if (lod === 0 && y0 > spec.base + 0.05) {
+    const sp = P(e, (u0 + u1) * 0.5, 0, pr * 0.5);
+    mb.box(sp[0], y0 - 0.16, sp[2], W, 0.24, pr + 0.1, rot, spec.trimSurf, spec.trimCol);
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1394,9 +1716,15 @@ export function buildBuilding(spec, mb, gb, lod) {
     for (let i = 0; i < m; i++) {
       const a = sp[i], b = sp[(i + 1) % m];
       const isFront = si === 0 && spec.front.has(i);
-      // Bowfront: swap the flat street edge for an arc.
+      // Bowfront: swap part of the flat street edge for an arc, pushed to one end
+      // so the entry bay beside it is wide enough for a door and its surround.
+      const chord = Math.hypot(b.x - a.x, b.z - a.z);
+      const lay = isFront && (spec.bow || spec.bay) ? frontLayout(spec, chord) : null;
       const line = (isFront && spec.bow && !spec.shop)
-        ? bowPolyline(a, b, 0.95 + spec.rnd(6001) * 0.5) : [a, b];
+        ? bowPolyline(a, b, 0.95 + spec.rnd(6001) * 0.5, lay.t0, lay.t1) : [a, b];
+      // Which sub-segment carries the front door: the flat entry bay, never the
+      // middle of the arc.
+      const entryK = line.length === 2 ? 0 : (lay && lay.entryLeft ? 0 : line.length - 2);
 
       for (let k = 0; k < line.length - 1; k++) {
         const e = edgeFrame(line[k], line[k + 1]);
@@ -1405,16 +1733,34 @@ export function buildBuilding(spec, mb, gb, lod) {
           partyWall(mb, gb, e, st.y0, st.y1, spec, lod, si);
           continue;
         }
+        // Square/canted bay: the wall it covers is skipped rather than buried,
+        // so the bay is close to triangle-neutral.
+        // A real Boston bay is ~3 m of a ~8 m frontage, set to one side with the
+        // entry bay beside it — not a bulge across the whole front.
+        const hasBay = spec.bay && line.length === 2 && e.L > 3.2;
+        const bayW = hasBay ? Math.min(3.35, e.L * 0.46) : 0;
+        const bu0 = hasBay ? (lay.entryLeft ? e.L - bayW - 0.35 : 0.35) : 0;
+        const bu1 = bu0 + bayW;
+        const bayY0 = base + (spec.bayFromGround ? 0 : spec.groundH);
         // Street facade: walk the storeys.
         let y = st.y0;
         for (let s = 0; s < spec.storeys; s++) {
           const hgt = s === 0 ? spec.groundH : spec.storeyH;
           const y1 = Math.min(y + hgt, st.y1);
           if (y1 - y < 0.2) break;
+          const skipBay = hasBay && y >= bayY0 - 0.01;
           if (s === 0 && spec.shop && line.length === 2) {
             shopfront(mb, gb, e, 0, e.L, y, y1, spec, lod);
           } else if (St.curtain) {
             curtainStorey(mb, gb, e, 0, e.L, y, y1, spec, s, lod);
+          } else if (skipBay) {
+            // A sub-span narrower than a metre is a pier, not a window bay —
+            // `frontStorey` would fit a 22 cm window into it.
+            for (const [q0, q1] of [[0, bu0], [bu1, e.L]]) {
+              if (q1 - q0 < 0.05) continue;
+              if (q1 - q0 < 1.0) band(mb, e, q0, q1, y, y1, spec.wallSurf, spec.wallCol, spec.uOff, 0);
+              else frontStorey(mb, gb, e, q0, q1, y, y1, spec, s, lod);
+            }
           } else {
             frontStorey(mb, gb, e, 0, e.L, y, y1, spec, s, lod);
             if (St.stringCourse && s === 0 && lod === 0) {
@@ -1426,14 +1772,25 @@ export function buildBuilding(spec, mb, gb, lod) {
           y = y1;
           if (y >= st.y1 - 0.05) break;
         }
+        if (hasBay && bu1 - bu0 > 1.5) {
+          bayFront(mb, gb, e, bu0, bu1, bayY0, st.y1, spec, lod);
+        }
         // Entrance and street furniture only on the true ground stage.
-        if (si === 0 && k === Math.floor((line.length - 1) / 2)) {
+        if (si === 0 && k === entryK) {
           if (spec.hasStoop && !spec.shop) {
-            entrance(mb, gb, e, e.L * (line.length > 2 ? 0.5 : 0.30), base, spec, lod);
+            // Beside the bay when there is one, otherwise a third of the way in.
+            const du = hasBay
+              ? (bu0 > e.L - bu1 ? bu0 * 0.5 : (bu1 + e.L) * 0.5)
+              : e.L * (line.length > 2 ? 0.5 : 0.30);
+            entrance(mb, gb, e, du, base, spec, lod);
+            if (spec.areaway && lod === 0) areaway(mb, e, spec, du, 2.3);
+          } else if (spec.areaway && lod === 0) {
+            areaway(mb, e, spec, -9, 0);
           }
-          if (spec.fireEscape && lod < 2 && spec.storeys > 2) {
-            fireEscape(mb, e, e.L * 0.5, spec, lod);
-          }
+        }
+        if (si === 0 && k === Math.floor((line.length - 1) / 2)
+            && spec.fireEscape && lod < 2 && spec.storeys > 2) {
+          fireEscape(mb, e, e.L * 0.5, spec, lod);
         }
         // Cornice at the top of the stage.
         if (St.cornice && lod < 2) {
@@ -1579,12 +1936,19 @@ function shellRoofKit(mb, poly, y, spec) {
   const area = w * d;
   const inset = 1.3;
   const K = 0.94, DY = 0.30;
+  const ctr = polyCentroid(poly);
+  const rin = Math.max(0.3, inRadius(poly, ctr.x, ctr.z));
+  const lim = Math.max(0.45, rin * 1.32 - 0.34);
   const px = (k) => minX + inset + r0(k) * Math.max(0.1, w - inset * 2);
   const pz = (k) => minZ + inset + r0(k) * Math.max(0.1, d - inset * 2);
+  /** Same keys, same clamp, same result as `roofClutter` — see `fitInPoly`. */
+  const site = (k, pad) => fitInPoly(poly, ctr.x, ctr.z, px(k), pz(k + 1), pad);
 
   if (area > 55) {
-    const bw = 2.0 + r0(0) * 1.1, bd = 2.2 + r0(1) * 1.2, bh = 2.35 + r0(2) * 0.5;
-    mb.box(px(3), y - DY + bh * 0.5, pz(4), bw * K, bh, bd * K, r0(5) * 3.14,
+    const bw = Math.min(2.0 + r0(0) * 1.1, lim), bd = Math.min(2.2 + r0(1) * 1.2, lim),
+          bh = 2.35 + r0(2) * 0.5;
+    site(3, Math.hypot(bw + 0.18, bd + 0.18) * 0.5);
+    mb.box(_fitX, y - DY + bh * 0.5, _fitZ, bw * K, bh, bd * K, r0(5) * 3.14,
       'brick_dark', [0.86, 0.82, 0.80]);
   }
   // Unit count and size must track `roofClutter` or the furniture visibly
@@ -1593,9 +1957,11 @@ function shellRoofKit(mb, poly, y, spec) {
   const hn = Math.min(3, Math.max(1, Math.floor(area / 240)));
   for (let i = 0; i < hn; i++) {
     const k = 20 + i * 6;
-    const uw = (1.1 + r0(k) * 1.5) * usc, ud = (0.9 + r0(k + 1) * 1.1) * usc,
+    const uw = Math.min((1.1 + r0(k) * 1.5) * usc, lim),
+          ud = Math.min((0.9 + r0(k + 1) * 1.1) * usc, lim),
           uh = (0.75 + r0(k + 2) * 0.7) * Math.min(1.7, usc);
-    mb.box(px(k + 3), y - DY + uh * 0.5 + 0.12, pz(k + 4), uw * K, uh, ud * K,
+    site(k + 3, Math.hypot(uw + 0.3, ud + 0.3) * 0.5);
+    mb.box(_fitX, y - DY + uh * 0.5 + 0.12, _fitZ, uw * K, uh, ud * K,
       r0(k + 5) < 0.5 ? 0 : Math.PI / 2, 'metal_panel', [0.85, 0.86, 0.88]);
   }
   // Mast — same keys, same place, same height as `roofClutter`. This is the one
@@ -1604,18 +1970,19 @@ function shellRoofKit(mb, poly, y, spec) {
   // see. Not dropped by `K`/`DY` either — a mast shrunk into the roof would
   // simply disappear.
   if (area > 240 && r0(240) < mastChance(spec)) {
-    const mx = px(241), mz = pz(242);
+    site(241, 0.4);
+    const mx = _fitX, mz = _fitZ;
     const mh = mastHeight(spec, r0(243));
     mb.box(mx, y - DY + mh * 0.5, mz, 0.16, mh, 0.16, 0, 'metal_dark', [0.4, 0.4, 0.42]);
     mb.box(mx, y - DY + mh * 0.62, mz, 0.62, 0.07, 0.62, 0, 'metal_dark', [0.4, 0.4, 0.42]);
     mb.box(mx, y - DY + mh, mz, 0.42, 0.06, 0.42, 0, 'metal_dark', [0.4, 0.4, 0.42]);
   }
   const cn = spec.S.chimneys || 0;
+  const csc = chimneyScale(rin);
   for (let i = 0; i < cn; i++) {
-    const cx = minX + inset + (i + 0.5) / cn * Math.max(0.2, w - inset * 2);
-    const cz = minZ + d * (0.18 + r0(261 + i * 3) * 0.1);
-    const ch = 1.5 + r0(262 + i * 3) * 1.3;
-    mb.box(cx, y - DY + ch * 0.5, cz, 0.85 * K, ch, 0.62 * K, 0,
+    chimneySite(poly, ctr, minX, minZ, w, d, inset, i, cn, r0, csc);
+    const ch = 1.5 + r0(261 + i * 2) * 1.3;
+    mb.box(_fitX, y - DY + ch * 0.5, _fitZ, 0.85 * K * csc, ch, 0.62 * K * csc, 0,
       'brick_dark', [0.88, 0.84, 0.82]);
   }
 }
