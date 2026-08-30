@@ -64,6 +64,22 @@ export default class TrafficSystem {
   an offscreen target and read `info` for that render alone. **Never toggle
   `shadowMap.enabled` or `light.castShadow`** — both change shader defines and
   recompile every material in the scene.
+  **Drain before you record.** After `autoUpdate = false`, each cascade's
+  `needsUpdate` keeps accumulating, so the first frame after re-enabling renders
+  *all* of them and reads ~3.0M. Step ~4 frames before recording a peak; a critic
+  pass reported an inflated breach from exactly this artefact.
+  **Read a peak, not a frame.** Cascades refresh on a round-robin, so per-frame
+  totals are multi-modal — at one point the intervals `[1,2,3,4]` all divided
+  frame 0, so one frame in six carried every cascade while the median carried a
+  third of that. Report peak and mean over ≥24 settled frames.
+  Measured 2026-08-30 at `d925cc1`, both **inside** budget: `night_neon` shadow
+  peak 2.22M / mean 2.03M against a 2.51M camera pass; `st_beaconhill` 1.75M /
+  1.59M against 1.82M. Where the shadow triangles actually come from, attributed
+  per cascade by wrapping `renderBufferDirect`: Buildings LOD-0 chunks 45%, Props
+  34%, the LOD-2 shell 18% — **not** the shell, which two separate analyses had
+  blamed for ~2M. `src/world/Props.js` is now the largest single item: each prop
+  type is one city-wide `InstancedMesh`, so its bounding sphere intersects every
+  cascade and all 400k triangles are submitted to all three every frame.
 - **< 1.5 GB** GPU memory. Textures procedural or <= 1024px, always with mipmaps.
 - No per-frame allocations in `update()`. Reuse scratch vectors (module-scope `_v3`).
 
