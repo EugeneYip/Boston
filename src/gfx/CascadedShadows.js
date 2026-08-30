@@ -254,6 +254,48 @@ export function installLightingShaders() {
   // --- pars: declarations + probe sampler, then the CSM shadow filter -------
   C.shadowmap_pars_fragment = PARS_DECL + pars.replace(GET_SHADOW, CSM_SHADOW_FN + GET_SHADOW);
 
+  /*
+   * --- skip the BRDF for lights that are provably black -------------------
+   *
+   * `LightManager` keeps a FIXED pool of real Point/SpotLights, because changing
+   * the count recompiles every lit material in the scene. Fixed means the shader
+   * unrolls all of them at every fragment for ever — and since the pool is now
+   * clock-gated, all fifteen sit at intensity 0 for the twelve daylight hours.
+   * Three has no early-out: `getPointLightInfo` computes `directLight.visible`
+   * and then calls `RE_Direct` regardless, so every building fragment in a noon
+   * frame was evaluating fifteen full GGX + Lambert BRDFs against `vec3(0.0)`.
+   *
+   * `visible` is `color * distanceAttenuation != 0`, so it is false both for a
+   * light that is switched off (the whole pool, all day) and for any fragment
+   * outside a lit lamp's `distance` (most of the frame, all night). In daylight
+   * the branch is uniform across the entire draw, so there is no divergence at
+   * all; at night it is coherent over large regions.
+   *
+   * SAFETY. Non-uniform control flow around a derivative or an implicit-LOD
+   * `texture()` is undefined in GLSL ES 3.0, and this driver returns garbage for
+   * it with no GL fault and no console error — see the note on `OPAQUE_NORMAL_F`
+   * in the buildings agent's work. That is why the guard wraps ONLY `RE_Direct`,
+   * which is pure ALU for physical, phong and lambert materials, and why TOON is
+   * excluded: `RE_Direct_Toon` samples `gradientMap` through
+   * `getGradientIrradiance`. The spot-light-map `texture2D` earlier in the loop
+   * stays outside the branch, in uniform flow, untouched.
+   */
+  const RE_DIRECT = DIR_TAIL;
+  const guardBlock = (src, head) => {
+    const i = src.indexOf(head);
+    if (i < 0) return src;
+    const j = src.indexOf(RE_DIRECT, i);
+    if (j < 0) return src;
+    const guarded = /* glsl */`
+		#if defined( TOON )
+			${RE_DIRECT}
+		#else
+			if ( directLight.visible ) { ${RE_DIRECT} }
+		#endif
+`;
+    return src.slice(0, j) + guarded + src.slice(j + RE_DIRECT.length);
+  };
+
   // --- begin: derive world position/normal, cascade-select, probe irradiance -
   let b = begin.replace(GEOM, GEOM + /* glsl */`
 
@@ -298,6 +340,11 @@ if ( bostonProbeMix > 0.0 ) {
    *    lets a non-casting light sort ahead of the cascades. Harmless today only
    *    because that path is gated on the key light being essentially black.
    */
+  // Both point and spot blocks sit ahead of the directional one in the chunk, so
+  // guarding them leaves DIR_BLOCK matchable verbatim.
+  b = guardBlock(b, `#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )`);
+  b = guardBlock(b, `#if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )`);
+
   b = b.replace(DIR_BLOCK, /* glsl */`		bostonDirW = bostonCascadeWeight( float( UNROLLED_LOOP_INDEX ), bostonViewDepth );
 
 		#if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
