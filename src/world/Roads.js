@@ -31,35 +31,69 @@ const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
  * The tint table below was authored against `makeAtlas()`, the fallback atlas at
  * the top of this file, which paints a **near-white** modulation map (~232/255).
  * The atlas the city actually renders is the one `Materials._buildRoadAtlas()`
- * assembles from the TextureFactory recipes, and its asphalt tile is a real dark
- * hot-mix texture with a mean of 89/255 — 0.100 in linear. So every carriageway
- * pixel has been shipping at `0.092 x 0.100 = 0.0092` linear diffuse albedo.
+ * assembles from the TextureFactory recipes, and those four tiles are real dark
+ * textures that differ from each other by 2.5x. So the effective diffuse albedo
+ * of any band is `tint x GAIN x tileLinear`, and every carriageway pixel used to
+ * ship far below the surface's own dielectric F0 of 0.04 — physically impossible
+ * for asphalt, which is why no albedo detail was visible and why `setWetness`
+ * (which darkens *albedo*) produced no wet response.
  *
- * That is not merely dark, it is **below the surface's own dielectric F0 of
- * 0.04**, which is physically impossible for asphalt (real aged hot-mix is
- * around 0.09 diffuse against the same 0.04 specular). Measured consequence, by
- * ablation on the near carriageway at `st_southend`: zeroing the road's diffuse
- * colour outright changed its rendered luminance by **13%**. The other 87% was
- * specular. That is why every albedo detail added here was invisible, and it is
- * the mechanical reason rain "produced no wet response" — `setWetness` darkens
- * *albedo*, and albedo was 13% of the signal, so soaking the street moved the
- * carriageway by a measured **+1%** (ratio 1.01, i.e. very slightly lighter).
+ * MEASURED, on the BAKED atlas read back to the CPU (`road_atlas.alb`, 1024²
+ * sRGB), as the mean of the *per-texel* linear values — the quantity that
+ * actually multiplies the tint:
  *
- * `ALBEDO_GAIN` restores the missing atlas brightness. It multiplies every entry
- * uniformly, so all the authored *ratios* — asphalt vs gutter vs paint vs
- * granite — are exactly as before; only the absolute level moves. It is
- * deliberately 3.0 rather than the ~9 that would make asphalt physically
- * correct: 9 lands the carriageway at 117/255 against a sunlit brick facade's
- * 138, which is a bigger exposure change than one agent should make to a shared
- * build mid-pass. At 3.0 the frame mean moves ~4%, nothing new clips, and the
- * measured wet/dry ratio goes 1.01 -> 0.94. The full sweep is in the report; the
- * remaining factor is a call for whoever owns exposure.
+ *   tile in TILE_UV order   mean sRGB   mean linear   linear RGB
+ *   0 T_ASPHALT   asphalt      90.5       0.1080    [0.1079 0.1071 0.1181]
+ *   1 T_CONCRETE  slab        140.0       0.2685    [0.2866 0.2675 0.2249]
+ *   2 T_BRICK     red brick   100.3       0.1488    [0.3021 0.1114 0.0676]
+ *   3 T_COBBLE    granite     116.0       0.1890    [0.2073 0.1855 0.1703]
+ *
+ * **Read the RGB column before trusting any table of these numbers.** The atlas
+ * is baked flipped (painted row 0 becomes v=1), so the quadrant that *looks*
+ * like tile 0 in memory is tile 2. A tile identified by its memory order alone
+ * pairs asphalt with 0.1488 and concrete with 0.1890; the [0.3021 0.1114 0.0676]
+ * signature of that 0.1488 tile is 4.5:1.6:1 red — it is brick, not asphalt.
+ * Cross-checked against the standalone `asphalt.alb` / `sidewalk.alb` /
+ * `sidewalk_brick.alb` / `cobblestone.alb` textures, which are baked from the
+ * same recipes and reproduce these four means exactly.
+ *
+ * A single uniform gain is the wrong shape of knob and the numbers say so: the
+ * ratios it preserves were authored against a fallback atlas where all four
+ * tiles were ~0.8 linear, and the real atlas already destroyed them. So the gain
+ * is **per class**, chosen so each class lands inside its real-world albedo band.
+ * Measured effective albedo (Rec.709 luma of tint x gain x tileLinearRGB):
+ *
+ *   class           was (uniform 3.0)   now      real-world reference
+ *   asphalt              0.0308       0.1078     0.09-0.14 aged hot-mix
+ *   asphalt (hot)        0.0376       0.1317     0.11-0.16 recent overlay
+ *   gutter               0.0260       0.0908     0.07-0.10
+ *   parking bay          0.0272       0.0954     0.07-0.10
+ *   white paint          0.1910       0.5730     0.55-0.75 fresh
+ *   worn white paint     0.1056       0.3870     0.35-0.45 worn
+ *   yellow paint         0.1273       0.3818     0.30-0.45
+ *   granite kerb face    0.1791       0.2388     0.20-0.28 Quincy granite
+ *   granite kerb top     0.2025       0.2565     0.20-0.28
+ *   concrete walk        0.2615       0.2615     0.18-0.30 dirty urban
+ *   brick walk           0.0733       0.2443     0.20-0.30
+ *   granite setts        0.0944       0.1794     0.15-0.22
+ *   verge                0.0970       0.1617     0.15-0.22 grass/dirt
+ *
+ * Three of these differ from the uniform-9.0 recommendation in the critic
+ * report, and the difference is the tile swap above: at a uniform 9.0 asphalt
+ * would reach only 0.092 (bottom of its band) while concrete reached 0.785 and
+ * setts 0.283, both far too bright. Concrete is the one class that was already
+ * correct and is deliberately left at 3.0.
  */
-const ALBEDO_GAIN = 3.0;
+const GAIN = {
+  asphalt: 10.5, asphaltHot: 10.5, gutter: 10.5, parkbay: 10.5,
+  white: 9.0, yellow: 9.0, whiteWorn: 11.0,
+  granite: 4.0, graniteTop: 3.8, concrete: 3.0,
+  brick: 10.0, cobble: 5.7, verge: 5.0,
+};
 
-// --- tints (linear albedo, before ALBEDO_GAIN; the ACES stack does the rest) --
-// Aged asphalt sits around 0.09 of the atlas value, fresh road paint around
-// 0.55, Boston granite kerb around 0.22.
+// --- tints (linear albedo, before GAIN; the ACES stack does the rest) --------
+// These are the *authored* ratios within a class (gutter vs running surface,
+// fresh vs worn paint). GAIN sets the absolute level per class.
 const C0 = {
   asphalt:   [0.092, 0.095, 0.104],
   asphaltHot:[0.115, 0.116, 0.120],
@@ -75,8 +109,15 @@ const C0 = {
   parkbay:   [0.082, 0.084, 0.090],
   graniteTop:[0.255, 0.251, 0.243],
 };
-const C = Object.fromEntries(Object.entries(C0)
-  .map(([k, v]) => [k, v.map(x => x * ALBEDO_GAIN)]));
+const C = Object.fromEntries(Object.entries(C0).map(([k, v]) => {
+  const g = GAIN[k];
+  if (g === undefined) {
+    // A silent `undefined` here would multiply the tint to NaN and paint the
+    // whole class black, so say so instead of shipping an invisible band.
+    console.warn(`[roads] no albedo gain for tint class "${k}" — using 3.0`);
+  }
+  return [k, v.map(x => x * (g ?? 3.0))];
+}));
 
 /** Cheap deterministic hash. Math.sin-based noise costs ~1M trig calls building
  *  the atlas; an integer mix is an order of magnitude faster and tiles better. */
@@ -280,6 +321,47 @@ const ROAD_NOISE_GLSL = `
     return mix(mix(bHash(i), bHash(i + vec2(1.0, 0.0)), f.x),
                mix(bHash(i + vec2(0.0, 1.0)), bHash(i + vec2(1.0, 1.0)), f.x), f.y);
   }
+  /** Two hashed values per cell — the jittered crack node inside it. */
+  vec2 bHash2(vec2 p) {
+    vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.xx + q.yz) * q.zy);
+  }
+  /**
+   * Worley F2 - F1, in cell units. Zero exactly on the boundary between two
+   * cells, so its level set IS the cell diagram: straight segments meeting at
+   * angles and Y junctions, which is what a fatigue crack network looks like.
+   *
+   * The field this replaced was the iso-line of value noise, and that is the
+   * whole reason the cracks read as soft grey marker scribbles: a value-noise
+   * iso-line is a smooth meandering curve whose *width* is set by the local
+   * gradient, so it is wide wherever the noise is flat, it never runs straight,
+   * and it never meets another crack at an angle.
+   */
+  float bCell(vec2 p, float jit) {
+    vec2 i = floor(p), f = fract(p);
+    float f1 = 9.0, f2 = 9.0;
+    for (int y = -1; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
+        vec2 g = vec2(float(x), float(y));
+        vec2 o = g + 0.5 + (bHash2(i + g) - 0.5) * jit - f;
+        float d = dot(o, o);
+        if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+      }
+    }
+    return sqrt(f2) - sqrt(f1);
+  }
+  /**
+   * A crack of wm metres, d metres from its centreline, seen through a px metre
+   * pixel. Never drawn narrower than one pixel — but the amplitude is cut by
+   * exactly the factor it was widened, so the integrated darkness is correct at
+   * every distance. That is what lets the line stay THIN and near-black up
+   * close, which is the whole point, without shimmering into the distance.
+   */
+  float bLine(float d, float wm, float px) {
+    float w = max(wm, px);
+    return (1.0 - smoothstep(0.0, w, d)) * (wm / w);
+  }
 `;
 
 /**
@@ -307,15 +389,28 @@ function makeRoadMaterial(atlas) {
   });
   m.userData.wetnessRough = 0.92;
   m.userData.wetnessColor = m.color.clone();
-  // A water film is a fresh dielectric layer over a surface that had none, so a
-  // wet road picks up more of the environment than the 0.55 the dry asphalt is
-  // authored at. Materials._applyEnv reads this. Kept small on purpose: at 1.35
-  // this more than doubled envMapIntensity, and on a *shadowed* street — where
-  // the probe is most of the light — that made the wet road measurably lighter
-  // than the dry one (ratio 1.054 at rain_street). The puddle read comes from
-  // roughness, not from env intensity; a mirror at 0.05 roughness reflects
-  // plenty at 0.49.
-  m.userData.wetEnvBoost = 0.45;
+  /**
+   * ZERO, deliberately, and the whole-material env boost is replaced by the
+   * per-pixel `gEnvK` below. `Materials._applyEnv` reads this and multiplies
+   * `envMapIntensity` for the entire material, which is a flat "wet surfaces
+   * reflect more" assumption — and it was the single largest reason rain made
+   * the road *brighter*.
+   *
+   * Measured, `st_southend` under `weather: 'rain'`, one frozen frame, exposure
+   * meter pinned, toggling only `setWetness` on a 800x240 px near-carriageway
+   * patch: wet/dry 1.288 with the 0.45 boost, 1.102 with it at 0. The boost
+   * alone was +18.6% of the dry level, on a surface that is supposed to get
+   * darker.
+   *
+   * It is also wrong physics. A water film does not add a reflector, it
+   * *replaces* one: asphalt's own interface is F0 = 0.04, water's is F0 = 0.02.
+   * At normal incidence a wet road reflects HALF as much of the sky as a dry
+   * one. It only wins at grazing angles, and it only becomes a mirror where the
+   * water actually stands — which is a puddle, and puddles are ~10% of the
+   * carriageway. That is exactly the shape `gEnvK` has, and unlike a material
+   * scalar it can tell the two apart.
+   */
+  m.userData.wetEnvBoost = 0.0;
   const shaders = [];
   m.userData.shaders = shaders;
   /** Push the current rain wetness into every compiled variant. */
@@ -334,9 +429,26 @@ function makeRoadMaterial(atlas) {
   m.userData.setDetail = (v) => {
     for (const sh of shaders) if (sh.uniforms.uDetail) sh.uniforms.uDetail.value = v;
   };
+  /*
+   * Wet-response tuning hook: (sheet roughness base, polished-track roughness,
+   * env multiplier, puddle env multiplier). Kept alongside `setDetail` for the
+   * same reason -- a critic needs to A/B this in ONE frame, because the effect
+   * being judged is a few percent of frame luminance.
+   *
+   * The shipped defaults below are measured, not guessed: isolated on a frozen
+   * frame by toggling only wetness, they put wet/dry at 0.925 against 1.093
+   * before the per-class albedo landed, i.e. the sign is finally correct and
+   * wetting the road darkens it. It is NOT finished -- real wet asphalt is
+   * nearer 0.5-0.7 of dry -- so this stays a live knob rather than being baked
+   * into constants.
+   */
+  m.userData.setWetTune = (a, b, c, d) => {
+    for (const sh of shaders) if (sh.uniforms.uWetTune) sh.uniforms.uWetTune.value.set(a, b, c, d);
+  };
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWet = { value: m.userData.wetLevel ?? 0 };
     sh.uniforms.uDetail = { value: m.userData.detailLevel ?? 1 };
+    sh.uniforms.uWetTune = { value: new THREE.Vector4(0.30, 0.17, 1.0, 0.9) };
     shaders.push(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
@@ -354,11 +466,12 @@ function makeRoadMaterial(atlas) {
       .replace('#include <common>', `#include <common>
         uniform float uWet;
         uniform float uDetail;
+        uniform vec4 uWetTune;
         varying vec2 vSurf; varying vec2 vTile; varying float vRough;
         varying vec2 vWear; varying vec3 vWPos;
-        // Resolved once in <map_fragment>, consumed by the roughness and normal
-        // chunks further down main().
-        float gRough, gPuddle, gWet, gFlat, gPx;
+        // Resolved once in <map_fragment>, consumed by the roughness, normal and
+        // indirect-specular chunks further down main().
+        float gRough, gPuddle, gWet, gFlat, gPx, gEnvK;
         ${ROAD_NOISE_GLSL}
         vec4 atlasTex(sampler2D t, vec2 s, vec2 tile) {
           vec2 dx = dFdx(s) * 0.5, dy = dFdy(s) * 0.5;
@@ -457,25 +570,37 @@ function makeRoadMaterial(atlas) {
           float joint = cut * (1.0 - smoothstep(0.0, 0.010, rim)) * bFade(0.25);
           float fill = cut * (bHash(pi * 3.1) - 0.5);
           // ---- cracks ------------------------------------------------------
-          // Two ridge fields at different scales: one long meandering fatigue
-          // crack every few metres, one denser web inside the aged areas. Both
-          // are narrow (~3 cm) and nearly black, which is what makes them
-          // survive the mip chain and register across a 0.34 m window.
-          float cw1 = bNoise(W * 0.052 + 11.3);
-          float crk1 = 1.0 - smoothstep(0.0, 0.060,
-                         abs(bNoise(W * 0.62 + cw1 * 3.4) - 0.5));
-          float crk2 = 1.0 - smoothstep(0.0, 0.048,
-                         abs(bNoise(W * 1.45 + n3 * 2.2 + 41.7) - 0.5));
-          float crack = max(crk1 * smoothstep(0.24, 0.58, n3),
-                            crk2 * smoothstep(0.40, 0.72, n2) * 0.85) * bFade(0.16);
+          // Block cracking on a ~2.6 m cell network, plus a finer alligator web
+          // inside the worn areas. Both are drawn on Worley cell boundaries, so
+          // they are straight segments meeting at angles and Y junctions, 2-3 cm
+          // wide and near-black — thin, dark and high-contrast, which is what a
+          // crack is and what survives an 89 px (0.34 m) detail window.
+          //
+          // Cracks also CLUSTER, and where they cluster is not a free choice:
+          // fatigue cracking opens under the wheel path where the axle load is,
+          // and along the gutter where water stands and the base softens. Both
+          // are already solved geometry here, so the web amplitude is gated on
+          // them and on the 23 m age field rather than sprayed uniformly.
+          vec2 cw = W + vec2(n2 - 0.5, n3 - 0.5) * 2.2;    // meander the network
+          float dBlk = bCell(cw * (1.0 / 2.60), 0.85) * 2.60;
+          float dWeb = bCell(cw * (1.0 / 0.62) + 37.0, 0.95) * 0.62;
+          float age  = smoothstep(0.30, 0.74, n3 * 0.62 + n2 * 0.38);
+          float load = clamp(track * 1.15 + gut * 0.55 + age * 0.50, 0.0, 1.0);
+          float crack = min(1.0, bLine(dBlk, 0.028, gPx) * (0.35 + 0.65 * age)
+                                + bLine(dWeb, 0.019, gPx) * load * age * 0.85);
           // ---- chip scatter and skin patching ------------------------------
-          // The exposed-aggregate speckle the atlas carries is 5-15 mm and the
-          // mip chain has eaten all of it by two metres out — measured: the
-          // atlas has a mean absolute deviation of 4.1/255 texel-to-texel and
-          // only 1.7 of that survives to the frame. These two bands sit above
-          // the mip cutoff and below the blotching, and they are what actually
-          // moves the near carriageway.
-          float grit = (bNoise(W * 4.3) - 0.5) * bFade(0.30);
+          // Exposed aggregate, as discrete stone rather than a smooth blotch.
+          // At eye height on the near carriageway one pixel is ~3.8 mm of road,
+          // so a 14 mm cell is three pixels across and reads as individual
+          // chips; the old smooth value noise at 0.23 m could only ever be
+          // blotching. World XZ is folded to 128 m first: at 4 km from origin
+          // W/0.014 is 2.9e5, where a float32 mantissa leaves the hash barely
+          // any entropy and it bands. The fold is invisible because the field is
+          // uncorrelated per cell and gone by ~3 m out anyway.
+          vec2 aw = W - floor(W * (1.0 / 128.0)) * 128.0;
+          vec2 ac = floor(aw * 71.4);
+          float grit = ((bHash(ac) - 0.5) * 1.30 - step(0.90, bHash(ac + 19.3)) * 0.26)
+                     * bFade(0.026);
           float chip = (bNoise(W * 1.85 + 23.1) - 0.5) * bFade(0.62);
           // Cold-patch dabs: the shovel-and-stamp repairs around every gully and
           // trench, a third of a metre across and much darker than the mix.
@@ -495,7 +620,8 @@ function makeRoadMaterial(atlas) {
           // term is the larger half of the road's luminance. Ablation measured
           // the first cut of this at +8% mean, which put the asphalt brighter
           // than the concrete walk beside it.
-          gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.04;
+          gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.04
+                 + crack * 0.12;               // a crack is a recess full of grit
           gFlat = track * 0.22 + oil * 0.16;   // polished: flatten the aggregate
         } else if (isVerge) {
           tone = 1.0 + macro * 0.60;
@@ -505,15 +631,18 @@ function makeRoadMaterial(atlas) {
           // blotches at half a metre, and trodden gum leaves near-black discs.
           float stain = smoothstep(0.50, 0.86, n2 * 0.55 + n1 * 0.45);
           float gum = smoothstep(0.90, 0.985, bNoise(W * 3.1 + 5.5)) * bFade(0.22);
-          float crk = (1.0 - smoothstep(0.0, 0.045,
-                        abs(bNoise(W * 0.83 + n3 * 2.6) - 0.5)))
-                    * smoothstep(0.52, 0.82, n2) * bFade(0.18);
-          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.34;
-          gRough = gRough + macro * 0.06 + stain * 0.03 - gum * 0.18;
+          // Slabs and brick crack across the bay and settle at the joint, so
+          // the same cell network applies here on a coarser grid — and for the
+          // same reason as the carriageway, a straight thin line reads as a
+          // crack where a wide soft curve reads as a smudge.
+          float crk = bLine(bCell(W * (1.0 / 1.45) + 8.5, 0.75) * 1.45, 0.016, gPx)
+                    * smoothstep(0.46, 0.80, n2);
+          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.42;
+          gRough = gRough + macro * 0.06 + stain * 0.03 - gum * 0.18 + crk * 0.10;
         }
 
         // ---- rain ----------------------------------------------------------
-        gWet = 0.0; gPuddle = 0.0;
+        gWet = 0.0; gPuddle = 0.0; gEnvK = 1.0;
         if (uWet > 0.005) {
           // Dampness is not uniform: sheltered stretches stay lighter.
           gWet = uWet * (0.74 + 0.26 * bNoise(W * 0.021 + 4.4));
@@ -537,16 +666,52 @@ function makeRoadMaterial(atlas) {
           // Assets.setWetness; this is the spatial part on top of it, and the
           // puddle is the darkest thing on the street, not the brightest —
           // everything it gains, it gains as specular.
-          tone *= 1.0 - gWet * (0.14 + gPuddle * 0.45);
+          //
+          // A pavement or kerb sheds water and keeps more of its albedo than a
+          // porous carriageway does: real hot-mix drops from ~0.11 diffuse to
+          // ~0.045 soaked, which with Assets.setWetness's 0.58 survival is a
+          // shader term of ~0.80, not the flat 0.86 that used to be here.
+          tone *= 1.0 - gWet * ((isRoad ? 0.20 : 0.13) + gPuddle * 0.42);
           // Sheet-damp asphalt measures ~0.30 roughness and standing water
           // ~0.06. Only the puddle is allowed near a mirror, and puddles are a
           // minority of the surface, so the frame cannot flip to white — which
           // is exactly what the old global collapse to 0.06 did.
           // Rubber-polished wheel tracks hold a thinner, glassier film than the
           // ravelled aggregate between them, so they come out a step smoother.
-          float sheet = mix(0.30, 0.17, min(1.0, gFlat * 2.4));
+          float sheet = mix(uWetTune.x, uWetTune.y, min(1.0, gFlat * 2.4));
           gRough = mix(gRough, isKerb ? 0.34 : mix(sheet, 0.050, gPuddle), gWet);
           gFlat = max(gFlat, gPuddle * 0.94);   // standing water is flat
+
+          // Indirect-specular weight for the water film, applied per pixel to
+          // the indirect radiance at <lights_fragment_maps>. See the
+          // wetEnvBoost note in makeRoadMaterial for why it is not a material
+          // scalar. (No backticks in here: this is a JS template literal.)
+          //
+          // This is a ratio of two Schlick terms, not a tuned boost. A water
+          // film replaces the asphalt's own air-to-aggregate interface
+          // (F0 = 0.04) with an air-to-water one (F0 = 0.02), so
+          //
+          //     filmF = F_water(theta) / F_asphalt(theta)
+          //
+          // runs from 0.5 head-on to 1.0 at perfect grazing and is NEVER above
+          // 1. A wet road does not reflect more environment than a dry one — it
+          // reflects the same or less, through a much tighter lobe, which is
+          // what the roughness collapse above already models. Getting this
+          // backwards is the whole reason rain used to brighten the street.
+          //
+          // Measured on the near carriageway at st_southend under rain: with
+          // the old flat +45% material boost the non-albedo half of the road
+          // went UP 28% when it got wet, which no amount of albedo darkening
+          // can cancel.
+          //
+          // Puddles get 1.9x on top. That one IS a fudge and is flagged as such:
+          // standing water should be a sharp mirror, but SSR contributes 0.00
+          // here and the env probe cannot resolve an image, so a puddle can only
+          // return a blurred average. Retire the 0.9 when SSR reaches the road.
+          float ndv = clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0);
+          float g5 = pow(1.0 - ndv, 5.0);
+          float filmF = (0.02 + 0.98 * g5) / (0.04 + 0.96 * g5);
+          gEnvK = mix(1.0, filmF * uWetTune.z * (1.0 + uWetTune.w * gPuddle), gWet);
         }
 
         // uDetail = 0 restores the pre-existing surface exactly: flat tone, one
@@ -561,7 +726,15 @@ function makeRoadMaterial(atlas) {
         mapN.xy *= normalScale * (1.0 - gFlat);
         normal = normalize(tbn * mapN);`)
       .replace('#include <roughnessmap_fragment>', `
-        float roughnessFactor = clamp(gRough, 0.045, 1.0);`);
+        float roughnessFactor = clamp(gRough, 0.045, 1.0);`)
+      // Per-pixel weight on the indirect specular only. `radiance` is declared
+      // in <lights_fragment_begin> and consumed by RE_IndirectSpecular in
+      // <lights_fragment_end>, so scaling it here reaches the environment
+      // reflection without touching iblIrradiance (the diffuse half) or any
+      // analytic light. gEnvK is 1.0 everywhere the road is dry, so this is a
+      // no-op outside rain.
+      .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>
+        radiance *= gEnvK;`);
   };
   m.customProgramCacheKey = () => 'bostonRoad';
   return m;

@@ -129,11 +129,24 @@ function makeFallback() {
 /**
  * Wetness response, by material family.
  *
- * `rough` is the roughness a fully soaked surface converges to; `darken` is how
- * much of its dry albedo survives being flooded. Both are stamped into
- * `userData` (see `_stampWetness`) and consumed by `Assets.setWetness`, which is
- * a dumb lerp — the policy lives here, in the material library, so it also
- * reaches materials authored in `src/world/`.
+ * `rough` is the roughness a fully soaked surface converges to; `darken` is the
+ * fraction of its dry albedo that a full soaking REMOVES — `Assets.setWetness`
+ * applies `color x (1 - wetness * darken)`, so 0.58 leaves 42% of the albedo
+ * standing, not 58%. (This comment used to say "survives", which is the
+ * opposite, and reading it that way turns every entry below into its own
+ * complement.) Both are stamped into `userData` (see `_stampWetness`) and
+ * consumed by `Assets.setWetness`, which is a dumb lerp — the policy lives here,
+ * in the material library, so it also reaches materials authored in
+ * `src/world/`.
+ *
+ * Measured against the physics, on the road: dry asphalt now ships at 0.108
+ * linear albedo and real soaked hot-mix measures 0.04-0.05, so the survival the
+ * carriageway wants is 0.37-0.46. `darken: 0.58` here gives 0.42, and the road
+ * shader multiplies a further ~0.80 on top of it, for 0.34 — which is why that
+ * shader term is 0.20 and not larger. Do not raise `darken` for the road family
+ * to chase a wet/dry ratio: it is already at the physical value, and past it the
+ * carriageway drops back under its own F0 of 0.04 in the rain, which is the
+ * failure this whole line of work started from.
  *
  * The physics, because the old constants had it backwards. A water film fills
  * the pores of a rough surface; light that enters the film is trapped by total
