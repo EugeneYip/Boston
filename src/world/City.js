@@ -131,6 +131,7 @@ export default class City {
 
   _publish() {
     const net = this.net;
+    this._ground = { y: 0, kind: 'ground', edgeId: -1, offset: 0 };
 
     /** @type {(x:number,z:number)=>number} terrain elevation in metres */
     this.groundHeight = (x, z) => this.terrain.groundHeight(x, z);
@@ -164,6 +165,34 @@ export default class City {
     this.parks = this.districts.parkPolys;
     this.parkPolys = this.districts.parkPolys;
     this.districtPolys = this.districts.polys;
+
+    /**
+     * Height of what is actually drawn — carriageway, pavement, or terrain.
+     *
+     * Use this, not `groundHeight`, to stand anything on the ground. The raster
+     * is stamped below the carriageway on purpose so the ground can never poke
+     * through asphalt, which makes `groundHeight` 0.4-0.6 m too low anywhere
+     * near a street.
+     * @param {number} x @param {number} z
+     * @param {number} [nearY] disambiguates a bridge deck from the ground below
+     * @returns {number}
+     */
+    this.surfaceHeight = (x, z, nearY) => {
+      const s = this.roadMesh.surfaceAt(x, z, nearY);
+      return s ? s.y : this.terrain.groundHeight(x, z);
+    };
+
+    /**
+     * As `surfaceHeight`, but says what the surface is, so a caller can put a
+     * lamp post on the pavement and a manhole on the carriageway.
+     * @returns {{y:number, kind:'road'|'pavement'|'ground'}}
+     */
+    this.surfaceAt = (x, z, nearY) => {
+      const s = this.roadMesh.surfaceAt(x, z, nearY);
+      if (s) return s;
+      this._ground.y = this.terrain.groundHeight(x, z);
+      return this._ground;
+    };
 
     /** Water surface level at a point, or null on dry land. */
     this.waterAt = (x, z) => this.terrain.waterAt(x, z);

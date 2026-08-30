@@ -17,6 +17,7 @@ const RESAMPLE = 20;             // max shape-point spacing along a street
 const NODE_SNAP = 7;             // merge graph nodes closer than this
 const END_SNAP = 21;             // pull a dangling endpoint onto a nearby street
 const GRADE_SEP = 4.5;           // vertical clearance that suppresses a crossing
+const SUBDIVIDE = 60;    // max pavement strand length, metres
 
 /**
  * Roadway cross-section by type, per side.
@@ -457,16 +458,70 @@ export default class RoadNetwork {
       return id;
     };
 
+    /** Cut a polyline into `n` equal-arc-length runs, keeping every vertex. */
+    const runs = (pts, n) => {
+      const cum = [0];
+      for (let i = 1; i < pts.length; i++) {
+        cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z));
+      }
+      const total = cum[cum.length - 1];
+      if (n < 2 || total < 1e-3) return [pts];
+      const at = (d) => {
+        let i = 1;
+        while (i < cum.length - 1 && cum[i] < d) i++;
+        const seg = cum[i] - cum[i - 1] || 1;
+        const t = (d - cum[i - 1]) / seg, a = pts[i - 1], b = pts[i];
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t,
+                 z: a.z + (b.z - a.z) * t, _i: i };
+      };
+      const out = [];
+      let prev = pts[0], prevI = 1;
+      for (let k = 1; k <= n; k++) {
+        const cut = k === n ? { ...pts[pts.length - 1], _i: pts.length }
+                            : at((total * k) / n);
+        const run = [prev];
+        for (let i = prevI; i < cut._i; i++) run.push(pts[i]);
+        run.push(cut);
+        out.push(run);
+        prev = cut; prevI = cut._i;
+      }
+      return out;
+    };
+
+    // Strand nodes, indexed by [edgeId][side] so the two kerbs of a street stay
+    // aligned and can be joined mid-block.
+    const strand = new Map();
     for (const e of this.edges) {
       if (e.walk < 0.3) continue;
+      // A pedestrian only gets to make a decision at a node. Undivided strands
+      // averaged 177 m and reached 1.2 km, so an actor spawned mid-block walked
+      // for minutes before it could turn, cross or stop. Cut every SUBDIVIDE
+      // metres; both kerbs use the same count so they stay opposite each other.
+      const n = Math.max(1, Math.round(e.length / SUBDIVIDE));
       for (const side of [-1, 1]) {
         const pts = this.offsetPolyline(e, side * this.walkOffset(e))
           .map(p => ({ x: p.x, y: p.y + 0.145, z: p.z }));
-        const a = nodeAt(pts[0].x, pts[0].z, pts[0].y);
-        const b = nodeAt(pts[pts.length - 1].x, pts[pts.length - 1].z, pts[pts.length - 1].y);
-        ends.set(`${e.id}:${side}:0`, a);
-        ends.set(`${e.id}:${side}:1`, b);
-        link(a, b, pts, 'walk');
+        const parts = runs(pts, n);
+        const ids = [nodeAt(pts[0].x, pts[0].z, pts[0].y)];
+        ends.set(`${e.id}:${side}:0`, ids[0]);
+        for (const run of parts) {
+          const tail = run[run.length - 1];
+          const b = nodeAt(tail.x, tail.z, tail.y);
+          link(ids[ids.length - 1], b, run, 'walk');
+          ids.push(b);
+        }
+        ends.set(`${e.id}:${side}:1`, ids[ids.length - 1]);
+        strand.set(`${e.id}:${side}`, ids);
+      }
+      // Mid-block crossings. Real pedestrians cross where they feel like it on
+      // a side street; flagged separately so the AI can require a signal on
+      // anything bigger.
+      if (e.type !== 'street' || n < 2) continue;
+      const L = strand.get(`${e.id}:-1`), R = strand.get(`${e.id}:1`);
+      for (let k = 1; k < n; k += 2) {
+        const a = nodes[L[k]], b = nodes[R[k]];
+        link(L[k], R[k], [{ x: a.x, y: a.y, z: a.z }, { x: b.x, y: b.y, z: b.z }],
+             'jaywalk');
       }
     }
 

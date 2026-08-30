@@ -270,6 +270,8 @@ export default class Roads {
     this.meshes = [];
     this.decals = null;
     this._nodeGeom = new Map();     // nodeId -> { dirs, trim } used by sidewalks
+    // Reused so surfaceAt() allocates nothing when called every frame.
+    this._surf = { y: 0, kind: 'road', edgeId: -1, offset: 0 };
   }
 
   /** The chunk covering a world point, created on first touch. */
@@ -827,6 +829,50 @@ export default class Roads {
     this.decals.matrixAutoUpdate = false;
     this.decals.receiveShadow = true;
     this._detailMat = m;
+  }
+
+  /**
+   * Height of the surface that is actually drawn at a point, and what it is.
+   *
+   * `Terrain.groundHeight()` is deliberately stamped 0.4-0.75 m *below* the
+   * carriageway so the ground can never poke through asphalt, which means it is
+   * the wrong answer for anything standing on a street: a lamp post placed on
+   * it sinks by more than half a metre. This walks the same cross-section the
+   * ribbon geometry was built from, so it agrees with the mesh to the
+   * centimetre — camber included.
+   *
+   * @param {number} x @param {number} z
+   * @param {number} [nearY] hint, used only to decide whether a caller is on a
+   *   bridge deck or on the ground beneath it
+   * @returns {{y:number, kind:'road'|'pavement', edgeId:number, offset:number}|null}
+   *   null when the point is not on a paved surface at all
+   */
+  surfaceAt(x, z, nearY) {
+    const ne = this.net.nearestEdge(x, z);
+    if (!ne) return null;
+    const e = this.net.edges[ne.edgeId];
+    const sec = e._sec || (e._sec = this.section(e));
+    const walk = e.walk > 0.3 ? 0.16 + e.walk : 0;
+    if (ne.distance > sec.half + walk) return null;
+
+    const f = this._at(e, ne.t * e.length);
+    // A flyover is only your surface if you are actually up on it.
+    if (e.bridged && (nearY === undefined || Math.abs(nearY - f.y) > 6)) return null;
+
+    const off = (x - f.x) * f.rx + (z - f.z) * f.rz;
+    const _r = this._surf;
+    _r.edgeId = e.id; _r.offset = off;
+    if (off >= sec.L && off <= sec.R) {
+      const t = Math.min(1, Math.abs(off - sec.shift) / (sec.half || 1));
+      _r.y = f.y - CROWN * t * t;
+      _r.kind = 'road';
+    } else {
+      // pavement: kerb height plus the same slight fall back towards the kerb
+      const over = Math.abs(off) - Math.max(-sec.L, sec.R);
+      _r.y = f.y + KERB_H + Math.max(0, 1 - over / (e.walk || 1)) * 0.05;
+      _r.kind = 'pavement';
+    }
+    return _r;
   }
 
   /** Distance LOD. Markings are sub-pixel past ~320 m, so drop them. */
