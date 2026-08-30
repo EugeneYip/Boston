@@ -159,6 +159,139 @@ function inPoly(x, z, poly) {
   return inside;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Road corridor clipping                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Half-width of the strip no building may enter: carriageway + kerb + footway.
+ *
+ * Deliberately the *same* offset `RoadNetwork.buildPlots` lays its frontage
+ * line on, and not a metre more. Clipping at exactly the back of the pavement
+ * leaves a correct parcel untouched and still lets the building meet the
+ * footway — Boston's streetwalls are continuous and a setback here would trade
+ * one automatic fail for another.
+ */
+function corridorHalf(e) { return e.halfRoad + 0.16 + (e.walk || 0); }
+
+/** Tolerance, metres. Below this an "intrusion" is chord slop, not a building. */
+const CLIP_EPS = 0.02;
+
+/** Scratch for the corridor rectangle's corners — init-time only, never in update(). */
+const _rect = new Float64Array(8);
+
+/**
+ * Exact overlap test between a convex parcel and one road's corridor rectangle,
+ * by separating axis. Cheap axes (along and across the road) come first because
+ * they reject almost everything.
+ *
+ * This must be exact rather than conservative: a false positive applies a
+ * half-plane that has no business touching the parcel, and the visible result
+ * is a building sliced off by a street it does not front.
+ */
+function overlapsCorridor(poly, seg) {
+  const { ax, az, dx, dz, len, w } = seg;
+  const nx = -dz, nz = dx;
+  let lo = Infinity, hi = -Infinity;
+  for (const p of poly) {
+    const t = (p.x - ax) * dx + (p.z - az) * dz;
+    if (t < lo) lo = t; if (t > hi) hi = t;
+  }
+  if (hi <= 0 || lo >= len) return false;
+  lo = Infinity; hi = -Infinity;
+  for (const p of poly) {
+    const t = (p.x - ax) * nx + (p.z - az) * nz;
+    if (t < lo) lo = t; if (t > hi) hi = t;
+  }
+  if (hi <= -w || lo >= w) return false;
+  const ex1 = ax + dx * len, ez1 = az + dz * len;
+  _rect[0] = ax + nx * w; _rect[1] = az + nz * w;
+  _rect[2] = ax - nx * w; _rect[3] = az - nz * w;
+  _rect[4] = ex1 + nx * w; _rect[5] = ez1 + nz * w;
+  _rect[6] = ex1 - nx * w; _rect[7] = ez1 - nz * w;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    let px = -(b.z - a.z), pz = b.x - a.x;
+    const L = Math.hypot(px, pz);
+    if (L < 1e-9) continue;
+    px /= L; pz /= L;
+    let plo = Infinity, phi = -Infinity;
+    for (const q of poly) {
+      const t = q.x * px + q.z * pz;
+      if (t < plo) plo = t; if (t > phi) phi = t;
+    }
+    let rlo = Infinity, rhi = -Infinity;
+    for (let k = 0; k < 8; k += 2) {
+      const t = _rect[k] * px + _rect[k + 1] * pz;
+      if (t < rlo) rlo = t; if (t > rhi) rhi = t;
+    }
+    if (rhi <= plo || rlo >= phi) return false;
+  }
+  return true;
+}
+
+/**
+ * Sutherland–Hodgman against one half-plane: keep `p·n >= c`.
+ * @returns {{poly:Array<{x,z}>, cut:boolean}} `cut` is true only when real area
+ *   was removed, so a parcel that merely touches the line is not re-fronted.
+ */
+function clipHalfPlane(poly, nx, nz, c) {
+  const out = [];
+  let cut = false;
+  for (let i = 0; i < poly.length; i++) {
+    const A = poly[i], B = poly[(i + 1) % poly.length];
+    const da = A.x * nx + A.z * nz - c, db = B.x * nx + B.z * nz - c;
+    if (da < -0.05) cut = true;
+    if (da >= -CLIP_EPS) out.push(A);
+    if ((da >= -CLIP_EPS) !== (db >= -CLIP_EPS)) {
+      const t = da / (da - db);
+      out.push({ x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t });
+    }
+  }
+  return { poly: out, cut };
+}
+
+/** Twice the signed area of an XZ ring. */
+function polyArea2(poly) {
+  let a = 0;
+  for (let i = 0, n = poly.length; i < n; i++) {
+    const p = poly[i], q = poly[(i + 1) % n];
+    a += p.x * q.z - q.x * p.z;
+  }
+  return a;
+}
+
+/** Drop vertices a clip left on top of each other, so no zero-length wall is emitted. */
+function dedupe(poly) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length];
+    if (Math.hypot(q.x - p.x, q.z - p.z) > 0.06) out.push(p);
+  }
+  return out;
+}
+
+/**
+ * Outward normal of the parcel's own street frontage.
+ *
+ * `RoadNetwork` publishes `frontage: {a, b}` but no direction, and `makeSpec`'s
+ * last-resort rule is "the longest edge is the facade". On a 8 m x 22 m Back Bay
+ * lot the longest edge is the *party wall*, so 96% of the city was presenting a
+ * blank flank to the street and its shopfront to its neighbour. Handing the
+ * direction over removes the guess.
+ */
+function frontageDir(plot, poly) {
+  const f = plot.frontage;
+  if (!f || !f.a || !f.b) return null;
+  const dx = f.b.x - f.a.x, dz = f.b.z - f.a.z;
+  const L = Math.hypot(dx, dz);
+  if (L < 1e-6) return null;
+  let nx = -dz / L, nz = dx / L;
+  const c = polyCentroid(poly);
+  if ((c.x - f.a.x) * nx + (c.z - f.a.z) * nz > 0) { nx = -nx; nz = -nz; }
+  return { x: nx, z: nz };
+}
+
 /**
  * Synthesise a plausible parcel layout so this system is never blocked on the
  * City agent. Blocks are laid on each district's own street bearing, then
@@ -303,6 +436,9 @@ export default class Buildings {
     this._maskDirty = true;
     this._maskSig = 1;          // never a real signature, so the first pass runs
     this._covered = new Set();
+    /** @type {?{cells:Map<number,number[]>, segs:Array, cell:number, seen:Set<number>}} */
+    this._roadIndex = null;
+    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0 };
     // Teleport catch-up. Plain numbers, not a vector: update() must not allocate.
     this._lastCamX = NaN;
     this._lastCamZ = NaN;
@@ -350,8 +486,11 @@ export default class Buildings {
     this._buildShell(ctx);
 
     const ms = performance.now() - t0;
+    const cs = this._clipStats;
     console.info(`[buildings] ${this.specs.length} buildings, ` +
       `${this.sectors.size} shell sectors, ${(ms | 0)}ms` +
+      ` (road corridor: ${cs.clipped} reshaped, ${cs.dropped} dropped,` +
+      ` ${cs.trimmed} stoops fitted to the pavement)` +
       (this._usedFallback ? ' (fallback parcels — city.plots not published)' : ''));
   }
 
@@ -368,15 +507,211 @@ export default class Buildings {
       this.plots = fallbackPlots();
       this._usedFallback = true;
     }
+    this._indexRoads(city);
+  }
+
+  /**
+   * Bucket every road segment's corridor so a parcel can be clipped out of it.
+   *
+   * Read-only: the road graph belongs to the city agent. Keeping buildings off
+   * the carriageway is enforced there too, but only by sampling a 5 x 3 grid of
+   * points per parcel, which lets a corner clip the far kerb of a skew junction
+   * and does nothing at all for the footway. This is the geometric guarantee.
+   */
+  _indexRoads(city) {
+    this._roadIndex = null;
+    const edges = city?.roads?.edges;
+    if (!Array.isArray(edges) || !edges.length) return;
+    const CELL = 48;
+    const cells = new Map();
+    const segs = [];
+    for (const e of edges) {
+      const w = corridorHalf(e);
+      for (let i = 0; i < e.pts.length - 1; i++) {
+        const a = e.pts[i], b = e.pts[i + 1];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz);
+        if (len < 1e-3) continue;
+        const id = segs.length;
+        segs.push({ ax: a.x, az: a.z, dx: dx / len, dz: dz / len, len, w,
+                    street: (e.walk || 0) >= 0.3 });
+        const x0 = Math.floor((Math.min(a.x, b.x) - w) / CELL);
+        const x1 = Math.floor((Math.max(a.x, b.x) + w) / CELL);
+        const z0 = Math.floor((Math.min(a.z, b.z) - w) / CELL);
+        const z1 = Math.floor((Math.max(a.z, b.z) + w) / CELL);
+        for (let cz = z0; cz <= z1; cz++) for (let cx = x0; cx <= x1; cx++) {
+          const k = cx * 100003 + cz;
+          let arr = cells.get(k); if (!arr) cells.set(k, arr = []);
+          arr.push(id);
+        }
+      }
+    }
+    this._roadIndex = {
+      cells, segs, cell: CELL, seen: new Set(), edges,
+      nearestEdge: typeof city.roads.nearestEdge === 'function'
+        ? (x, z) => city.roads.nearestEdge(x, z) : null,
+    };
+  }
+
+  /**
+   * Clip one parcel out of every road corridor it overlaps.
+   *
+   * Half-plane clipping, not rectangle subtraction: the result stays a single
+   * convex ring, so a parcel shaved on one side keeps a full-width frontage on
+   * the other and the streetwall stays continuous instead of growing notches.
+   * A parcel that loses everything is dropped rather than emitted as a sliver.
+   *
+   * @returns {?{poly:Array<{x,z}>, cutDirs:Array<{x,z}>, changed:boolean}}
+   */
+  _clipParcel(poly) {
+    const idx = this._roadIndex;
+    if (!idx) return { poly, cutDirs: null, changed: false };
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const p of poly) {
+      if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+      if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z;
+    }
+    const C = idx.cell, seen = idx.seen;
+    seen.clear();
+    let out = poly, changed = false;
+    let cutDirs = null;
+    for (let cz = Math.floor(z0 / C); cz <= Math.floor(z1 / C); cz++) {
+      for (let cx = Math.floor(x0 / C); cx <= Math.floor(x1 / C); cx++) {
+        const list = idx.cells.get(cx * 100003 + cz);
+        if (!list) continue;
+        for (const si of list) {
+          if (seen.has(si)) continue;
+          seen.add(si);
+          const seg = idx.segs[si];
+          if (!overlapsCorridor(out, seg)) continue;
+          const nx = -seg.dz, nz = seg.dx;
+          // Which side of the road does the parcel belong to? Keep whichever
+          // side reaches further out, so a parcel straddling the corridor is
+          // pushed off it rather than halved down the middle.
+          let lo = Infinity, hi = -Infinity;
+          for (const p of out) {
+            const t = (p.x - seg.ax) * nx + (p.z - seg.az) * nz;
+            if (t < lo) lo = t; if (t > hi) hi = t;
+          }
+          const pos = hi + lo >= 0;
+          const kx = pos ? nx : -nx, kz = pos ? nz : -nz;
+          const c = seg.w + (pos ? 1 : -1) * (seg.ax * nx + seg.az * nz);
+          const r = clipHalfPlane(out, kx, kz, c);
+          out = r.poly;
+          if (r.cut) {
+            changed = true;
+            if (seg.street) {
+              (cutDirs || (cutDirs = [])).push({ x: -kx, z: -kz });
+            }
+          }
+          if (out.length < 3) return null;
+        }
+      }
+    }
+    if (!changed) return { poly, cutDirs: null, changed: false };
+    out = dedupe(out);
+    // Match `makeSpec`'s own rejects so a clipped-to-nothing parcel disappears
+    // here instead of becoming a degenerate footprint downstream.
+    if (out.length < 3 || Math.abs(polyArea2(out)) * 0.5 < 24) return null;
+    let ax0 = Infinity, ax1 = -Infinity, az0 = Infinity, az1 = -Infinity;
+    for (const p of out) {
+      if (p.x < ax0) ax0 = p.x; if (p.x > ax1) ax1 = p.x;
+      if (p.z < az0) az0 = p.z; if (p.z > az1) az1 = p.z;
+    }
+    if (ax1 - ax0 < 3.3 || az1 - az0 < 3.3) return null;
+    return { poly: out, cutDirs, changed: true };
+  }
+
+  /**
+   * Keep the front steps on the pavement.
+   *
+   * Clipping the *footprint* is only half the job. A Back Bay bowfront bulges up
+   * to 1.45 m past the property line and its stoop runs another 0.30 m per step
+   * plus a newel on top of that — together up to 4.15 m, across a footway that
+   * is 3.76 m on Beacon Street and 1.56 m on a cobbled Beacon Hill lane. 1,703
+   * buildings put their steps on the kerb and 1,230 of those put them in the
+   * gutter, which raycasts as a building standing in the road exactly like a
+   * misplaced parcel does — it is what the critic photographed on Acorn Street.
+   *
+   * Shorten the rise first (three steps is the floor, which is what the narrow
+   * Beacon Hill lanes really have) and only drop the bow if that is still not
+   * enough: an empty pavement is a tech-demo tell, but so is a missing bowfront.
+   * `spec` is shared by LOD 0, LOD 1 and the shell, so all three stay identical.
+   */
+  _fitOrnament(spec) {
+    const near = this._roadIndex?.nearestEdge;
+    if (!near) return;
+    let bow = (spec.bow && !spec.shop) ? 0.95 + spec.rnd(6001) * 0.5 : 0;
+    const runOf = (rise) => Math.max(3, Math.round(rise / 0.175)) * 0.30 + 0.08;
+    let run = (spec.hasStoop && spec.stoopH > 0.5) ? runOf(spec.stoopH) : 0;
+    const want = bow + run;
+    if (want <= 0) return;
+
+    // How far each street face may project before its tip is on a carriageway.
+    // Measured at the tip rather than from the parcel's own street width, so a
+    // corner house whose steps face a *different*, narrower street than the one
+    // it was subdivided from is caught too (Louisburg Square does this).
+    const poly = spec.poly, m = poly.length;
+    let avail = Infinity;
+    for (const i of spec.front) {
+      const a = poly[i], b = poly[(i + 1) % m];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const L = Math.hypot(dx, dz) || 1;
+      const nx = dz / L, nz = -dx / L;          // outward, matching `makeSpec`
+      const mx = (a.x + b.x) * 0.5, mz = (a.z + b.z) * 0.5;
+      let p = want;
+      while (p > 0.98) {
+        const ne = near(mx + nx * p, mz + nz * p);
+        if (!ne) break;
+        if (ne.distance >= this._roadIndex.edges[ne.edgeId].halfRoad + 0.30) break;
+        p -= 0.30;
+      }
+      if (p < avail) avail = p;
+    }
+    if (!Number.isFinite(avail) || want <= avail) return;
+
+    if (run > 0) {
+      const steps = Math.max(3, Math.floor((avail - bow - 0.08) / 0.30));
+      spec.stoopH = Math.min(spec.stoopH, steps * 0.175);
+      run = runOf(spec.stoopH);
+    }
+    if (bow + run > avail && bow > 0) { spec.bow = false; bow = 0; }
+    this._clipStats.trimmed++;
+  }
+
+  /**
+   * The parcel as `makeSpec` should see it: the clipped ring, plus every
+   * direction that actually faces a street.
+   *
+   * The city's parcels are never mutated — props, traffic and the minimap read
+   * the same array — so this returns a shallow copy whenever anything changed.
+   */
+  _respec(plot, poly, cutDirs) {
+    const dirs = [];
+    const push = (d) => {
+      if (!d) return;
+      for (const q of dirs) if (q.x * d.x + q.z * d.z > 0.985) return;
+      dirs.push(d);
+    };
+    push(frontageDir(plot, poly));
+    if (cutDirs) for (const d of cutDirs) push(d);
+    if (!dirs.length) return poly === plot.polygon ? plot : { ...plot, polygon: poly };
+    return { ...plot, polygon: poly, frontDirs: plot.frontDirs || dirs };
   }
 
   _buildSpecs() {
     const specs = [];
     const n = Math.min(this.plots.length, MAX_BUILDINGS);
+    let clipped = 0, dropped = 0;
+    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0 };
     for (let i = 0; i < n; i++) {
       const plot = this.plots[i];
       if (!plot?.polygon || plot.polygon.length < 3) continue;
-      const c = polyCentroid(plot.polygon);
+      const cut = this._clipParcel(plot.polygon);
+      if (!cut) { dropped++; continue; }
+      const poly = cut.poly;
+      if (cut.changed) clipped++;
+      const c = polyCentroid(poly);
       if (isReserved(c.x, c.z)) continue;
       // The city publishes a per-parcel ground elevation; prefer it over
       // sampling the terrain ourselves so a building can never float or sink
@@ -384,12 +719,14 @@ export default class Buildings {
       const g = Number.isFinite(plot.y) ? plot.y : this.groundAt(c.x, c.z);
       const base = g - 0.25;
       if (!Number.isFinite(base)) continue;
-      const spec = makeSpec(plot, base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
+      const src = this._respec(plot, poly, cut.cutDirs);
+      const spec = makeSpec(src, base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
       if (!spec) continue;
+      this._fitOrnament(spec);
       spec.cx = c.x; spec.cz = c.z;
       // Conservative radius for culling and collider streaming.
       let rad = 0;
-      for (const p of plot.polygon) {
+      for (const p of poly) {
         const d = Math.hypot(p.x - c.x, p.z - c.z);
         if (d > rad) rad = d;
       }
@@ -397,6 +734,8 @@ export default class Buildings {
       specs.push(spec);
     }
     this.specs = specs;
+    this._clipStats.clipped = clipped;
+    this._clipStats.dropped = dropped;
 
     // Spatial bucketing
     this.chunks.clear();
@@ -792,6 +1131,7 @@ export default class Buildings {
     for (const ch of this.chunks.values()) this._disposeChunk(ch);
     this._disposeSectors();
     this.chunks.clear(); this.specs.length = 0;
+    this._roadIndex = null;
     if (this.root) this.ctx?.scene.remove(this.root);
     // Textures and materials live in ctx.assets, which disposes them itself.
     void _v; void hash2;
