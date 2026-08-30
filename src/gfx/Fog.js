@@ -46,6 +46,21 @@ export default class AtmosphereFog {
       uFogTint:       { value: new THREE.Color().setStyle('#c3ccd6') },
       uShaftStrength: { value: 1.0 },
       uFlashScreen:   { value: 0.0 },
+      // Airlight source-function ramp — see the long note in COMPOSITE_FRAG.
+      // The sky-view LUT is a to-infinity column radiance; used raw it makes the
+      // air in a street canyon as bright as the whole sky. `uInscatFloor` is the
+      // fraction of the open-sky source that survives at the camera, and the
+      // ramp reaches the full sky after `uInscatTau` optical depths.
+      //
+      // 0.30 is not a taste value: it is the figure that makes the mid field
+      // behave like a genuinely clear day. `clear` runs sigma 3.4e-4, i.e. an
+      // 11.5 km meteorological range, so 244 m already carries 8.3% of the sky;
+      // a real clear day is 40 km, or 2.4%. 0.30 puts `open` at 244 m at 0.29 —
+      // exactly that ratio — while leaving the kilometre scale to accumulate the
+      // full haze. Weather does not touch these; they are a property of the
+      // model, not of the day.
+      uInscatFloor:   { value: 0.05 },
+      uInscatTau:     { value: 0.30 },
     };
 
     this._dummyShadow = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
@@ -111,6 +126,8 @@ export default class AtmosphereFog {
       uFogAlbedo:   this.p.uFogAlbedo,
       uFogTint:     this.p.uFogTint,
       uFlashScreen: this.p.uFlashScreen,
+      uInscatFloor: this.p.uInscatFloor,
+      uInscatTau:   this.p.uInscatTau,
     };
     this.compMaterial = new THREE.ShaderMaterial({
       vertexShader: QUAD_VERT, fragmentShader: COMPOSITE_FRAG,

@@ -144,6 +144,8 @@ uniform float uLightning;
 uniform vec3  uLightningColor;
 uniform float uFlashScreen;
 uniform float uMaxRadiance;
+uniform float uInscatFloor;
+uniform float uInscatTau;
 varying vec2 vUv;
 
 // ~5.2 deg. Its half-value, 2.6 deg, is where every horizontal-or-below ray
@@ -218,7 +220,41 @@ void main() {
     // Thick fog is a local white medium, not a window onto the sky.
     inscat = mix(inscat, uFogTint * (0.35 + 0.65 * dot(inscat, vec3(0.33))), uFogAlbedo);
 
-    col = col * T + inscat * (vec3(1.0) - T);
+    // Ramp the SOURCE FUNCTION with path length, so aerial perspective is a
+    // function of the path and not just of the sky in that direction.
+    //
+    // skyLut() is the radiance of the entire atmospheric column. Feeding it
+    // straight into the airlight term asserts that the 14 m of air between the
+    // camera and the brick wall across the street is as bright as the whole
+    // sky, and the frame said exactly that: measured on Mount Vernon St at
+    // 12:00, in-scatter lifted a wall at 9.9 m by 19.6/255 and a shadowed
+    // facade at 244 m by 126/255 -- (7,35,32) -> (132,160,176), i.e. most of
+    // the way to the sky at a quarter of a kilometre. That is the "milky wash
+    // at 10 m, no depth cue at 400 m" complaint, and it is not a small error:
+    // in-scatter radiance near the horizon is ~1.9 against surface radiance of
+    // 0.002-0.03 in the same buffer, two orders of magnitude.
+    //
+    // The air in a street canyon is shadowed by the buildings and sees a slot
+    // of sky rather than a hemisphere, so it scatters a fraction of the
+    // open-air value; the path only climbs into open air over hundreds of
+    // metres. Ramp from uInscatFloor to the full sky over uInscatTau
+    // optical depths. Ramping on OPTICAL DEPTH rather than on metres keeps it
+    // weather-coherent: at clear (sigma 3.4e-4) the mid-field then behaves
+    // like a genuinely clear ~40 km-visibility day while the kilometre scale
+    // still accumulates the full haze, which is also the real vertical profile.
+    //
+    // The far-field asymptote is untouched by construction: the ramp tends to 1
+    // as the path lengthens, so geometry at the far plane still resolves to
+    // exactly the dome's sky colour and the skyline does not separate from it.
+    //
+    // uFogAlbedo opts out. Once the medium is a dense local one the source is
+    // the fog itself, not a sky that buildings can screen, and fog is *supposed*
+    // to wash the near field -- that is what fog is.
+    float tau  = dot(od, vec3(0.2126, 0.7152, 0.0722));
+    float open = mix(uInscatFloor, 1.0, 1.0 - exp(-tau / max(uInscatTau, 1e-4)));
+    open = mix(open, 1.0, uFogAlbedo);
+
+    col = col * T + inscat * (open * (vec3(1.0) - T));
   }
 
   if (uUseVolume > 0.5) col += texture2D(uVolume, vUv).rgb;
