@@ -48,6 +48,11 @@ function fbm(x, y, oct = 4) {
 }
 const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
+// Scratch for _sample(). Build-time only, but reused so the per-vertex loop
+// does not churn the allocator across ~56 000 vertices.
+const _smp = new Float64Array(7);
+const _col = new THREE.Color();
+
 /**
  * Give a world-space merged mesh a meaningful sort key.
  *
@@ -271,68 +276,165 @@ export default class Terrain {
   // -- mesh -----------------------------------------------------------------
 
   /**
+   * Everything one terrain vertex needs, at one point.
+   *
+   * `e` is the half-width of the central difference used for the normal and for
+   * the slope tint. It is a parameter rather than `step * 0.5` because a vertex
+   * that is *shared* with a neighbouring ring has to be sampled with THAT
+   * ring's spacing — otherwise the two rings agree on the position and disagree
+   * on the shading, and the seam shows up as a lit/unlit hairline even though
+   * there is no hole. Same reason `surf` is a parameter.
+   *
+   * Writes into the shared `out` scratch: [y, nx, ny, nz, r, g, b].
+   */
+  _sample(x, z, e, surf, out) {
+    const y = this.groundHeight(x, z);
+    const hx = this.groundHeight(x + e, z) - this.groundHeight(x - e, z);
+    const hz = this.groundHeight(x, z + e) - this.groundHeight(x, z - e);
+    const nl = Math.hypot(-hx, 2 * e, -hz);
+    // Grass on the flats, dry dirt on steep flanks, silt near the water.
+    const slope = Math.min(1, Math.hypot(hx, hz) / (2 * e) * 1.6);
+    const wet = 1 - Math.min(1, Math.max(0, (y - 1.2) / 2.4));
+    const tint = fbm(x * 0.006, z * 0.006, 3);
+    // Downtown Boston is not built on a lawn. Only parks, the riverbank and
+    // the outskirts get green; everything between the buildings reads as
+    // the grey-brown of yard, gravel and packed dirt it actually is.
+    const green = surf ? surf(x, z) : 1;
+    const gr = 0.118 + slope * 0.20 + wet * 0.09 + tint * 0.055;
+    const gg = 0.152 + slope * 0.13 + wet * 0.05 + tint * 0.070;
+    const gb = 0.076 + slope * 0.08 + wet * 0.06 + tint * 0.030;
+    const dr = 0.108 + slope * 0.10 + tint * 0.048;
+    _col.setRGB(
+      dr + (gr - dr) * green,
+      (dr * 0.97) + (gg - dr * 0.97) * green,
+      (dr * 0.90) + (gb - dr * 0.90) * green);
+    out[0] = y;
+    out[1] = -hx / nl; out[2] = 2 * e / nl; out[3] = -hz / nl;
+    out[4] = _col.r; out[5] = _col.g; out[6] = _col.b;
+    return out;
+  }
+
+  /**
    * One grid patch. `hole` carves out the middle so rings nest without overlap
    * (an overlapping inner/outer terrain ring is a classic z-fighting source).
    *
    * `half`, `step` and `hole` must satisfy `2*half % step === 0` and
-   * `(half + hole) % step === 0`, so a vertex lands exactly on the hole
-   * boundary and the ring abuts its neighbour instead of leaving a gap. See
-   * RINGS below — getting this wrong opened a 2 m and a 100 m hole right around
-   * the city, through which you could see the back of the sky dome.
+   * `(half - hole) % step === 0`, so a vertex lands exactly on the hole
+   * boundary and the ring abuts its neighbour instead of leaving a gap. Getting
+   * that wrong opened an 8 m and a 100 m hole right around the city, through
+   * which you could see the back of the sky dome.
+   *
+   * Matching the *extents* is only half the job. The ring inside this one is
+   * tessellated finer, so its outer boundary is a polyline with a vertex every
+   * `rim.step` metres while this ring's hole boundary would be a chord every
+   * `step` metres — a T-junction. The chord cuts the corner and the ground
+   * between them is simply absent: measured 1.14 m of vertical daylight at the
+   * 18/36 m seam and **7.79 m** at the 36/531 m one, i.e. a full-perimeter slot
+   * you can see the sky through unless something happens to be behind it.
+   *
+   * So `rim` (`{ step, surf }`, describing the finer neighbour) makes this
+   * patch's hole boundary carry the neighbour's vertices: each boundary quad is
+   * re-triangulated as a fan over `step / rim.step` sub-edges sampled exactly
+   * as the neighbour samples them. The two rings then share one identical
+   * polyline. Note the direction: the COARSE ring conforms to the fine one.
+   * Doing it the other way — snapping the fine ring's edge onto the coarse
+   * chord — is also watertight, but it would have dragged the mid ring's last
+   * row up to 7.8 m off the real ground to meet the horizon filler.
    */
-  _patch(half, step, hole = 0, tile = 24, surf = null, skirt = 0) {
+  _patch(half, step, hole = 0, tile = 24, surf = null, skirt = 0, rim = null) {
     const n = Math.round((half * 2) / step);
     if (Math.abs((half * 2) / step - n) > 1e-6) {
       console.warn(`[terrain] ring ${half}/${step} is not grid-aligned`);
     }
+    if (hole > 0 && (half - hole) % step !== 0) {
+      console.warn(`[terrain] ring ${half}/${step}: hole ${hole} is off-grid`);
+    }
+    if (rim && (step % rim.step !== 0 || hole % rim.step !== 0)) {
+      console.warn(`[terrain] ring ${half}/${step}: cannot weld to a ${rim.step} m neighbour`);
+    }
+
     const pos = [], nrm = [], uv = [], col = [], idx = [];
     const map = new Int32Array((n + 1) * (n + 1)).fill(-1);
-    const c = new THREE.Color();
     let v = 0;
+    const vertex = (x, z, e, sf) => {
+      const s = this._sample(x, z, e, sf, _smp);
+      pos.push(x, s[0], z);
+      nrm.push(s[1], s[2], s[3]);
+      uv.push(x / tile, z / tile);
+      col.push(s[4], s[5], s[6]);
+      return v++;
+    };
+
+    // Grid lines that carry the hole boundary: x = -hole at iLo, x = +hole at iHi.
+    const iLo = hole > 0 ? Math.round((half - hole) / step) : -1;
+    const iHi = n - iLo;
+    // The hole boundary proper — the square the finer ring's outer edge traces.
+    // The rest of the x = +/-hole grid line is ordinary interior and is not shared.
+    const onRim = (x, z) => {
+      const ax = Math.abs(x), az = Math.abs(z);
+      return (Math.abs(ax - hole) < 1e-6 && az <= hole + 1e-6) ||
+             (Math.abs(az - hole) < 1e-6 && ax <= hole + 1e-6);
+    };
+
     for (let j = 0; j <= n; j++) {
       for (let i = 0; i <= n; i++) {
         const x = -half + i * step, z = -half + j * step;
         if (hole > 0 && Math.abs(x) < hole - 1e-3 && Math.abs(z) < hole - 1e-3) continue;
-        const y = this.groundHeight(x, z);
-        map[j * (n + 1) + i] = v++;
-        pos.push(x, y, z);
-        const e = step * 0.5;
-        const hx = this.groundHeight(x + e, z) - this.groundHeight(x - e, z);
-        const hz = this.groundHeight(x, z + e) - this.groundHeight(x, z - e);
-        const nl = Math.hypot(-hx, 2 * e, -hz);
-        nrm.push(-hx / nl, 2 * e / nl, -hz / nl);
-        uv.push(x / tile, z / tile);
-        // Grass on the flats, dry dirt on steep flanks, silt near the water.
-        const slope = Math.min(1, Math.hypot(hx, hz) / (2 * e) * 1.6);
-        const wet = 1 - Math.min(1, Math.max(0, (y - 1.2) / 2.4));
-        const tint = fbm(x * 0.006, z * 0.006, 3);
-        // Downtown Boston is not built on a lawn. Only parks, the riverbank and
-        // the outskirts get green; everything between the buildings reads as
-        // the grey-brown of yard, gravel and packed dirt it actually is.
-        const green = surf ? surf(x, z) : 1;
-        const gr = 0.118 + slope * 0.20 + wet * 0.09 + tint * 0.055;
-        const gg = 0.152 + slope * 0.13 + wet * 0.05 + tint * 0.070;
-        const gb = 0.076 + slope * 0.08 + wet * 0.06 + tint * 0.030;
-        const dr = 0.108 + slope * 0.10 + tint * 0.048;
-        c.setRGB(
-          dr + (gr - dr) * green,
-          (dr * 0.97) + (gg - dr * 0.97) * green,
-          (dr * 0.90) + (gb - dr * 0.90) * green);
-        col.push(c.r, c.g, c.b);
+        map[j * (n + 1) + i] = (rim && onRim(x, z))
+          ? vertex(x, z, rim.step * 0.5, rim.surf)
+          : vertex(x, z, step * 0.5, surf);
       }
     }
+
+    const K = rim ? step / rim.step : 1;
+    // The interior vertices of one coarse rim edge, in traversal order. All
+    // coordinates here are exact integers and `step` is an exact multiple of
+    // `rim.step`, so multiply-then-divide reproduces the neighbour's grid
+    // positions bit-for-bit rather than to within a rounding error.
+    const split = (x0, z0, x1, z1) => {
+      const out = [];
+      for (let k = 1; k < K; k++) {
+        out.push(vertex(x0 + ((x1 - x0) * k) / K, z0 + ((z1 - z0) * k) / K,
+                        rim.step * 0.5, rim.surf));
+      }
+      return out;
+    };
+    // A rim quad, wound like the regular ones (counter-clockwise from above):
+    // `apex` is the corner off the rim, then the loop runs c1, c2, the split
+    // rim edge, c3.
+    const fan = (apex, c1, c2, mids, c3) => {
+      idx.push(apex, c1, c2);
+      let prev = c2;
+      for (let k = 0; k < mids.length; k++) { idx.push(apex, prev, mids[k]); prev = mids[k]; }
+      idx.push(apex, prev, c3);
+    };
+
     for (let j = 0; j < n; j++) {
       for (let i = 0; i < n; i++) {
         const a = map[j * (n + 1) + i], b = map[j * (n + 1) + i + 1];
         const d = map[(j + 1) * (n + 1) + i], e2 = map[(j + 1) * (n + 1) + i + 1];
         if (a < 0 || b < 0 || d < 0 || e2 < 0) continue;
+        // Base winding is the loop a -> d -> e2 -> b. Each case below rotates
+        // that loop so the subdivided edge comes last.
+        if (K > 1) {
+          const x0 = -half + i * step, x1 = x0 + step;
+          const z0 = -half + j * step, z1 = z0 + step;
+          const zIn = j >= iLo && j + 1 <= iHi, xIn = i >= iLo && i + 1 <= iHi;
+          if (i + 1 === iLo && zIn) { fan(a, d, e2, split(x1, z1, x1, z0), b); continue; }
+          if (i === iHi && zIn) { fan(e2, b, a, split(x0, z0, x0, z1), d); continue; }
+          if (j + 1 === iLo && xIn) { fan(b, a, d, split(x0, z1, x1, z1), e2); continue; }
+          if (j === iHi && xIn) { fan(d, e2, b, split(x1, z0, x0, z0), a); continue; }
+        }
         idx.push(a, d, b, b, d, e2);
       }
     }
-    // Perimeter skirt. Neighbouring rings meet on the same grid line but sample
-    // the ground at different densities, so the shared edge can differ by a few
-    // centimetres over a 54 m span. A wall hanging down from the edge means any
-    // residual hairline shows ground, never sky.
+    // Perimeter skirt — insurance, not the fix. The rim weld above already
+    // makes the shared polyline identical, but `recenter()` then translates
+    // each ring by its own bounding-box centre and stores the result as
+    // float32, so the two copies of a shared vertex can end up ~1e-6 m apart.
+    // A wall hanging down from the edge means any such hairline shows ground,
+    // never sky. Wound so its front face looks inward, towards the player.
+    // While the seam is exact this is fully occluded and costs 2 720 triangles.
     if (skirt > 0) {
       const edge = [];
       for (let i = 0; i <= n; i++) edge.push([i, 0]);
@@ -374,9 +476,16 @@ export default class Terrain {
     // texture does not alias into shimmer at distance.
     const tile = material?.userData?.tileMeters || 4;
     const [C, M, F] = Terrain.RINGS;
-    const core = this._patch(C.half, C.step, 0, tile, surf, 4);
-    const mid = this._patch(M.half, M.step, M.hole, tile * 4, surf, 8);
-    const far = this._patch(F.half, F.step, F.hole, tile * 40, null, 0);
+    // Each ring welds its hole boundary to the finer ring inside it, so the
+    // shared polyline is one polyline. The far ring paints itself as open grass
+    // (`surf` is null) because `Districts.districtAt()` returns nonsense out
+    // past the district raster — but its rim still uses `surf`, so the join to
+    // the mid ring is continuous and the change happens over the first 540 m.
+    const core = this._patch(C.half, C.step, 0, tile, surf, 4, null);
+    const mid = this._patch(M.half, M.step, M.hole, tile * 4, surf, 8,
+                            { step: C.step, surf });
+    const far = this._patch(F.half, F.step, F.hole, tile * 40, null, 0,
+                            { step: M.step, surf });
     for (const g of [core, mid, far]) {
       const m = new THREE.Mesh(g, material);
       m.receiveShadow = true;
@@ -430,21 +539,34 @@ export default class Terrain {
 /**
  * Nested LOD rings, chosen so the seams are exact.
  *
- * Each ring must satisfy `2*half % step === 0` (so the grid is symmetric about
- * the origin) and `(half + hole) % step === 0` (so a vertex lands exactly on the
- * hole boundary). Pick these by eye and the rings miss each other: the previous
- * set left a 2 m gap at 1506 and a 100 m gap at 3200, both full perimeter
- * rings, through which you could see the back of the sky dome.
+ * Three conditions, all of them load-bearing:
+ *   1. `2*half % step === 0`      — the grid is symmetric about the origin.
+ *   2. `hole === (inner ring).half` and `(half - hole) % step === 0`
+ *                                 — a vertex lands exactly on the boundary, so
+ *                                   the rings abut instead of leaving a gap.
+ *   3. `step % (inner ring).step === 0` and `hole % (inner ring).step === 0`
+ *                                 — the inner ring's boundary vertices land on
+ *                                   this ring's rim, so `_patch`'s rim fan can
+ *                                   weld the two into one polyline.
  *
- *   core 1458 / 18 : the fine ring. 18 m is the coarsest spacing at which the
- *                    road stamp still keeps the ground out of the carriageway.
- *   mid  3186 / 36 : covers the rest of the play area.
- *   far 11151 / 531: horizon filler out past the sky dome's visible ground.
+ * Pick these by eye and the rings miss each other. The set before last was
+ * 1500/3200/11000 and left an 8 m gap at r = 1500 and a 100 m gap at r = 3200,
+ * both full-perimeter, through which you could see the back of the sky dome.
+ * The set after that (1458/3186/11151) fixed condition 2 but not 3 — 531 is not
+ * a multiple of 36 — and left a T-junction crack of up to 7.79 m at the outer
+ * seam, papered over by an 8 m skirt with 0.21 m to spare.
+ *
+ *   core  1440 / 18 : the fine ring. 18 m is the coarsest spacing at which the
+ *                     road stamp still keeps the ground out of the carriageway.
+ *   mid   3240 / 36 : covers the rest of the play area (+/-3000).
+ *   far  11340 / 540: horizon filler out past the sky dome's visible ground.
+ *
+ * 18 | 36 | 540, and 1440 = 40x36, 3240 = 6x540.
  */
 Terrain.RINGS = [
-  { half: 1458, step: 18, hole: 0 },
-  { half: 3186, step: 36, hole: 1458 },
-  { half: 11151, step: 531, hole: 3186 },
+  { half: 1440, step: 18, hole: 0 },
+  { half: 3240, step: 36, hole: 1440 },
+  { half: 11340, step: 540, hole: 3240 },
 ];
 
 export { CELL as TERRAIN_CELL, BASE_LAND };
