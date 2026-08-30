@@ -3,15 +3,39 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: 2026-08-27, commit `06f93d3`.
+Last verified: 2026-08-30, commit `754747a`.
 
 > **Note on verification while several agents are running.** `capture()` runs the engine's
-> `update()` chain, so a throw in *any* system aborts the shot. During this pass `HUD`
-> (`this.moneyN` undefined), `Pedestrians` (`_refreshCandidates`) and `Traffic` all threw
-> inside `capture()`. If you need a shot and someone else's system is mid-flight, stub its
-> `update` at runtime rather than editing their file. Vite's HMR full-reload will also wipe
-> the page between `capture()` and a screenshot; `npx vite build` + a static server gives a
-> stable target.
+> `update()` chain, so a throw in *any* system aborts the shot. If you need a shot and
+> someone else's system is mid-flight, stub its `update` at runtime rather than editing
+> their file. Use the HMR-free verify server (`npm run verify`, port 5290, also in
+> `.claude/launch.json` as `boston-verify`) rather than `npm run dev` — the shared dev
+> server full-reloads every tab on every save. Do NOT `vite build` to get a stable target:
+> this machine runs with ~7 GiB free and duplicate build artifacts are not affordable.
+>
+> **Pixels are unavailable while the Browser pane is hidden — verified 2026-08-30.** A
+> hidden pane collapses the canvas (drawing buffer goes to 1x1, composer buffers report
+> 0x0) and the GPU then produces nothing at all: `readPixels` on the default framebuffer,
+> a same-task read with no `await`, and an offscreen FBO render are **all** solid black,
+> and forcing `setSize`/`composer.setSize` up to 2880x1620 does not recover it. Any visual
+> claim made in that state is fiction. Geometry, physics and point-in-polygon work are
+> CPU-side and unaffected. `measureFps()` refuses by design when `document.hidden`; when
+> the pane IS visible, drive frames synchronously and force GPU completion instead:
+> ```js
+> const b=window.__boston,r=b.engine.renderer,gl=r.getContext();
+> function bench(n){const s=[];for(let i=0;i<n;i++){const t=performance.now();b.step(1/60);gl.finish();s.push(performance.now()-t);}s.sort((a,c)=>a-c);return s[Math.floor(s.length/2)];}
+> ```
+> Keep any one evaluation under ~40 `step()` calls; ~190 exceeds the tool timeout.
+>
+> **Sample road centrelines from `edge.pts`, never a node-to-node chord.** Streets are
+> curved polylines (Beacon St edge 0 has 10 points); a chord cuts the corner and passes
+> through the buildings on the inside of every bend. That mistake manufactured a false
+> 7.9% buildings-in-road failure rate during this pass. Always include the self-test —
+> 500 building centroids must test inside their own polygon — or the number means nothing.
+>
+> **Disk pressure here is swap, not transcripts.** Concurrent hidden WebGL contexts each
+> hold a full city scene; three 1 GiB swapfiles appeared during one 3-agent wave and were
+> reclaimed when the agents exited. Close browser tabs when done and keep waves to 3-4.
 
 ---
 
@@ -20,8 +44,8 @@ Last verified: 2026-08-27, commit `06f93d3`.
 |---|---|
 | Boots | Yes — 22 systems, `bootReport.failed` is `[]` |
 | Console | `__boston.errors` is `[]` and `__boston.glFaults` is `[]`. The `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` warning is **gone** — it was `LensPass`; see §Resolved. Stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten. |
-| Real fps | **13 @ 1920×1080 `high`** (`measureFps(2)`, settled, static build, `hero_skyline`). Unchanged by the buildings fix — the whole city now rasterises for the same cost, which is what `PERF_REPORT.md` §6 predicts. **Not re-measurable while sibling agent tabs are rendering** — see the note under Next priorities. |
-| Draws / tris | 217 / 1.37M at `hero_skyline`; 529 / 2.87M at `downtown_dusk` — **inside** the 1200 / 3.5M budget |
+| Real fps | **Not measurable at present** — the Browser pane is hidden, so the GPU produces nothing (see the note above). The last trustworthy figure is a *relative* A/B on 2026-08-30 at a verified 1920×1080 buffer: median synchronous frame with `gl.finish()` went **13.4–15.9 ms → 4.7–6.1 ms** when the point/spot BRDF guard landed (`2cc85c5`). Treat any absolute fps in older rows as void. |
+| Draws / tris | 341 / 2.14M at boot default (2026-08-30, all of wave 1 in tree) — **inside** the 1200 / 3.5M budget. Buildings' facade-on-short-edge fix also cut LOD-0 opaque tris 30% (997,743 → 698,251 across 341 Beacon Hill buildings). |
 | Cold boot | ~8 s (was ~45 s) |
 | Visual quality | **~3/10.** Content is real; it does not yet look good. |
 
