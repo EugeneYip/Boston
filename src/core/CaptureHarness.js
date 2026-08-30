@@ -38,7 +38,14 @@ export default class CaptureHarness {
 
     /** Named viewpoints the critic compares against GTA V reference framing. */
     this.shots = {
-      street_level:   { pos: [40, 1.7, 120],   look: [0, 1.7, -400],  tod: 9.5,  fov: 55, eye: 1.7 },
+      // Re-authored: the original [40,1.7,120] was parked in Boston Common with no
+      // road surface in the near field at all. Toggling the road material moved the
+      // lower-frame mean by 0.2/255 there -- the shot was grass. A critic pass
+      // graded "the rain carriageway is identical to the dry one" from a shot with
+      // no carriageway in it. East Berkeley St, South End: 23 buildings within
+      // 45 m, and the same ablation moves 27.2.
+      street_level:   { pos: [-312.4, 5.06, 1275.9], look: [-237.6, 5.15, 1297.6],
+                        tod: 9.5,  fov: 55, eye: 1.7 },
       // Re-authored: the original [180,42,260] ended up pressed against a facade
       // once building heights were fixed, so the shot was a wall of windows.
       downtown_dusk:  { pos: [700, 120, 900],  look: [-100, 40, -200], tod: 19.4, fov: 48 },
@@ -51,8 +58,12 @@ export default class CaptureHarness {
       golden_hour:    { pos: [-300, 18, 420],  look: [300, 40, -200], tod: 6.6,  fov: 50 },
       overcast_wide:  { pos: [0, 320, 900],    look: [0, 30, -400],   tod: 13.0, fov: 60,
                         weather: 'overcast' },
-      rain_street:    { pos: [90, 2.4, -40],   look: [-300, 6, -420], tod: 15.2, fov: 58,
-                        weather: 'rain', eye: 2.4 },
+      // Re-authored off the Common for the same reason as street_level, and onto a
+      // DIFFERENT street so the two are not the same view twice -- a previous
+      // critic pass noted they were. Saint James Ave, Back Bay: 25 buildings
+      // within 45 m, road ablation moves 14.0.
+      rain_street:    { pos: [-459.2, 5.53, 496.8], look: [-523.8, 5.62, 527.8],
+                        tod: 15.2, fov: 58, weather: 'rain', eye: 1.7 },
       bridge:         { pos: [-40, 26, -980],  look: [120, 8, -1500], tod: 8.2,  fov: 52 },
 
       // ---- Level eye-height street cameras -------------------------------
