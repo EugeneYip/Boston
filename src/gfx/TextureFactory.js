@@ -1143,13 +1143,20 @@ function paintAsphalt(S, F, o) {
   for (let i = 0; i < S.n; i++) {
     const wear = sat(o.wear + (macro[i] - 0.5) * 0.55 + (mid[i] - 0.5) * 0.30);
     let r = binder[0], g = binder[1], b = binder[2];
-    const bv = (macro[i] - 0.5) * 0.115 + (mid[i] - 0.5) * 0.055 + (gr[i] - 0.5) * 0.022;
+    // Binder tone spread. Raised from 0.115/0.055 because the road is viewed at
+    // a grazing angle, where the mip chain averages several texels per pixel and
+    // eats most of the fine contrast before it reaches the frame — the near
+    // carriageway measured a mean absolute deviation of 1.7/255 against a brick
+    // wall's 48 in the same shot. Hot-mix genuinely varies this much between a
+    // ravelled patch and a sound one; it is the *filtering* that was flattening
+    // it, not the paint.
+    const bv = (macro[i] - 0.5) * 0.185 + (mid[i] - 0.5) * 0.090 + (gr[i] - 0.5) * 0.030;
     r += bv; g += bv; b += bv;
     let rough = 0.93 + (gr[i] - 0.5) * 0.04;
     let height = 0.55 + (grit[i] - 0.5) * 0.04 + (gr[i] - 0.5) * 0.03;
 
     // Aggregate poking through the ravelled binder. ~9 mm stones, partial cover.
-    const st = smoothstep(0.36, 0.22, stone[i]) * smoothstep(0.12, 0.62, wear);
+    const st = smoothstep(0.40, 0.20, stone[i]) * smoothstep(0.10, 0.58, wear);
     if (st > 0) {
       const s = sid[i];
       const a = s > 0.78 ? aggLight : s > 0.42 ? aggDark : aggTan;

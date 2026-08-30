@@ -319,13 +319,21 @@ export default class Materials {
     this._lastEnvI = envI; this._lastWet = wet;
     const tex = this.probe?.texture;
     for (const m of ctx.assets.materials.values()) {
-      const base = m.userData.envBase;
+      // Surfaces that shade their own wetness (the road atlas) need the level
+      // itself, not just a roughness lerp — puddles have to pool somewhere, and
+      // only the shader knows where the gutter is. Push it before the envMap
+      // test so it reaches the material whether or not it is on the probe.
+      const ud = m.userData;
+      if (ud.setWet) { ud.wetLevel = wet; ud.setWet(wet); }
+      const base = ud.envBase;
       if (base === undefined || m.envMap !== tex) continue;
       // A water film is a fresh dielectric layer over a surface that had none,
-      // so a wet street does pick up more of the environment. Kept modest: the
-      // darker albedo below it is what has to dominate, or we are back to a
-      // white road by another route.
-      const boost = m.userData.wetRough !== undefined ? 1 + wet * 0.35 : 1;
+      // so a wet street does pick up more of the environment. Kept modest by
+      // default: the darker albedo below it is what has to dominate, or we are
+      // back to a white road by another route. `wetEnvBoost` raises it for the
+      // one surface where the reflection IS the effect — a puddle at roughness
+      // 0.055 reflecting a 0.4-intensity probe is a grey smudge, not a mirror.
+      const boost = ud.wetRough !== undefined ? 1 + wet * (ud.wetEnvBoost ?? 0.35) : 1;
       m.envMapIntensity = base * envI * boost;
     }
   }

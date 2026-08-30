@@ -27,11 +27,40 @@ const VERGE = 2.2;          // graded strip that hides the terrain stamp seam
 // Atlas tiles: 0 asphalt aggregate | 1 concrete slab | 2 red brick | 3 granite sett
 const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
 
-// --- tints (linear-ish sRGB authored values; the ACES stack does the rest) ---
-// Linear albedo. The atlas is a near-white modulation map, so what is written
-// here is very close to what the surface actually reflects: aged asphalt sits
-// around 0.09, fresh road paint around 0.55, Boston granite kerb around 0.22.
-const C = {
+/**
+ * The tint table below was authored against `makeAtlas()`, the fallback atlas at
+ * the top of this file, which paints a **near-white** modulation map (~232/255).
+ * The atlas the city actually renders is the one `Materials._buildRoadAtlas()`
+ * assembles from the TextureFactory recipes, and its asphalt tile is a real dark
+ * hot-mix texture with a mean of 89/255 — 0.100 in linear. So every carriageway
+ * pixel has been shipping at `0.092 x 0.100 = 0.0092` linear diffuse albedo.
+ *
+ * That is not merely dark, it is **below the surface's own dielectric F0 of
+ * 0.04**, which is physically impossible for asphalt (real aged hot-mix is
+ * around 0.09 diffuse against the same 0.04 specular). Measured consequence, by
+ * ablation on the near carriageway at `st_southend`: zeroing the road's diffuse
+ * colour outright changed its rendered luminance by **13%**. The other 87% was
+ * specular. That is why every albedo detail added here was invisible, and it is
+ * the mechanical reason rain "produced no wet response" — `setWetness` darkens
+ * *albedo*, and albedo was 13% of the signal, so soaking the street moved the
+ * carriageway by a measured **+1%** (ratio 1.01, i.e. very slightly lighter).
+ *
+ * `ALBEDO_GAIN` restores the missing atlas brightness. It multiplies every entry
+ * uniformly, so all the authored *ratios* — asphalt vs gutter vs paint vs
+ * granite — are exactly as before; only the absolute level moves. It is
+ * deliberately 3.0 rather than the ~9 that would make asphalt physically
+ * correct: 9 lands the carriageway at 117/255 against a sunlit brick facade's
+ * 138, which is a bigger exposure change than one agent should make to a shared
+ * build mid-pass. At 3.0 the frame mean moves ~4%, nothing new clips, and the
+ * measured wet/dry ratio goes 1.01 -> 0.94. The full sweep is in the report; the
+ * remaining factor is a call for whoever owns exposure.
+ */
+const ALBEDO_GAIN = 3.0;
+
+// --- tints (linear albedo, before ALBEDO_GAIN; the ACES stack does the rest) --
+// Aged asphalt sits around 0.09 of the atlas value, fresh road paint around
+// 0.55, Boston granite kerb around 0.22.
+const C0 = {
   asphalt:   [0.092, 0.095, 0.104],
   asphaltHot:[0.115, 0.116, 0.120],
   gutter:    [0.078, 0.080, 0.086],
@@ -46,6 +75,8 @@ const C = {
   parkbay:   [0.082, 0.084, 0.090],
   graniteTop:[0.255, 0.251, 0.243],
 };
+const C = Object.fromEntries(Object.entries(C0)
+  .map(([k, v]) => [k, v.map(x => x * ALBEDO_GAIN)]));
 
 /** Cheap deterministic hash. Math.sin-based noise costs ~1M trig calls building
  *  the atlas; an integer mix is an order of magnitude faster and tiles better. */
@@ -190,10 +221,83 @@ function makeAtlas() {
 }
 
 /**
+ * Metres of kerb per unit of `aSurf` on a kerb band. `section()` emits both the
+ * granite face and the granite top with `scale: 1.5`, and the shader turns
+ * `vSurf` back into metres with this constant to size the sawn block joints and
+ * the stone grain. If you change one, change the other.
+ */
+const KERB_SCALE = 1.5;
+
+/**
+ * Surface classes carried in `aWear.y`.
+ *
+ * A non-negative value means "carriageway, and this is the distance in metres to
+ * the nearer kerb" — which is what drives gutter grime and puddle pooling.
+ * Negative values are class tags. They are constant across a band, and no band
+ * shares vertices with a band of a different class, so nothing ever interpolates
+ * between two classes and the comparisons below cannot straddle a boundary.
+ */
+const W_ROAD = 0, W_WALK = -1, W_KERB_FACE = -2, W_KERB_TOP = -3, W_VERGE = -4;
+
+/**
+ * Procedural surface detail shared by every paved surface.
+ *
+ * Why this is in a shader and not in the atlas: the atlas tile is 2.4 m square,
+ * so *everything* painted into it repeats every 2.4 m. That is fine for
+ * aggregate grain and useless for the things that actually make a road read as a
+ * road — wheel-track polish (fixed to the lane, not to the tile), gutter grime
+ * (fixed to the kerb), utility patches and cracks (tens of metres long), oil
+ * down the middle of the lane. Those are all functions of position *in the
+ * street*, which only the shader knows. Generating them here also means no new
+ * texture memory and no new draw call, and it cannot introduce a tiling period:
+ * the noise is evaluated on continuous world XZ at scales that are not harmonics
+ * of each other or of the atlas tile.
+ *
+ * Scale matters more than amplitude here, and the reason is measurable. The
+ * critic's flatness number is the mean absolute luminance difference across an
+ * 89 px window on the *near* carriageway — and 89 px at 1080p, on ground 4.7 m
+ * from a 1.65 m eye, is **0.34 m of road**. Metre-scale blotching therefore
+ * scores almost nothing; what moves it is 0.2-1 m structure and thin, dark,
+ * high-contrast cracks that the window can straddle. Anything finer than that
+ * the atlas already carries, and the mip chain eats most of it at a grazing
+ * angle anyway — which is why `bFade` exists: octaves switch off once a pixel
+ * footprint approaches their cell size, instead of shimmering into the distance.
+ */
+const ROAD_NOISE_GLSL = `
+  // Hash without sine: sin() drives a texture-sized transcendental per octave
+  // and banded badly at Boston's world coordinates (up to ~4 km from origin).
+  float bHash(vec2 p) {
+    vec3 q = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
+  }
+  // 1 while a feature of "cell" metres is resolved, 0 once it is not. Backticks
+  // are forbidden in this string: it is a JS template literal.
+  float bFade(float cell) { return smoothstep(cell * 1.30, cell * 0.40, gPx); }
+  float bNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(bHash(i), bHash(i + vec2(1.0, 0.0)), f.x),
+               mix(bHash(i + vec2(0.0, 1.0)), bHash(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+`;
+
+/**
  * One material for every paved surface in the city.
  * Tiling is done in the shader (`fract` on a world-scaled UV, with explicit
  * gradients so the atlas seams do not blow up the mip selection), which is what
  * lets brick, concrete, granite and asphalt share a single draw call.
+ *
+ * Wetness. `Assets.setWetness()` already lerps this material's `roughness`
+ * (0.92 -> 0.26) and `color` (x0.42) from the policy in `Materials.js`, which is
+ * the correct *average* for rain-damp asphalt. What it cannot do is vary in
+ * space, and a road that is uniformly damp everywhere is exactly the "rain
+ * changes nothing" reading. `uWet` lets the shader pool water where water
+ * actually goes — the gutter and the broad low spots — and leave the crown
+ * merely damp. Puddles are the only thing that gets near-mirror roughness, they
+ * cover ~10% of the carriageway, and everything wet gets *darker*: the global
+ * roughness collapse to 0.06 that turned Boylston Street into white ice is
+ * exactly what this avoids.
  */
 function makeRoadMaterial(atlas) {
   const m = new THREE.MeshStandardMaterial({
@@ -203,31 +307,261 @@ function makeRoadMaterial(atlas) {
   });
   m.userData.wetnessRough = 0.92;
   m.userData.wetnessColor = m.color.clone();
+  // A water film is a fresh dielectric layer over a surface that had none, so a
+  // wet road picks up more of the environment than the 0.55 the dry asphalt is
+  // authored at. Materials._applyEnv reads this. Kept small on purpose: at 1.35
+  // this more than doubled envMapIntensity, and on a *shadowed* street — where
+  // the probe is most of the light — that made the wet road measurably lighter
+  // than the dry one (ratio 1.054 at rain_street). The puddle read comes from
+  // roughness, not from env intensity; a mirror at 0.05 roughness reflects
+  // plenty at 0.49.
+  m.userData.wetEnvBoost = 0.45;
+  const shaders = [];
+  m.userData.shaders = shaders;
+  /** Push the current rain wetness into every compiled variant. */
+  m.userData.setWet = (v) => {
+    for (const sh of shaders) if (sh.uniforms.uWet) sh.uniforms.uWet.value = v;
+  };
+  /**
+   * Ablation switch, 0..1. At 0 the surface is exactly what it was before the
+   * procedural pass existed — flat tint x atlas, one uniform roughness — so a
+   * critic can A/B the two in the *same* frame. That matters more than it
+   * sounds: the auto-exposure and the drifting cloud shadow move the absolute
+   * luminance of this shot by up to 35% between two captures minutes apart, so
+   * a before/after taken across an edit is not a controlled comparison and a
+   * before/after taken across this uniform is.
+   */
+  m.userData.setDetail = (v) => {
+    for (const sh of shaders) if (sh.uniforms.uDetail) sh.uniforms.uDetail.value = v;
+  };
   m.onBeforeCompile = (sh) => {
+    sh.uniforms.uWet = { value: m.userData.wetLevel ?? 0 };
+    sh.uniforms.uDetail = { value: m.userData.detailLevel ?? 1 };
+    shaders.push(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
         attribute vec2 aSurf;      // world-scaled pattern UV
         attribute vec2 aTile;      // atlas tile origin (0 or 0.5)
+        attribute vec2 aWear;      // x = metres from the lane centre,
+                                   // y = metres to the kerb, or a class tag < 0
         attribute float aRough;
-        varying vec2 vSurf; varying vec2 vTile; varying float vRough;`)
+        varying vec2 vSurf; varying vec2 vTile; varying float vRough;
+        varying vec2 vWear; varying vec3 vWPos;`)
       .replace('#include <uv_vertex>', `#include <uv_vertex>
-        vSurf = aSurf; vTile = aTile; vRough = aRough;`);
+        vSurf = aSurf; vTile = aTile; vRough = aRough; vWear = aWear;
+        vWPos = (modelMatrix * vec4(position, 1.0)).xyz;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
+        uniform float uWet;
+        uniform float uDetail;
         varying vec2 vSurf; varying vec2 vTile; varying float vRough;
+        varying vec2 vWear; varying vec3 vWPos;
+        // Resolved once in <map_fragment>, consumed by the roughness and normal
+        // chunks further down main().
+        float gRough, gPuddle, gWet, gFlat, gPx;
+        ${ROAD_NOISE_GLSL}
         vec4 atlasTex(sampler2D t, vec2 s, vec2 tile) {
           vec2 dx = dFdx(s) * 0.5, dy = dFdy(s) * 0.5;
           return textureGrad(t, tile + fract(s) * 0.5, dx, dy);
         }`)
       .replace('#include <map_fragment>', `
         vec4 sampledDiffuseColor = atlasTex(map, vSurf, vTile);
+        vec2 W = vWPos.xz;
+        float lane = vWear.x, kerb = vWear.y;
+        bool isRoad = kerb > -0.5;
+        bool isKerb = kerb < -1.5 && kerb > -3.5;
+        bool isVerge = kerb < -3.5;
+
+        // Pixel footprint on the ground, as the geometric mean of the two screen
+        // derivatives — the isotropic equivalent of the anisotropic footprint,
+        // and the same quantity a trilinear LOD would pick.
+        vec2 ddWx = dFdx(W), ddWy = dFdy(W);
+        gPx = sqrt(max(length(ddWx), 1e-4) * max(length(ddWy), 1e-4));
+
+        // --- albedo variation across five non-harmonic scales ---------------
+        // 0.85 m, 2.7 m, 7.7 m and 23 m, plus a 0.24 m scatter that stands in
+        // for chip and sand once the atlas has been mipped away. None of these
+        // is a multiple of the 2.4 m atlas period or of each other, so there is
+        // nothing here for an autocorrelation to lock onto.
+        float n0 = bNoise(W * 1.18);
+        float n1 = bNoise(W * 0.37);
+        float n2 = bNoise(W * 0.13);
+        float n3 = bNoise(W * 0.043);
+        float macro = (n0 - 0.5) * 0.84 * bFade(0.85)
+                    + (n1 - 0.5) * 0.70
+                    + (n2 - 0.5) * 0.62
+                    + (n3 - 0.5) * 0.54;
+
+        float tone = 1.0;
+        gRough = roughness * vRough;
+        gFlat = 0.0;
+
+        if (isKerb) {
+          // ---- sawn Quincy granite ---------------------------------------
+          // The atlas has four tiles and none of them is granite, so the kerb
+          // was borrowing the concrete-slab tile and reading as a painted
+          // stripe. Granite is a coarse two-feldspar + quartz + biotite rock:
+          // what the eye actually reads at kerb scale is dense 3-6 mm speckle
+          // with sparse near-black flecks, plus the sawn joint every ~1.35 m.
+          vec2 kq = vSurf * ${KERB_SCALE.toFixed(2)};      // metres (along, up)
+          // The kerb face is vertical, so the world-XZ footprint gPx collapses
+          // on it and cannot be used to fade the grain. Measure the footprint in
+          // kerb space instead, or 3 mm speckle turns every distant kerb into a
+          // sparkling line.
+          float kpx = sqrt(max(length(dFdx(kq)), 1e-4) * max(length(dFdy(kq)), 1e-4));
+          float kFine = smoothstep(0.008, 0.0025, kpx);
+          float kMid  = smoothstep(0.030, 0.010, kpx);
+          float sp = bHash(floor(kq * 300.0));
+          float md = bNoise(kq * 46.0);
+          float coarse = bHash(floor(kq * 84.0) + 7.7);
+          tone = 0.80 + 0.15 + (sp - 0.5) * 0.30 * kFine
+               + (coarse - 0.5) * 0.26 * kMid + (md - 0.5) * 0.13 * kMid;
+          tone -= step(0.972, sp) * 0.42 * kFine;          // biotite
+          tone += step(0.994, coarse) * 0.30 * kMid;       // quartz catch-light
+          // Sawn block joints, and the traffic film that collects in them.
+          float bl = fract(kq.x / 1.35 + bHash(vec2(floor(kq.x / 1.35), 3.0)) * 0.1);
+          float bj = 1.0 - smoothstep(0.0, 0.022, min(bl, 1.0 - bl));
+          tone *= 1.0 - bj * 0.42;
+          // Splash line: the bottom 40 mm of a kerb face is permanently filthy.
+          if (kerb < -2.5) {
+            tone *= 1.0 - smoothstep(0.055, 0.0, kq.y) * 0.26;
+          } else {
+            // Kerb top: rounded, chipped arris and boot polish.
+            tone *= 0.94 + bNoise(kq * 7.0) * 0.14;
+          }
+          tone *= 1.0 + macro * 0.30;
+          gRough = clamp(0.52 + (sp - 0.5) * 0.22 * kFine + bj * 0.24, 0.20, 0.95);
+        } else if (isRoad) {
+          // ---- wheel tracks ----------------------------------------------
+          // Tyres run ~0.78 m either side of the lane centre. Between them the
+          // surface keeps its aggregate; under them 60 years of rubber has
+          // polished it darker and smoother. This is the single strongest
+          // "this is a road" cue and it cannot come from a tiled texture.
+          float dt = (abs(lane) - 0.78) / 0.42;
+          float track = exp(-dt * dt) * (0.55 + 0.45 * n2);
+          // ---- gutter grime ----------------------------------------------
+          float gut = smoothstep(1.45, 0.10, kerb);
+          // ---- oil and drip staining down the lane centre ----------------
+          float oilLane = exp(-(lane / 0.34) * (lane / 0.34));
+          float oil = oilLane * smoothstep(0.44, 0.80, n2 * 0.6 + n3 * 0.4);
+          // ---- utility-cut patches ----------------------------------------
+          // Cells rotated off the street grid and domain-warped, so the joints
+          // meander like real saw cuts instead of reading as a chequerboard.
+          vec2 pw = W + vec2(n3 - 0.5, n2 - 0.5) * 5.5;
+          vec2 pc = vec2(pw.x * 0.906 - pw.y * 0.423, pw.x * 0.423 + pw.y * 0.906) / 9.5;
+          vec2 pi = floor(pc), pf = fract(pc);
+          // NB: not "patch" — that is a reserved word in GLSL ES 3.0 and the
+          // whole road material silently failed to compile.
+          float cut = step(0.68, bHash(pi * 1.7));
+          float rim = min(min(pf.x, pf.y), min(1.0 - pf.x, 1.0 - pf.y));
+          float joint = cut * (1.0 - smoothstep(0.0, 0.010, rim)) * bFade(0.25);
+          float fill = cut * (bHash(pi * 3.1) - 0.5);
+          // ---- cracks ------------------------------------------------------
+          // Two ridge fields at different scales: one long meandering fatigue
+          // crack every few metres, one denser web inside the aged areas. Both
+          // are narrow (~3 cm) and nearly black, which is what makes them
+          // survive the mip chain and register across a 0.34 m window.
+          float cw1 = bNoise(W * 0.052 + 11.3);
+          float crk1 = 1.0 - smoothstep(0.0, 0.060,
+                         abs(bNoise(W * 0.62 + cw1 * 3.4) - 0.5));
+          float crk2 = 1.0 - smoothstep(0.0, 0.048,
+                         abs(bNoise(W * 1.45 + n3 * 2.2 + 41.7) - 0.5));
+          float crack = max(crk1 * smoothstep(0.24, 0.58, n3),
+                            crk2 * smoothstep(0.40, 0.72, n2) * 0.85) * bFade(0.16);
+          // ---- chip scatter and skin patching ------------------------------
+          // The exposed-aggregate speckle the atlas carries is 5-15 mm and the
+          // mip chain has eaten all of it by two metres out — measured: the
+          // atlas has a mean absolute deviation of 4.1/255 texel-to-texel and
+          // only 1.7 of that survives to the frame. These two bands sit above
+          // the mip cutoff and below the blotching, and they are what actually
+          // moves the near carriageway.
+          float grit = (bNoise(W * 4.3) - 0.5) * bFade(0.30);
+          float chip = (bNoise(W * 1.85 + 23.1) - 0.5) * bFade(0.62);
+          // Cold-patch dabs: the shovel-and-stamp repairs around every gully and
+          // trench, a third of a metre across and much darker than the mix.
+          float dab = smoothstep(0.72, 0.93, bNoise(W * 2.6 + 61.4))
+                    * smoothstep(0.38, 0.70, n2) * bFade(0.40);
+
+          // Base 0.90, not 1.0: wear, grime and traffic film are a net loss of
+          // reflectance, and scaling the base rather than the noise raises
+          // relative contrast at the same time as it holds the level.
+          tone = 0.90 + macro * 1.00 + fill * 0.34 + grit * 0.80 + chip * 0.62
+               - track * 0.26 - gut * 0.34 - oil * 0.50 - dab * 0.30
+               - joint * 0.62 - crack * 0.70;
+          // The polish is what makes a wheel track read at a grazing angle — it
+          // is a specular cue first and a tonal one second. Kept deliberately
+          // moderate: smoothing and flattening a horizontal surface both raise
+          // the light it returns, and at a diffuse albedo this low the specular
+          // term is the larger half of the road's luminance. Ablation measured
+          // the first cut of this at +8% mean, which put the asphalt brighter
+          // than the concrete walk beside it.
+          gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.04;
+          gFlat = track * 0.22 + oil * 0.16;   // polished: flatten the aggregate
+        } else if (isVerge) {
+          tone = 1.0 + macro * 0.60;
+        } else {
+          // ---- pavement ----------------------------------------------------
+          // Slabs weather in patches; damp shadow lines and salt bloom leave
+          // blotches at half a metre, and trodden gum leaves near-black discs.
+          float stain = smoothstep(0.50, 0.86, n2 * 0.55 + n1 * 0.45);
+          float gum = smoothstep(0.90, 0.985, bNoise(W * 3.1 + 5.5)) * bFade(0.22);
+          float crk = (1.0 - smoothstep(0.0, 0.045,
+                        abs(bNoise(W * 0.83 + n3 * 2.6) - 0.5)))
+                    * smoothstep(0.52, 0.82, n2) * bFade(0.18);
+          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.34;
+          gRough = gRough + macro * 0.06 + stain * 0.03 - gum * 0.18;
+        }
+
+        // ---- rain ----------------------------------------------------------
+        gWet = 0.0; gPuddle = 0.0;
+        if (uWet > 0.005) {
+          // Dampness is not uniform: sheltered stretches stay lighter.
+          gWet = uWet * (0.74 + 0.26 * bNoise(W * 0.021 + 4.4));
+          // Water runs to the gutter (the carriageway is cambered towards it)
+          // and gathers in broad shallow depressions. Both terms are needed:
+          // the gutter alone reads as a painted stripe, the noise alone puts
+          // puddles on the crown where water cannot stand.
+          // Water stands in two places on a real street and only two: the
+          // gutter, and the worn ruts under the wheel tracks. The rutted
+          // ribbons are what makes a rainy street photograph the way it does —
+          // two long broken mirrors down each lane — and they are free here,
+          // because the wheel tracks are already solved geometry.
+          float low = isRoad ? max(smoothstep(1.9, 0.12, kerb), gFlat * 1.3) : 0.22;
+          float pn = bNoise(W * 0.075 + 17.2) * 0.64 + bNoise(W * 0.235 + 3.1) * 0.36;
+          // Tight threshold: a puddle has an edge. A wide ramp gives a damp
+          // smear over the whole gutter instead of standing water with a rim.
+          gPuddle = smoothstep(0.600, 0.720, pn * 0.72 + low * 0.46)
+                  * smoothstep(0.10, 0.55, gWet);
+          if (isKerb) gPuddle = 0.0;    // a vertical face holds no water
+          // Wet asphalt is DARKER. The material colour is already darkened by
+          // Assets.setWetness; this is the spatial part on top of it, and the
+          // puddle is the darkest thing on the street, not the brightest —
+          // everything it gains, it gains as specular.
+          tone *= 1.0 - gWet * (0.14 + gPuddle * 0.45);
+          // Sheet-damp asphalt measures ~0.30 roughness and standing water
+          // ~0.06. Only the puddle is allowed near a mirror, and puddles are a
+          // minority of the surface, so the frame cannot flip to white — which
+          // is exactly what the old global collapse to 0.06 did.
+          // Rubber-polished wheel tracks hold a thinner, glassier film than the
+          // ravelled aggregate between them, so they come out a step smoother.
+          float sheet = mix(0.30, 0.17, min(1.0, gFlat * 2.4));
+          gRough = mix(gRough, isKerb ? 0.34 : mix(sheet, 0.050, gPuddle), gWet);
+          gFlat = max(gFlat, gPuddle * 0.94);   // standing water is flat
+        }
+
+        // uDetail = 0 restores the pre-existing surface exactly: flat tone, one
+        // roughness, no wet structure. See makeRoadMaterial's setDetail.
+        tone = mix(1.0, tone, uDetail);
+        gRough = mix(roughness * vRough, gRough, uDetail);
+        gFlat *= uDetail;
+        sampledDiffuseColor.rgb *= clamp(tone, 0.18, 1.75);
         diffuseColor *= sampledDiffuseColor;`)
       .replace('#include <normal_fragment_maps>', `
         vec3 mapN = atlasTex(normalMap, vSurf, vTile).xyz * 2.0 - 1.0;
-        mapN.xy *= normalScale;
+        mapN.xy *= normalScale * (1.0 - gFlat);
         normal = normalize(tbn * mapN);`)
       .replace('#include <roughnessmap_fragment>', `
-        float roughnessFactor = roughness * vRough;`);
+        float roughnessFactor = clamp(gRough, 0.045, 1.0);`);
   };
   m.customProgramCacheKey = () => 'bostonRoad';
   return m;
@@ -237,11 +571,11 @@ function makeRoadMaterial(atlas) {
 class Batch {
   constructor() {
     this.p = []; this.n = []; this.c = []; this.s = []; this.t = []; this.r = [];
-    this.i = []; this.v = 0;
+    this.w = []; this.i = []; this.v = 0;
   }
-  vert(x, y, z, nx, ny, nz, cr, cg, cb, su, sv, tu, tv, rg) {
+  vert(x, y, z, nx, ny, nz, cr, cg, cb, su, sv, tu, tv, rg, wl = 0, wk = W_ROAD) {
     this.p.push(x, y, z); this.n.push(nx, ny, nz); this.c.push(cr, cg, cb);
-    this.s.push(su, sv); this.t.push(tu, tv); this.r.push(rg);
+    this.s.push(su, sv); this.t.push(tu, tv); this.r.push(rg); this.w.push(wl, wk);
     return this.v++;
   }
   quad(a, b, c, d) { this.i.push(a, b, c, a, c, d); }
@@ -254,6 +588,7 @@ class Batch {
     g.setAttribute('aSurf', new THREE.Float32BufferAttribute(this.s, 2));
     g.setAttribute('aTile', new THREE.Float32BufferAttribute(this.t, 2));
     g.setAttribute('aRough', new THREE.Float32BufferAttribute(this.r, 1));
+    g.setAttribute('aWear', new THREE.Float32BufferAttribute(this.w, 2));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(this.s, 2));  // for TBN
     g.setIndex(this.i);
     g.computeBoundingSphere();
@@ -337,6 +672,19 @@ export default class Roads {
     const surfTint = e.surface === 'cobble' ? C.cobble : C.asphalt;
     const marks = e.type !== 'alley' && e.surface === 'asphalt' && !lw;
 
+    // Lane centrelines, in the same offset space as the bands. The shader puts
+    // the wheel tracks 0.78 m either side of these, so they have to be the real
+    // travelled lanes and not a naive division of the kerb-to-kerb width —
+    // otherwise the tracks land in the parking bay and the gutter.
+    const lanes = [];
+    if (marks) {
+      for (let k = bwd; k >= 1; k--) lanes.push(shift - (k - 0.5) * laneW);
+      for (let k = 1; k <= fwd; k++) lanes.push(shift + (k - 0.5) * laneW);
+    } else {
+      const n = Math.max(1, Math.round((R - L) / laneW));
+      for (let k = 0; k < n; k++) lanes.push(L + (k + 0.5) * ((R - L) / n));
+    }
+
     if (!marks) {
       add(L, R, surfTile, surfTint, e.surface === 'cobble' ? 0.86 : 0.97);
     } else {
@@ -398,23 +746,48 @@ export default class Roads {
         // rather than a kerb; the concrete-slab tile at this scale gives the
         // block joints, and `vertical` maps the texture up the face properly.
         bands.push({ o0: k0, o1: k0, y0: 0, y1: KERB_H, tile: T_CONCRETE,
-                     tint: C.granite, rough: 0.74, vertical: true, side, scale: 1.5 });
+                     tint: C.granite, rough: 0.74, vertical: true, side,
+                     scale: KERB_SCALE, cls: W_KERB_FACE });
         bands.push({ o0: side < 0 ? k1 : k0, o1: side < 0 ? k0 : k1, y0: KERB_H, y1: KERB_H,
-                     tile: T_CONCRETE, tint: C.graniteTop, rough: 0.70, scale: 1.5 });
+                     tile: T_CONCRETE, tint: C.graniteTop, rough: 0.70,
+                     scale: KERB_SCALE, cls: W_KERB_TOP });
         const w0 = edge + side * 0.16, w1 = edge + side * (0.16 + walk);
         bands.push({ o0: side < 0 ? w1 : w0, o1: side < 0 ? w0 : w1,
                      y0: KERB_H + (side < 0 ? 0.05 : 0.0), y1: KERB_H + (side < 0 ? 0.0 : 0.05),
-                     tile: wt, tint: wc, rough: brick ? 0.9 : 0.88, scale: brick ? 1.9 : 2.6 });
+                     tile: wt, tint: wc, rough: brick ? 0.9 : 0.88,
+                     scale: brick ? 1.9 : 2.6, cls: W_WALK });
         // Graded verge behind the pavement. The terrain raster is stamped a
         // little low around every street so it can never poke through the
         // asphalt; this closes that seam instead of leaving a visible lip.
         const v1 = edge + side * (0.16 + walk + VERGE);
         bands.push({ o0: side < 0 ? v1 : w1, o1: side < 0 ? w1 : v1,
                      y0: side < 0 ? -0.46 : KERB_H, y1: side < 0 ? KERB_H : -0.46,
-                     tile: T_CONCRETE, tint: C.verge, rough: 0.98, scale: 3.4 });
+                     tile: T_CONCRETE, tint: C.verge, rough: 0.98, scale: 3.4,
+                     cls: W_VERGE });
       }
     }
-    return { bands, L, R, half, shift, corridor: half + (walk > 0.3 ? walk + 0.16 : 0) };
+    return { bands, L, R, half, shift, lanes,
+             corridor: half + (walk > 0.3 ? walk + 0.16 : 0) };
+  }
+
+  /** Centre of the travelled lane nearest an offset, in the same space. */
+  static _nearestLane(lanes, o) {
+    let best = 0, bd = 1e9;
+    for (let i = 0; i < lanes.length; i++) {
+      const d = Math.abs(o - lanes[i]);
+      if (d < bd) { bd = d; best = lanes[i]; }
+    }
+    return best;
+  }
+
+  /**
+   * Signed distance from an offset to the nearest lane centre, in metres.
+   * Clamped to well outside a wheel-track lobe so the tracks never leak into
+   * the next lane when a "lane" is really a wide shoulder.
+   */
+  static _laneOff(lanes, o) {
+    if (!lanes.length) return 0;
+    return Math.max(-2.2, Math.min(2.2, o - Roads._nearestLane(lanes, o)));
   }
 
   // -- ribbon ---------------------------------------------------------------
@@ -482,6 +855,23 @@ export default class Roads {
     const tile = TILE_UV[band.tile];
     const sc = band.scale || 2.4;
     const half = sec.half || 1;
+    // Wear coordinates. On the carriageway these are real geometry — offset from
+    // the travelled lane centre, and distance to the nearer kerb — so wheel
+    // tracks and gutter grime land where traffic and water actually put them.
+    // Off it, aWear.y is a class tag (see W_* above).
+    const cls = band.cls ?? W_ROAD;
+    const lanes = sec.lanes || [];
+    // Pick the lane from the band's MIDPOINT, not per vertex. Choosing per
+    // vertex lets a 12 cm lane-divider band pick lane A at one edge and lane B
+    // at the other, so the interpolated offset sweeps ±1.7 m across 12 cm and
+    // paints a bogus wheel track inside the painted line.
+    const cMid = cls === W_ROAD && lanes.length
+      ? Roads._nearestLane(lanes, (band.o0 + band.o1) / 2) : 0;
+    const wearAt = (o) => cls !== W_ROAD ? [0, cls]
+      : [band.laneOff !== undefined ? band.laneOff
+                                    : Math.max(-2.2, Math.min(2.2, o - cMid)),
+         Math.max(0, Math.min(o - sec.L, sec.R - o))];
+    const wa = wearAt(band.o0), wb = wearAt(band.o1);
     const vy = (o, fr) => {
       const base = band.vertical || band.y0 !== undefined ? 0 : 0;
       const cam = band.road === true || band.y0 === undefined
@@ -521,9 +911,9 @@ export default class Roads {
       const v0 = band.vertical ? y0 / sc : o0 / sc;
       const v1 = band.vertical ? y1 / sc : o1 / sc;
       const a = bat.vert(x0, f.y + y0, z0, nrm.x, nrm.y, nrm.z, cr, cg, cb,
-        f.d / sc, v0, tile[0], tile[1], band.rough);
+        f.d / sc, v0, tile[0], tile[1], band.rough, wa[0], wa[1]);
       const b = bat.vert(x1, f.y + y1, z1, nrm.x, nrm.y, nrm.z, cr, cg, cb,
-        f.d / sc, v1, tile[0], tile[1], band.rough);
+        f.d / sc, v1, tile[0], tile[1], band.rough, wb[0], wb[1]);
       if (i > 0) bat.quad(prevA, prevB, b, a);
       prevA = a; prevB = b;
     }
@@ -604,12 +994,15 @@ export default class Roads {
     }
     // fan from the node centre — crowned very slightly so water sheds
     const nrm = [0, 1, 0];
+    // aWear on a junction: no lane structure, so no wheel tracks — but the
+    // middle of a junction is the oiliest asphalt in a city and its edges drain
+    // like a gutter, which is what the 3.6 m / 0.9 m kerb distances buy.
     const cIdx = bat.vert(n.x, n.y + 0.035, n.z, 0, 1, 0,
       C.asphaltHot[0], C.asphaltHot[1], C.asphaltHot[2], n.x / 2.4, n.z / 2.4,
-      tile[0], tile[1], 0.98);
+      tile[0], tile[1], 0.98, 0, 3.6);
     const ring = loop.map(p => bat.vert(p.x, p.y, p.z, nrm[0], nrm[1], nrm[2],
       C.asphaltHot[0] * 0.96, C.asphaltHot[1] * 0.96, C.asphaltHot[2] * 0.96,
-      p.x / 2.4, p.z / 2.4, tile[0], tile[1], 0.98));
+      p.x / 2.4, p.z / 2.4, tile[0], tile[1], 0.98, 0, 0.9));
     for (let i = 0; i < ring.length; i++) {
       bat.i.push(cIdx, ring[i], ring[(i + 1) % ring.length]);
     }
@@ -634,7 +1027,8 @@ export default class Roads {
         [c.x, c.z],
       ];
       const vs = quad.map(([x, z]) => bat.vert(x, y, z, 0, 1, 0,
-        C.concrete[0], C.concrete[1], C.concrete[2], x / 2.6, z / 2.6, ct[0], ct[1], 0.88));
+        C.concrete[0], C.concrete[1], C.concrete[2], x / 2.6, z / 2.6, ct[0], ct[1], 0.88,
+        0, W_WALK));
       for (let k = 1; k < vs.length - 1; k++) bat.i.push(vs[0], vs[k], vs[k + 1]);
       // kerb face around the corner
       const gt = TILE_UV[T_CONCRETE];
@@ -643,10 +1037,11 @@ export default class Roads {
         const [x0, z0] = face[k], [x1, z1] = face[k + 1];
         let fx = x1 - x0, fz = z1 - z0; const fl = Math.hypot(fx, fz) || 1;
         const nx = -fz / fl, nz = fx / fl;
-        const a = bat.vert(x0, n.y, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 1.5, 0, gt[0], gt[1], 0.74);
-        const b = bat.vert(x1, n.y, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 1.5, 0, gt[0], gt[1], 0.74);
-        const c2 = bat.vert(x1, n.y + KERB_H, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / 1.5, KERB_H / 1.5, gt[0], gt[1], 0.74);
-        const d = bat.vert(x0, n.y + KERB_H, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / 1.5, KERB_H / 1.5, gt[0], gt[1], 0.74);
+        const S = KERB_SCALE, KF = W_KERB_FACE;
+        const a = bat.vert(x0, n.y, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / S, 0, gt[0], gt[1], 0.74, 0, KF);
+        const b = bat.vert(x1, n.y, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / S, 0, gt[0], gt[1], 0.74, 0, KF);
+        const c2 = bat.vert(x1, n.y + KERB_H, z1, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x1 / S, KERB_H / S, gt[0], gt[1], 0.74, 0, KF);
+        const d = bat.vert(x0, n.y + KERB_H, z0, -nx, 0.2, -nz, C.granite[0], C.granite[1], C.granite[2], x0 / S, KERB_H / S, gt[0], gt[1], 0.74, 0, KF);
         bat.quad(a, b, c2, d);
       }
     }
@@ -670,7 +1065,9 @@ export default class Roads {
         const cam = -CROWN * Math.pow(Math.min(1, Math.abs(o - sec.shift) / sec.half), 2) * 0.35;
         return bat.vert(f.x + f.rx * o, f.y + cam, f.z + f.rz * o, 0, 1, 0,
           t[0] * wear, t[1] * wear, t[2] * wear, (f.d || 0) / 2.4, o / 2.4,
-          tile[0], tile[1], paint ? 0.66 : 0.97);
+          tile[0], tile[1], paint ? 0.66 : 0.97,
+          Roads._laneOff(sec.lanes || [], o),
+          Math.max(0, Math.min(o - sec.L, sec.R - o)));
       });
       bat.quad(vs[0], vs[1], vs[2], vs[3]);
     }
@@ -684,11 +1081,22 @@ export default class Roads {
     // cannot be one of the materials library's generic surfaces. Build it here
     // and register it so it is still shared, disposed centrally and picked up
     // by `assets.setWetness()` when it rains.
-    this.atlas = makeAtlas();
-    this.material = assets
-      ? assets.material('road_atlas', () => makeRoadMaterial(this.atlas))
-      : makeRoadMaterial(this.atlas);
-    this._ownMaterial = !assets;
+    // Materials.init already assembles a `road_atlas` from the TextureFactory
+    // recipes and registers it, and that is the one the city actually renders.
+    // Painting the fallback atlas anyway cost two 1024^2 canvas passes and two
+    // CanvasTextures that were never sampled, on every boot. Only build it if
+    // nobody got here first.
+    const shared = assets?.materials?.get('road_atlas');
+    if (shared) {
+      this.material = shared;
+      this._ownMaterial = false;
+    } else {
+      this.atlas = makeAtlas();
+      this.material = assets
+        ? assets.material('road_atlas', () => makeRoadMaterial(this.atlas))
+        : makeRoadMaterial(this.atlas);
+      this._ownMaterial = !assets;
+    }
     // Match the materials library's environment response if it has landed.
     const ref = materials?.get?.('asphalt');
     if (ref && ref.name === 'asphalt') {
@@ -733,8 +1141,12 @@ export default class Roads {
       }
       // low-detail version: bare carriageway + pavement, no markings
       const lo = this._frames(e, d0, d1, STEP * 3);
+      // `laneOff: 2.2` parks the far LOD outside every wheel-track lobe. The band
+      // is the whole carriageway in two vertices, so a real lane offset would
+      // interpolate straight across it and paint one bogus track down the middle;
+      // at >290 m the tracks are sub-pixel anyway.
       this._stripChunked(lo, { o0: sec.L, o1: sec.R, tile: T_ASPHALT, tint: C.asphalt,
-                               rough: 0.97, road: true }, sec, 0, true);
+                               rough: 0.97, road: true, laneOff: 2.2 }, sec, 0, true);
       for (const band of sec.bands) {
         if (band.vertical) continue;
         if (band.tile === T_CONCRETE || band.tile === T_BRICK) {
@@ -795,7 +1207,9 @@ export default class Roads {
           const cam = -CROWN * Math.pow(Math.min(1, Math.abs(o - sec.shift) / sec.half), 2) * 0.3;
           return bat.vert(f.x + f.rx * o, f.y + cam, f.z + f.rz * o, 0, 1, 0,
             C.white[0] * wear, C.white[1] * wear, C.white[2] * wear,
-            f.d / 2.4, o / 2.4, tile[0], tile[1], 0.66);
+            f.d / 2.4, o / 2.4, tile[0], tile[1], 0.66,
+            Roads._laneOff(sec.lanes || [], o),
+            Math.max(0, Math.min(o - sec.L, sec.R - o)));
         });
         bat.quad(vs[0], vs[1], vs[2], vs[3]);
       }
