@@ -19,6 +19,15 @@ const END_SNAP = 21;             // pull a dangling endpoint onto a nearby stree
 const GRADE_SEP = 4.5;           // vertical clearance that suppresses a crossing
 const SUBDIVIDE = 60;    // max pavement strand length, metres
 
+const KERB = 0.16;               // gap between the carriageway edge and the footway
+const CORRIDOR_CELL = 48;        // corridor hash cell, metres
+const CORRIDOR_TOL = 0.010;      // must stay under Buildings' CLIP_EPS; see `hitsCorridor`
+const FRONTAGE_TOL = 0.003;      // must be < CORRIDOR_TOL; see `spanInCorridor`
+const MITER_MIN = 0.35;          // floor on the miter denominator, caps the spike on a hairpin
+const MIN_FRONTAGE = 6;          // shortest street frontage worth subdividing, metres
+const MIN_WIDTH = 3.4;           // narrowest lot worth emitting, metres
+const MIN_DEPTH = 8;             // shallowest parcel worth building on, metres
+
 /**
  * Roadway cross-section by type, per side.
  *   lane     travel lane width
@@ -36,6 +45,127 @@ export const PROFILE = {
 };
 
 const key = (x, z) => `${Math.floor(x / HASH)},${Math.floor(z / HASH)}`;
+
+/**
+ * Half-width of the strip no building may enter: carriageway + kerb + footway.
+ *
+ * This is *the* definition of "the street" for anything that has to stay off it.
+ * `Buildings._indexRoads` clips parcels against exactly this number, so it lives
+ * here, next to the profile it is derived from, and is exported rather than
+ * restated. The bug this replaces was precisely two definitions in two places:
+ * the parcel generator guarded the carriageway alone (`halfRoad + 0.25`) while
+ * the clip downstream guarded the whole corridor, so 4,693 of 117,490 footway
+ * samples ended up inside a building, up to 4.85 m in.
+ */
+export function corridorHalf(e) { return e.halfRoad + KERB + (e.walk || 0); }
+
+/* Build-time scratch. `buildPlots` runs once, at init, never in update(). */
+const _quad = new Float64Array(8);
+const _rect = new Float64Array(8);
+const _plane = new Float64Array(8);
+const _span = new Float64Array(2);
+const _nearRun = [];
+const _nearFit = [];
+
+/**
+ * Does a convex ring (flat x,z pairs) overlap one corridor rectangle?
+ *
+ * Separating axis, exact — not conservative. A false positive here shortens a
+ * parcel that has no business being shortened, which reads as a hole punched in
+ * the streetwall. `CORRIDOR_TOL` shrinks the rectangle a centimetre so a
+ * parcel laid *exactly* on the back of the pavement, which is where every
+ * parcel starts, does not count as being inside it. It has to stay *under*
+ * `Buildings.CLIP_EPS` (0.02): a parcel edge lying further inside than that
+ * straddles the clip's own epsilon, and `clipHalfPlane` then divides by the
+ * near-zero `da - db` of an edge parallel to the plane. At `CORRIDOR_TOL = 0.05`
+ * that produced 43 buildings with vertices out at 7.7e11 m.
+ *
+ * Every comparison below is otherwise identical to `Buildings.overlapsCorridor`,
+ * deliberately: this test decides what gets emitted and that one decides what
+ * gets clipped, and any slack in one that the other does not share shows up as
+ * a parcel the clip mauls. A 1 mm epsilon tried here to forgive grazing contact
+ * cost 83 extra clips and 26 extra drops downstream.
+ */
+function hitsCorridor(q, n, s) {
+  const w = s.w - CORRIDOR_TOL;
+  if (w <= 0) return false;
+  const nx = -s.uz, nz = s.ux;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < n; i += 2) {
+    const t = (q[i] - s.ax) * s.ux + (q[i + 1] - s.az) * s.uz;
+    if (t < lo) lo = t; if (t > hi) hi = t;
+  }
+  if (hi <= 0 || lo >= s.len) return false;
+  lo = Infinity; hi = -Infinity;
+  for (let i = 0; i < n; i += 2) {
+    const t = (q[i] - s.ax) * nx + (q[i + 1] - s.az) * nz;
+    if (t < lo) lo = t; if (t > hi) hi = t;
+  }
+  if (hi <= -w || lo >= w) return false;
+  const ex = s.ax + s.ux * s.len, ez = s.az + s.uz * s.len;
+  _rect[0] = s.ax + nx * w; _rect[1] = s.az + nz * w;
+  _rect[2] = s.ax - nx * w; _rect[3] = s.az - nz * w;
+  _rect[4] = ex + nx * w;   _rect[5] = ez + nz * w;
+  _rect[6] = ex - nx * w;   _rect[7] = ez - nz * w;
+  for (let i = 0; i < n; i += 2) {
+    const j = (i + 2) % n;
+    let px = -(q[j + 1] - q[i + 1]), pz = q[j] - q[i];
+    const L = Math.hypot(px, pz);
+    if (L < 1e-9) continue;
+    px /= L; pz /= L;
+    let plo = Infinity, phi = -Infinity;
+    for (let k = 0; k < n; k += 2) {
+      const t = q[k] * px + q[k + 1] * pz;
+      if (t < plo) plo = t; if (t > phi) phi = t;
+    }
+    let rlo = Infinity, rhi = -Infinity;
+    for (let k = 0; k < 8; k += 2) {
+      const t = _rect[k] * px + _rect[k + 1] * pz;
+      if (t < rlo) rlo = t; if (t > rhi) rhi = t;
+    }
+    if (rhi <= plo || rlo >= phi) return false;
+  }
+  return true;
+}
+
+/**
+ * The stretch of a segment a->b that lies inside one corridor rectangle, as
+ * parameters into [0,1]. Clipping the parameter range against the rectangle's
+ * four half-planes is exact, so a frontage line that merely grazes a corner of
+ * a cross street loses exactly the grazed centimetres and nothing else.
+ *
+ * The width sits between two knife edges and has to clear both. Shrunk by less
+ * than `CORRIDOR_TOL`, so the frontage is trimmed a little further than the
+ * parcel test demands and the two tests share a margin instead of arguing over
+ * a boundary. Shrunk by *something*, because a frontage line lies exactly
+ * `corridorHalf` from its own centreline: test it against the full width and
+ * every straight run is tangent, float noise decides, and half the city stops
+ * existing — measured, 10,434 parcels down to 5,597.
+ * @returns {boolean} false when the segment misses the rectangle entirely
+ */
+function spanInCorridor(ax, az, bx, bz, s, out) {
+  const w = s.w - FRONTAGE_TOL;
+  if (w <= 0) return false;
+  const nx = -s.uz, nz = s.ux;
+  const la = (ax - s.ax) * s.ux + (az - s.az) * s.uz;
+  const lb = (bx - s.ax) * s.ux + (bz - s.az) * s.uz;
+  const ta = (ax - s.ax) * nx + (az - s.az) * nz;
+  const tb = (bx - s.ax) * nx + (bz - s.az) * nz;
+  _plane[0] = -la;         _plane[1] = -lb;               // past the near end
+  _plane[2] = la - s.len;  _plane[3] = lb - s.len;        // short of the far end
+  _plane[4] = ta - w;      _plane[5] = tb - w;            // inside +w across
+  _plane[6] = -ta - w;     _plane[7] = -tb - w;           // inside -w across
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 8; i += 2) {
+    const fa = _plane[i], d = _plane[i + 1] - fa;
+    if (Math.abs(d) < 1e-12) { if (fa > 0) return false; continue; }
+    const t = -fa / d;
+    if (d > 0) { if (t < hi) hi = t; } else if (t > lo) lo = t;
+    if (lo >= hi) return false;
+  }
+  out[0] = lo; out[1] = hi;
+  return true;
+}
 
 export default class RoadNetwork {
   constructor(terrain) {
@@ -411,7 +541,7 @@ export default class RoadNetwork {
           const u = ((a.x - x) * dz - (a.z - z) * dx) / den;
           if (t > 0.5 && t < bestT && u >= 0 && u <= 1) {
             bestT = t;
-            best = t - e.halfRoad - e.walk;
+            best = t - corridorHalf(e);
           }
         }
       }
@@ -424,6 +554,72 @@ export default class RoadNetwork {
     const ne = this.nearestEdge(x, z);
     if (!ne) return true;
     return ne.distance >= this.edges[ne.edgeId].halfRoad + margin;
+  }
+
+  /**
+   * True where a point is clear of the whole street: carriageway, kerb and
+   * footway. `offCarriageway` is not a substitute — on an arterial the two
+   * answers differ by 3.76 m, which is the entire pavement.
+   */
+  offCorridor(x, z, margin = 0) {
+    const ne = this.nearestEdge(x, z);
+    if (!ne) return true;
+    return ne.distance >= corridorHalf(this.edges[ne.edgeId]) + margin;
+  }
+
+  // -- corridor index -------------------------------------------------------
+
+  /**
+   * Every road segment as a corridor rectangle, bucketed for O(1) lookup.
+   *
+   * Built once, lazily: only parcel generation needs it and that runs after the
+   * graph is final. Cells are padded by the corridor half-width so a query box
+   * that only touches the *edge* of a corridor still finds its segment.
+   */
+  _corridors() {
+    if (this._corr) return this._corr;
+    const cells = new Map(), segs = [];
+    for (const e of this.edges) {
+      const w = corridorHalf(e);
+      for (let i = 0; i < e.pts.length - 1; i++) {
+        const a = e.pts[i], b = e.pts[i + 1];
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const len = Math.hypot(dx, dz);
+        if (len < 1e-3) continue;
+        const id = segs.length;
+        segs.push({ ax: a.x, az: a.z, ux: dx / len, uz: dz / len, len, w, edge: e.id });
+        const x0 = Math.floor((Math.min(a.x, b.x) - w) / CORRIDOR_CELL);
+        const x1 = Math.floor((Math.max(a.x, b.x) + w) / CORRIDOR_CELL);
+        const z0 = Math.floor((Math.min(a.z, b.z) - w) / CORRIDOR_CELL);
+        const z1 = Math.floor((Math.max(a.z, b.z) + w) / CORRIDOR_CELL);
+        for (let cz = z0; cz <= z1; cz++) for (let cx = x0; cx <= x1; cx++) {
+          const k = `${cx},${cz}`;
+          let arr = cells.get(k); if (!arr) cells.set(k, arr = []);
+          arr.push(id);
+        }
+      }
+    }
+    this._corr = { cells, segs, stamp: new Int32Array(segs.length), tick: 0 };
+    return this._corr;
+  }
+
+  /** Corridor rectangles that can reach a box, de-duplicated into `out`. */
+  _nearCorridors(x0, z0, x1, z1, out) {
+    const C = this._corridors();
+    const tick = ++C.tick;
+    out.length = 0;
+    for (let cz = Math.floor(z0 / CORRIDOR_CELL); cz <= Math.floor(z1 / CORRIDOR_CELL); cz++) {
+      for (let cx = Math.floor(x0 / CORRIDOR_CELL); cx <= Math.floor(x1 / CORRIDOR_CELL); cx++) {
+        const list = C.cells.get(`${cx},${cz}`);
+        if (!list) continue;
+        for (const si of list) {
+          if (C.stamp[si] === tick) continue;
+          C.stamp[si] = tick;
+          out.push(C.segs[si]);
+        }
+      }
+    }
+    return out;
   }
 
   // -- pavement graph -------------------------------------------------------
@@ -603,6 +799,106 @@ export default class RoadNetwork {
   };
 
   /**
+   * The line a streetwall stands on: the back of the pavement, mitered.
+   *
+   * `offsetPolyline` pushes each vertex `off` along the *bisector*, which leaves
+   * the offset line only `off * cos(a)` from the centreline segments either side
+   * of a bend — short by up to 3.25 m at the kinks that endpoint-snapping puts
+   * at junctions, i.e. the frontage itself standing on the footway before a
+   * single parcel is laid. The miter point is the one at exactly `off` from both
+   * adjacent segments; `MITER_MIN` caps the spike where the street doubles back.
+   */
+  _frontageLine(e, side) {
+    const off = corridorHalf(e) * side;
+    const p = e.pts, out = [];
+    for (let i = 0; i < p.length; i++) {
+      const b = p[i];
+      const a = p[Math.max(0, i - 1)], c = p[Math.min(p.length - 1, i + 1)];
+      let u1x = b.x - a.x, u1z = b.z - a.z; let L1 = Math.hypot(u1x, u1z);
+      let u2x = c.x - b.x, u2z = c.z - b.z; let L2 = Math.hypot(u2x, u2z);
+      if (L1 < 1e-6) { u1x = u2x; u1z = u2z; L1 = L2; }
+      if (L2 < 1e-6) { u2x = u1x; u2z = u1z; L2 = L1; }
+      if (L1 < 1e-6) { out.push({ x: b.x, y: b.y, z: b.z }); continue; }
+      u1x /= L1; u1z /= L1; u2x /= L2; u2z /= L2;
+      const k = off / Math.max(MITER_MIN, 1 + u1x * u2x + u1z * u2z);
+      out.push({ x: b.x + (-u1z - u2z) * k, y: b.y, z: b.z + (u1x + u2x) * k });
+    }
+    return out;
+  }
+
+  /**
+   * The stretches of a frontage line that are not inside somebody else's road.
+   *
+   * Every edge runs from the middle of one junction to the middle of the next,
+   * so the first metres of every frontage line lie straight across the mouth of
+   * the cross street — land that is carriageway and pavement, not a building
+   * plot. Subtracting those intervals is the corner behaviour, not a setback:
+   * what survives is still hard against the back of its own pavement, it just
+   * stops where the cross street starts.
+   * @returns {Array<[number, number]>} clear arc-length runs, in order
+   */
+  _clearFrontage(segs, acc) {
+    const cut = [];
+    for (const sg of segs) {
+      if (sg.L < 1e-6) continue;
+      const ax = sg.a.x, az = sg.a.z, bx = sg.b.x, bz = sg.b.z;
+      this._nearCorridors(Math.min(ax, bx), Math.min(az, bz),
+                          Math.max(ax, bx), Math.max(az, bz), _nearRun);
+      for (const s of _nearRun) {
+        if (spanInCorridor(ax, az, bx, bz, s, _span)) {
+          cut.push([sg.s + _span[0] * sg.L, sg.s + _span[1] * sg.L]);
+        }
+      }
+    }
+    if (!cut.length) return [[0, acc]];
+    cut.sort((a, b) => a[0] - b[0]);
+    const runs = [];
+    let at = 0;
+    for (const [s, t] of cut) {
+      if (s > at) runs.push([at, Math.min(s, acc)]);
+      if (t > at) at = t;
+      if (at >= acc) break;
+    }
+    if (at < acc) runs.push([at, acc]);
+    return runs;
+  }
+
+  /** Is the parcel quad p0->p1 extruded by `d` touching any of `near`? */
+  _quadHits(p0, p1, dx, dz, d, near) {
+    _quad[0] = p0.x;          _quad[1] = p0.z;
+    _quad[2] = p1.x;          _quad[3] = p1.z;
+    _quad[4] = p1.x + dx * d; _quad[5] = p1.z + dz * d;
+    _quad[6] = p0.x + dx * d; _quad[7] = p0.z + dz * d;
+    for (const s of near) if (hitsCorridor(_quad, 8, s)) return true;
+    return false;
+  }
+
+  /**
+   * The deepest a parcel can run before it touches a road corridor.
+   *
+   * The quad only grows with depth, so the clear depths are an interval [0, d*)
+   * and a bisection on an exact polygon-vs-rectangle test converges on d*. This
+   * replaces a 5 x 3 grid of point samples that tested the *carriageway* only
+   * and, on a 58 m lot, looked at three depths 29 m apart — a corridor crossing
+   * anywhere between them was invisible.
+   */
+  _fitDepth(p0, p1, dx, dz, dmax) {
+    const ex0 = p0.x + dx * dmax, ez0 = p0.z + dz * dmax;
+    const ex1 = p1.x + dx * dmax, ez1 = p1.z + dz * dmax;
+    this._nearCorridors(
+      Math.min(p0.x, p1.x, ex0, ex1), Math.min(p0.z, p1.z, ez0, ez1),
+      Math.max(p0.x, p1.x, ex0, ex1), Math.max(p0.z, p1.z, ez0, ez1), _nearFit);
+    if (!_nearFit.length) return dmax;
+    if (!this._quadHits(p0, p1, dx, dz, dmax, _nearFit)) return dmax;
+    let lo = 0, hi = dmax;
+    for (let i = 0; i < 18; i++) {
+      const m = (lo + hi) * 0.5;
+      if (this._quadHits(p0, p1, dx, dz, m, _nearFit)) hi = m; else lo = m;
+    }
+    return lo;                                  // the tested-clear end of the bracket
+  }
+
+  /**
    * Subdivide the land between roads into parcels with real street frontage.
    * Depth is measured by casting into the block until the next street, so a
    * parcel never runs through the building behind it.
@@ -613,9 +909,8 @@ export default class RoadNetwork {
     let pid = 0;
     for (const e of this.edges) {
       if (e.type === 'highway' || e.type === 'alley' || e.bridged) continue;
-      const off = e.halfRoad + 0.16 + e.walk;
       for (const side of [-1, 1]) {
-        const line = this.offsetPolyline(e, side * off);
+        const line = this._frontageLine(e, side);
         // walk the frontage in even steps
         let acc = 0;
         const segs = [];
@@ -623,25 +918,43 @@ export default class RoadNetwork {
           const L = Math.hypot(line[i].x - line[i - 1].x, line[i].z - line[i - 1].z);
           segs.push({ a: line[i - 1], b: line[i], L, s: acc }); acc += L;
         }
-        if (acc < 6) continue;
+        if (acc < MIN_FRONTAGE) continue;
+        const runs = this._clearFrontage(segs, acc);
+        if (!runs.length) continue;
         const midDist = acc / 2;
         const probe = this._along(segs, midDist, acc);
         const dist = districtAt(probe.x, probe.z);
-        const cfg = (dist in Z) ? Z[dist] : Z.southEnd;
+        // `districtAt` reports null for "don't know". Falling back to `southEnd`
+        // is right, but `null in Z` only reaches it by accident: `in` coerces
+        // the key to the *string* "null", which happens not to be a member. Say
+        // so explicitly rather than relying on that.
+        const cfg = (dist && dist in Z) ? Z[dist] : Z.southEnd;
         if (!cfg) continue;                       // parks and water are not for sale
         const n = Math.max(1, Math.round(acc / cfg.w));
-        const w = acc / n;
+        const step = acc / n;
         for (let k = 0; k < n; k++) {
-          const p0 = this._along(segs, k * w, acc);
-          const p1 = this._along(segs, (k + 1) * w, acc);
+          // Keep the district's lot rhythm, but hand each lot only the part of
+          // its frontage that is actually land. Re-dividing the surviving runs
+          // instead would round the corner lots away entirely: 15.9 km of the
+          // 153 km of frontage line lies across a cross street, and losing a
+          // whole lot per junction arm costs 5% of the city for nothing.
+          let s0 = 0, s1 = 0;
+          for (const [rs, re] of runs) {
+            const a = Math.max(k * step, rs), b = Math.min((k + 1) * step, re);
+            if (b - a > s1 - s0) { s0 = a; s1 = b; }
+          }
+          const w = s1 - s0;
+          if (w < MIN_WIDTH) continue;
+          const p0 = this._along(segs, s0, acc);
+          const p1 = this._along(segs, s1, acc);
           const mx = (p0.x + p1.x) / 2, mz = (p0.z + p1.z) / 2;
           // Outward is simply `side * right-of-travel`, taken from this very
           // segment. The old test compared against the edge's midpoint, which on
           // a street that curves as hard as Atlantic Ave picks the wrong sign
           // near the ends and builds the parcel back across the carriageway.
           const rl = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
-          let dx = side * -(p1.z - p0.z) / rl;
-          let dz = side * (p1.x - p0.x) / rl;
+          const dx = side * -(p1.z - p0.z) / rl;
+          const dz = side * (p1.x - p0.x) / rl;
           // Probe from both ends as well as the middle: a parcel on a bend or
           // near a skew junction can have a corner run into a street the
           // centre ray never sees.
@@ -651,22 +964,13 @@ export default class RoadNetwork {
             this.rayToRoad(p0.x, p0.z, dx, dz, lim, e.id),
             this.rayToRoad(p1.x, p1.z, dx, dz, lim, e.id));
           let depth = Math.min(cfg.depth, Math.max(0, reach / 2 - 0.6));
-          if (depth < 8) continue;
-          // Final guarantee: pull the parcel back until no corner and no edge
-          // midpoint sits on a carriageway. Roads are mine, so keeping parcels
-          // off them is my job, not the buildings agent's.
-          const clear = (d) => {
-            for (let k = 0; k <= 4; k++) {
-              const t = k / 4;
-              const fx = p0.x + (p1.x - p0.x) * t, fz = p0.z + (p1.z - p0.z) * t;
-              if (!this.offCarriageway(fx + dx * d, fz + dz * d)) return false;
-              if (!this.offCarriageway(fx + dx * d * 0.5, fz + dz * d * 0.5)) return false;
-              if (!this.offCarriageway(fx, fz)) return false;
-            }
-            return true;
-          };
-          while (depth >= 8 && !clear(depth)) depth -= 2.5;
-          if (depth < 8) continue;
+          if (depth < MIN_DEPTH) continue;
+          // Final guarantee, and the only one that is exact: shorten the parcel
+          // until its whole outline is clear of every corridor — carriageway,
+          // kerb and footway. Roads are mine, so keeping parcels off them is my
+          // job, not the buildings agent's.
+          depth = this._fitDepth(p0, p1, dx, dz, depth);
+          if (depth < MIN_DEPTH) continue;
           // Test the middle of the parcel, not the kerb: a street that runs
           // along the Common has frontage on the pavement but no land behind it.
           if (blocked && blocked(mx + dx * depth * 0.5, mz + dz * depth * 0.5)) continue;
