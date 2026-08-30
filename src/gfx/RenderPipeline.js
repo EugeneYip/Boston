@@ -25,19 +25,44 @@ import GpuTimer from './effects/GpuTimer.js';
 /**
  * What each quality preset is actually allowed to run, and how hard.
  *
- * Measured at 1920x1080 on Apple Silicon, street_level. Two things dominate and both
- * are counter-intuitive:
+ * ## The measured post budget (read this before adding anything back)
  *
- *  1. On this tile-based driver the *number of render-target binds* costs more than
- *     the shading inside them — roughly 0.2-0.3 ms each. So the lever that matters is
- *     pass count, not sample count. That is why bloom builds its pyramid from quarter
- *     resolution and why the anamorphic streak chain is an `ultra` luxury.
- *  2. The scene render itself is well over the whole 16.6 ms frame budget, so post has
- *     to fit in what is left rather than in a fair share. `high` is therefore the
- *     cheapest arrangement that still looks authored: temporal AA, a graded image and
- *     a lens response. Depth of field, motion blur and screen-space reflections are
- *     real features, they are just not 60 fps features on this hardware yet, so they
- *     live on `ultra` until the scene comes down.
+ * Paired A/B, median of 4 alternations, measured as the **median gap between rAF
+ * callbacks** in a visible, compositing window at 1920x1080 on an M2, `st_beaconhill`.
+ * That instrument is the only honest one here; see `profile()` for the three that
+ * are not, and why.
+ *
+ * | stage                                   |  ms |
+ * |-----------------------------------------|----:|
+ * | N8AO                                    | 7.6 |
+ * | TAA + Velocity + FrameState jitter      | 5.0 |
+ * | FX[LensComposite+Exposure+ToneMap+Grade]| 2.7 |
+ * | LensPass (bloom pyramid)                | 2.4 |
+ * | atmosphere (clouds + aerial perspective)| 2.1 |
+ * | AutoExposure                            | 0.4 |
+ * | **whole composer vs scene straight to canvas** | **16.6** |
+ *
+ * The whole frame at that shot is ~63 ms, so post is ~26% of it and the scene render
+ * is the other ~47 ms (`buildings` alone is 22.6 ms). **Post-processing is not what
+ * stops this game reaching 60 fps** — but a 60 fps frame is 16.7 ms in total, so a
+ * post stack that costs 16.6 ms on its own cannot be called a 60 fps configuration
+ * either. `high` therefore keeps only the stages that are load-bearing for the look
+ * and cost about a millimetre each.
+ *
+ * ## What that means per preset
+ *  - **N8AO is off below `ultra`.** 7.6 ms is 45% of an entire 60 fps frame for a
+ *    half-res, 6-sample AO. Its cost is almost all fixed overhead: sweeping
+ *    `aoRadius` 2.6 -> 0.4 m, `aoSamples` 6 -> 4 and `denoiseSamples` 3 -> 0 each
+ *    moved the frame by less than the noise floor, so there is no cheap tier of it to
+ *    buy. It is a render-target-bind cost (depth downsample + AO + two denoise +
+ *    composite), not a sampling cost.
+ *  - **TAA is off below `ultra`.** TAA + its velocity buffer is 5.0 ms — 30% of the
+ *    budget — and `_rebuild` substitutes SMAA when it is off, which is one pass.
+ *  - DOF, motion blur and SSR were already `ultra`-only and stay there.
+ *
+ * On this tile-based driver the *number of render-target binds* costs more than the
+ * shading inside them, which is why the levers above are all "one fewer pass" rather
+ * than "fewer samples", and why bloom builds its pyramid from quarter resolution.
  *
  * Settings.js asks for SSR, DOF and motion blur on `high`; this table narrows that.
  * It can only ever take features away, never add them back.
@@ -52,17 +77,17 @@ const BUDGET = {
   },
   medium: {
     pixels: 1600 * 900,
-    ao: true, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 6, aoDenoise: 2, bloomLevels: 4, streaks: false,
+    ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
+    aoSamples: 6, aoDenoise: 2, bloomLevels: 3, streaks: false,
     dofRings: 2, dofMaxCoC: 8, mbSamples: 6,
     ssrSteps: 14, ssrRefine: 3, ssrDistance: 80,
   },
   high: {
     pixels: 1920 * 1080,
-    ao: true, taa: true, dof: false, motionBlur: false, ssr: false,
-    // AO is the one place on `high` where sample count still buys measurable time
-    // (PERF_REPORT §9 row 7). 6/3 keeps contact shadows at street level — the AO is
-    // half-res and denoised, so the sample count mostly controls noise, not extent.
+    // AO and TAA measured 7.6 ms and 5.0 ms — together 75% of a whole 60 fps frame,
+    // for a stage that is meant to be a garnish on the scene render. Both move to
+    // `ultra`; `high` gets SMAA instead of TAA and no ambient occlusion.
+    ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
     aoSamples: 6, aoDenoise: 3, bloomLevels: 4, streaks: false,
     dofRings: 3, dofMaxCoC: 10, mbSamples: 8,
     ssrSteps: 16, ssrRefine: 4, ssrDistance: 110,
@@ -641,6 +666,41 @@ export default class RenderPipeline {
    * EXT_disjoint_timer_query_webgl2, so the fallback disables one pass at a time and
    * measures the difference in wall-clock frame time with a hard GPU sync either side.
    * That is intrusive — call it from a dev tool, never per frame.
+   *
+   * ## Three instruments that lie on this driver, and one that does not
+   *
+   * Everything below was verified against a control: a bare WebGL2 canvas in the same
+   * browser, clearing to a colour once per rAF, holds 16.7 ms at 1280x720, 1920x1080
+   * **and** 2560x1440. So the browser, the compositor and the present path are all
+   * fine, and any slow number is either the game or the instrument.
+   *
+   *  1. **Any batch of `composer.render()` calls timed with one `gl.finish()` at each
+   *     end.** This is the shape `Profiler.measurePrefix` uses and it under-reports the
+   *     scene by roughly an order of magnitude. Rendering the *same* frame N times
+   *     back-to-back lets ANGLE/Metal drop render passes whose entire output is
+   *     overwritten by the next iteration before anything reads it: measured
+   *     2.17 ms/frame for `renderer.render(scene, camera)` over 10 iterations against
+   *     ~40 ms for the same call once per rAF. This is why `PERF_REPORT.md` §2 has the
+   *     frame inverted — it reports the scene at 4.8 ms and the final `EffectPass` at
+   *     25.5 ms, and the truth is the other way round.
+   *  2. **Stubbing the LAST pass** (the only one with `renderToScreen === true`).
+   *     Nothing is written to the canvas, so the compositor never takes a frame and
+   *     rAF stops being paced by GPU completion at all: the loop jumps to the 16.7 ms
+   *     vsync floor no matter what the rest of the chain costs. Every "the final
+   *     EffectPass is 53% of the frame" figure is this artefact. Measured properly,
+   *     that pass is under 2 ms. **PERF_REPORT §11.1 is settled: it is present, not
+   *     shader.**
+   *  3. **A non-compositing surface.** A collapsed browser pane (`document.hidden`
+   *     true) throttles rAF to zero, and an *occluded but not hidden* window throttles
+   *     sustained GPU work: the same scene render measured 2.17 ms in a short burst and
+   *     224 ms sustained, in the same tab, minutes apart. Launch the browser with
+   *     `--disable-backgrounding-occluded-windows` or the numbers are fiction.
+   *
+   * What does work: **the median gap between consecutive rAF callbacks** in a visible
+   * window, taken over ~24 frames and paired A/B/A/B so drift cancels. When the frame
+   * is GPU-bound that gap *is* the GPU frame time, because the browser will not
+   * deliver the next rAF until the presented frame completes. It agrees with
+   * `__boston.measureFps()` to within a frame.
    *
    * @param {number} [frames=20] - frames averaged per measurement
    * @return {Promise<Object>} { total, <passName>: ms, ... }
