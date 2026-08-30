@@ -125,15 +125,59 @@ export default class Districts {
   }
 
   /**
+   * True where the baked raster actually has an answer.
+   *
+   * The raster is a nearest-neighbour lookup, so it covers half a cell beyond
+   * the outermost sample: `x, z ∈ [MINX - RES/2, MINX + (N-1)*RES + RES/2)`,
+   * which for the current constants is ±3310 m. Outside that, `districtAt`
+   * knows nothing at all; inside it, a `null` answer means "surveyed, and no
+   * neighbourhood claims this point". Callers that need to tell those two
+   * apart — a HUD saying "unknown" versus "open ground" — ask this. Uses the
+   * exact same arithmetic as `districtAt` so the two can never disagree.
+   * @param {number} x @param {number} z @returns {boolean}
+   */
+  inRaster(x, z) {
+    const i = Math.round((x - MINX) / RES), j = Math.round((z - MINZ) / RES);
+    return i >= 0 && j >= 0 && i < N && j < N;
+  }
+
+  /**
+   * Neighbourhood at a world point, or `null` where there is no neighbourhood.
+   *
+   * `null` is returned in two cases, and both are truthful:
+   *   - the point is outside the raster (see `inRaster`), i.e. out past ±3310 m;
+   *   - the point is inside the raster but on ground no district polygon
+   *     claims — the harbour approaches, the far bank, the land past Fenway.
+   *     That is 44,855 of 109,561 cells, 41% of the raster.
+   *
+   * This used to answer `'financial'` in *both* cases. Neither was an index
+   * bug: the bounds test below was always correct, and grid value 0 has always
+   * meant "nothing in particular". The defect was that two distinct
+   * don't-know answers were spelled as a real, central, high-rise district, so
+   * nothing downstream could see the difference. The Financial District
+   * polygon spans x ∈ [102, 1320], z ∈ [-714, 754]; every one of the 37,376
+   * off-raster probes in a ±12 km sweep, and all 10,039 unclaimed cells in the
+   * 3000–3240 m band, still called themselves Financial District. That is what
+   * painted the terrain rings as urban dirt out to the horizon and forced
+   * `Terrain.build` to pass `surf = null` for the far ring to dodge it.
+   *
+   * Do not reintroduce a fallback here. A caller that needs one — road
+   * zoning wants a default parcel size, props want a default street dressing —
+   * must spell it at its own call site, where the choice is visible and can be
+   * right for that caller. Hiding it in here makes every caller wrong at once.
+   *
+   * NaN in gives `null` out: `!(NaN >= 0)` is true, so the guard catches it
+   * before it can index the grid.
+   *
    * @param {number} x @param {number} z
    * @returns {'backBay'|'beaconHill'|'northEnd'|'financial'|'fenway'|'seaport'
-   *           |'southEnd'|'charlestown'|'cambridge'|'water'|'park'}
+   *           |'southEnd'|'charlestown'|'cambridge'|'water'|'park'|null}
    */
   districtAt(x, z) {
     const i = Math.round((x - MINX) / RES), j = Math.round((z - MINZ) / RES);
-    if (i < 0 || j < 0 || i >= N || j >= N) return 'financial';
+    if (!(i >= 0) || !(j >= 0) || i >= N || j >= N) return null;
     const v = this.grid[j * N + i];
-    return v ? IDS[v - 1] : 'financial';
+    return v ? IDS[v - 1] : null;
   }
 
   /**
@@ -296,5 +340,18 @@ export default class Districts {
     this.meshes.length = 0;
   }
 }
+
+/**
+ * Where the raster actually has data, in world metres. Published so callers can
+ * decide *before* they probe — the terrain rings, for one, want to know which
+ * of their vertices are even inside the surveyed area rather than discovering
+ * it one `null` at a time. `half` is the nearest-neighbour half-cell margin
+ * included: the raster answers for `x, z ∈ [-half, half)`.
+ */
+Districts.RASTER = {
+  res: RES, n: N, minX: MINX, minZ: MINZ,
+  maxX: MINX + (N - 1) * RES, maxZ: MINZ + (N - 1) * RES,
+  half: MINX + (N - 1) * RES + RES / 2,      // 3310 m
+};
 
 export { IDS as DISTRICT_IDS };

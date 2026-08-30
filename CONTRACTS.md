@@ -10,7 +10,14 @@ degrades instead of crashing.
 city.groundHeight(x, z) -> number          // terrain elevation, metres
 city.districtAt(x, z)   -> 'backBay' | 'beaconHill' | 'northEnd' | 'financial'
                          | 'fenway' | 'seaport' | 'southEnd' | 'charlestown'
-                         | 'cambridge' | 'water' | 'park'
+                         | 'cambridge' | 'water' | 'park' | null
+                         // null = "no neighbourhood here". Two distinct cases,
+                         // both formerly and wrongly reported as 'financial':
+                         // outside the baked raster (beyond +/-3310 m), and
+                         // inside it where the grid holds the 0 sentinel --
+                         // 41% of raster cells. Use city.districts.inRaster(x,z)
+                         // to tell them apart. Non-finite input returns null.
+city.plots[].district   -> same union, nullable for the same reason
 city.roads = {
   nodes: [{ id, x, z, y }],
   edges: [{ id, a, b, lanes, width, oneway, type, speed, name }],
