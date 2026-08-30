@@ -149,6 +149,8 @@ Last verified: 2026-08-27, commit `06f93d3`.
 | Kerb occupancy stuck at ~24% of natural — cars *sprinkled* along a street rather than parked on it | Not the budget number: the **LOD granularity**. `PropBatch` picks a level per 96 m chunk, so "LOD0 within 38 m" actually admits every instance in any chunk whose centre is within 38 + 67.9 m — ~120 cars at 3.5k triangles each. Density was paying for a coarse LOD test. `PropBatch` now does **per-instance LOD selection for the near tier**, opt-in via `splitNear` so the other ninety-odd types keep the bulk-copy path. Measured across the five street shots: parked-car triangles in frustum **372–622k → 120–162k** while the fleet went 11,000 → 14,138 and the near body went 424 → 3,532 triangles. | `PropBatch.refresh` / `splitNear` |
 | Parked cars sat partly in the outer travel lane | There was no parking bay in the road graph, so the placer used a `halfRoad >= 2.9` width test to bound the intrusion. The city now publishes `edge.parking = { width, offset }`; cars sit in the bay, intrusion is zero by construction, and coverage goes from a width test to **450 of 509 segments**. | `Props` parked-car placement |
 | **Street trees had 4.14 m thick trunks** (11.47 m on the Common's elms) | `buildTree` took `SPECIES.trunk` as a straight proportion of tree height and used `S.trunk * H` directly as the bole **radius**, so a 14.5 m London plane got a 2.07 m radius — eight to ten times life size. This is most of why vegetation read as "blobby broccoli": every tree was a canopy balanced on a concrete column, and it is also why the bark tiling was so conspicuous, because one 256 px tile was stretched over a five-metre cylinder. A street tree's DBH is roughly H/40 to H/25. Fixed with a `TRUNK_R = 0.13` factor. The three **park specimens** needed their own constants brought down as well, and were missed on the first pass — elm was left at H/16, beech H/14, willow H/13. Measured after both passes: plane **4.14 m → 0.71 m (H/20)**, elm **11.47 m → 1.14 m (H/22)**, beech H/16, pin oak 3.96 m → 0.74 m. Canopy cards additionally now cluster around 3–5 lobe centres with a quarter thrown past the crown radius at reduced size, so the silhouette is not a disc — same card count, same triangles. | `Vegetation.TRUNK_R` / `buildTree` |
+| **The always-resident shell re-drew every near building, and stood behind their windows** | The LOD-2 shell is built for all 9,514 buildings and never turned off, so wherever a detailed chunk is loaded the same wall rasterises twice. Measured at `st_beaconhill`: the nearest in-frustum sector holds **733 buildings of which 704 already had a detailed mesh** — 61 k of the 63 k triangles that sector submits were hidden duplicates, in the part of the frame that covers the most pixels, and re-submitted to three shadow cascades on top. The shell is inset only **0.25 m** from its LOD-0 twin, which is *less than a window reveal*, so it was also standing behind every recessed pane in the near field and hiding the interior mapping and the sky reflection. Same class of bug as the shell roof lid fixed earlier — the inset/drop clears the *wall plane*, not the *openings*. Each sector's shell is now emitted in streaming-chunk order so every chunk owns a contiguous index run, and `_refreshShellMask` compacts the index buffer to drop the runs a loaded **LOD-0** chunk covers (LOD 1 keeps its shell: an LOD-1 chunk mesh is `castShadow = false`, so at that range the shell is the only thing casting the building's shadow). | `Buildings._buildShell` / `_refreshShellMask`, commit `2bdba51` |
+| **Every building mesh sorted as if it were at the world origin** | `MeshBuf`/`GlassBuf` bake in world space and the meshes carried an identity matrix, so three's `painterSortStable` projected *all* of them to the same clip-space point and the opaque depth sort degenerated to `object.id` ascending, i.e. creation order. The shell is created in `init` and the streamed chunks much later, so the distant shell was drawn **first** and the near city painted over it — exactly back-to-front, the worst possible order for early-Z. `build(recenter)` now translates to the geometry's own bounding-box centre and publishes `geometry.userData.origin`, which `Buildings` puts back on `mesh.position`. Any other system that merges geometry in world space has the same defect. | `BuildingKit.MeshBuf.build` / `GlassBuf.build`, commit `2bdba51` |
 | Buildings render as flat, pale, untextured white slabs beside properly-facaded neighbours ("floating with white outline boxes") | The slabs are the LOD 2 shell; the detailed LOD 0/1 chunks had not been built yet. `Buildings._pump` widened its per-frame build budget only while `ctx.time.frame < 200` and used 6 ms after that. A camera teleport invalidates every near chunk at once, a dense chunk is ~160 ms of emit on its own, and `capture()` warms up only ~24 frames — so 6 ms/frame could never converge. Whatever happened to be built already showed a full facade and everything else showed the shell, hence the mixture. `update` now detects a teleport (camera moved more than one CHUNK in a frame) and `_pump` spends 50 ms/frame for 45 frames. Normal driving moves ~0.5 m a frame and never trips it. Measured after a 2 km teleport and a single `capture()`: near chunks built 0/14 → **14/14**; frame changed by hiding the detailed meshes 1.5% → **66.1%** (noise 0.1%). | `Buildings._pump` / `update`, commit `a927ec9` |
 
 ### Handed to other systems by the props/vegetation pass
@@ -505,6 +507,56 @@ without**. Less occlusion means more sky and ground reaching the post chain, and
 chain is the cost. This is `PERF_REPORT.md` §6 reproduced from the other direction — do not
 attribute an fps change to building geometry without an A/B like this one.
 
+## What the `buildings` frame actually contains — measured at `st_beaconhill`
+
+Counted analytically (three's own bounding-sphere-vs-frustum test replicated in JS), 1920x1080
+`high`, camera `[-379.8, 5.2, -193.1]`, tod 16. These are structural facts, not timings, so
+they are unaffected by the measurement problems below.
+
+| | meshes in frustum | triangles in frustum |
+|---|---:|---:|
+| LOD-0/1 detail, opaque | 7 | **972,014** |
+| LOD-0/1 detail, glass | 7 | 67,918 |
+| LOD-2 shell (19 of 54 sectors) | 19 | 276,706 |
+
+Per building: LOD 0 **3,003** tris (234 buildings inside 175 m), LOD 1 **741** (592 buildings
+to 410 m), LOD 2 shell **79**. So the whole visible building set is ~1.32 M triangles in 33
+draws — comfortably inside budget, which is why triangle count has never been the lever.
+
+**The lever is per-fragment cost, and most of it is not owned by `buildings`.** The compiled
+facade program at tod 16 declares `directionalLights[4]` (3 casting, each with the 16-tap
+Poisson PCF from `CascadedShadows`), `pointLights[10]`, `spotLights[5]`, `hemisphereLights[1]`
+and a `CUBEUV_MAX_MIP 8` IBL, on top of the facade's own 5 array/2D fetches and its derivative
+tangent frame. Three unrolls those loops, so **every building fragment evaluates all fifteen
+pooled point/spot BRDFs** — at a moment when `LightManager` has correctly driven every one of
+them to **intensity 0** (verified live: Σ pooled intensity 0.0 at tod 16, matching the
+"lamps off at noon" table above). Buildings cover most of a street-level frame, so buildings
+pay most of that bill; but the pool size is `src/gfx/LightManager.js`'s, not
+`src/world/Buildings.js`'s. *Owner: lighting, with render.* Note the standing warning: cutting
+the pool changes `NUM_POINT_LIGHTS`/`NUM_SPOT_LIGHTS` and **recompiles every lit material**, so
+it has to be a build-time decision, not a per-hour toggle.
+
+### Frame timing was not obtainable during that pass — do not read a ms figure into it
+Every instrument failed in the same way and for the same reason, and the failure is worth
+recording because it will recur:
+
+- All Boston tabs reported `document.hidden === true` for the entire session. The Browser
+  pane was collapsed, so the page never composited and the engine's own rAF loop delivered
+  **0 frames** (`engine.time.frame` did not advance across 244 rAF callbacks).
+- `Profiler._sync()` — `gl.finish()` + a **1x1** `readPixels` — measured **311 ms** on its own
+  in that state. Any `measureRender`/`measurePrefix` number taken then is that constant divided
+  by the frame count: an empty scene "cost" 16–22 ms/frame at 16 frames.
+- `EXT_disjoint_timer_query_webgl2` is present and returns results, but reported **257–395 ms
+  per composed frame**, i.e. it was timing scheduler gaps, not work.
+- Forcing compositing with a burst of screenshots does deliver rAF callbacks, but the gaps
+  are 16.6 ms to 1023 ms on an unchanged frozen frame — a 60x spread.
+
+**Conclusion: with the pane hidden there is no honest frame timing on this machine.** The
+`measureFps` refusal is right and there is no way around it. What *is* still trustworthy while
+hidden: draw/triangle counts, frustum tests, compiled shader source, uniform values, and
+full-frame `readPixels` used for **image** comparison (~0.5 s each, and a same-build A/B has a
+noise floor of 0.115/255 mean absolute on a 192x108 luminance grid).
+
 ## Debugging methodology — learned the hard way on issue #0
 - **"The console is clean" is not the same as "the GL context is happy."** Driver-level
   `GL_INVALID_OPERATION` from `glDrawElements` arrives as a **`warn`**, not an `error`, so
@@ -527,6 +579,20 @@ attribute an fps change to building geometry without an A/B like this one.
 - A `customProgramCacheKey` that returns a **constant** is not itself dangerous for program
   sharing (three appends it to a full parameter key), but it *does* freeze recompilation,
   and it makes two materials that differ only in chained-in GLSL share one program.
+- **Never put a screen-space derivative — or a `texture()` that computes its own LOD — inside
+  non-uniform control flow.** Both are *undefined* in GLSL ES 3.0 and this driver returns
+  garbage rather than something plausible. Gating the facade's normal map on
+  `if (dist < 140.0)` (a perfectly sensible saving: one atlas texel is far under a pixel by
+  then) rendered **the entire near city as one flat colour**, while the distant shell stayed
+  correct — because the shell is far and therefore fell *outside* the taken branch. The
+  symptom looks nothing like a shader bug: no GL fault, no console error, `bootReport.failed`
+  empty, and a frame that reads as "the atmosphere pass has lost its depth buffer". If a
+  per-fragment cost has to come off the far geometry, do it with a **separate material whose
+  block is compiled out with a `#define`**, so the control flow is uniform by construction.
+- **A frame that is a smooth radial gradient is the lens vignette over a constant colour.**
+  Contrast-stretch a downsampled luminance grid before concluding anything about a frame: at
+  a 10-level ramp on raw 0–255 a scene with a 120–150 range and a broken scene with a
+  120–150 range look identical.
 
 ## Corrections to docs/PERF_REPORT.md — believe these over the report
 The report is broadly excellent but three of its specifics were later disproved by
