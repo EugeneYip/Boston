@@ -48,14 +48,22 @@ const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
  *   2 T_BRICK     red brick   100.3       0.1488    [0.3021 0.1114 0.0676]
  *   3 T_COBBLE    granite     116.0       0.1890    [0.2073 0.1855 0.1703]
  *
- * **Read the RGB column before trusting any table of these numbers.** The atlas
- * is baked flipped (painted row 0 becomes v=1), so the quadrant that *looks*
- * like tile 0 in memory is tile 2. A tile identified by its memory order alone
- * pairs asphalt with 0.1488 and concrete with 0.1890; the [0.3021 0.1114 0.0676]
- * signature of that 0.1488 tile is 4.5:1.6:1 red — it is brick, not asphalt.
- * Cross-checked against the standalone `asphalt.alb` / `sidewalk.alb` /
- * `sidewalk_brick.alb` / `cobblestone.alb` textures, which are baked from the
- * same recipes and reproduce these four means exactly.
+ * These labels are correct as written, and were cross-checked against the
+ * standalone `asphalt.alb` / `sidewalk.alb` / `sidewalk_brick.alb` /
+ * `cobblestone.alb` textures, which bake from the same recipes and reproduce
+ * these four means exactly.
+ *
+ * CORRECTION, and read this before "fixing" the table. An earlier revision of
+ * this comment claimed the atlas bake flips (painted row 0 becomes v=1) and that
+ * memory order therefore mislabels the quadrants — pairing asphalt with 0.1488.
+ * **That is backwards.** The bake does flip, but `Materials.ATLAS_TILES` already
+ * compensates: asphalt is blitted at painted offset `[0, 512]` precisely so it
+ * lands on uv (0.0, 0.0) = `T_ASPHALT`. Reading the baked atlas in memory order
+ * therefore gives the RIGHT labels. The permutation that earlier revision
+ * described is what you get by treating `ATLAS_TILES`' painted-space offsets as
+ * if they were memory offsets — an easy mistake that reproduces its exact
+ * mis-pairing, which is presumably how it arose. Verify against the standalone
+ * textures rather than reasoning about the flip in either direction.
  *
  * A single uniform gain is the wrong shape of knob and the numbers say so: the
  * ratios it preserves were authored against a fallback atlas where all four
