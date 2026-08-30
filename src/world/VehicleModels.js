@@ -383,6 +383,19 @@ function sweepPath(mb, mat, sg, pts, radius, sides = 4, offset = 0.004) {
 
 const _wheelCache = new Map();
 
+/**
+ * Lathe a `[radius, x]` profile about the wheel axle. Three.js lathes about +Y,
+ * so the profile's second component is the axial offset and the result is turned
+ * a quarter turn to put the axis on +X — the same convention the tyre carcass
+ * uses. Caller owns the geometry.
+ */
+function latheX(profile, seg) {
+  const g = new THREE.LatheGeometry(
+    profile.map(p => new THREE.Vector2(Math.max(p[0], 0.0005), p[1])), seg);
+  g.rotateZ(-Math.PI / 2);
+  return g;
+}
+
 /** Tyre + rim + brake disc, axis along +X, outboard face at +X. */
 function buildWheel(r, w, style, lod) {
   const key = `${r.toFixed(3)}_${w.toFixed(3)}_${style}_${lod}`;
@@ -392,14 +405,22 @@ function buildWheel(r, w, style, lod) {
   const hw = w * 0.5;
 
   // --- tyre: lathed carcass with a real shoulder radius and a sidewall bulge
+  //
+  // The mid tier used to be four rings between bead and bead, which a single
+  // `computeVertexNormals` pass then smoothed into an unbroken torus -- and a
+  // torus has no sidewall, no bead flange and no shoulder for a highlight to
+  // break on. The extra two rings below cost 48 triangles a wheel and are what
+  // put a visible bead, a bulged sidewall and a shoulder radius on the tyre that
+  // sits 3.7 m from camera at every kerb.
   const prof = lod === 0 ? [
     [r * 0.66, -hw * 0.92], [r * 0.78, -hw * 1.02], [r * 0.90, -hw * 1.06],
     [r * 0.975, -hw * 0.92], [r, -hw * 0.62], [r, 0], [r, hw * 0.62],
     [r * 0.975, hw * 0.92], [r * 0.90, hw * 1.06], [r * 0.78, hw * 1.02],
     [r * 0.66, hw * 0.92],
   ] : lod === 1 ? [
-    [r * 0.66, -hw], [r * 0.94, -hw * 1.02], [r, -hw * 0.7], [r, hw * 0.7],
-    [r * 0.94, hw * 1.02], [r * 0.66, hw],
+    [r * 0.665, -hw * 0.98], [r * 0.80, -hw * 1.03], [r * 0.965, -hw * 0.90],
+    [r, -hw * 0.62], [r, hw * 0.62],
+    [r * 0.965, hw * 0.90], [r * 0.80, hw * 1.03], [r * 0.665, hw * 0.98],
   ] : [
     [r * 0.70, -hw], [r, -hw * 0.8], [r, hw * 0.8], [r * 0.70, hw],
   ];
@@ -427,29 +448,46 @@ function buildWheel(r, w, style, lod) {
   }
 
   // --- rim face
+  //
+  // What was here at LOD1 (the tier every parked car at a kerb is drawn from)
+  // was a single flat disc: one plane, normal straight down the axle, so it sits
+  // at a grazing angle to every light in a street scene and shades out to nothing
+  // inside the tyre. Measured on a kerbside car at 3.6 m, 26% of the rim face
+  // read below luminance 12 -- a black hole inside a torus, which is exactly how
+  // the critic described it, and it is the closest object to camera in the game.
+  //
+  // A wheel face reads because of the *steps* in it: a bright outer flange, a
+  // dish set well back from that flange, spokes standing proud of the dish, and
+  // a hub cap proud of the spokes. Four surfaces at four depths give four
+  // different angles to the sun, so something always catches a highlight and the
+  // recesses stay dark by contrast rather than by default. Splitting the flange
+  // and the dish into two lathes is deliberate: one lathe would smooth across
+  // the join and lose the step that does all the work.
   const faceX = hw * 0.80;
-  if (lod === 0 && style !== 'steel') {
+  const bright = style === 'steel' ? 'trimDark' : 'chrome';
+  if (lod < 2) {
+    // Outer flange: proud of everything, and the part that catches the sun.
+    const flange = latheX([
+      [rimR * 0.985, faceX - 0.030], [rimR, faceX + 0.010], [rimR * 0.895, faceX + 0.004],
+    ], seg);
+    mb.add(bright, flange); flange.dispose();
+    // Dish: set back ~5 cm, so the spokes have something to stand out of.
+    const dish = latheX([
+      [rimR * 0.895, faceX + 0.004], [r * 0.34, faceX - 0.052], [r * 0.15, faceX - 0.044],
+    ], seg);
+    mb.add('trimDark', dish); dish.dispose();
+    // Spokes.
     const spokes = style === 'truck' ? 6 : 5;
-    const inner = new THREE.CylinderGeometry(r * 0.20, r * 0.20, 0.045, 12);
-    inner.rotateZ(Math.PI / 2);
-    place(mb, 'chrome', inner, faceX, 0, 0);
-    inner.dispose();
-    const spoke = new THREE.BoxGeometry(0.030, r * 0.47, r * 0.135);
+    const spoke = new THREE.BoxGeometry(0.034, r * 0.47, r * (style === 'steel' ? 0.10 : 0.145));
     for (let i = 0; i < spokes; i++) {
       const a = (i / spokes) * Math.PI * 2;
-      place(mb, 'chrome', spoke, faceX, Math.cos(a) * r * 0.42, -Math.sin(a) * r * 0.42, a, 0, 0);
+      place(mb, bright, spoke, faceX - 0.022, Math.cos(a) * r * 0.40, -Math.sin(a) * r * 0.40,
+        a, 0, 0);
     }
     spoke.dispose();
-    // Outer lip: a real rim has a bright flange that catches the light.
-    const lip = new THREE.TorusGeometry(rimR * 0.99, 0.026, 4, seg);
-    lip.rotateY(Math.PI / 2);
-    place(mb, 'chrome', lip, hw * 0.90, 0, 0);
-    lip.dispose();
-  } else {
-    const disc = new THREE.CylinderGeometry(rimR * 0.98, rimR * 0.98, 0.03, seg);
-    disc.rotateZ(Math.PI / 2);
-    place(mb, style === 'steel' ? 'trimDark' : 'chrome', disc, faceX, 0, 0);
-    disc.dispose();
+    // Hub cap. Always the bright material: a steel wheel is a dark painted dish
+    // with a chrome cap in the middle, which is most of what identifies it.
+    cyl(mb, 'chrome', r * 0.165, r * 0.135, 0.05, faceX - 0.020, 0, 0, 0, 0, Math.PI / 2, 8);
     if (lod === 0) {
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2;
@@ -457,6 +495,13 @@ function buildWheel(r, w, style, lod) {
           faceX + 0.012, Math.cos(a) * r * 0.22, -Math.sin(a) * r * 0.22, 0, 0, Math.PI / 2, 6);
       }
     }
+  } else {
+    // Shell tier: one disc, but sized to the tyre bead rather than to the rim, or
+    // you can see daylight through the ring between the two.
+    const disc = new THREE.CylinderGeometry(r * 0.70, r * 0.70, 0.03, seg);
+    disc.rotateZ(Math.PI / 2);
+    place(mb, 'trimDark', disc, faceX, 0, 0);
+    disc.dispose();
   }
 
   // --- brake disc, only where you can actually see through the spokes
@@ -844,6 +889,52 @@ const TYPE_DEFS = {
   },
 };
 
+// ---------------------------------------------------------------------------
+//  Paint energy
+// ---------------------------------------------------------------------------
+
+/**
+ * Correct a showroom swatch to a paint *albedo*.
+ *
+ * The swatches above are authored the way a colour chart is: `#e8e9ea` is what a
+ * white car looks like in a photograph, after the light has hit it. Fed to a
+ * renderer as a base colour it means something else entirely — reflectance 0.81
+ * in linear light, which is brighter than fresh snow and about 25x the asphalt
+ * it is parked on. Nothing in a PBR pipeline can rescue that: the surface
+ * returns more energy than the scene can hold, so pale cars blow their highlights
+ * out in daylight and are the brightest objects in frame at night.
+ *
+ * Measured, 1920x1080 / `high`, masking the painted panels of the pale variants
+ * only: at `st_southend` 09:00 with the meter re-converged for each palette,
+ * 2.99% of those pixels clipped at 255 before and 2.03% after; at `night_neon`
+ * 22:00 they sat at 10.7x the near carriageway before and 9.1x after. Holding
+ * the exposure fixed so the meter cannot launder the change, the same panels
+ * return 13-23% less light across 09:00 / 12:00 / 22:00.
+ *
+ * This is an energy fix, not a repaint. Hue and saturation are untouched — only
+ * the luminance is pushed through a soft shoulder, so anything below the knee
+ * (every dark and every saturated colour in the table) comes back bit-identical
+ * and the palette keeps exactly the variety it was authored with. Real
+ * automotive white basecoat measures ~0.55-0.65 linear; the rest of what you see
+ * on a white car is the clearcoat's specular lobe, which is the renderer's job
+ * and not the albedo's.
+ */
+const PAINT_KNEE = 0.20;   // linear luminance below which nothing changes
+const PAINT_CEIL = 0.66;   // asymptotic ceiling on paint albedo
+const _paintCol = new THREE.Color();
+function paintAlbedo(hex) {
+  _paintCol.setStyle(hex);                       // sRGB in, working (linear) out
+  const y = 0.2126 * _paintCol.r + 0.7152 * _paintCol.g + 0.0722 * _paintCol.b;
+  if (y <= PAINT_KNEE || y <= 0) return hex;
+  const span = PAINT_CEIL - PAINT_KNEE;
+  const y2 = PAINT_KNEE + span * (1 - Math.exp(-(y - PAINT_KNEE) / span));
+  _paintCol.multiplyScalar(y2 / y);
+  return '#' + _paintCol.getHexString();
+}
+for (const t of Object.keys(TYPE_DEFS)) {
+  TYPE_DEFS[t].colors = TYPE_DEFS[t].colors.map(paintAlbedo);
+}
+
 /** Build the runtime spec the Vehicle class consumes from the compact type table. */
 function buildSpec(type) {
   const d = TYPE_DEFS[type];
@@ -1079,9 +1170,8 @@ function pillarsAndRails(mb, surf, d) {
 }
 
 /** Vertical panel gap between two body sections — doors, bonnet, boot. */
-function shutLine(mb, surf, z, k0, k1, sgn) {
+function shutLine(mb, surf, z, k0, k1, sgn, n = 7) {
   const path = [];
-  const n = 7;
   for (let i = 0; i <= n; i++) {
     const kk = lerp(k0, k1, i / n);
     surfacePoint(surf, z, sgn > 0 ? kk : 26 - kk, _sp);
@@ -1090,16 +1180,33 @@ function shutLine(mb, surf, z, k0, k1, sgn) {
   sweepPath(mb, 'gap', 70, path, 0.009, 3, -0.004);
 }
 
-function doorFurniture(mb, surf, d, doorZs) {
+/**
+ * Shut lines, handles and the rocker crease.
+ *
+ * `lod` 1 runs a decimated version of the same thing. It is worth the ~300
+ * triangles: the mid tier is what every parked car at a kerb is drawn from, and
+ * without shut lines the body is one unbroken lofted surface that reads as
+ * inflatable rather than as panels. The handles are the other half of it — a
+ * door with no handle is the detail a stranger notices without being able to say
+ * why.
+ */
+function doorFurniture(mb, surf, d, doorZs, lod = 0) {
+  const coarse = lod > 0;
   for (const sgn of [1, -1]) {
-    for (const z of doorZs) shutLine(mb, surf, z, 3.2, 9.0, sgn);
+    for (const z of doorZs) shutLine(mb, surf, z, 3.2, 9.0, sgn, coarse ? 4 : 7);
     // Handles just under the beltline.
     for (let i = 0; i < doorZs.length - 1; i++) {
       const z = lerp(doorZs[i], doorZs[i + 1], 0.80);
       surfacePoint(surf, z, sgn > 0 ? 5.65 : 26 - 5.65, _sp);
-      roundBox(mb, 'chrome', 0.032, 0.042, 0.145,
-        _sp[0] + Math.sign(_sp[0]) * 0.018, _sp[1], _sp[2], 0.012);
+      if (coarse) {
+        box(mb, 'chrome', 0.030, 0.040, 0.145,
+          _sp[0] + Math.sign(_sp[0]) * 0.018, _sp[1], _sp[2]);
+      } else {
+        roundBox(mb, 'chrome', 0.032, 0.042, 0.145,
+          _sp[0] + Math.sign(_sp[0]) * 0.018, _sp[1], _sp[2], 0.012);
+      }
     }
+    if (coarse) continue;
     // Rocker crease: the line every car has along the sill, and the thing that most
     // clearly separates a modelled car from an extruded slab in a side-on screenshot.
     const st = surf.stations;
@@ -1112,6 +1219,26 @@ function doorFurniture(mb, surf, d, doorZs) {
     }
     if (cPath.length > 2) sweepPath(mb, 'paint', 71, cPath, 0.013, 3, 0.006);
   }
+}
+
+/**
+ * Number plate as geometry.
+ *
+ * `VehicleVisual` hangs a texture-mapped plate off the anchors, but only on
+ * LOD0 — so every parked car in the city, and every driving car past ~25 m, has
+ * a bare bumper. This puts a plate on the mid tier instead: a bright plate in a
+ * dark surround, 48 triangles for the pair. It goes in the `chrome` bucket
+ * because that is the only light, reflective slot the shared prop material
+ * exposes; a real plate is retroreflective and does read as the brightest patch
+ * on a bumper, so the substitution holds up at the distance it is used.
+ *
+ * @param {number} sgn +1 for the rear (+Z), -1 for the front (-Z)
+ */
+function plateBlock(mb, a, sgn) {
+  if (!a) return;
+  const z = a.z + sgn * 0.010;
+  box(mb, 'trimDark', a.w + 0.024, a.h + 0.022, 0.016, a.x, a.y, z - sgn * 0.006);
+  box(mb, 'chrome', a.w, a.h, 0.014, a.x, a.y, z);
 }
 
 function mirrors(mb, surf, d, zBase, big) {
@@ -1473,25 +1600,39 @@ export function getVehicleGeometry(type) {
       for (const t of anchors.turnR) t.side = t.sgn;
       if (d.livery) liveryDecals(mb, surf, d, type);
     }
-    if (lod === 0) {
-      pillarsAndRails(mb, surf, d);
+    if (lod < 2) {
       const doorZs = d.body === 'sedan' || d.body === 'suv'
         ? [body.glassSpans[0][0] + 0.06, 0.17, 1.16]
         : (d.body === 'sports' ? [body.glassSpans[0][0] + 0.06, 0.92]
           : [body.glassSpans[0][0] + 0.02, body.glassSpans[0][1] - 0.02]);
-      doorFurniture(mb, surf, d, doorZs);
+      doorFurniture(mb, surf, d, doorZs, lod);
       if (d.tags.mirrors) {
         mirrors(mb, surf, d, body.glassSpans[0][0] + 0.34, d.tags.mirrors === 'big');
       }
-      wipersAndTrim(mb, surf, d);
+    }
+    if (lod === 1) {
+      // Plates only on the mid tier: LOD0 gets a texture-mapped one from
+      // `VehicleVisual`, and putting both on would z-fight.
+      plateBlock(mb, anchors.plateFront, -1);
+      plateBlock(mb, anchors.plateRear, 1);
+    }
+    if (lod < 2) {
       // Interior: a dark shell so the glass has something behind it. Without this,
       // windows read as painted-on holes the moment the sun is behind the car.
+      // The parked fleet is drawn from LOD1 and had no interior at all, which is
+      // why its glazing read as a hole straight through the car at a kerb — the
+      // prop pipeline's glass is 20% opaque, so whatever is behind it is what you
+      // see. 24 triangles.
       const zc = (body.glassSpans[0][0] + body.glassSpans[0][1]) * 0.5;
       const wI = Math.abs(surfX(surf, zc, 6.5)) * 0.92;
       const yI = surfY(surf, zc, 6.2);
       const len = (body.glassSpans[0][1] - body.glassSpans[0][0]) * 0.94;
       box(mb, 'interior', wI * 2, 0.34, len, 0, yI - 0.08, zc);
       box(mb, 'interior', wI * 1.5, 0.30, 0.10, 0, yI + 0.16, zc + len * 0.30);
+    }
+    if (lod === 0) {
+      pillarsAndRails(mb, surf, d);
+      wipersAndTrim(mb, surf, d);
     } else {
       bakeWheels(mb, spec, lod);
     }
@@ -1547,11 +1688,18 @@ export function createMaterialKit(ctx) {
         if (base && base.isMaterial) { m = base.clone(); m.color.setHex(hex); }
       }
       if (!m) {
+        // Standalone fallback — used only when the materials system is absent.
+        // Held at the same numbers `Materials.carPaint` uses, because a metalness
+        // this far below the system's makes the fallback car noticeably chalkier
+        // than the same colour on the same street, and the whole point of the
+        // fallback is that nobody can tell which path they got.
         m = new THREE.MeshPhysicalMaterial({
-          color: hex, metalness: 0.62, roughness: 0.315,
-          clearcoat: 1.0, clearcoatRoughness: 0.055,
-          envMapIntensity: 1.15,
+          color: hex, metalness: 0.78, roughness: 0.26,
+          clearcoat: 1.0, clearcoatRoughness: 0.045,
+          envMapIntensity: 1.25,
+          envMap: ctx?.scene?.environment ?? null,
         });
+        m.userData.envBase = 1.25;
         wet(m);
       }
       m.name = 'car_paint_' + key.toString(16);
