@@ -2,529 +2,570 @@
 
 | | |
 |---|---|
-| **Commit measured** | `4311bd1` — working tree clean, local == origin/main, **one build throughout** |
+| **Commit measured** | `e86a6e3` — working tree clean at the start **and at the end** of the session, **one build throughout** |
 | **Resolution / preset** | 1920×1080 drawing buffer, preset `high`, `pixelRatio` 1.5 on a 1280×720 canvas |
-| **Captures** | ~60 deterministic `capture()` calls — 13 named shots, 2 custom aerials, 5 time-of-day variants, 4 weather variants, 3 shader-ablation states |
-| **Boot** | `bootReport.failed` `[]`, `errors` `[]`, `glFaults` `[]` at the end of the session |
-| **Verdict** | **OVERALL: 4/10 — KEEP WORKING** (was 3/10) |
+| **Captures** | ~30 deterministic `capture()` calls — 11 named shots, 2 custom framings (rooftop, rain-on-road), plus 8-point albedo and 5-point wetness ablation sweeps |
+| **Boot** | `bootReport.failed` `[]`, `errors` `[]`, `glFaults` `[]` at the end of the session; `validate().ok` true |
+| **Verdict** | **OVERALL: 5/10 — KEEP WORKING** (was 4/10, before that 3/10) |
 
 Everything below is either **measured** (a number I produced this session, with the
 method stated) or **judgement** (my eye on a frame). Each finding says which.
 
----
-
-## 0. Methodology — read this before trusting or repeating any number
-
-Four traps bit me this session. Three of them would have put false findings in this
-report if I had not tested them.
-
-1. **A `grab()` that is not immediately preceded by a `step()` reads solid black.**
-   The drawing buffer is cleared after compositing. Every readback must be
-   `b.step(1); gl.readPixels(...)` in **one synchronous block**. My first grab read
-   0% non-zero; the same grab after a `step(1)` read 100%. This is *not* the
-   "hidden pane" failure described in `CURRENT_STATE.md` — the GPU is producing
-   pixels normally.
-
-2. **Screenshots of the Browser pane are lossy.** At 1:1 zoom the brick facades
-   showed dense magenta/cyan speckle and I nearly filed "per-pixel chroma noise /
-   broken texture filtering" as an automatic fail. Measured from the readback
-   instead: the brick patch's mean absolute difference rises monotonically with
-   sample spacing (lag 1 → 4.61, lag 2 → 7.43, lag 4 → 12.2, lag 8 → 21.2). Real
-   per-pixel aliasing would be flat across lags. All 28 textured materials use
-   `LinearMipmapLinearFilter` at anisotropy 8 or 16. **The speckle was JPEG
-   compression in the screenshot channel.** Judge anything at pixel frequency from
-   `readPixels`, never from a screenshot.
-
-3. **`capture()` does not settle the scene.** `Buildings._pump` spends **50 ms/frame
-   for 45 frames** after a camera teleport (`CATCHUP_FRAMES = 45`, `Buildings.js:24`
-   and `:1076`), and `capture()` only runs 24 + 6 = **30** frames. Every benchmark
-   taken straight after `capture()` — including the coordinator's spot figures and
-   my own first pass — lands *inside* the catch-up window, and the streamed
-   building set is still growing. The same camera reported 2.12M → 2.75M → 3.55M
-   triangles on three successive captures. **Step at least 60 further frames before
-   benchmarking or counting geometry.**
-
-4. **`step(1/60)` is accidentally correct, but not for the reason it looks.**
-   `step: (n = 1, dt = 1/60)` takes a frame **count** first. `for (let i = 0; i < n; i++)`
-   with `n = 0.0167` runs exactly **once**, because `0 < 0.0167`. I verified the frame
-   counter advances by 1, and `bench` via `step(1/60)` and via `step(1)` agree
-   (5.8 vs 6.1 ms). The snippet in `AGENTS.md` is safe. It is also one edit away
-   from silently measuring nothing, and it reads as if it passes a delta-time.
-   **Suggest changing it to `step(1)` in the docs.**
-
-One more caveat I could not eliminate: this machine is under memory pressure, and
-repeat measurements of the same settled shot varied by up to 2× (st_beaconhill
-median 5.8 ms and 11.8 ms in two runs minutes apart). I report the **worst** settled
-median observed and flag the spread.
+**The skin is going on. It went on at a third of the thickness it needed, on one
+surface, and the wet response is still the wrong sign.**
 
 ---
 
-## 1. Performance — the "8 fps" headline does not survive
+## 0. Methodology — one instrument fix that changes how everything gets measured
 
-`docs/CURRENT_STATE.md` and `PROGRESS.md` still say *"8 fps at 1080p high is the
-headline problem."* **That is false and should be struck.**
+The three instruments the brief says were repaired **are** repaired, and I sanity-checked
+each. But I found a fourth problem, and fixing it removes the constraint the brief
+describes as unavoidable.
 
-Measured: 1920×1080, preset `high`, camera parked, **90 frames of settling** past the
-catch-up window, then the median of 24 synchronous frames each forced to GPU
-completion with `gl.finish()`. 24 frames covers four full cycles of the 6-frame
-shadow-cascade stagger.
+**`capture()` leaves `timeScale` at 40.** The brief says "absolute luminance on a fixed
+shot drifts 76→99 between captures minutes apart (auto-exposure plus a moving cloud
+shadow)", and that any A/B must therefore be toggled in one frame. I reproduced the
+drift exactly — camera parked, `timeOfDay` unchanged, exposure meter pinned
+(`speedUp = speedDown = 0`), the `st_southend` near carriageway read:
 
-| shot | median ms | p90 ms | peak draws | peak tris (all passes) |
-|---|---:|---:|---:|---:|
-| `st_backbay` | **4.7** | 5.6 | 1054 | 3.72M |
-| `st_northend` | **6.7** | 7.5 | 730 | 3.42M |
-| `st_southend` | **6.9** | 10.4 | 708 | 3.50M |
-| `night_neon` | **6.6** | 7.9 | 735 | 5.95M |
-| `st_beaconhill` | **11.8** (5.8 in a second run) | 13.4 | 948 | 4.66M |
+```
+100.2  100.2  100.2  97.5  92.4  85.4  82.6  89.8  86.5  84.2      (every 3rd frame)
+```
 
-Every street camera is **inside the 16.7 ms 60 fps budget**, the worst by a factor of
-1.4. Draw calls peak at 1054 against the 1200 budget. `hero_skyline`, `downtown_dusk`,
-`bridge`, `rain_street` and `overcast_wide` all sit at 2.0–2.8 ms.
+−18% and non-monotonic in 27 frames. `freeze: (on) => { timeScale = on ? 0 : 40 }`,
+so 27 synchronous frames are **18 seconds of game time** — the cloud shadow crosses the
+street. **Calling `window.__boston.freeze(true)` after `capture()` removes it
+completely:**
 
-**Perf is not this project's problem any more. Stop optimising and spend the budget
-on pixels.** The one number still out of contract is the shadow load. Splitting
-camera from shadow by freezing `shadowMap.autoUpdate` and re-counting:
+```
+98.67  100.21  100.21  100.21  100.21  100.21  100.21  100.21
+```
 
-| shot | camera tris / draws | shadow tris / draws | ms with shadow update | ms frozen |
-|---|---:|---:|---:|---:|
-| `night_neon` | 2.53M / 380 ✅ | **3.47M** / 436 ❌ | 6.9 | 4.9 |
-| `st_beaconhill` | 1.81M / 327 ✅ | **2.73M** / 419 ❌ | 5.8 | 4.3 |
+Every ablation in this report was taken with `freeze(true)` and the meter pinned. That
+turns an 18% noise floor into a **0.00** one, and it is why I can report a 0.04 spread
+on a control patch across an 8-state sweep. **Add `freeze(true)` to the ablation recipe
+in `AGENTS.md`.** Toggling in one frame is still good practice, but it is no longer the
+only option.
 
-Camera triangles are comfortably inside the 3.5M budget. **Shadow triangles exceed
-the 2.5M budget by 9–39%**, and shadow rendering is ~30% of frame cost (1.5–2.0 ms).
-That is the only budget breach, and it is cheap headroom if anyone wants it.
+Sanity checks on the three repaired instruments:
 
-*Caveat (judgement):* these are synchronous `step()` frames with `gl.finish()`, not a
-live rAF loop — `measureFps()` still refuses because `document.hidden` is `true` for
-this pane. A forced-completion synchronous frame is if anything *pessimistic* about a
-real loop, so I am confident the direction is right, but nobody has yet seen this
-build run at its natural cadence.
+1. **`capture()` settling — works, with one caveat.** `streamed` is reported and
+   `settled()` is honoured. `st_southend` came back at 3.58M triangles where the
+   previous pass measured a half-built 2.12M. **Caveat:** `settled()` is
+   `_catchUp === 0 && _queue.length === 0`, which is also true when Buildings has
+   *evicted* chunks. Repeat captures of the same shot returned 3.58M → 2.07M → 2.76M
+   triangles with `streamed: 0` each time. I compared the frames directly: the visible
+   image is unchanged; the delta is off-screen geometry in the shadow cascades that
+   unloads because Buildings streams around the **player** (parked at 166, 3.1, 128)
+   rather than the capture camera 560 m away. Harmless for pixels, **not** harmless for
+   anyone quoting `capture().tris`.
+2. **`Engine.resize()` floor — holding.** `drawingBufferWidth/Height` stayed 1920×1080
+   for the whole session with the pane hidden. `readPixels` never came back empty.
+   The GPU is alive; report the good news loudly, as asked.
+3. **`street_level` / `rain_street` re-authoring — half-successful.** Both are off the
+   Common. Neither frames a carriageway. See §2, AF-5.
+
+One trap I set for myself and want on the record: `Assets.setWetness()` **rewrites
+`material.color`** from `userData.wetnessColor`. My first wet-vs-dry sweep set
+`road.color` after calling it, which silently deleted the albedo-darkening half of the
+wet response and produced a wrong answer. The correct handle is
+`road.userData.wetnessColor`, applied *before* `setWetness`.
+
+---
+
+## 1. `ALBEDO_GAIN` — the open question the road agent refused to decide
+
+**Verdict: 3.0 is too timid. Ship 9.0. The better answer is to retire the uniform
+scalar entirely and normalise per tile — see the table below.**
+
+### 1.1 The commit's own diagnosis is still true at the shipped value
+
+*Measured.* I read the **baked** road atlas (`assets.textures.get('road_atlas.alb')`,
+1024², sRGB) back to the CPU and computed each 512² tile's mean **linear** luminance
+per pixel:
+
+| atlas tile | mean sRGB | **mean linear** |
+|---|---:|---:|
+| asphalt | 100.3 | **0.1488** |
+| concrete (sidewalk) | 116.0 | **0.1890** |
+| brick (sidewalk) | 90.5 | **0.1080** |
+| cobble (setts) | 140.0 | **0.2685** |
+
+Effective diffuse albedo is `tint × ALBEDO_GAIN × tileLinear`. At the shipped
+`ALBEDO_GAIN = 3.0`:
+
+| surface | **effective linear albedo** | real-world | under by |
+|---|---:|---|---:|
+| **carriageway asphalt** | **0.0424** | 0.09–0.14 (aged hot-mix) | **2.1–3.3×** |
+| gutter | **0.0357** | ~0.07–0.10 | 2.0–2.8× |
+| sidewalk **brick** | **0.0442** | 0.20–0.30 | **4.5–6.8×** |
+| granite kerb | 0.1260 | 0.20–0.28 | 1.6–2.2× |
+| sidewalk concrete | 0.1839 | 0.18–0.30 (dirty urban) | ~1.0–1.6× |
+| cobble setts | 0.1339 | 0.15–0.22 | ~1.1–1.6× |
+| road paint, white | 0.3342 | 0.55–0.75 fresh / 0.35–0.45 worn | ~1.0–2.2× |
+
+The commit's whole diagnosis was "the carriageway ships below its own dielectric F0 of
+0.04, which is physically impossible, so no albedo detail can be visible and
+`setWetness` is a no-op." **At 3.0 the carriageway is at 0.0424 — 6% above the F0 it
+identified as the impossibility threshold, and the gutter at 0.0357 is still below it.**
+The condition the commit named as the root cause has been reduced, not cleared.
+
+(The commit computed the asphalt tile at "89/255 = 0.100 linear". Measured on the baked
+atlas it is 100.3/255 = 0.1488. The direction of its argument is right; the arithmetic
+that produced "the remaining factor is ~9" was working from a slightly different number.)
+
+### 1.2 The sweep — nothing breaks, all the way up
+
+*Measured.* `road_atlas.color` is white and `vertexColors` is on, so scaling
+`material.color` by `k` is an exact `ALBEDO_GAIN = 3k` handle. `st_southend` 11:12,
+`freeze(true)`, meter pinned, one frozen frame. Road patch = 560×240 px of paint-free
+near carriageway; brick control = 340×300 px of the sunlit right-hand facade.
+
+| ALBEDO_GAIN | eff. albedo | road mean | road MAD@89 | road clip | brick p50 | brick MAD@89 | frame mean | frame clip |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 (no diffuse) | 0 | 72.87 | 10.23 | 0.00% | 104.3 | 56.32 | 93.15 | 0.95% |
+| 1 | 0.014 | 83.44 | 8.80 | 0.00% | 104.3 | 56.32 | 96.97 | 0.96% |
+| 2 | 0.028 | 92.40 | 9.44 | 0.00% | 104.3 | 56.31 | 100.03 | 0.97% |
+| **3 (shipped)** | **0.042** | **100.14** | **10.59** | 0.00% | 104.3 | 56.33 | 102.72 | 0.98% |
+| 5 | 0.071 | 112.97 | 12.91 | 0.00% | 104.3 | 56.29 | 107.30 | 0.96% |
+| 7 | 0.099 | 123.28 | 14.91 | 0.00% | 104.3 | 56.30 | 111.15 | 0.97% |
+| **9** | **0.127** | **131.87** | **16.49** | 0.00% | 104.3 | 56.33 | 114.47 | 0.98% |
+| 11 | 0.155 | 139.21 | 17.74 | 0.00% | 104.3 | 56.29 | 117.38 | 0.96% |
+
+The brick control does not move: p50 **104.3 at every state**, MAD spread **0.04 across
+the whole sweep**. Frame clipping is flat at 0.95–0.98% — **there is no exposure cost at
+all**, contrary to the fear recorded in the source comment that 9 would be "a bigger
+exposure change than one agent should make." Road clipping is 0.00% throughout and the
+road patch max only reaches 182/255 at gain 9.
+
+Road-vs-brick flatness: **9.7× before this pass → 5.3× at gain 3 → 3.4× at gain 9.**
+
+### 1.3 The argument that actually settles it — the wet response
+
+*Measured, and this is the strongest number in the report.* One frozen `st_southend`
+frame under `weather: 'rain'`, identical lighting, identical exposure, toggling **only**
+`setWetness` with `wetnessColor` pre-scaled so the albedo-darkening term survives:
+
+| ALBEDO_GAIN | dry mean | wet mean | **wet / dry** |
+|---:|---:|---:|---:|
+| **3 (shipped)** | 48.30 | 52.79 | **1.093** |
+| 5 | 55.46 | 55.47 | 1.000 |
+| 7 | 61.87 | 58.08 | 0.939 |
+| **9** | 67.65 | 60.53 | **0.895** |
+| 11 | 73.34 | 64.13 | 0.874 |
+
+**At the shipped gain, wetting the road still makes it 9.3% BRIGHTER.** The sign of the
+wet response is unchanged from the failure the previous report filed as AF-5. Break-even
+is at `ALBEDO_GAIN ≈ 5.0`. The commit's claimed "wet ratio 1.01 → 0.795" is a comparison
+of **rain weather against clear weather** — a different sky, a different sun and a
+different exposure — not a wet-against-dry toggle. It is not measuring what its name says.
+
+Supporting split: ablating the road's diffuse colour entirely moves the carriageway from
+100.14 to 72.87. **73% of the road's rendered luminance is still not albedo** at gain 3
+(vs the commit's 87% before the pass). It is 59% at gain 7 and 55% at gain 9. Env
+specular accounts for only ~3/255 of that, SSR for **0.00** (verified by toggling
+`rp.ssr.enabled`), AO for 0.00.
+
+### 1.4 The number, and the better answer
+
+**If the knob stays a uniform scalar: `ALBEDO_GAIN = 9.0.`** Defence: it puts the
+carriageway at 0.127 linear — inside the real aged-hot-mix band and clear of its own F0
+by 3×; it moves the wet/dry ratio to 0.895 (still short of a real 0.75–0.85, but the
+right side of 1.0); it raises carriageway MAD@89 from 10.59 to 16.49, closing the
+road-to-brick flatness gap from 5.3× to 3.4×; and it costs **nothing** — 0.00% new road
+clipping, 0.98% frame clipping unchanged, brick control unmoved. 7.0 is the minimum I
+would accept; below 5.0 the wet response is still inverted, which makes 3.0 indefensible.
+
+**But a uniform gain is the wrong shape of knob, and the report should say so.** The
+source comment defends it as "preserving every authored ratio". Those ratios were
+authored against the near-white fallback atlas where all four tiles were ~0.8 linear;
+the real tiles differ by **2.5× between classes** (0.108 to 0.269). The ratios the
+uniform gain preserves are precisely the ones the atlas swap destroyed. At gain 9,
+cobble reaches 0.402 and concrete 0.552 — both far too bright — while the road-atlas
+brick only reaches 0.133, still half of real brick.
+
+**Is the under-authoring visible on concrete, brick and cobble? Yes, and it is not
+uniform.** Per-class correction factors relative to today, to hit physical albedo:
+
+| class | ×today | resulting albedo |
+|---|---:|---:|
+| asphalt / gutter | **×3.0** | 0.127 / 0.107 |
+| sidewalk brick | **×5.0** | 0.221 |
+| granite kerb / top | ×1.8 | 0.227 / 0.257 |
+| sidewalk concrete | ×1.3 | 0.239 |
+| cobble setts | ×1.2 | 0.161 |
+| road paint white | ×1.7 | 0.568 |
+
+That is a six-line change in the same file by the same owner, and it is strictly better
+than any single number. **Owner: roads / materials.**
 
 ---
 
 ## 2. Automatic fails
 
-Called out per the rubric, no matter the scores.
+Called out per the rubric, no matter the scores. Four of the seven from the previous
+pass are cleared.
 
-**AF-1 — The road is an untextured plane, and it is the largest surface in the game.**
-*Measured.* Horizontal mean-absolute-difference of the near carriageway at
-`st_southend`: **1.71 at 1 px spacing, rising only to 3.55 at 89 px**. The brick
-facade in the same frame measures 6.29 → **48.25** over the same lags. The road is
-~14× flatter than the wall behind it, at every spatial scale. There is no wheel-track
-polish, no gutter grime, no camber shading, no oil, no patch joints, no drains. It
-occupies roughly 35–45% of every street frame.
+**AF-5 — Rain still has the wrong sign, and the streaks are broken geometry. STANDS,
+restated.**
+*Measured + judgement.* The wet road is **1.093× the dry road** in one frozen frame at
+identical lighting (§1.3). Magnified 2.1× on the readback, the wet near carriageway is a
+uniform dark field, p05 36 / p90 67 — a 30-value band with **no puddles, no standing
+water, no sheen structure and no reflections of anything**. SSR contributes exactly 0.00
+to it. Judgement, at 2× on the readback of `rain_street`: the streaks are enormous
+opaque white quads with **visible polygon corners and faceted, aliased ends**, up to a
+third of the screen height for one drop, at one angle and one opacity over the whole
+frame including the sky, plus shard-like clusters that read as broken glass over the
+facades. This is worse than the "scratches on the lens" the previous pass described.
+Rain also blows the sky: `st_southend` clipping goes 0.98% dry → **4.89%** wet.
 
-**AF-2 — Parked cars clip to pure white and have no detail.**
-*Measured.* At `night_neon` 22:00: car body mean **133.2 and 166.5** (max 255) against
-near road **19.1** — a ratio of **7.0×**, and brighter than the sky patch (42.5). They
-are the brightest objects in a night frame. In daylight (`st_southend`, `st_backbay`)
-the pale variants read 250–255 across whole panels with zero shading. *Judgement:* the
-body surface is a soft quilted loft that reads as inflatable; there are no plates,
-mirrors, handles, wipers or badges.
+**AF-6 — `overcast_wide` is still a flat milky wash. STANDS, unchanged.**
+*Measured.* p05 **73.1**, p50 116.4, p90 **162.7**, min 55.8, max 210.6, **0.00%
+clipped, 0.00% below luminance 2**. The previous pass measured 74 / 117 / 163. Nothing
+moved. The whole 1920×1080 frame lives inside a 155-value band and 90% of it inside a
+90-value band; city, river and sky resolve to one blue-grey.
 
-**AF-3 — Wheels are open tori with a black void where the rim should be.**
-*Judgement, at 7× zoom on the readback.* The tyre is a torus; the hub is simply
-absent — no rim, no spokes, no brake face, no cap. At street level this is the closest
-object to the camera in every framing.
+**AF-7 — Shadow-cascade triangles are over budget, and the breach moved the wrong way.**
+*Measured.* Peak over 10 synchronous frames, camera-only counted with
+`shadowMap.autoUpdate = false`:
 
-**AF-4 — Facade sill/lintel bands project past the building into open sky.**
-*Judgement, confirmed in three independent framings* (`st_southend`, `golden_hour`,
-`st_backbay` dusk). Grey horizontal bands extend beyond the facade plane and hang
-unattached against the sky, in cascades on curved frontages. This is the single most
-obviously *broken* thing in the build — it reads as unfinished geometry, not as a
-stylistic choice. Likely the string course / sill run is emitted at parcel width
-rather than clipped to the (now corridor-clipped) footprint.
+| shot | camera tris / draws | **shadow tris** | previous pass | all-pass draws |
+|---|---:|---:|---:|---:|
+| `night_neon` | 2.50M / 344 ✅ | **3.51M** ❌ | 3.47M | 712 |
+| `st_beaconhill` | 1.82M / 335 ✅ | **2.82M** ❌ | 2.73M | 775 |
+| `st_southend` | 1.39M / 267 ✅ | 2.27M ✅ | — | 578 |
+| `st_backbay` | 1.65M / 376 ✅ | 2.04M ✅ | — | 829 |
+| `st_northend` | 1.33M / 312 ✅ | 2.08M ✅ | — | 709 |
 
-**AF-5 — Rain produces no wet-surface response at all.**
-*Judgement + measured.* `st_southend` at `weather: 'rain'` renders the carriageway
-visually identical to the same shot at `clear`; the frame gains only overlaid streaks.
-No reflections, no puddle specular, no sheen, no spray, no drips, no splash rings. The
-rain streaks themselves are uniform white lines of identical length, angle and opacity
-drawn over the whole frame including the sky — they read as scratches on the lens.
-`CURRENT_STATE.md` already routes "wet asphalt renders white" to roads/materials; the
-current state is the opposite failure, and it is worse, because rain is free contrast.
+Against the 2.5M shadow budget: `night_neon` is **40% over** (was 39%) and
+`st_beaconhill` **13% over** (was 9%). **The breach did not move materially, and what
+movement there is, is upward.** Camera triangles and draw calls are comfortably inside
+budget everywhere; peak draws 829 against 1200.
 
-**AF-6 — `overcast_wide` is a flat milky wash with no black and no white.**
-*Measured.* p05 **74**, p50 117, p90 **163**, 0.00% clipped, 0.00% below luminance 2.
-The entire 1920×1080 frame lives inside a 90-value band. The city, the river and the
-sky resolve to one grey. The rubric's "no flat ambient wash" is failed outright.
+**AF-8 (new) — the harbour is still an unshaded plane.** *Measured + judgement.*
+`bridge` at 08:12: water occupies ~55% of frame at min 22.2 and reads as one flat dark
+sheet — no waves, no normal, no reflection, no sun glitter. `hero_skyline` the same. The
+previous pass listed this under "could not test"; it is testable and it fails.
 
-**AF-7 — Shadow-cascade triangles are over budget.** 2.73M–3.47M against 2.5M. See §1.
+### Cleared since the last pass — take these off the list
 
-**Explicitly checked and NOT failing** — I want these off the worry list:
-- **No z-fighting found** anywhere, in any shot, at any zoom.
-- **No visible texture tiling.** *Measured* by autocorrelation: the brick facade shows
-  no periodic trough before lag 79; grass plateaus with only shallow minima at lags
-  6/21/33. My initial visual impression of "repeating brick" was the regular window
-  grid — architecture, not a texture repeat. Do not chase this.
-- **Zero console errors and zero GL faults** across the whole session.
-- **No pure-black clipped regions** beyond legitimate deep night shadow (worst 6.99%
-  at `night_neon`).
-- **No objects floating or sunk**, and **no buildings in the carriageway** (see §3.2).
-- **Draw calls and camera triangles are inside budget.**
+- **AF-4, floating facade ornament — CLEARED.** *Judgement, four independent framings
+  (`st_southend`, `st_backbay`, `st_beaconhill`, a custom rooftop camera at 48 m).* Not
+  one band, sill or lintel projects into open sky anywhere. This was the single most
+  broken read in the build and it is gone.
+- **AF-3, hollow wheels — CLEARED.** *Judgement at 3.0× on the readback.* Bright outer
+  flange, recessed dish, spokes and a hub cap, visible on parked cars at 5–15 m.
+- **AF-2, cars clipping to pure white — CLEARED as clipping.** *Measured* by toggling
+  the `prop_surf` material at `st_southend` 11:12: prop pixels are 23.27% of the frame
+  at mean luminance 55.2 and **0.13% clipped**. The bodies are now off-white, not 255.
+  (The *material response* is still wrong — see §3.2.)
+- **AF-1, the road is an untextured plane — DOWNGRADED, not cleared.** *Measured.*
+  Carriageway MAD@89 **10.59** against the brick control's **56.33** — 5.3× flatter,
+  from 9.7×. There is real structure now. It is no longer an automatic fail; it is
+  ranked fix #1 for a different reason (§3.1).
+- **No z-fighting, no shadow acne, no visible tiling, no floating or sunk objects, no
+  empty streets, zero console errors, zero GL faults** — all re-checked, all clean.
 
 ---
 
-## 3. Verification of the five unconfirmed repair waves
+## 3. Verdicts on the three changes under review
 
-None of these had been seen by anyone. All five did what they claimed. Two
-over-corrected, and one is masking a different problem.
+### 3.1 `8b6fff6` — road and pavement — **REAL, AND UNDER-DOSED**
 
-### 3.1 `ccc2a50` — airlight ramp — **VERIFIED, with a caveat**
+Every headline claim reproduces. Carriageway MAD@89 measured **10.59** (claimed 10.27);
+road-to-brick flatness **5.3×** (claimed 4.7×, my brick patch differs); road material
+covers **41.5%** of the `st_southend` frame, confirming "35–45% of every street frame".
+The `uDetail` handle works, kerbs are modelled with a top and a face, and the frame cost
+is unchanged.
 
-*Method:* ablation. `uInscatFloor`/`uInscatTau` in `src/gfx/Fog.js` drive
-`open = mix(uInscatFloor, 1.0, 1 - exp(-tau/uInscatTau))` in
-`atmospherePass.glsl.js:254`. Three states rendered on one frozen frame at
-`st_northend` 12:00 with the exposure meter pinned (`speedUp = speedDown = 0`):
-**C** = in-scatter ablated (`floor 0, tau 1e9`), **B** = shipped (`0.05 / 0.30`),
-**A** = pre-fix (`floor 1.0`). Distance comes from the road plane analytically,
-`d = h / −ray.y`, camera 1.65 m above the carriageway.
+*Judgement, at 2.4–2.7× on the readback (`st_southend` and `st_beaconhill`):* **the crack
+field is the new tell.** The cracks are wide, soft, low-contrast grey-brown curves —
+hooks, loops and S-bends several pixels across with blurred edges, scattered like
+handwriting. Real asphalt cracks are thin, dark, high-contrast, made of straight
+segments meeting at angles, and they cluster at joints, edges and wheel paths. These
+branch nowhere and follow no directional logic. At street magnification they are the
+dominant feature of the surface and they read as **someone having drawn on the road with
+a soft grey marker**. Two supporting observations from the same crops: there is no
+visible aggregate or chip texture between them (the surface is smooth), and the lane
+line is a soft blurred band with no crisp paint edge and no chipping. The utility-cut
+patches are the best part of the pass — right idea, edges too soft.
 
-| distance | ablated | shipped | pre-fix | **dL shipped** | dL pre-fix |
-|---:|---:|---:|---:|---:|---:|
-| 10 m | 122.5 | 122.8 | 126.3 | **+0.2** | +3.8 |
-| 18 m | 120.9 | 121.3 | 128.1 | **+0.4** | +7.2 |
-| 45 m | 125.7 | 128.3 | 145.8 | **+2.6** | +20.1 |
-| 103 m | 124.0 | 128.8 | 153.8 | **+4.8** | +29.9 |
-| 242 m | 148.6 | 157.5 | 179.6 | **+8.9** | +31.0 |
-| 442 m | 170.1 | 179.5 | 197.4 | **+9.3** | +27.3 |
+The gain is the headline problem (§1). **Owner: roads / materials.**
 
-**Is the near field still washed out? No.** In-scatter now contributes +0.2/255 at
-10 m against +3.8 before. The near field is clean.
+### 3.2 `8eeb1b7` — parked cars — **REAL, AND THE CLEARCOAT IS NOW THE BINDING LIMIT**
 
-**Is there a real depth cue at 400 m? Yes, but a modest one** — +9.3/255, monotonic
-from 45 m. Judgement: that is a *thin* cue. The commit's claim of "1.5 km at 93% of
-the un-ramped value" is a **linear-radiance** ratio; in display space after the tone
-curve I measure the shipped in-scatter at roughly 30% of the pre-fix value in the far
-field. Both can be true — the tone curve compresses the highlight — but anyone reading
-that 93% as "the far field is unchanged to the eye" is reading it wrong.
+Clipping and the wheel both verify (see AF-2 and AF-3 above). The wheel face is the
+single most visible per-object improvement in the build.
 
-*Caveat on my own numbers:* below screen row ~550 the band is genuine road; above it
-the street's vanishing point and distant geometry dominate, so the 442 m row is
-indicative rather than a clean road sample.
+**Yes, the missing clearcoat is now the binding limit — and it is worse than the commit
+states.** *Measured:* `prop_surf` is a `MeshStandardMaterial`; its `roughness: 1.0,
+metalness: 1.0` are scale factors and the real values come per-vertex from `aSurf`, so
+car paint renders at `SURF.paint = [0.46, 0.18]` (`StreetFurniture.js:172`). *Judgement
+at 3.0× on the readback, `st_southend` in direct 11:12 sun:* the body has **no specular
+highlight of any kind**. There is no shoulder streak, no horizon line, no sky reflection
+— the falloff is purely Lambertian and the surface reads as **unglazed clay or
+polystyrene**. Roughness 0.46 is far too rough for automotive paint (real clearcoat is
+0.05–0.15) and metalness 0.18 is a fudge that buys nothing. The commit's own ask —
+`SURF.paint → ~[0.34, 0.05]` and `prop_surf → MeshPhysicalMaterial` with clearcoat 1.0 /
+clearcoatRoughness 0.06 — is correct and should be executed; add the roughness change,
+because clearcoat alone on a 0.46-rough base will still read matte underneath.
 
-**Is the horizon step gone? Yes — cleanly.** *Measured* with the project's own
-method (median luminance step per row across 480 columns, plus sign coherence),
-±14 rows around the analytically-computed horizon:
+Two further things visible at 3.0×, not mentioned in the commit: the nearest car carries
+a **large hard-edged dark chevron across its flank** that reads as a painted decal rather
+than a shadow, and its greenhouse is opaque with the windscreen reading as a black slot.
+Door lines, mirrors and plates *are* present on cars 2–5 back — they are simply not
+present on the nearest one, which is the one the eye lands on. **Owner: props /
+materials, with vehicles.**
 
-| shot | horizon row | worst median step | coherence | seam rows |
-|---|---:|---:|---:|---:|
-| `st_backbay` | 543 | −1.00 | 0.25 | **0** |
-| `st_beaconhill` | 546 | +2.72 | 0.30 | **0** |
-| `st_northend` | 536 | −1.36 | 0.18 | **0** |
-| `st_southend` | 541 | −2.07 | 0.31 | **0** |
-| `street_level` | 540 | −1.28 | 0.17 | **0** |
+### 3.3 `a40f35f` — facades — **THE STRONGEST OF THE THREE**
 
-For scale, the defect this replaced measured +12.9 to +40.1 at coherence 0.61–0.91.
-Every residual here is incoherent, i.e. content. **Closed.**
-
-### 3.2 `754747a` — buildings face the street — **VERIFIED, and it over-corrected**
-
-*Method:* CPU-side over all **10,191** building specs. Road centrelines sampled from
-`edge.pts` (never node-to-node chords) every 4–6 m into a spatial hash — 20,032
-samples. For each building I take the outward normal of each edge in `spec.front`
-(a `Set` of polygon edge indices) and compare it with the direction to the nearest
-centreline. The old "longest edge is the facade" rule is computed alongside as a
-control.
-
-| | result |
-|---|---|
-| Buildings whose front edge faces the street (<45°) | **86.6%** |
-| Median angle, front edge → street | **3.3°** |
-| Same test on the old longest-edge rule | **7.3%**, median **90.0°** |
-| Buildings with no `front` set | **0** |
-
-The control reproduces the commit's headline independently: the longest edge is at a
-dead 90° to the street — it is the party wall — so **92.7% would face the wrong way**
-under the old rule, against the commit's claimed 96.3%. **Buildings now address the
-street.**
-
-*Streetwall*, measured from the front-edge midpoint to the nearest centreline, minus
-(`halfRoad` + `walk`), over 10,200 facades:
-
-| | value |
-|---|---|
-| Facade setback from the back of the pavement — p10 / median / p90 | **0.2 / 0.2 / 0.3 m** |
-| Facades intruding into carriageway or footway | **2 of 10,200** |
-| Per-street standard deviation of setback (212 streets, ≥12 facades) | median **0.1 m**, p90 0.3 m |
-| Streetwall continuity (centreline steps with a facade within 20 m) | **77.5%** of 20,193 |
-
-**Not ragged, and not set back.** The streetwall is continuous and flush.
-
-**But it is now flush to 0.1 m, which is more regular than any real street.** No real
-Boston block has a 10 cm building line. Bays project, stoops project, areaways set
-back, corner buildings step. *This is a large part of why the streets read as extruded
-corridors rather than architecture*, and it is a cheap fix: 0.3–1.5 m of per-building
-setback jitter plus projecting bays. **Owner: buildings.** Do not undo the fix —
-add variance on top of it.
-
-Related: storey heights are sound — median **3.33 m**, p10 3.08, p90 3.59.
-
-### 3.3 `7d3a7ac` — terrain LOD ring seams — **VERIFIED**
-
-*Method:* independent of the commit's own geometry test. Top-down cameras at 2200 m
-and 5200 m so that world radius maps monotonically to screen radius; every pixel's
-ground radius computed by intersecting the view ray with the ground plane; luminance
-binned per 1 m of radius; then the largest single-bin step within ±3 m of the ring
-compared against the typical step 5–12 m away.
-
-| ring | camera | max step at ring | background step | samples/bin |
-|---|---|---:|---:|---:|
-| r = 1440 | 2200 m | **1.95** | 0.51 | 402 |
-| r = 1440 | 5200 m | **2.05** | 1.77 | 108 |
-| r = 3240 | 5200 m | **2.06** | 1.14 | 176 |
-
-The radial profile across r = 1440 reads 115.9, 116.1, 115.2, 115.9, 115.9, 115.9 …
-— flat within 2/255 over 25 bins. **No visible line, no shading hairline, no
-z-fighting at either radius.** Closed.
-
-### 3.4 `55ab64b` — districts — **VERIFIED for the bug; the skyline is still wrong**
-
-*Method:* `city.districtAt` sampled on a 60 m grid over `city.bounds`; height
-distribution over all 10,191 specs; tall buildings located against `geo()` of the real
-Financial District (42.3560, −71.0550) and Back Bay (42.3480, −71.0810).
-
-**The bug is fixed.** `financial` now covers **3.3%** of the sampled map, not 41%.
-(`none` 35.5%, `water` 19.1%, `cambridge` 14.8%, `southEnd` 5.5%, `seaport` 5.3%,
-`fenway` 5.0%, `charlestown` 4.4%, `backBay` 3.1%, `park` 1.8%, `northEnd` 1.3%,
-`beaconHill` 1.0%.)
-
-**Downtown did not lose its towers.** Of 72 buildings ≥100 m, **67 are in the
-financial district**, 44 within 600 m of the real Financial District centre, and only
-3 outside both real clusters. The zoning is now correctly concentrated.
-
-**But the skyline is still not Boston's**, and two new problems are now visible:
-
-| height band | count |
-|---|---:|
-| 0–20 m | **8,384** (82%) |
-| 20–40 m | 1,424 |
-| 40–60 m | **128** |
-| 60–100 m | 183 |
-| 100–150 m | 66 |
-| 150–180 m | 6 |
-| **180 m+** | **0** |
-
-- **Back Bay has zero buildings over 100 m** — and Back Bay is where Boston's two
-  tallest actually stand. 200 Clarendon (241 m) and the Prudential (229 m) exist as
-  landmarks, so they will stand entirely alone on a flat low-rise plain, with none of
-  the real 111 Huntington / One Dalton / Westin cluster around them.
-- **Nothing procedural exceeds 162 m**, so the 165–225 m register is empty. Real
-  Boston has roughly eight buildings in it. The landmarks will read as two spikes
-  stuck into a mesa rather than as the peaks of a massing.
-- There is a cliff from 1,424 buildings at 20–40 m to **128** at 40–60 m. Downtown
-  Boston is full of 40–80 m mid-rise; here that band barely exists.
-
-*Judgement, from `hero_skyline` and `downtown_dusk`:* the skyline reads as a field of
-similar boxes with no dominant peak and no crowns — every tower ends in a flat
-parapet, and the distant ones dissolve into featureless white slabs (see §4).
-**Owner: buildings / city.**
-
-### 3.5 `2cc85c5` — point/spot BRDF guard — **VERIFIED, no regression**
-
-*Method:* ablation at `st_seaport` 20:00 with the exposure meter pinned. Enumerate
-every live `PointLight`/`SpotLight`, render, zero all intensities, render, diff.
+*Measured*, CPU-side over all **10,191** specs:
 
 | | |
-|---|---|
-| Live pooled lights | **15** (10 point + 5 spot) — the full fixed pool |
-| Intensities | 13 × 130, 2 × 42 |
-| Frame area lifted by >4/255 when they are on | **28.96%** |
-| Max lift | **153/255** |
-| Mean lift over the frame | 0.69/255 |
+|---|---:|
+| bays | **2,529** (claim 2,529 ✅) |
+| bows | **1,894** (claim 1,894 ✅) |
+| areaways | **4,544** (claim 4,544 ✅) |
+| stoops | 5,667 |
+| mansards / dormers | 2,750 / 663 |
+| fire escapes / shopfronts | 1,247 / 3,368 |
+| **setback jitter** | mean **0.695 m**, SD **0.379 m**, range 0.10–2.49 m |
 
-**Nothing is missing.** The lights contribute, the guard has not silently killed
-anything, there is no banding, and no light that should be lit is dark. The
-day/night gating in `_applyPools` also still holds. **No regression from the guard.**
+The 0.1 m dead-flush building line the previous pass called out is gone. **Nothing broke
+at the roofline** — I flew a custom camera to 48 m over Back Bay and magnified the roofs
+to 3.8×: bulkheads, packaged HVAC units, roof fans on stalks, brick chimneys, masts and
+antennae all sit **inside their parapets**, on angled parcels as well as grid-aligned
+ones, and the parapet coping is consistent. This is a clean fix and the rooftop view is
+now one of the better frames in the build.
 
-**However, the ablation exposes a much larger problem the guard did not cause.**
-Amplifying the on/off difference 3× and looking at it: the contribution is a handful
-of small bright spots and **nothing at all on the near road**. There are 15 real
-dynamic lights for the entire city against "~2,300 street lamps" — the rest are
-additive glow proxies that light nothing. Measured along the `night_neon` carriageway,
-the road luminance profile is a smooth ramp (26.7 at 8 m → 132.2 at 39 m → 106.2 at
-220 m) with **no periodic pool structure whatsoever**. A night street in GTA V is
-defined by the chain of lamp ellipses on the asphalt. Here the lamps glow in the air
-and the road under them is unlit. **Owner: lighting + render.** See fix #6.
+*Judgement — does the streetwall read as Boston?* **Closer than it has ever been, and
+still not yet.** `st_backbay` and `st_beaconhill` read as brick rowhouse streets with
+cornices, fire escapes, awnings, stoops and street trees, and `st_backbay` carries a
+painted red bike lane, which is a genuinely Bostonian detail. What is missing is that
+the 2,529 bays and 1,894 bows are not legible from the street — no framing I took shows
+a projecting bay or oriel reading as one. Two things I did find at the roofline that are
+*not* regressions but are wrong: **every roof deck is one flat untextured tone** — no
+membrane seams, gravel, staining, drains or rust — and, judgement with moderate
+confidence, at least one pale windowed wall reads as standing free on a roof deck rather
+than as a taller neighbour behind it. **Owner: buildings.**
 
 ---
 
-## 4. Shot-by-shot
+## 4. The two open items from last time
 
-Format per the rubric. Scores are out of 10; below 8 is a fail.
+**Back Bay towers — STILL OPEN, and worse than "no buildings over 100 m."**
+*Measured*, `city.districtAt` on every spec centroid:
+
+| district | specs | ≥60 m | ≥100 m | **max height** |
+|---|---:|---:|---:|---:|
+| **backBay** | 2,499 | **0** | **0** | **33.6 m** |
+| financial | 448 | 208 | 67 | 162.5 |
+| southEnd | 2,712 | 1 | 1 | 150.6 |
+| seaport | 245 | 34 | 0 | 90.0 |
+| beaconHill / northEnd / charlestown | 1,027 / 857 / 653 | 0 | 0 | 35.0 / 31.8 / 16.0 |
+
+Back Bay tops out at **33.6 m across 2,499 buildings**, where 200 Clarendon (241 m) and
+the Prudential (229 m) actually stand. The height bands are **byte-identical to the
+previous pass** — 0–20 m: 8,384; 20–40: 1,424; 40–60: **128**; 60–100: 183; 100–150: 66;
+150–180: 6; **180 m+: 0**. Nothing procedural exceeds 162 m, so the 165–225 m register
+where real Boston has ~8 buildings is empty, and the 40–60 m mid-rise band is a cliff.
+One oddity worth a look: a **150.6 m tower in the South End**, which is wrong.
+*Judgement from `hero_skyline` and `downtown_dusk`:* the towers now carry varied facade
+tone and legible window grids — a real improvement on "featureless white boxes" — but
+**every one ends in a flat parapet with a flat dark roof deck**. No crowns, no
+mechanical penthouses, no spires. It reads as a mesa, not a skyline.
+
+**Night lamp pools — STILL OPEN, unchanged.** *Measured* at `night_neon` 22:00:
+**exactly 15 dynamic lights** (10 point at 42/108, 5 spot at 108) plus 3 directional, for
+~2,300 lamp props. The near-road horizontal luminance profile across the full 1920 px
+width sits between 9 and 34, with a single 49.7 spike from a vehicle headlight and
+otherwise a smooth broad hump — **no periodic structure of any kind**. `st_seaport` is
+the same: lamps glow in the air, the road beneath them is unlit. A GTA V night street is
+*defined* by the chain of lamp ellipses on the asphalt.
+
+---
+
+## 5. Shot-by-shot
 
 ```
-SHOT: st_backbay        VERDICT: FAIL   (09:36 clear, 4.7 ms, 1054 draws, 3.72M tris)
-Scores: silhouette 4, material 2, lighting 5, atmosphere 6, grade 5, density 6,
-        geometry 4, boston 5   → 4/10
-Gives it away: (1) the carriageway is a flat plane, MAD 1.7→3.6; (2) the parked row
-is clipped white with black-void wheels; (3) tree canopies show hard card edges.
-Blind test: YES, instantly — on the road and the cars.
+SHOT: st_beaconhill     VERDICT: FAIL   (16:00 clear, 4.7 ms med, 335 cam draws, 0.00% clipped)
+Scores: silhouette 6, material 4, lighting 5, atmosphere 6, grade 6, density 7,
+        geometry 7, boston 7   → 6/10   ** best daylight street **
+Brick rows, fire escapes, green awning, street sign, real pedestrians, patch joints and
+wheel-track polish now visible on the road. Gives it away: (1) the crack "worms";
+(2) a flat black manhole disc mid-carriageway; (3) mannequin pedestrians.
 
-SHOT: st_beaconhill     VERDICT: FAIL   (16:00 clear, 11.8 ms, 948 draws)
-The most nearly-credible daylight street. Brick rows, fire escapes, awnings, real
-pedestrians, a street sign. Let down by flat matte facades, a black blob of a manhole
-decal mid-carriageway, and mannequin pedestrians. → 5/10
+SHOT: st_backbay        VERDICT: FAIL   (09:36 clear, 5.1 ms, 376 cam draws, 2.90% clipped)
+Scores: 5 / 4 / 5 / 6 / 5 / 7 / 6 / 6   → 6/10
+Painted red bike lane, parked rows both sides, street trees, cornices. No floating bands
+anywhere — the biggest single change since the last pass. Cars still putty; vanishing
+point blows to white.
 
-SHOT: st_northend       VERDICT: FAIL   (18:24, 6.7 ms, 9.16% clipped)
-The sunset down the street is an undifferentiated white blob with no disc, no streak
-and no shape. Double-yellow centreline is a nice touch. → 4/10
+SHOT: st_southend       VERDICT: FAIL   (11:12, 5.3 ms, 267 cam draws, 0.98% clipped)
+Scores: 5 / 4 / 5 / 5 / 6 / 6 / 6 / 6   → 5/10
+The reference shot for the road work. Road material = 41.5% of the frame. Detail is
+real; the level is a third of what it should be and the cracks read as drawn on.
 
-SHOT: st_southend       VERDICT: FAIL   (11:12, 6.9 ms)
-Where the projecting lintel bands are clearest — grey planks hanging in the sky off
-the building edges. Brownstone rows have no bays or oriels. → 3/10
+SHOT: st_seaport        VERDICT: FAIL   (20:00, 3.06% black)
+Scores: 5 / 4 / 4 / 6 / 6 / 7 / 6 / 6   → 5/10   ** best night frame **
+Neon, crosswalk, double-yellow, signal glow, overhead wires, sky glow. Road is dark navy
+with visible crack structure and no lamp pools at all.
 
-SHOT: st_seaport        VERDICT: FAIL   (20:00 night, 6.6 ms)
-Best night frame. Neon, crosswalk, traffic signal glow, lit windows, sky glow. Road
-is unlit between lamps and dead flat. → 5/10
+SHOT: hero_skyline      VERDICT: FAIL   (17:48, 6.6 ms, 293 draws, 0.00% clipped)
+Scores: 4 / 4 / 6 / 7 / 7 / 5 / 5 / 5   → 5/10
+Towers now have window grids and varied tone; haze depth is genuinely good; clouds
+remain the best single element. Every tower ends in a flat parapet. Water is a flat sheet.
 
-SHOT: hero_skyline      VERDICT: FAIL   (17:48, 2.6 ms, 229 draws)
-Clouds are genuinely good — the best single element in the build. But the far towers
-resolve to plain white featureless boxes, and the harbour is a flat mottled sheet
-with no waves and no reflection. → 4/10
+SHOT: downtown_dusk     VERDICT: FAIL   (19:24, 0.01% clipped)
+Scores: 4 / 3 / 6 / 7 / 7 / 5 / 5 / 5   → 5/10
+Pink cumulus and a sun-glitter path. Underneath, every roof deck is the same flat dark
+grey rectangle and the lit-window grid is perfectly regular.
 
-SHOT: downtown_dusk     VERDICT: FAIL   (19:24, 2.8 ms)
-Handsome pink cumulus and a sun-glitter path. Underneath it, a uniform field of dark
-boxes with a perfectly regular checkerboard of identical lit windows. → 4/10
+SHOT: st_northend       VERDICT: FAIL   (18:24, 4.3 ms, 0.00% clipped, p90 240.6)
+Scores: 5 / 4 / 5 / 6 / 4 / 6 / 6 / 6   → 5/10
+Backlit brick, fire escapes, lit shop signs, headlights on. The sun down the street is
+still an undifferentiated blob with no disc and no streak.
 
-SHOT: night_neon        VERDICT: FAIL   (22:00, 6.6 ms, 5.95M tris)
-Parked cars glow at 7× the road. Tree cards show rectangular edges. No lamp pools.
-→ 3/10
+SHOT: night_neon        VERDICT: FAIL   (22:00, 4.3 ms, 7.09% black, shadow 3.51M ❌)
+Scores: 4 / 4 / 4 / 5 / 5 / 6 / 6 / 5   → 5/10
+Wheels read properly now. No lamp pools; one LOD-2 shell mid-frame is a plain white box.
 
-SHOT: overcast_wide     VERDICT: FAIL   (13:00 overcast, 2.7 ms)
-The milky wash. p05 74 / p90 163, nothing clipped, nothing black. → 2/10
+SHOT: street_level      VERDICT: FAIL   (09:30 East Berkeley St, 2.02% clipped)
+Scores: 6 / 4 / 6 / 6 / 5 / 7 / 6 / 7   → 6/10
+Re-authored well: brownstone stoops, wrought-iron rails, areaways, bins, dappled tree
+shadow on the pavement. Not a carriageway framing. Tree trunks are smooth bare cylinders.
 
-SHOT: rain_street       VERDICT: FAIL   (15:12 rain)
-Not a street — it is the Common. Rain streaks are identical parallel white lines.
-White ripple rings render on grass. Nothing is wet. → 2/10
+SHOT: bridge            VERDICT: FAIL   (08:12, 93 draws, 0.05% clipped)
+Scores: 4 / 2 / 5 / 7 / 6 / 3 / 4 / 5   → 4/10
+Zakim cables and the Bunker Hill monument in haze are good. 55% of the frame is an
+unshaded flat plane of water.
 
-SHOT: golden_hour       VERDICT: FAIL   (06:36, 10.2% clipped)
-The camera is jammed against a brick wall — `unstick` produced a useless framing.
-Usefully, it shows the brick at close range: courses read ~4–6× life size. → 3/10
+SHOT: overcast_wide     VERDICT: FAIL   (13:00 overcast, 2.9 ms)
+Scores: 3 / 2 / 3 / 3 / 2 / 4 / 5 / 4   → 3/10   ** worst shot **
+p05 73.1 / p90 162.7, 0.00% clipped, 0.00% black. Unchanged from the last pass.
 
-SHOT: bridge            VERDICT: FAIL   (08:12, 2.0 ms, 93 draws)
-Water is a flat dark plane over ~55% of frame — no waves, no normal, no reflection,
-no sun glitter. Zakim cables alias into rainbow fringing. → 3/10
+SHOT: rain_street       VERDICT: FAIL   (15:12 rain, Saint James Ave)
+Scores: 3 / 3 / 4 / 4 / 3 / 5 / 3 / 4   → 3/10
+Off the Common, but the camera is on a pavement with two untextured mannequins occupying
+roughly 15% of the frame and a parked car blocking the only carriageway in view. The
+streaks are oversized faceted quads. I re-framed rain onto st_southend's camera myself
+to judge it (§1.3, AF-5) — the shipped shot cannot carry the verdict.
 
-SHOT: street_level      VERDICT: FAIL   (09:30)
-Also the Common. Textbook "broccoli" trees; grass is a uniform noise sheet
-(autocorrelation plateaus at 16.5 with no macro variation). → 3/10
-
-SHOT: st_beaconhill @ fog 08:00   VERDICT: FAIL — but closest to passing
-Fog reads believably, depth is legible, pedestrians silhouette well. The one framing
-where a stranger might hesitate. → 6/10
+SHOT: golden_hour       VERDICT: FAIL   (06:36)
+Scores: 3 / 3 / 5 / 4 / 5 / 3 / 4 / 4   → 3/10
+Still jammed against a brick wall — `unstick` produces a useless framing, unchanged from
+the last pass. Usefully it shows brick at close range: courses read roughly 4x life size
+against the window they surround, and the windows are flat decals with no glass, no
+depth and no sill shadow.
 ```
 
 ### Rubric scores, whole build
 
-| # | Axis | Score | One-line basis |
-|---|---|---:|---|
-| 1 | Silhouette & massing | **4** | Storey heights and streetwall correct; 82% under 20 m, nothing over 162 m, flat roofs, 0.1 m setback SD |
-| 2 | Material truth | **2** | Road MAD 1.7→3.6 vs brick 48; cars clip; grass uniform; no wet response |
-| 3 | Lighting | **5** | Key light at every hour and real cascades, but 15 dynamic lights city-wide and no lamp pools |
-| 4 | Atmosphere & depth | **6** | Best axis — clouds strong, horizon step gone, airlight ramp working; far field over-erased |
-| 5 | Composition & grade | **5** | Exposure adapts 2.7 stops; 5–10% clipping in sun-facing shots; sun has no shape |
-| 6 | Density & life | **5** | Real props, cars, peds, signage everywhere; peds are mannequins, no wires/litter/displays |
-| 7 | Geometric fidelity | **4** | No z-fighting, seams welded, nothing in the road — but bands float in the sky and wheels are hollow |
-| 8 | Boston authenticity | **5** | Geography, districts and street pattern genuinely real; no bays/oriels, Back Bay flat |
+| # | Axis | Prev | **Now** | One-line basis |
+|---|---|---:|---:|---|
+| 1 | Silhouette & massing | 4 | **5** | Roof clutter fits the real roof; setback SD 0.026 → 0.379 m — but the height histogram is byte-identical, Back Bay maxes at 33.6 m, every tower ends flat |
+| 2 | Material truth | 2 | **4** | Road MAD 10.6 vs brick 56.3 (was 9.7× flatter, now 5.3×); cars stop clipping — but asphalt albedo 0.042, road-brick 0.044, no clearcoat, wet sign inverted, roofs and water unshaded |
+| 3 | Lighting | 5 | **5** | Unchanged: 15 dynamic lights city-wide, zero lamp pools |
+| 4 | Atmosphere & depth | 6 | **6** | Unchanged: clouds strong, haze depth good, overcast still one grey |
+| 5 | Composition & grade | 5 | **5** | Several shots now 0.00% clipped with clean rolloff; rain blows the sky to 4.89%, sun has no shape, golden_hour unusable |
+| 6 | Density & life | 5 | **6** | Bike lane, granite kerbs, wheel faces, mirrors and plates, roof clutter, 4,544 areaways, 5,667 stoops |
+| 7 | Geometric fidelity | 4 | **6** | Floating ornament gone, wheels solid, no z-fighting, no tiling — rain streaks are visibly faceted quads |
+| 8 | Boston authenticity | 5 | **6** | Rowhouse roofscape, stoops, areaways, bike lane, real geography — but no legible bays, Back Bay flat, brick 4× oversized |
 
-**Direction of travel: up, and the systems work is real.** Every one of the five
-commits did what it said. What has not happened is that any of it has turned into
-*surface quality*. The build has a correct city and a placeholder skin.
+**Direction of travel: up, and for the first time the movement is in the pixels rather
+than the systems.** Three commits, three real fixes, one of them (facades) essentially
+complete. What holds the score at 5 is that the road pass shipped at a third of its own
+prescribed dose, and that everything the previous pass flagged as *unowned* — night
+pools, water, overcast, skyline register — has not moved at all.
 
 ---
 
-## 5. Ranked fixes — highest visual impact per unit of work
+## 6. Ranked fixes
 
 Ranked by (fraction of pixels affected) × (severity of the tell) ÷ (work).
 
-**1. Road and pavement surface material.** *Owner: materials + roads.*
-The carriageway is 35–45% of every street frame and measures 14× flatter than the wall
-behind it (MAD 3.55 vs 48.25 at 89 px). It needs albedo variation, darker polished
-wheel tracks, gutter grime, patch joints, cracks, drains and oil staining — plus the
-kerb face, which `CURRENT_STATE.md` already records as being textured with `T_ASPHALT`
-rather than granite and still is. **Ranked first because it is the largest, flattest,
-most-visible surface in the game and nothing about fixing it is architecturally
-risky.**
+**1. Raise the road albedo — `ALBEDO_GAIN` 3.0 → 9.0, or better, a per-class table.**
+*Owner: roads / materials.* 41.5% of every street frame. Measured cost of the change:
+zero — 0.00% new clipping, frame clipping flat at 0.98%, brick control unmoved across an
+8-state sweep. Measured benefit: carriageway MAD@89 10.6 → 16.5, road-to-brick flatness
+5.3× → 3.4×, and the wet/dry ratio crosses from 1.093 to 0.895. **This is a one-line
+change that fixes fix #2 as a side effect.** The per-class table in §1.4 is strictly
+better and is six lines in the same file.
 
-**2. Parked-car material response.** *Owner: props / materials, with vehicles.*
-They are the closest object to camera in every street framing, they clip to 255 in
-daylight and sit at 7.0× the road at night. Needs: correct albedo/energy so pale
-paints stop blowing out, a clearcoat + environment specular so the body reads as
-painted metal, a **wheel face** (currently a black void inside a torus), and plates /
-mirrors / handles. The palette is already varied in `buildParkedCars` — the problem is
-response, not colour choice. **Ranked second: small, bounded, self-contained work on
-the most conspicuous foreground object.**
+**2. Wet-surface response: fix the sign, add puddle reflections, rebuild the streaks.**
+*Owner: materials + roads + render.* Three separate defects behind one symptom. (a) The
+sign — `tone *= 1 - gWet*(0.14 + gPuddle*0.45)` darkens un-puddled asphalt by only 14%;
+real asphalt darkens 40–55% when wet. Raise it and the gain together. (b) SSR contributes
+**0.00** to the wet road, so a wet street reflects nothing — a wet carriageway that
+mirrors the facades is the single strongest AAA signal available and it reuses lighting
+that already exists. (c) The streaks are oversized faceted quads at one angle, one
+length and one opacity over the whole frame including the sky; they need depth-varied
+size and opacity, and they must not draw over the sky at full strength.
 
-**3. Wet-weather surface response.** *Owner: materials + roads + render.*
-Rain currently adds streaks and changes nothing else. A reflective wet road is the
-single strongest "AAA" signal available, it reuses lighting that already exists, and
-it turns the two weakest shots (`rain_street`, `night_neon`) into the two strongest.
-Note the trap already documented: `wetnessRough = 0.92` driving roughness to 0.06
-makes the road a near-mirror that blows out under a bright sky — target ~0.25–0.35 with
-puddle masks rather than a global roughness collapse. **Ranked third: highest
-look-per-hour, but it needs care to avoid the known white-road failure.**
+**3. Give parked-car paint a clearcoat and a real roughness.** *Owner: props /
+materials, with vehicles.* `prop_surf → MeshPhysicalMaterial`, clearcoat 1.0 /
+clearcoatRoughness 0.06, `SURF.paint → [0.34, 0.05]`, `envBase` ~1.25. Drive it per
+surface class so bins and benches are not lacquered too. Closest object to camera in
+every street framing; currently reads as unglazed clay. Also chase the hard dark chevron
+on the near car's flank, and give car #1 the door lines and mirrors that cars 2–5 have.
 
-**4. Clip facade ornament to the building footprint.** *Owner: buildings.*
-Sill and lintel bands project past the facade and hang unattached in the sky, worst on
-curved frontages. It is a bug, not a quality gap, so it is bounded work — and it is the
-detail that most says "unfinished" to a stranger. **Ranked fourth because it is cheap
-and it removes an outright broken read.**
+**4. Real light pools on the night street.** *Owner: lighting + render.* 15 dynamic
+lights for ~2,300 lamp props; the measured near-road profile has no periodic structure
+at all. A projected pool decal per lamp is the cheap version; a clustered forward path is
+the right version. This transforms `night_neon` and `st_seaport` at once, and it is the
+only item on this list that needs architectural work.
 
-**5. Far-field aerial perspective and distant building detail.**
-*Owner: atmosphere + buildings, together.*
-`overcast_wide` compresses the whole city into a 90-value band; `hero_skyline` resolves
-distant towers to plain white boxes. Two causes: extinction is too aggressive at
-kilometre scale, and the LOD-2 shell loses its facade signal once it desaturates.
-Reduce far-field extinction under `overcast`, and keep a low-frequency window/tone
-pattern alive on the shell. **Ranked fifth: it fixes both wide shots at once, but it
-needs the two owners to agree a target rather than each tuning their own end.**
+**5. Skyline upper register, Back Bay towers, and roof-deck material.**
+*Owner: buildings / city.* Back Bay is 2,499 buildings with a 33.6 m ceiling under the
+city's two tallest landmarks; nothing procedural exceeds 162 m; the 40–60 m band has 128
+buildings. Fill 165–225 m sparsely downtown, give Back Bay a real cluster, and — cheapest
+of the three — put *any* texture on the roof decks, which are currently one flat tone
+each and are 30–40% of every elevated frame.
 
-**6. Real light pools on the night street.** *Owner: lighting + render.*
-15 dynamic lights for ~2,300 lamps; the road under a lamp is unlit and the profile
-shows no periodic structure. A baked/projected pool decal per lamp, or a clustered
-forward path, would transform every night frame. **Sixth: high impact, but the most
-architectural work on this list.**
+**6. Rework the crack and joint motif on the road.** *Owner: roads.* Thin, dark,
+high-contrast, angular, clustered at joints and wheel paths — not soft wide curves.
+Sharpen the lane-paint edge and add visible aggregate between the cracks. Ranked below
+the gain because at gain 9 the same geometry reads considerably better.
 
-**7. Setback jitter and projecting bays.** *Owner: buildings.*
-The streetwall is flush to a 0.1 m standard deviation. Add 0.3–1.5 m of per-building
-jitter plus bays, oriels and areaways — which also fixes the single biggest Boston
-authenticity miss (South End and Back Bay rows have no bay windows at all).
+**7. Overcast grade.** *Owner: atmosphere + render.* p05 73 / p90 163 with 0.00% at
+either end, unchanged across two critic passes. It needs a real black point.
 
-**8. Skyline upper register and Back Bay towers.** *Owner: buildings / city.*
-Nothing procedural above 162 m; Back Bay has zero buildings over 100 m; the 40–60 m
-band is nearly empty. Fill 165–225 m sparsely downtown and give Back Bay a real
-cluster so the two landmarks read as peaks rather than spikes.
+**8. Water.** *Owner: city / render.* 55% of `bridge`, a flat unshaded plane.
+`CURRENT_STATE.md` issue 5 says the shader fails to compile; no GL fault fires, so
+whatever the status, it is not shading.
 
-**9. Pedestrian materials.** *Owner: characters / peds.*
-The crowd animates well and costs two draw calls, but every figure is an untextured
-mannequin. Clothing albedo variation and a face/hair tone would carry a long way.
+**9. Re-author `rain_street` and `golden_hour`.** *Owner: whoever owns the harness.*
+`golden_hour` is still inside a wall two passes running, and `rain_street` puts two
+mannequins and a parked car between the camera and the only road in frame. A critic
+cannot judge weather on a shot that does not show the surface weather acts on.
 
-**10. Tree canopy card silhouettes.** *Owner: vegetation.*
-Hard rectangular card edges are visible against the sky at dusk and at night. Alpha
-cutout shape on the canopy cards, not more cards.
+**10. Pedestrian and tree materials.** *Owner: characters / vegetation.* Untextured
+mannequins are the largest foreground object in `rain_street`; tree trunks are smooth
+bare cylinders.
 
-**Not worth doing:** further perf work; hunting z-fighting; hunting texture tiling.
-All three are measured clean.
+**Not worth doing:** perf work. Median settled frame time at 1920×1080 `high` is
+**2.9–6.6 ms** against a 16.7 ms budget (`overcast_wide` 2.9, `night_neon` 4.3,
+`st_northend` 4.3, `st_beaconhill` 4.7, `st_backbay` 5.1, `st_southend` 5.3,
+`hero_skyline` 6.6). Peak draws 829 against 1200; camera triangles 1.33–2.50M against
+3.5M. The **only** breach is shadow triangles, and freezing the cascade saves 0.9 ms of a
+4.3 ms frame — real, but not worth a pass. Also do not chase z-fighting or texture
+tiling; both re-measured clean.
 
 ---
 
-## 6. For the record — what I could not test
+## 7. For the record — what I could not test
 
 - **No real rAF frame rate.** `document.hidden` is `true` for this pane, so
-  `measureFps()` refuses and nobody has yet seen this build run at its natural
-  cadence. All timings here are synchronous frames forced to GPU completion.
-- **Temporal stability under motion.** With the camera frozen and traffic and
-  pedestrians stubbed, **6.6% of pixels still alternate between two states**
-  frame-to-frame (whole-frame mean delta 5.0/255, max 211; facades 7.2%). The delta
-  does not grow with frame separation, so it is a two-state alternation — consistent
-  with the 6-frame staggered cascade refresh (draw counts cycle 795, 803, 795, 608,
-  990, 608). On a moving camera this would read as facade shimmer. I could not judge
-  how bad it looks in motion. *Owner: lighting / render.*
-- **Water.** `CURRENT_STATE.md` issue 5 says the water shader fails to compile. I saw
-  no GL fault this session, but the harbour renders as a flat untextured plane in both
-  `bridge` and `hero_skyline`, so whatever the status, it is not shading.
+  `measureFps()` still refuses. Every timing here is a synchronous `step(1)` forced to
+  GPU completion with `gl.finish()` — pessimistic if anything, but nobody has yet seen
+  this build run at its natural cadence.
+- **Motion.** All judgement is on frozen frames. The previous pass measured 6.6% of
+  pixels alternating between two states on a static camera, consistent with the 6-frame
+  cascade stagger; I did not re-measure it and it would read as facade shimmer in motion.
+- **The windowed wall at roof level** in the 48 m rooftop framing — I could not
+  distinguish "a bulkhead wearing the facade generator" from "a taller neighbour seen
+  over a lower roof" from a single viewpoint. Worth five minutes from the buildings owner.
 
 ---
 
-`OVERALL: 4/10 — KEEP WORKING`
+`OVERALL: 5/10 — KEEP WORKING`
