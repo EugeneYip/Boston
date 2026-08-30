@@ -1057,6 +1057,20 @@ export default class Buildings {
     q.sort((a, b) => a.dist - b.dist);
   }
 
+  /**
+   * True when streaming has finished and the near field is real geometry.
+   *
+   * `capture()` parks the camera, which is a teleport, which invalidates every
+   * near chunk at once — so for `CATCHUP_FRAMES` afterwards the shot is mostly
+   * the crude LOD-2 shell. `capture()` used to advance a fixed 30 frames against
+   * this system's 45, so every capture ever taken rendered a half-built city and
+   * the visual critic measured flat pale shells next to fully facaded
+   * neighbours. The harness now asks instead of counting, so the two can never
+   * drift apart again.
+   * @returns {boolean}
+   */
+  settled() { return this._catchUp === 0 && this._queue.length === 0; }
+
   /** Spend a slice of the frame turning queued chunks into geometry. */
   _pump(ctx) {
     if (this._catchUp > 0) this._catchUp--;

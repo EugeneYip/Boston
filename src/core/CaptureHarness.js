@@ -340,11 +340,26 @@ export default class CaptureHarness {
         rawPos[1] = groundedPos;
         const freed = api.unstick(rawPos, rawLook);
         api.setCamera(freed.pos, rawLook, fov ?? s.fov);
-        // Warm up: lets IBL, streaming, LOD and temporal effects settle.
+        // Warm up: lets IBL, LOD and temporal effects settle.
         api.step(warmup);
+        // Then wait for streaming to ACTUALLY finish rather than assuming a frame
+        // count covers it. setCamera above is a teleport, which invalidates every
+        // near chunk; Buildings widens its build budget for CATCHUP_FRAMES (45)
+        // afterwards, against the 30 frames this function used to advance. Every
+        // capture therefore rendered before the detailed chunks existed, and most
+        // buildings in every shot were the crude LOD-2 shell — flat and pale
+        // beside fully facaded neighbours. That corrupted a whole critic pass.
+        // Counting frames here is what drifted; asking cannot.
+        let guard = 0;
+        while (!api.settled() && guard < 600) { api.step(4); guard += 4; }
+        const streamed = guard;
         await settle(60);
         const stats = api.step(6);
-        return { shot: shot || 'custom', weather: w,
+        if (!api.settled()) {
+          console.warn(`[capture] streaming did not settle in ${guard} frames; `
+            + 'the shot may contain LOD-2 shell where detail was expected.');
+        }
+        return { shot: shot || 'custom', weather: w, streamed,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
       },
       /**
@@ -384,6 +399,19 @@ export default class CaptureHarness {
           resolution: [engine.renderer.domElement.width, engine.renderer.domElement.height],
           preset: engine.settings.preset,
         };
+      },
+      /**
+       * True when every system that streams geometry reports it has caught up.
+       *
+       * Systems opt in by implementing `settled()`. A system without one is
+       * treated as always ready, so this degrades to the old behaviour rather
+       * than hanging on a system that never answers.
+       */
+      settled: () => {
+        for (const sys of engine.systems.values()) {
+          if (typeof sys.settled === 'function' && !sys.settled()) return false;
+        }
+        return true;
       },
       shotNames: () => Object.keys(this.shots),
       stats: () => ({
