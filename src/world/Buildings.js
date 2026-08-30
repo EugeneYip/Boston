@@ -143,6 +143,11 @@ const DISTRICTS = [
   },
 ];
 
+/** Streaming-chunk key for a spec. Must match the bucketing in `_buildSpecs`. */
+function chunkKey(s) {
+  return Math.floor(s.cx / CHUNK) * 10007 + Math.floor(s.cz / CHUNK);
+}
+
 /** Point in polygon, XZ plane. */
 function inPoly(x, z, poly) {
   let inside = false;
@@ -285,6 +290,8 @@ export default class Buildings {
   constructor() {
     this.specs = [];
     this.chunks = new Map();
+    /** @type {Map<number, {mesh:THREE.Mesh, spans:Array, full:THREE.BufferAttribute,
+     *                      mask:?THREE.BufferAttribute, masked:boolean}>} */
     this.sectors = new Map();
     this.root = null;
     this._queue = [];
@@ -292,6 +299,10 @@ export default class Buildings {
     this._tmpKeys = [];
     this._usedFallback = false;
     this._swapChecks = 0;
+    // Shell/detail overlap bookkeeping — see `_refreshShellMask`.
+    this._maskDirty = true;
+    this._maskSig = 1;          // never a real signature, so the first pass runs
+    this._covered = new Set();
     // Teleport catch-up. Plain numbers, not a vector: update() must not allocate.
     this._lastCamX = NaN;
     this._lastCamZ = NaN;
@@ -392,7 +403,7 @@ export default class Buildings {
     for (let i = 0; i < specs.length; i++) {
       const s = specs[i];
       const cx = Math.floor(s.cx / CHUNK), cz = Math.floor(s.cz / CHUNK);
-      const key = cx * 10007 + cz;
+      const key = chunkKey(s);
       let ch = this.chunks.get(key);
       if (!ch) {
         ch = { cx, cz, x: (cx + 0.5) * CHUNK, z: (cz + 0.5) * CHUNK,
@@ -416,20 +427,112 @@ export default class Buildings {
       arr.push(i);
     }
     for (const [key, list] of bySector) {
+      // Emit in streaming-chunk order so each chunk owns one contiguous run of
+      // the sector's index buffer. That is what makes `_refreshShellMask` a
+      // memcpy rather than a rebuild.
+      list.sort((a, b) => chunkKey(this.specs[a]) - chunkKey(this.specs[b]));
       // Pre-size: growing a 1 M-vertex typed array by doubling costs more in
       // memcpy and GC than the whole emit does.
       const mb = new MeshBuf(Math.max(4096, list.length * 96));
-      for (const i of list) buildBuilding(this.specs[i], mb, null, 2);
-      const g = mb.build();
+      const spans = [];
+      let cur = -1;
+      for (const i of list) {
+        const ck = chunkKey(this.specs[i]);
+        if (ck !== cur) { spans.push({ key: ck, start: mb.ni, count: 0 }); cur = ck; }
+        buildBuilding(this.specs[i], mb, null, 2);
+        const sp = spans[spans.length - 1];
+        sp.count = mb.ni - sp.start;
+      }
+      const g = mb.build(true);
       if (!g) continue;
       const mesh = new THREE.Mesh(g, this.matOpaque);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      mesh.position.fromArray(g.userData.origin);
       mesh.matrixAutoUpdate = false;
       mesh.updateMatrix();
       mesh.name = 'shell';
       this.root.add(mesh);
-      this.sectors.set(key, mesh);
+      this.sectors.set(key, {
+        mesh, spans, full: g.index, mask: null, masked: false,
+      });
+    }
+    this._maskDirty = true;
+    this._maskSig = 1;
+  }
+
+  /**
+   * Stop the always-resident shell from re-drawing buildings a detailed chunk is
+   * already drawing.
+   *
+   * The shell is built for every building in the city and never turned off, so
+   * wherever an LOD-0 chunk is loaded the same wall is rasterised twice: once as
+   * the detailed mesh and once as the shell 0.25 m inside it. Measured at
+   * `st_beaconhill`, the nearest in-frustum sector held 733 buildings of which
+   * **704 already had a detailed mesh** — 61 k triangles of the 63 k that sector
+   * submits, all of it hidden, all of it in the part of the frame that covers
+   * the most pixels, and all of it re-submitted to three shadow cascades on top.
+   *
+   * Only LOD 0 is masked. An LOD-1 chunk mesh carries `castShadow = false`
+   * (`_stepChunk`), so at that range the shell is the only thing casting the
+   * building's shadow and dropping it would put holes in the cascade.
+   *
+   * Nothing about the image changes: `Facades.buildShell` insets the shell 0.25 m
+   * and drops every cap 0.30 m precisely so it is strictly inside its LOD-0 twin,
+   * and window openings are closed by the glass mesh at every LOD.
+   */
+  _refreshShellMask() {
+    this._maskDirty = false;
+    const covered = this._covered;
+    covered.clear();
+    let sig = 0;
+    for (const [key, ch] of this.chunks) {
+      if (ch.meshes && ch.lod === 0) { covered.add(key); sig = (sig * 31 + key) | 0; }
+    }
+    // Streaming re-flags this on every chunk that completes, but the set of
+    // LOD-0 chunks only actually moves when the camera crosses a boundary.
+    if (sig === this._maskSig) return;
+    this._maskSig = sig;
+    for (const rec of this.sectors.values()) {
+      let drop = 0;
+      if (covered.size) {
+        for (const sp of rec.spans) if (covered.has(sp.key)) drop += sp.count;
+      }
+      const g = rec.mesh.geometry;
+      if (drop === 0) {
+        if (rec.masked) {
+          g.setIndex(rec.full);
+          g.setDrawRange(0, Infinity);
+          rec.masked = false;
+        }
+        continue;
+      }
+      const src = rec.full.array;
+      if (!rec.mask) {
+        rec.mask = new THREE.BufferAttribute(new src.constructor(src.length), 1);
+        rec.mask.setUsage(THREE.DynamicDrawUsage);
+      }
+      const dst = rec.mask.array;
+      let n = 0;
+      // Coalesce runs of kept chunks so this is a handful of typed-array
+      // `set()` calls rather than a per-index copy.
+      let runStart = -1, runEnd = -1;
+      for (const sp of rec.spans) {
+        if (covered.has(sp.key)) {
+          if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
+          runStart = -1;
+        } else if (runStart < 0) { runStart = sp.start; runEnd = sp.start + sp.count; }
+        else runEnd = sp.start + sp.count;
+      }
+      if (runStart >= 0) { dst.set(src.subarray(runStart, runEnd), n); n += runEnd - runStart; }
+      if (rec.mask.clearUpdateRanges) {
+        rec.mask.clearUpdateRanges();
+        rec.mask.addUpdateRange(0, n);
+      }
+      rec.mask.needsUpdate = true;
+      g.setIndex(rec.mask);
+      g.setDrawRange(0, n);
+      rec.masked = true;
     }
   }
 
@@ -458,25 +561,28 @@ export default class Buildings {
 
     this._disposeChunk(ch, false);
     const meshes = [];
-    const go = j.mb.build();
+    const go = j.mb.build(true);
     if (go) {
       const m = new THREE.Mesh(go, this.matOpaque);
       m.castShadow = lod === 0;
       m.receiveShadow = true;
+      m.position.fromArray(go.userData.origin);
       m.matrixAutoUpdate = false; m.updateMatrix();
       this.root.add(m); meshes.push(m);
     }
-    const gg = j.gb.build();
+    const gg = j.gb.build(true);
     if (gg) {
       const m = new THREE.Mesh(gg, this.matGlass);
       m.castShadow = false;
       m.receiveShadow = true;
+      m.position.fromArray(gg.userData.origin);
       m.matrixAutoUpdate = false; m.updateMatrix();
       this.root.add(m); meshes.push(m);
     }
     ch.meshes = meshes;
     ch.lod = lod;
     ch.job = null;
+    this._maskDirty = true;
     if (lod === 0) this._addColliders(ch);
     return true;
   }
@@ -519,6 +625,7 @@ export default class Buildings {
     if (ch.meshes) {
       for (const m of ch.meshes) { this.root.remove(m); m.geometry.dispose(); }
       ch.meshes = null;
+      this._maskDirty = true;
     }
     ch.lod = -1;
     if (dropColliders) ch.job = null;
@@ -570,6 +677,7 @@ export default class Buildings {
       this._retarget(ctx, cam);
     }
     this._pump(ctx);
+    if (this._maskDirty) this._refreshShellMask();
   }
 
   /** Decide which chunks want which LOD, and queue the deltas by distance. */
@@ -628,8 +736,7 @@ export default class Buildings {
   _rebuildFromCity(ctx) {
     console.info('[buildings] city.plots published — rebuilding on real parcels');
     for (const ch of this.chunks.values()) this._disposeChunk(ch);
-    for (const m of this.sectors.values()) { this.root.remove(m); m.geometry.dispose(); }
-    this.sectors.clear();
+    this._disposeSectors();
     this._usedFallback = false;
     this._collectPlots(ctx);
     this._buildSpecs(ctx);
@@ -648,22 +755,43 @@ export default class Buildings {
     return best;
   }
 
+  /**
+   * Drop every shell sector. The full index attribute is put back first: three
+   * frees the buffers of whatever `geometry.index` points at when the geometry
+   * is disposed, so a sector left on its masked index would leak the original.
+   */
+  _disposeSectors() {
+    for (const rec of this.sectors.values()) {
+      const g = rec.mesh.geometry;
+      if (rec.masked) { g.setIndex(rec.full); g.setDrawRange(0, Infinity); }
+      rec.mask = null;
+      this.root?.remove(rec.mesh);
+      g.dispose();
+    }
+    this.sectors.clear();
+  }
+
   stats() {
-    let live = 0, tris = 0;
+    let live = 0, tris = 0, shellTris = 0, maskedSectors = 0;
     for (const ch of this.chunks.values()) {
       if (!ch.meshes) continue;
       live++;
       for (const m of ch.meshes) tris += (m.geometry.index?.count ?? 0) / 3;
     }
-    for (const m of this.sectors.values()) tris += (m.geometry.index?.count ?? 0) / 3;
+    for (const rec of this.sectors.values()) {
+      const g = rec.mesh.geometry;
+      const n = Math.min(g.drawRange.count, g.index?.count ?? 0);
+      shellTris += n / 3;
+      if (rec.masked) maskedSectors++;
+    }
     return { buildings: this.specs.length, liveChunks: live, sectors: this.sectors.size,
-             tris: tris | 0 };
+             maskedSectors, shellTris: shellTris | 0, tris: (tris + shellTris) | 0 };
   }
 
   dispose() {
     for (const ch of this.chunks.values()) this._disposeChunk(ch);
-    for (const m of this.sectors.values()) { this.root?.remove(m); m.geometry.dispose(); }
-    this.sectors.clear(); this.chunks.clear(); this.specs.length = 0;
+    this._disposeSectors();
+    this.chunks.clear(); this.specs.length = 0;
     if (this.root) this.ctx?.scene.remove(this.root);
     // Textures and materials live in ctx.assets, which disposes them itself.
     void _v; void hash2;

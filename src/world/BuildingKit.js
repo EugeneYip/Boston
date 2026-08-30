@@ -828,6 +828,19 @@ diffuseColor.rgb *= (0.80 + 0.40 * m1) * (0.88 + 0.24 * m2);
 diffuseColor.rgb *= mix(0.80, 1.0, clamp(vWPosB.y * 0.10, 0.0, 1.0));
 `;
 
+// DO NOT wrap this block in a distance branch. It was tried: past ~150 m one
+// atlas texel is far under a pixel, so skipping the fetch and the tangent frame
+// beyond 140 m looks identical and saves real per-fragment work. It renders the
+// entire near city as one flat colour.
+//
+// `bkTangentFrame` takes four screen-space derivatives and `texture()` computes
+// its own implicit LOD from derivatives as well. Derivatives inside NON-UNIFORM
+// control flow are undefined in GLSL ES 3.0, and this driver returns garbage for
+// them — so every LOD-0/1 chunk (near, therefore inside the taken branch) shaded
+// flat while the shell (far, therefore outside it) stayed correct, which is what
+// makes the symptom so confusing. If this cost ever has to come off the distant
+// city, do it with a separate material whose normal block is compiled out with a
+// #define, so the control flow is uniform by construction.
 const OPAQUE_NORMAL_F = /* glsl */`
 {
   vec3 mapN = texture(uNormalArr, vec3(vUv, vLayer)).xyz * 2.0 - 1.0;
@@ -858,8 +871,12 @@ reflectedLight.indirectDiffuse *= bkAO;
 material.specularF90 *= mix(1.0, bkAO, 0.5);
 // Shop signage and lit fascias. An internally-lit sign is on during the day too,
 // but it must be barely perceptible against sunlight rather than a glowing bar.
-float lit = mix(0.045, 1.0, uNight);
-totalEmissiveRadiance += diffuseColor.rgb * vEmis * lit * uLampColor;
+// vEmis is zero on all but a handful of surfaces, so the branch is coherent
+// across whole draws and saves the multiply-add nearly everywhere.
+if (vEmis > 0.0) {
+  float lit = mix(0.045, 1.0, uNight);
+  totalEmissiveRadiance += diffuseColor.rgb * vEmis * lit * uLampColor;
+}
 
 // Night windows on the baked facade strips (bkTex.a is the window mask; it is
 // zero on every other layer, see buildAtlas).
@@ -872,11 +889,17 @@ totalEmissiveRadiance += diffuseColor.rgb * vEmis * lit * uLampColor;
 // storey, and the quantised world anchor keeps neighbouring buildings from
 // lighting in the same pattern. Quantised, so it never shimmers as the camera
 // moves.
-vec2 bkCell = floor(vec2(vUv.x * 3.0, vUv.y));
-vec2 bkAnchor = floor(vWPosB.xz * 0.05);
-float bkRoll = fract(sin(dot(bkCell + bkAnchor * 7.31, vec2(12.9898, 78.233))) * 43758.545);
-float bkOn = step(bkRoll, 0.34);
-totalEmissiveRadiance += bkTex.rgb * bkTex.a * bkOn * uNight * uLampColor * 0.85;
+//
+// The whole block is multiplied by uNight, so it contributes exactly nothing
+// for the ~12 daylight hours. uNight is a uniform: the branch is free and the
+// transcendental in the roll is not paid at all in daylight.
+if (uNight > 0.002) {
+  vec2 bkCell = floor(vec2(vUv.x * 3.0, vUv.y));
+  vec2 bkAnchor = floor(vWPosB.xz * 0.05);
+  float bkRoll = fract(sin(dot(bkCell + bkAnchor * 7.31, vec2(12.9898, 78.233))) * 43758.545);
+  float bkOn = step(bkRoll, 0.34);
+  totalEmissiveRadiance += bkTex.rgb * bkTex.a * bkOn * uNight * uLampColor * 0.85;
+}
 `;
 
 
@@ -1012,7 +1035,7 @@ export function makeOpaqueMaterial(tex, room, macro) {
       .replace('#include <roughnessmap_fragment>', OPAQUE_ORM_F)
       .replace('#include <metalnessmap_fragment>', OPAQUE_METAL_F)
       .replace('#include <aomap_fragment>', OPAQUE_AO_F);
-  }, 'bkOpaque3');
+  }, 'bkOpaque4');
   return m;
 }
 
@@ -1407,12 +1430,45 @@ export class MeshBuf {
     }
   }
 
-  /** Bake into an indexed BufferGeometry. Returns null when nothing was pushed. */
-  build() {
+  /**
+   * Bake into an indexed BufferGeometry. Returns null when nothing was pushed.
+   *
+   * @param {boolean} [recenter] Move the vertices so the geometry's own bounding
+   *   box centre is the origin, and publish that centre as `g.userData.origin`.
+   *   The caller is expected to put it back on `mesh.position`.
+   *
+   *   This is not cosmetic. Three sorts the opaque render list by
+   *   `material.id`, then by the *object origin* projected into clip space
+   *   (`painterSortStable`). Every building mesh here is baked in world space
+   *   with an identity matrix, so every one of them projected to the same
+   *   point — the world origin — and the depth sort degenerated to "object id
+   *   ascending", i.e. creation order. The always-resident shell is created at
+   *   init and the streamed detail chunks much later, so the whole distant
+   *   shell was being drawn FIRST and the near buildings painted over it:
+   *   exactly back-to-front, the worst order for early-Z rejection. Giving
+   *   each mesh a real origin restores a genuine front-to-back sort.
+   */
+  build(recenter = false) {
     if (!this.ni) return null;
     const v = this.v;
+    const pos = this.p.slice(0, v * 3);
+    let ox = 0, oy = 0, oz = 0;
+    if (recenter) {
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity;
+      let x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+      for (let i = 0, n = v * 3; i < n; i += 3) {
+        const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+        if (z < z0) z0 = z; if (z > z1) z1 = z;
+      }
+      ox = (x0 + x1) * 0.5; oy = (y0 + y1) * 0.5; oz = (z0 + z1) * 0.5;
+      for (let i = 0, n = v * 3; i < n; i += 3) {
+        pos[i] -= ox; pos[i + 1] -= oy; pos[i + 2] -= oz;
+      }
+    }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(this.p.slice(0, v * 3), 3));
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('normal', new THREE.BufferAttribute(this.n.slice(0, v * 3), 3));
     g.setAttribute('uv', new THREE.BufferAttribute(this.u.slice(0, v * 2), 2));
     g.setAttribute('color', new THREE.BufferAttribute(this.c.slice(0, v * 3), 3));
@@ -1422,6 +1478,7 @@ export class MeshBuf {
       v > 65534 ? ix : Uint16Array.from(ix), 1));
     g.computeBoundingSphere();
     g.computeBoundingBox();
+    g.userData.origin = [ox, oy, oz];
     return g;
   }
 }
@@ -1485,11 +1542,28 @@ export class GlassBuf {
     this.ni = k + 6;
   }
 
-  build() {
+  /** @param {boolean} [recenter] see `MeshBuf.build` — same contract. */
+  build(recenter = false) {
     if (!this.ni) return null;
     const v = this.v;
+    const pos = this.p.slice(0, v * 3);
+    let ox = 0, oy = 0, oz = 0;
+    if (recenter) {
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity;
+      let x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+      for (let i = 0, n = v * 3; i < n; i += 3) {
+        const x = pos[i], y = pos[i + 1], z = pos[i + 2];
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+        if (z < z0) z0 = z; if (z > z1) z1 = z;
+      }
+      ox = (x0 + x1) * 0.5; oy = (y0 + y1) * 0.5; oz = (z0 + z1) * 0.5;
+      for (let i = 0, n = v * 3; i < n; i += 3) {
+        pos[i] -= ox; pos[i + 1] -= oy; pos[i + 2] -= oz;
+      }
+    }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(this.p.slice(0, v * 3), 3));
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     g.setAttribute('normal', new THREE.BufferAttribute(this.n.slice(0, v * 3), 3));
     g.setAttribute('uv', new THREE.BufferAttribute(this.u.slice(0, v * 2), 2));
     g.setAttribute('color', new THREE.BufferAttribute(this.c.slice(0, v * 3), 3));
@@ -1501,6 +1575,7 @@ export class GlassBuf {
       v > 65534 ? ix : Uint16Array.from(ix), 1));
     g.computeBoundingSphere();
     g.computeBoundingBox();
+    g.userData.origin = [ox, oy, oz];
     return g;
   }
 }
