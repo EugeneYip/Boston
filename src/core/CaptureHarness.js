@@ -139,8 +139,54 @@ export default class CaptureHarness {
         return { frames: n, fps: engine.perf.fps, draws: engine.perf.drawCalls,
                  tris: engine.perf.tris };
       },
-      /** Freeze the world clock so shots are reproducible. */
-      freeze: (on = true) => { engine.settings.timeScale = on ? 0 : 40; },
+      /**
+       * Stop the systems that animate under their own dt rather than off the
+       * world clock: traffic, vehicles and pedestrians.
+       *
+       * `freeze()` only ever stopped the clock, so a "frozen" frame still had
+       * cars rolling and crowds walking through it. Two reads of the supposedly
+       * identical frame therefore differed, and an agent doing an A/B on the
+       * road surface measured a 40% A/A noise floor until it worked this out and
+       * stubbed the three systems by hand. Any pixel comparison that does not do
+       * this is measuring pedestrians.
+       *
+       * Deliberately NOT the streaming or render systems: `Buildings._pump`
+       * builds geometry from `update()`, so stubbing it would stop `capture()`
+       * ever settling.
+       * @param {boolean} on
+       */
+      pauseActors: (on = true) => {
+        const ids = ['traffic', 'vehicles', 'peds'];
+        for (const id of ids) {
+          const sys = engine.systems.get(id);
+          if (!sys) continue;
+          if (on) {
+            if (sys._capturePaused) continue;
+            sys._capturePaused = { update: sys.update, fixedUpdate: sys.fixedUpdate,
+                                   lateUpdate: sys.lateUpdate };
+            const noop = () => {};
+            if (sys.update) sys.update = noop;
+            if (sys.fixedUpdate) sys.fixedUpdate = noop;
+            if (sys.lateUpdate) sys.lateUpdate = noop;
+          } else if (sys._capturePaused) {
+            const p = sys._capturePaused;
+            if (p.update) sys.update = p.update;
+            if (p.fixedUpdate) sys.fixedUpdate = p.fixedUpdate;
+            if (p.lateUpdate) sys.lateUpdate = p.lateUpdate;
+            delete sys._capturePaused;
+          }
+        }
+        return ids.filter((id) => !!engine.systems.get(id)?._capturePaused);
+      },
+      /**
+       * Freeze the world clock AND the actors, so a shot is genuinely static.
+       * Two reads of the same frame must return the same pixels; before this
+       * also paused the actors, they did not.
+       */
+      freeze: (on = true) => {
+        engine.settings.timeScale = on ? 0 : 40;
+        api.pauseActors(on);
+      },
       setTime: (h) => { engine.settings.timeOfDay = h % 24; engine.time.timeOfDay = h % 24; },
       setWeather: (w) => { engine.settings.weather = w; ctx.bus.emit('weather:set', w); },
       setQuality: (p) => { engine.settings.apply(p); ctx.bus.emit('quality:changed'); },
@@ -362,6 +408,9 @@ export default class CaptureHarness {
             + `${gl0.drawingBufferWidth}x${gl0.drawingBufferHeight}; forcing a resize.`);
           engine.resize();
         }
+        // Let the actors run through warm-up so traffic and crowds reach sensible
+        // positions, then freeze them again below for the frame we hand back.
+        api.pauseActors(false);
         // Warm up: lets IBL, LOD and temporal effects settle.
         api.step(warmup);
         // Then wait for streaming to ACTUALLY finish rather than assuming a frame
