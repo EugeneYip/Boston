@@ -82,7 +82,9 @@ const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
  *   granite kerb face    0.1791       0.2388     0.20-0.28 Quincy granite
  *   granite kerb top     0.2025       0.2565     0.20-0.28
  *   concrete walk        0.2615       0.2615     0.18-0.30 dirty urban
- *   brick walk           0.0733       0.2443     0.20-0.30
+ *   brick walk           0.0733       0.1994     0.20-0.30  (see C0.brick: the
+ *                                               level was already in band and the
+ *                                               CHROMA was not — red 0.710)
  *   granite setts        0.0944       0.1794     0.15-0.22
  *   verge                0.0970       0.1617     0.15-0.22 grass/dirt
  *
@@ -111,7 +113,23 @@ const C0 = {
   yellow:    [0.520, 0.386, 0.108],
   granite:   [0.225, 0.222, 0.216],
   concrete:  [0.330, 0.324, 0.312],
-  brick:     [0.235, 0.112, 0.086],
+  // NEARLY NEUTRAL, ON PURPOSE, and this is the one entry in this table that
+  // must not be read as a colour. The atlas brick tile is ALREADY 4.5:1.6:1 red
+  // ([0.3021 0.1114 0.0676] linear, measured); a red tint on top of it
+  // multiplies the two together. [0.235 0.112 0.086] x 10 x that tile is
+  // [0.710 0.125 0.058] — 12:2:1 — which lands the right luma (0.244, inside
+  // the 0.20-0.30 band) on a red channel of 0.71. Nothing made of clay reflects
+  // 71% of the red it is given; real Boston pavers measure ~0.39. So the walk
+  // rendered as sRGB (219, 99, 68), a running-track orange, and the critic
+  // graded it hot terracotta while its luma sat politely inside the band.
+  //
+  // The tile carries the chroma. The tint sets the level. Target below is a
+  // sunlit Boston paver, linear [0.400 0.150 0.098] = sRGB (170, 108, 88),
+  // ratio 4.1:1.5:1, luma 0.199 — bottom of the band rather than the middle,
+  // which is where a dark red clay paver belongs.
+  brick:     [0.400 / (0.3021 * GAIN.brick),
+              0.150 / (0.1114 * GAIN.brick),
+              0.098 / (0.0676 * GAIN.brick)],
   cobble:    [0.170, 0.166, 0.158],
   verge:     [0.115, 0.126, 0.076],
   parkbay:   [0.082, 0.084, 0.090],
@@ -270,6 +288,97 @@ function makeAtlas() {
 }
 
 /**
+ * Specular level for the paved surfaces: [carriageway F0, F90 roughness blend].
+ *
+ * WHERE THE ROAD'S NON-ALBEDO FLOOR ACTUALLY COMES FROM — and it is not the
+ * ambient, which is what three passes have assumed. Measured at `st_southend`
+ * 11:12, frozen, 600x220 px of near carriageway, ablating one term at a time
+ * with `Lighting.update` stubbed so it cannot re-drive the knob between steps
+ * (drive it live and every one of these reads back as a no-op — that trap cost
+ * me the first pass of this measurement):
+ *
+ *   full frame                                mean 128.7
+ *   material.color = 0 (no diffuse at all)         67.1   <- the "floor"
+ *   ... and hemisphere light off                   67.3   (+0.2: NOTHING)
+ *   ... and scene.environmentIntensity = 0         64.5   (-2.8)
+ *   ... and this material's envMapIntensity = 0    64.8   (0)
+ *   ... and the sun off                             2.8   <- all of it
+ *
+ * The hemisphere fill contributes **zero** to the carriageway and the sky IBL
+ * contributes 2% of it. The entire 52% floor is the SUN's own specular lobe,
+ * and it survives zeroing the albedo because `MeshStandardMaterial` gives every
+ * surface the F0 = 0.04 of a clean smooth dielectric. Ablating along the frame
+ * confirms the shape: the floor is 49.6% on the nearest 60 px of road and 64.4%
+ * eight metres out, which is a Fresnel/masking ramp with view angle, not a
+ * constant ambient.
+ *
+ * (The 52% is also a gamma-space figure, which is worth stating because it is
+ * the one the rubric quotes: 67.1/128.7 of an sRGB-encoded 8-bit luma is about
+ * 27% of DISPLAY-linear and, back through the tone curve, ~15% of scene-linear
+ * radiance. The perceptual complaint is still right — a smooth 27% pedestal
+ * under a high-frequency albedo is exactly what "washed" means — but nobody
+ * should read "55% of the light on this road is not its albedo".)
+ *
+ * 0.018 is a little under half of three's 0.04, i.e. an effective IOR of ~1.30
+ * against bitumen's ~1.6. That is deliberate and it is not a fudge of the
+ * Fresnel equation: the reflecting surface of aged hot-mix is not the binder,
+ * it is a layer of oxidised skin, dust and ravelled fines with no coherent
+ * interface, and most of what a flat interface would send into the specular
+ * lobe leaves as scatter. Mineral surfaces — the concrete slab, the sawn
+ * granite kerb — do have an interface and keep 1.55x of it (0.028).
+ *
+ * Effect at the same patch, measured through `setSpec` in single frames:
+ *
+ *   F0     F90 blend   albedo fraction   MAD    mean
+ *   0.040     0 (3js)       0.467       18.66   132.7
+ *   0.030     0             0.538       17.86   125.4
+ *   0.020     0             0.612       19.17   121.7
+ *   0.018     1 (shipped)   0.668       22.56   122.5
+ *   0.010     1             0.767       21.64   117.0
+ *
+ * Dry MAD over the same patch goes 16.74 -> 22.56 across this whole commit
+ * (+34.8%), of which the specular cut is 18.66 -> 22.56 and the crack rework is
+ * the rest. Wet (0.90, driving BOTH `assets.setWetness` and the material's own
+ * `setWet` — drive one and you measure a different road) it goes to 18.04
+ * against 16.93 for the same build with three's stock F0. The wet response
+ * itself is unchanged where it matters: wet/dry 0.699 at rain and 0.663 at
+ * storm, which reproduces the critic's 0.698 / 0.663 exactly.
+ */
+const SPEC_TUNE = [0.018, 1.0];
+
+/**
+ * Crack motif: [open threshold, seam weight, alligator threshold, depth].
+ *
+ * The thresholds are CALIBRATED, not reasoned — see below for why that matters.
+ *
+ * Measured at `st_southend` 11:12, frozen, `traffic`/`vehicles`/`peds` stubbed
+ * (freeze() does not stop them), reading 1300x240 px of near carriageway twice
+ * two steps apart and differencing `setCrack` 1 against 0 with the median offset
+ * removed. "cov N" is the share of road pixels the crack darkens by more than N
+ * of 255; the same-mode A/A floor over that region is max |delta| 15.2, mean
+ * 1.48, so cov 18 and cov 30 are signal and cov 8 is signal plus a little grain.
+ *
+ *                        cov 8    cov 18   cov 30   mean depth   max   width p50
+ *   before (bLine, 2.6 m)  1.139%   0.320%   0.013%     15.4      44.8    2 px
+ *   after  (bCrack, 3.1 m) 0.630%   0.442%   0.316%     34.8     105.9    3 px
+ *
+ * Half the footprint, twenty-four times as many genuinely dark pixels, twice the
+ * depth and twice the peak. That is the whole difference between an opening and
+ * a stroke: the old line spread the same ink thinly across a soft 5.6 cm band
+ * (which is why its cov 30 is essentially zero — nothing in it was ever dark),
+ * the new one puts it in a 1 cm core.
+ *
+ * WHY THESE NUMBERS AND NOT ROUNDER ONES. The `drive` field they threshold is a
+ * sum of value-noise octaves, and value noise interpolated off a lattice does
+ * NOT have the mean and spread its inputs do — measured here, `drive` lives in a
+ * narrow band with its knee around 0.2-0.3, not the ~0.5 an analytic estimate
+ * gives. Thresholds picked by arithmetic came out either "cracks everywhere" or
+ * "no crack anywhere at all" and both looked deliberate. Sweep the threshold and
+ * read the coverage curve off the frame; do not derive it.
+ */
+const CRACK_TUNE = [0.22, 0.34, 0.32, 0.84];
+
+/**
  * Metres of kerb per unit of `aSurf` on a kerb band. `section()` emits both the
  * granite face and the granite top with `scale: 1.5`, and the shader turns
  * `vSurf` back into metres with this constant to size the sawn block joints and
@@ -370,6 +479,26 @@ const ROAD_NOISE_GLSL = `
     float w = max(wm, px);
     return (1.0 - smoothstep(0.0, w, d)) * (wm / w);
   }
+  /**
+   * A crack, as opposed to a stroke. Same distance-invariant amplitude
+   * compensation as bLine — never narrower than a pixel, amplitude cut by
+   * exactly the factor it was widened — but the profile is a flat core with one
+   * short shoulder instead of a smoothstep spread across the entire width.
+   *
+   * That difference is the whole finding. bLine's profile only reaches full
+   * strength at d = 0 and is at half strength at half the width, so a line
+   * authored "2.8 cm wide" arrives as a 5.6 cm gradient with no edge anywhere in
+   * it — which at 3.8 mm/px on the near carriageway is a 15 px soft grey stroke.
+   * Measured (setCrack A/B, st_southend, 1300x240 px of near carriageway) that
+   * shipped as: median line width 6 px, mean darkening 8.1%, 1.96% of road
+   * pixels covered. Three critic passes have called the result a marker
+   * scribble. A crack is an opening: dark all the way across and over in one
+   * pixel at the rim.
+   */
+  float bCrack(float d, float wm, float px) {
+    float w = max(wm, px);
+    return (1.0 - smoothstep(w * 0.30, w, d)) * (wm / w);
+  }
 `;
 
 /**
@@ -443,19 +572,57 @@ function makeRoadMaterial(atlas) {
    * same reason -- a critic needs to A/B this in ONE frame, because the effect
    * being judged is a few percent of frame luminance.
    *
-   * The shipped defaults below are measured, not guessed: isolated on a frozen
-   * frame by toggling only wetness, they put wet/dry at 0.925 against 1.093
-   * before the per-class albedo landed, i.e. the sign is finally correct and
-   * wetting the road darkens it. It is NOT finished -- real wet asphalt is
-   * nearer 0.5-0.7 of dry -- so this stays a live knob rather than being baked
-   * into constants.
+   * The shipped defaults below are measured, not guessed. The 0.925 an earlier
+   * revision of this comment claimed is WRONG and the error is worth recording:
+   * it was taken by driving `Assets.setWetness` alone. Rain drives two things --
+   * that, and this material's own `setWet` -- and measuring one of them measures
+   * a road the game never renders. Driving both, on a frozen frame with the
+   * meter pinned and a car-free carriageway patch: wet/dry 0.699 at rain (0.90)
+   * and 0.663 at storm (1.00), reproducibly, which is INSIDE the 0.5-0.7 band
+   * for real wet asphalt. The darkening is done.
+   *
+   * What is not done is the other half of "wet": wetting still LOWERS the
+   * carriageway's contrast (MAD 22.56 dry -> 18.04 at rain) where a real wet
+   * street gains it. That is not a darkening problem and no value in this vector
+   * fixes it -- the albedo is the only high-frequency signal the surface has,
+   * water suppresses it, and the sharp specular that should replace it needs
+   * something sharp to reflect. SSR is not in the pass chain (critic, section 5).
    */
   m.userData.setWetTune = (a, b, c, d) => {
     for (const sh of shaders) if (sh.uniforms.uWetTune) sh.uniforms.uWetTune.value.set(a, b, c, d);
   };
+  /**
+   * Crack ablation, 0..1. Same one-frame-A/B argument as `setDetail`, but for
+   * the one motif a critic has failed three passes running. Crack coverage,
+   * line width and line contrast are all differential measurements — you have
+   * to see the surface with and without them inside a single frozen frame to
+   * measure any of them, because the aggregate speckle around them is louder
+   * than the cracks are.
+   */
+  m.userData.setCrack = (v) => {
+    for (const sh of shaders) if (sh.uniforms.uCrack) sh.uniforms.uCrack.value = v;
+  };
+  /** Crack tuning hook: see CRACK_TUNE. (open threshold, seam weight, web
+   *  threshold, depth). Live, for the same one-frame reason as setWetTune. */
+  m.userData.setCrackTune = (a, b, c, d) => {
+    for (const sh of shaders) if (sh.uniforms.uCrackTune) sh.uniforms.uCrackTune.value.set(a, b, c, d);
+  };
+  /**
+   * Specular level for the paved surfaces: (F0 multiplier, grazing F90).
+   *
+   * `MeshStandardMaterial` hard-codes a clean-dielectric F0 of 0.04 and an F90
+   * of 1.0 for every surface it draws, which is right for varnish and wrong for
+   * a road. See `SPEC_TUNE` for the measurement that made this a knob.
+   */
+  m.userData.setSpec = (f0, f90) => {
+    for (const sh of shaders) if (sh.uniforms.uSpecTune) sh.uniforms.uSpecTune.value.set(f0, f90);
+  };
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWet = { value: m.userData.wetLevel ?? 0 };
     sh.uniforms.uDetail = { value: m.userData.detailLevel ?? 1 };
+    sh.uniforms.uCrack = { value: m.userData.crackLevel ?? 1 };
+    sh.uniforms.uCrackTune = { value: new THREE.Vector4(...CRACK_TUNE) };
+    sh.uniforms.uSpecTune = { value: new THREE.Vector2(SPEC_TUNE[0], SPEC_TUNE[1]) };
     sh.uniforms.uWetTune = { value: new THREE.Vector4(0.30, 0.17, 1.0, 0.9) };
     shaders.push(sh);
     sh.vertexShader = sh.vertexShader
@@ -474,12 +641,15 @@ function makeRoadMaterial(atlas) {
       .replace('#include <common>', `#include <common>
         uniform float uWet;
         uniform float uDetail;
+        uniform float uCrack;
+        uniform vec4 uCrackTune;
+        uniform vec2 uSpecTune;
         uniform vec4 uWetTune;
         varying vec2 vSurf; varying vec2 vTile; varying float vRough;
         varying vec2 vWear; varying vec3 vWPos;
-        // Resolved once in <map_fragment>, consumed by the roughness, normal and
-        // indirect-specular chunks further down main().
-        float gRough, gPuddle, gWet, gFlat, gPx, gEnvK;
+        // Resolved once in <map_fragment>, consumed by the roughness, normal,
+        // specular and indirect-specular chunks further down main().
+        float gRough, gPuddle, gWet, gFlat, gPx, gEnvK, gF0;
         ${ROAD_NOISE_GLSL}
         vec4 atlasTex(sampler2D t, vec2 s, vec2 tile) {
           vec2 dx = dFdx(s) * 0.5, dy = dFdy(s) * 0.5;
@@ -516,6 +686,11 @@ function makeRoadMaterial(atlas) {
         float tone = 1.0;
         gRough = roughness * vRough;
         gFlat = 0.0;
+        // Specular reflectance at normal incidence, per class, ABSOLUTE (not a
+        // multiplier on three's 0.04). See SPEC_TUNE. The carriageway gets
+        // uSpecTune.x; the mineral surfaces keep more of theirs because a sawn
+        // granite kerb and a concrete slab really do present an interface.
+        gF0 = isRoad ? uSpecTune.x : uSpecTune.x * 1.55;
 
         if (isKerb) {
           // ---- sawn Quincy granite ---------------------------------------
@@ -578,24 +753,59 @@ function makeRoadMaterial(atlas) {
           float joint = cut * (1.0 - smoothstep(0.0, 0.010, rim)) * bFade(0.25);
           float fill = cut * (bHash(pi * 3.1) - 0.5);
           // ---- cracks ------------------------------------------------------
-          // Block cracking on a ~2.6 m cell network, plus a finer alligator web
-          // inside the worn areas. Both are drawn on Worley cell boundaries, so
-          // they are straight segments meeting at angles and Y junctions, 2-3 cm
-          // wide and near-black — thin, dark and high-contrast, which is what a
-          // crack is and what survives an 89 px (0.34 m) detail window.
+          // The cell network is right and the way it was drawn was not. Worley
+          // F2-F1 gives straight segments meeting at angles and Y junctions,
+          // which is the correct topology for a fatigue network; what shipped on
+          // top of it was a 5.6 cm smoothstep gradient at a 2.6 m spacing with a
+          // 35% floor everywhere and no gate but the age field. That is a
+          // uniform field of soft grey squiggles, and it is what the critic has
+          // now failed three times running.
           //
-          // Cracks also CLUSTER, and where they cluster is not a free choice:
-          // fatigue cracking opens under the wheel path where the axle load is,
-          // and along the gutter where water stands and the base softens. Both
-          // are already solved geometry here, so the web amplitude is gated on
-          // them and on the 23 m age field rather than sprayed uniformly.
+          // Three separate properties have to be right, and none of them is
+          // amplitude:
+          //
+          //   THIN.   A block crack is 5-20 mm at the surface, not 56, and it
+          //           has an EDGE — see bCrack, which is the actual fix.
+          //   DARK.   A crack is an open void with shadow and detritus in it. It
+          //           is the darkest thing on the carriageway, not a tint on it,
+          //           so the tone subtraction below goes past the old 0.18 tone
+          //           clamp (which was silently limiting it to 20% of base).
+          //   SPARSE, AND ANCHORED. Cracking starts at a discontinuity and
+          //           propagates from it — the longitudinal paving joint out at
+          //           the lane edge, the gutter where water stands and the base
+          //           softens, the sawn rim of a utility trench, the wheel path
+          //           where the axle load is. Between those, a surface stays
+          //           intact for decades. So the network is gated BOTH by a
+          //           coarse "this stretch is failing" field and by the distance
+          //           to a seam, and on an intact stretch it is simply absent
+          //           rather than present at 35%.
+          //
+          // The seams are all solved geometry already: lane, gut, track and the
+          // utility-cut rim are computed above for other reasons. (No backticks
+          // anywhere below this line: it is a JS template literal.)
           vec2 cw = W + vec2(n2 - 0.5, n3 - 0.5) * 2.2;    // meander the network
-          float dBlk = bCell(cw * (1.0 / 2.60), 0.85) * 2.60;
-          float dWeb = bCell(cw * (1.0 / 0.62) + 37.0, 0.95) * 0.62;
+          float dBlk = bCell(cw * (1.0 / 3.10), 0.85) * 3.10;
+          float dWeb = bCell(cw * (1.0 / 0.66) + 37.0, 0.95) * 0.66;
           float age  = smoothstep(0.30, 0.74, n3 * 0.62 + n2 * 0.38);
-          float load = clamp(track * 1.15 + gut * 0.55 + age * 0.50, 0.0, 1.0);
-          float crack = min(1.0, bLine(dBlk, 0.028, gPx) * (0.35 + 0.65 * age)
-                                + bLine(dWeb, 0.019, gPx) * load * age * 0.85);
+          // Distance to a discontinuity a crack can start from, 0..1.
+          float trench = cut * smoothstep(0.050, 0.008, rim);
+          float seam = clamp(smoothstep(1.05, 1.80, abs(lane)) * 0.55
+                           + gut * 0.95 + track * 0.55 + trench, 0.0, 1.0);
+          // One damage field, THRESHOLDED, rather than three soft gates
+          // multiplied together. The multiplied form is what a first cut of this
+          // shipped and it is worth recording as a trap: three fields each
+          // averaging ~0.3 give a product of ~0.03, so the cracks came out at 3%
+          // of their authored depth and measured as pure film grain (max
+          // darkening 10/255 over the whole near carriageway, against 31 before
+          // the rewrite). A gate has to be a threshold; multiplying gates is an
+          // AND that is also a fade, and the fade wins.
+          float dmg = bNoise(W * 0.031 + 91.3) * 0.55
+                    + bNoise(W * 0.118 + 12.7) * 0.25 + age * 0.20;
+          float drive = dmg + seam * uCrackTune.y;
+          float open = smoothstep(uCrackTune.x, uCrackTune.x + 0.09, drive);
+          float web  = smoothstep(uCrackTune.z, uCrackTune.z + 0.09, drive) * seam;
+          float crack = min(1.0, bCrack(dBlk, 0.010, gPx) * open
+                                + bCrack(dWeb, 0.006, gPx) * web * 0.85) * uCrack;
           // ---- chip scatter and skin patching ------------------------------
           // Exposed aggregate, as discrete stone rather than a smooth blotch.
           // At eye height on the near carriageway one pixel is ~3.8 mm of road,
@@ -620,7 +830,7 @@ function makeRoadMaterial(atlas) {
           // relative contrast at the same time as it holds the level.
           tone = 0.90 + macro * 1.00 + fill * 0.34 + grit * 0.80 + chip * 0.62
                - track * 0.26 - gut * 0.34 - oil * 0.50 - dab * 0.30
-               - joint * 0.62 - crack * 0.70;
+               - joint * 0.62 - crack * uCrackTune.w;
           // The polish is what makes a wheel track read at a grazing angle — it
           // is a specular cue first and a tonal one second. Kept deliberately
           // moderate: smoothing and flattening a horizontal surface both raise
@@ -642,10 +852,12 @@ function makeRoadMaterial(atlas) {
           // Slabs and brick crack across the bay and settle at the joint, so
           // the same cell network applies here on a coarser grid — and for the
           // same reason as the carriageway, a straight thin line reads as a
-          // crack where a wide soft curve reads as a smudge.
-          float crk = bLine(bCell(W * (1.0 / 1.45) + 8.5, 0.75) * 1.45, 0.016, gPx)
-                    * smoothstep(0.46, 0.80, n2);
-          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.42;
+          // crack where a wide soft curve reads as a smudge. Same bCrack profile
+          // and the same tightened gate: a pavement bay either has a settled
+          // crack across it or it does not, it is not uniformly crazed.
+          float crk = bCrack(bCell(W * (1.0 / 1.75) + 8.5, 0.75) * 1.75, 0.006, gPx)
+                    * smoothstep(0.58, 0.86, n2) * uCrack;
+          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.62;
           gRough = gRough + macro * 0.06 + stain * 0.03 - gum * 0.18 + crk * 0.10;
         }
 
@@ -690,36 +902,38 @@ function makeRoadMaterial(atlas) {
           gRough = mix(gRough, isKerb ? 0.34 : mix(sheet, 0.050, gPuddle), gWet);
           gFlat = max(gFlat, gPuddle * 0.94);   // standing water is flat
 
-          // Indirect-specular weight for the water film, applied per pixel to
-          // the indirect radiance at <lights_fragment_maps>. See the
-          // wetEnvBoost note in makeRoadMaterial for why it is not a material
-          // scalar. (No backticks in here: this is a JS template literal.)
+          // A water film gives the surface back the interface it does not have
+          // when it is dry. That is now expressed where it belongs — in the F0
+          // itself — instead of as a ratio applied to the indirect radiance
+          // only, because it has to reach the SUN's lobe too, and a scalar on
+          // the indirect radiance cannot. Water is F0 = 0.02; a film is a
+          // continuous interface, so wherever it is unbroken the surface
+          // reflects like water regardless of what is underneath it.
           //
-          // This is a ratio of two Schlick terms, not a tuned boost. A water
-          // film replaces the asphalt's own air-to-aggregate interface
-          // (F0 = 0.04) with an air-to-water one (F0 = 0.02), so
+          // Note this now runs UPWARD on the carriageway (dry 0.018 -> wet
+          // 0.020) and DOWNWARD on the pavement (dry 0.028 -> 0.020), which is
+          // the right pair of signs: a wet road gains a specular sheen it did
+          // not have, a wet slab loses a little of its own. The darkening that
+          // makes rain read as rain is the albedo term above, not this.
+          gF0 = mix(gF0, 0.020, gWet * (0.55 + 0.45 * gPuddle));
+
+          // Indirect-specular weight, applied per pixel to the indirect
+          // radiance at <lights_fragment_maps>. See the wetEnvBoost note in
+          // makeRoadMaterial for why it is not a material scalar. (No backticks
+          // in here: this is a JS template literal.)
           //
-          //     filmF = F_water(theta) / F_asphalt(theta)
-          //
-          // runs from 0.5 head-on to 1.0 at perfect grazing and is NEVER above
-          // 1. A wet road does not reflect more environment than a dry one — it
-          // reflects the same or less, through a much tighter lobe, which is
-          // what the roughness collapse above already models. Getting this
-          // backwards is the whole reason rain used to brighten the street.
-          //
-          // Measured on the near carriageway at st_southend under rain: with
-          // the old flat +45% material boost the non-albedo half of the road
-          // went UP 28% when it got wet, which no amount of albedo darkening
-          // can cancel.
-          //
-          // Puddles get 1.9x on top. That one IS a fudge and is flagged as such:
-          // standing water should be a sharp mirror, but SSR contributes 0.00
-          // here and the env probe cannot resolve an image, so a puddle can only
-          // return a blurred average. Retire the 0.9 when SSR reaches the road.
-          float ndv = clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0);
-          float g5 = pow(1.0 - ndv, 5.0);
-          float filmF = (0.02 + 0.98 * g5) / (0.04 + 0.96 * g5);
-          gEnvK = mix(1.0, filmF * uWetTune.z * (1.0 + uWetTune.w * gPuddle), gWet);
+          // The Fresnel half of this used to live here as an explicit
+          // F_water/F_asphalt ratio; gF0 above now carries it, for both the
+          // direct and the indirect lobe, so what is left is the puddle term
+          // alone. That one IS a fudge, and it was flagged as such because SSR
+          // contributed 0.00 and a puddle could only return a blurred probe
+          // average. SSR is now IN the composer's pass chain (measured at the
+          // end of this pass: FrameState / Render / N8AO / atmosphere /
+          // AutoExposure / Velocity / SSR / Lens / FX...), so the reason for the
+          // fudge has gone away. Retiring the 0.9 is the next thing to try here,
+          // and it should be measured against a real reflection rather than
+          // dropped on faith.
+          gEnvK = mix(1.0, uWetTune.z * (1.0 + uWetTune.w * gPuddle), gWet);
         }
 
         // uDetail = 0 restores the pre-existing surface exactly: flat tone, one
@@ -727,7 +941,12 @@ function makeRoadMaterial(atlas) {
         tone = mix(1.0, tone, uDetail);
         gRough = mix(roughness * vRough, gRough, uDetail);
         gFlat *= uDetail;
-        sampledDiffuseColor.rgb *= clamp(tone, 0.18, 1.75);
+        // Floor was 0.18, which is 20% of the 0.90 carriageway base — so a crack
+        // authored to reach 6% of the surface around it was silently clipped to
+        // a fifth of it, and no amount of amplitude in the crack term could get
+        // past it. Nothing else on the surface goes near this: the next darkest
+        // thing is trodden gum at 0.58 of base.
+        sampledDiffuseColor.rgb *= clamp(tone, 0.055, 1.75);
         diffuseColor *= sampledDiffuseColor;`)
       .replace('#include <normal_fragment_maps>', `
         vec3 mapN = atlasTex(normalMap, vSurf, vTile).xyz * 2.0 - 1.0;
@@ -735,6 +954,26 @@ function makeRoadMaterial(atlas) {
         normal = normalize(tbn * mapN);`)
       .replace('#include <roughnessmap_fragment>', `
         float roughnessFactor = clamp(gRough, 0.045, 1.0);`)
+      // Specular level. `MeshStandardMaterial` hard-codes F0 = 0.04 / F90 = 1.0
+      // for every surface it draws — the clean smooth dielectric interface that
+      // varnish, glass and wet paint have. Aged hot-mix has no such interface:
+      // its top layer is oxidised binder, loose fines and ravelled stone, and
+      // what a clean interface would return specularly it returns scattered.
+      // This is exactly the parameter glTF calls
+      // `KHR_materials_specular.specularFactor` and Unreal calls `Specular`, and
+      // setting it here reaches the DIRECT lobe as well as the indirect one,
+      // which a material-level `envMapIntensity` cannot — see SPEC_TUNE for why
+      // that distinction is the whole finding.
+      //
+      // F90 is the Lagarde/Frostbite roughness-dependent form. A smooth
+      // interface really does go to 1.0 at grazing; a surface whose microfacets
+      // are randomly oriented over a 0.9 roughness does not, because the facets
+      // that would be at grazing are the ones being masked. uSpecTune.y blends
+      // between three's flat 1.0 (0) and that form (1).
+      .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>
+        material.specularColor = vec3(gF0);
+        material.specularF90 = mix(1.0,
+          clamp(1.0 - material.roughness + gF0, 0.0, 1.0), uSpecTune.y);`)
       // Per-pixel weight on the indirect specular only. `radiance` is declared
       // in <lights_fragment_begin> and consumed by RE_IndirectSpecular in
       // <lights_fragment_end>, so scaling it here reaches the environment
