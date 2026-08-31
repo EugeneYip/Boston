@@ -1122,11 +1122,36 @@ const LIMESTONE = {
 /* ---- roads ---------------------------------------------------------------*/
 
 /**
+ * Per-motif ablation switches for the asphalt tile, 0..1 each.
+ *
+ * The carriageway's albedo has two independent halves — the procedural terms in
+ * the `Roads.js` shader, and the pixels painted here — and until now only the
+ * shader half had switches. That is how a motif painted into THIS function
+ * survived `setDetail(0)` and `setCrack(0)` unchanged and got misattributed to a
+ * shader term for three critic passes running.
+ *
+ * These gate APPLICATION, never generation: every mask is still built and every
+ * `R()` call still happens, so flipping one leaves the rest of the tile
+ * bit-identical instead of reshuffling the whole RNG stream downstream. Drive
+ * them through `Materials.rebuildRoadAtlas()`, which repaints and re-uploads.
+ */
+export const ASPHALT_ABLATE = {
+  aggregate: 1, patch: 1, patchEdge: 1, crack: 1, oil: 1, ghost: 1,
+};
+
+/**
  * Hot-mix asphalt. Exposed aggregate where the binder has ravelled, utility-cut
- * patches with cold joints, rubberised crack sealant ("tar snakes") and oil
- * dripped where traffic idles.
+ * patches with cold joints, hairline cracking and oil dripped where traffic
+ * idles.
+ *
+ * Everything here is at or below a couple of centimetres, deliberately: the
+ * tile spans 2.4 m and is the surface of every road in the city, so any motif
+ * approaching that size becomes wallpaper. Metre-scale features (the crack
+ * network, sealant, cold-patch staining, wheel polish) live in the world-space
+ * shader in `Roads.js` where they can be sparse and never repeat.
  */
 function paintAsphalt(S, F, o) {
+  const ABL = ASPHALT_ABLATE;
   const { w, h } = F;
   const R = F.rand;
   const stone = F.noise('c', 2, 2, false);
@@ -1156,7 +1181,7 @@ function paintAsphalt(S, F, o) {
     let height = 0.55 + (grit[i] - 0.5) * 0.04 + (gr[i] - 0.5) * 0.03;
 
     // Aggregate poking through the ravelled binder. ~9 mm stones, partial cover.
-    const st = smoothstep(0.40, 0.20, stone[i]) * smoothstep(0.10, 0.58, wear);
+    const st = smoothstep(0.40, 0.20, stone[i]) * smoothstep(0.10, 0.58, wear) * ABL.aggregate;
     if (st > 0) {
       const s = sid[i];
       const a = s > 0.78 ? aggLight : s > 0.42 ? aggDark : aggTan;
@@ -1190,7 +1215,7 @@ function paintAsphalt(S, F, o) {
   const patchEdge = F.mask(drawRects(true));
   const patchTone = F.noise('A', 2, 2);
   for (let i = 0; i < S.n; i++) {
-    const p = patch[i];
+    const p = patch[i] * ABL.patch;
     if (p > 0.01) {
       const fresh = patchTone[i] > 0.5;
       const c = fresh ? o.patchFresh : o.patchOld;
@@ -1198,7 +1223,7 @@ function paintAsphalt(S, F, o) {
       S.rough[i] = lerp(S.rough[i], fresh ? 0.90 : 0.95, p * 0.7);
       S.height[i] += p * 0.03;
     }
-    const e = patchEdge[i];
+    const e = patchEdge[i] * ABL.patchEdge;
     if (e > 0.01) {   // cold joint, later sealed with tar
       S.mix(i, [0.055, 0.052, 0.058], e * 0.85);
       S.height[i] += e * 0.06;
@@ -1206,7 +1231,10 @@ function paintAsphalt(S, F, o) {
     }
   }
 
-  // --- cracks and crack sealant -------------------------------------------
+  // --- hairline cracks -----------------------------------------------------
+  // Sub-texel and full-res (div = 1): at 4.7 mm/texel these are 4-10 mm lines,
+  // which is the scale a 2.4 m tile can legitimately carry. Anything longer
+  // than a few centimetres does not belong in here — see the note below.
   const cracks = F.mask((g, wrap) => {
     g.lineCap = 'round';
     for (let n = 0; n < o.cracks; n++) {
@@ -1216,32 +1244,60 @@ function paintAsphalt(S, F, o) {
       wrap(x, y, w * 0.5, (c) => F.strokePts(c, pts));
     }
   }, 1);
-  const snakes = F.mask((g, wrap) => {
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    for (let n = 0; n < o.snakes; n++) {
-      const x = R() * w, y = R() * h;
-      g.lineWidth = R.range(0.013, 0.030) * w;
-      const pts = F.crackPts(x, y, R.range(0.3, 0.95) * w, w / 60, 0.75, R);
-      wrap(x, y, w * 0.5, (c) => F.strokePts(c, pts));
-    }
-  });
-  const tar = hx('#141317');
   for (let i = 0; i < S.n; i++) {
-    const c = cracks[i];
+    const c = cracks[i] * ABL.crack;
     if (c > 0.01) { S.mix(i, [0.075, 0.072, 0.082], c * 0.9); S.height[i] -= c * 0.085; S.rough[i] = lerp(S.rough[i], 0.95, c); }
-    const s = snakes[i];
-    if (s > 0.01) {
-      S.set(i, tar); S.mix(i, [0.09, 0.085, 0.095], (1 - s) * 0.6);
-      S.height[i] += s * 0.16;                                 // proud rubber bead
-      S.rough[i] = lerp(S.rough[i], 0.34 + gr[i] * 0.08, s);   // sealant stays glossy
-    }
   }
+  // --- the tar snakes are GONE FROM HERE, and this is why -----------------
+  // "Soft grey marker scribbles on the carriageway" survived four critic
+  // passes, `setCrack(0)` and `setDetail(0)`, and was blamed on three
+  // different shader terms. It was this function. The motif was:
+  //
+  //   g.lineCap = 'round'; g.lineJoin = 'round';
+  //   g.lineWidth = R.range(0.013, 0.030) * w;              // 3.1 - 7.2 cm
+  //   F.crackPts(x, y, R.range(0.3, 0.95) * w, w / 60, 0.75, R);
+  //
+  // Four things were wrong with it and only one of them was amplitude:
+  //
+  //   IT REPEATED.  A 512 tile spans 2.4 m, so a 0.7-2.3 m stroke is a feature
+  //     most of a tile-period long, and the tile is the whole city's road. The
+  //     same three strokes therefore recurred every 2.4 m down every street in
+  //     Boston. No amount of re-authoring fixes that: a sparse metre-scale
+  //     motif cannot live in a metre-scale tile. It has to be world-space, so
+  //     it now is — see `seal` in Roads.js, which rides the crack network's own
+  //     distance field and never repeats.
+  //   IT WANDERED.  crackPts random-walks the heading by +/-0.375 rad every
+  //     4 cm, so over 1.5 m it is a smooth meander that never runs straight and
+  //     never meets anything at an angle. That is exactly the pathology the
+  //     bCell comment in Roads.js diagnoses for cracks — sealant follows a
+  //     crack, so it inherits the crack's straightness or it is not sealant.
+  //   IT HAD ROUND CAPS at 15 texels wide, which is the "fat rounded terminus"
+  //     the critic kept describing.
+  //   IT IGNORED ITS OWN MASK.  `S.set(i, tar)` ran at full strength for every
+  //     texel with s > 0.01, so the entire antialiased skirt was as black as
+  //     the core and then lightened back toward grey by `(1 - s) * 0.6`. With
+  //     the mask built at half res (div 2, 9.4 mm per drawn pixel) and bilinear
+  //     upsampled, that turned a soft edge into a hard stair-stepped grey rim —
+  //     the "visible stair-stepping" reported at setDetail(0).
+  //
+  // MEASURED before removal, st_southend near carriageway, 5370 8x8 block
+  // means, drift-cancelled, A/A floor 0.15% / 0.083:
+  //
+  //   ablation             %blocks   mean    max    d(local contrast)
+  //   snakes off             7.13    1.554   73.4      -0.504
+  //   whole atlas albedo    95.34    7.505   76.9      -0.849
+  //   patches + joints       7.43    0.711   26.9      -0.072
+  //   shader cracks          4.02    0.302   30.7      -0.048
+  //   shader `dab`          13.22    1.230   24.7      -0.022
+  //
+  // 59% of every painted contrast on the road came from this one motif, at 7%
+  // coverage. It was never the cracks and it was never `dab`.
 
   // --- oil and rubber ------------------------------------------------------
   const oil = F.noise('A', 1, 1);
   const oil2 = F.noise('B', 2, 2);
   for (let i = 0; i < S.n; i++) {
-    const t = smoothstep(0.50, 0.86, oil[i] * 0.7 + oil2[i] * 0.3) * o.oil;
+    const t = smoothstep(0.50, 0.86, oil[i] * 0.7 + oil2[i] * 0.3) * o.oil * ABL.oil;
     if (t <= 0) continue;
     S.mul(i, 1 - t * 0.62);
     S.rough[i] = lerp(S.rough[i], 0.44, t * 0.9);
@@ -1256,7 +1312,7 @@ function paintAsphalt(S, F, o) {
     });
     const spot = F.noise('B', 3, 3);
     for (let i = 0; i < S.n; i++) {
-      const t = gh[i] * smoothstep(0.35, 0.75, spot[i]) * 0.5;
+      const t = gh[i] * smoothstep(0.35, 0.75, spot[i]) * 0.5 * ABL.ghost;
       if (t > 0) { S.mix(i, [0.62, 0.61, 0.57], t); S.rough[i] = lerp(S.rough[i], 0.7, t); }
     }
   }
@@ -1266,13 +1322,13 @@ function paintAsphalt(S, F, o) {
 
 const ASPHALT = {
   res: 512, tile: 2.4, base: hx('#57575d'), rough: 0.93, normalStrength: 0.9, relief: 0.019,
-  binder: hx('#57575d'), wear: 0.34, patches: 2, cracks: 5, snakes: 3, oil: 0.5,
+  binder: hx('#57575d'), wear: 0.34, patches: 2, cracks: 5, oil: 0.5,
   patchFresh: hx('#3a3a41'), patchOld: hx('#66666c'), paintGhost: false, paint: paintAsphalt,
 };
 
 const ASPHALT_WORN = {
   ...ASPHALT, res: 512, base: hx('#66666b'),
-  binder: hx('#66666b'), wear: 0.66, patches: 4, cracks: 14, snakes: 7, oil: 0.6,
+  binder: hx('#66666b'), wear: 0.66, patches: 4, cracks: 14, oil: 0.6,
   patchFresh: hx('#3d3d44'), patchOld: hx('#727278'), paintGhost: true,
 };
 

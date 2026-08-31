@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import TextureFactory, { RECIPES } from './TextureFactory.js';
+import TextureFactory, { RECIPES, ASPHALT_ABLATE } from './TextureFactory.js';
 import EnvProbe from './EnvProbe.js';
 import { makeRoadMaterial } from '../world/Roads.js';
 
@@ -501,6 +501,58 @@ export default class Materials {
     this._stampWetness(m);
     this._mats.set('road_atlas', m);
     this._atlas = null;                        // free the 4 MB float composite
+  }
+
+  /**
+   * Repaint and re-upload the road atlas with `ASPHALT_ABLATE` flags applied.
+   *
+   * The carriageway's look is half shader and half baked pixels, and only the
+   * shader half was switchable — so a motif painted into `paintAsphalt` was
+   * invisible to `setDetail` and `setCrack` and got blamed on a shader term
+   * three critic passes in a row. This is the missing half of the bisection:
+   * `setAtlas(0, 1)` says "it is in the albedo texture", and this says WHICH
+   * painted motif it is.
+   *
+   * Debug/authoring only — it costs a repaint of all four tiles (~200 ms) and
+   * is never called by the running game. Pass `null` to restore the shipped
+   * textures without a repaint.
+   *
+   * @param {object|null} flags e.g. `{ snake: 0 }`, or null to restore.
+   */
+  rebuildRoadAtlas(flags) {
+    const m = this._mats.get('road_atlas');
+    if (!m || !this.factory) return null;
+    // Keep the shipped pair alive so restoring is exact and free. They are
+    // owned by ctx.assets; only the debug bakes below are ours to dispose.
+    this._roadAtlas0 = this._roadAtlas0 || { map: m.map, nrm: m.normalMap };
+    const drop = () => {
+      if (!this._roadAtlasDbg) return;
+      this._roadAtlasDbg.map.dispose(); this._roadAtlasDbg.nrm.dispose();
+      this._roadAtlasDbg = null;
+    };
+    if (!flags) {
+      m.map = this._roadAtlas0.map; m.normalMap = this._roadAtlas0.nrm;
+      m.needsUpdate = true; drop();
+      for (const k of Object.keys(ASPHALT_ABLATE)) ASPHALT_ABLATE[k] = 1;
+      return { restored: true };
+    }
+    Object.assign(ASPHALT_ABLATE, flags);
+    const t0 = performance.now();
+    const A = this.factory.newAtlas(1024);
+    for (const [name, slot] of Object.entries(ATLAS_TILES)) {
+      // build() bakes three textures we do not want here; take the painted
+      // Surface and dispose the rest rather than leaking ~3 MB per call.
+      const baked = this.factory.build(name, RECIPES[name]);
+      baked.map?.dispose(); baked.normalMap?.dispose(); baked.ormMap?.dispose();
+      this.factory.blitTile(A, this.factory.lastSurface, slot[0], slot[1],
+        this.factory.lastRelief / ATLAS_REF_K);
+    }
+    const tex = this.factory.bakeAtlas(A, ATLAS_REF_K);
+    tex.map.anisotropy = 8; tex.nrm.anisotropy = 4;
+    drop();
+    this._roadAtlasDbg = { map: tex.map, nrm: tex.nrm };
+    m.map = tex.map; m.normalMap = tex.nrm; m.needsUpdate = true;
+    return { ms: +(performance.now() - t0).toFixed(1), ablate: { ...ASPHALT_ABLATE } };
   }
 
   /* ---- public API (CONTRACTS.md) --------------------------------------- */

@@ -550,10 +550,39 @@ function makeRoadMaterial(atlas) {
   m.userData.wetEnvBoost = 0.0;
   const shaders = [];
   m.userData.shaders = shaders;
-  /** Push the current rain wetness into every compiled variant. */
-  m.userData.setWet = (v) => {
-    for (const sh of shaders) if (sh.uniforms.uWet) sh.uniforms.uWet.value = v;
+  /**
+   * Live uniform state, kept OUTSIDE the compiled shader.
+   *
+   * `onBeforeCompile` re-runs whenever the material is invalidated — a texture
+   * swap with `needsUpdate`, a quality change, an envMap arriving — and it used
+   * to seed fresh uniform objects from the shipped constants. So any knob a
+   * critic had set was silently reverted by the next recompile, and the
+   * measurement that followed compared a surface against itself. Seeding from
+   * this object instead makes every hook below survive a recompile.
+   */
+  const st = {
+    uWet: m.userData.wetLevel ?? 0,
+    uDetail: m.userData.detailLevel ?? 1,
+    uCrack: m.userData.crackLevel ?? 1,
+    uCrackTune: [...CRACK_TUNE],
+    uSpecTune: [SPEC_TUNE[0], SPEC_TUNE[1]],
+    uWetTune: [0.30, 0.17, 1.0, 0.9],
+    uAblA: [1, 1, 1, 1],
+    uAblB: [1, 1, 1, 1],
+    uAblC: [1, 1, 1, 1],
+    uAtlas: [1, 1],
   };
+  m.userData.uniformState = st;
+  const setF = (n, v) => {
+    st[n] = v;
+    for (const sh of shaders) if (sh.uniforms[n]) sh.uniforms[n].value = v;
+  };
+  const setV = (n, ...v) => {
+    st[n] = v;
+    for (const sh of shaders) if (sh.uniforms[n]) sh.uniforms[n].value.set(...v);
+  };
+  /** Push the current rain wetness into every compiled variant. */
+  m.userData.setWet = (v) => setF('uWet', v);
   /**
    * Ablation switch, 0..1. At 0 the surface is exactly what it was before the
    * procedural pass existed — flat tint x atlas, one uniform roughness — so a
@@ -563,9 +592,7 @@ function makeRoadMaterial(atlas) {
    * a before/after taken across an edit is not a controlled comparison and a
    * before/after taken across this uniform is.
    */
-  m.userData.setDetail = (v) => {
-    for (const sh of shaders) if (sh.uniforms.uDetail) sh.uniforms.uDetail.value = v;
-  };
+  m.userData.setDetail = (v) => setF('uDetail', v);
   /*
    * Wet-response tuning hook: (sheet roughness base, polished-track roughness,
    * env multiplier, puddle env multiplier). Kept alongside `setDetail` for the
@@ -588,9 +615,7 @@ function makeRoadMaterial(atlas) {
    * water suppresses it, and the sharp specular that should replace it needs
    * something sharp to reflect. SSR is not in the pass chain (critic, section 5).
    */
-  m.userData.setWetTune = (a, b, c, d) => {
-    for (const sh of shaders) if (sh.uniforms.uWetTune) sh.uniforms.uWetTune.value.set(a, b, c, d);
-  };
+  m.userData.setWetTune = (a, b, c, d) => setV('uWetTune', a, b, c, d);
   /**
    * Crack ablation, 0..1. Same one-frame-A/B argument as `setDetail`, but for
    * the one motif a critic has failed three passes running. Crack coverage,
@@ -599,14 +624,60 @@ function makeRoadMaterial(atlas) {
    * measure any of them, because the aggregate speckle around them is louder
    * than the cracks are.
    */
-  m.userData.setCrack = (v) => {
-    for (const sh of shaders) if (sh.uniforms.uCrack) sh.uniforms.uCrack.value = v;
-  };
+  m.userData.setCrack = (v) => setF('uCrack', v);
   /** Crack tuning hook: see CRACK_TUNE. (open threshold, seam weight, web
    *  threshold, depth). Live, for the same one-frame reason as setWetTune. */
-  m.userData.setCrackTune = (a, b, c, d) => {
-    for (const sh of shaders) if (sh.uniforms.uCrackTune) sh.uniforms.uCrackTune.value.set(a, b, c, d);
+  m.userData.setCrackTune = (a, b, c, d) => setV('uCrackTune', a, b, c, d);
+  /**
+   * PER-TERM ABLATION, and read this before nominating another suspect.
+   *
+   * Three critic passes attributed "soft grey marker scribbles" on the
+   * carriageway to a term nobody could switch off, and two of them were wrong.
+   * `setDetail` and `setCrack` were the only two switches on the surface, which
+   * meant the only possible bisection was "all of the procedural tone" versus
+   * "the cracks" — and the answer was neither, so the search stopped with a
+   * guess. The fix is not a better guess, it is more switches.
+   *
+   * Two things matter about the coverage here:
+   *
+   *   1. Every dark term in the carriageway branch gets its own scalar, so any
+   *      one of them can be zeroed inside a SINGLE frozen frame. (`setDab` is
+   *      the one the critic asked for by name; the others cost nothing extra
+   *      and are what actually let you eliminate suspects.)
+   *   2. `setAtlas` ablates the thing NEITHER of the old switches could reach:
+   *      the baked atlas itself. `uDetail = 0` collapses `tone` to 1.0, which
+   *      removes every procedural term at once — so anything still visible at
+   *      `setDetail(0)` is PAINTED INTO THE TEXTURE and no shader knob will
+   *      ever touch it. That is the branch three passes never took.
+   *
+   * @param {string} name  macro | grit | chip | dab | track | gut | oil | joint
+   * @param {number} v     0 = off, 1 = shipped
+   */
+  const ABL_SLOT = {
+    macro: ['uAblA', 'x'], grit: ['uAblA', 'y'], chip: ['uAblA', 'z'], dab: ['uAblA', 'w'],
+    track: ['uAblB', 'x'], gut: ['uAblB', 'y'], oil: ['uAblB', 'z'], joint: ['uAblB', 'w'],
+    seal: ['uAblC', 'x'],
   };
+  m.userData.setTerm = (name, v) => {
+    const slot = ABL_SLOT[name];
+    if (!slot) throw new Error(`setTerm: unknown road term "${name}" (have ${Object.keys(ABL_SLOT).join(', ')})`);
+    const i = { x: 0, y: 1, z: 2, w: 3 }[slot[1]];
+    st[slot[0]][i] = v;
+    for (const sh of shaders) if (sh.uniforms[slot[0]]) sh.uniforms[slot[0]].value[slot[1]] = v;
+  };
+  /** Ablation for the cold-patch dab term. Sugar for setTerm('dab', v). */
+  m.userData.setDab = (v) => m.userData.setTerm('dab', v);
+  /**
+   * Atlas ablation: (albedo weight, normal weight), 0..1 each.
+   *
+   * At 0 the sampled tile is replaced by its own measured mean linear colour
+   * (the four-tile table at the top of this file) and the tangent-space normal
+   * goes flat. The surface keeps every procedural term, its lighting, its
+   * exposure and its geometry — only the painted pixels go away. So a motif
+   * that survives `setDetail(0)` and dies at `setAtlas(0, 1)` is in the albedo
+   * texture, and one that dies at `setAtlas(1, 0)` is in the normal map.
+   */
+  m.userData.setAtlas = (alb, nrm) => setV('uAtlas', alb, nrm);
   /**
    * Specular level for the paved surfaces: (F0 multiplier, grazing F90).
    *
@@ -614,16 +685,20 @@ function makeRoadMaterial(atlas) {
    * of 1.0 for every surface it draws, which is right for varnish and wrong for
    * a road. See `SPEC_TUNE` for the measurement that made this a knob.
    */
-  m.userData.setSpec = (f0, f90) => {
-    for (const sh of shaders) if (sh.uniforms.uSpecTune) sh.uniforms.uSpecTune.value.set(f0, f90);
-  };
+  m.userData.setSpec = (f0, f90) => setV('uSpecTune', f0, f90);
   m.onBeforeCompile = (sh) => {
-    sh.uniforms.uWet = { value: m.userData.wetLevel ?? 0 };
-    sh.uniforms.uDetail = { value: m.userData.detailLevel ?? 1 };
-    sh.uniforms.uCrack = { value: m.userData.crackLevel ?? 1 };
-    sh.uniforms.uCrackTune = { value: new THREE.Vector4(...CRACK_TUNE) };
-    sh.uniforms.uSpecTune = { value: new THREE.Vector2(SPEC_TUNE[0], SPEC_TUNE[1]) };
-    sh.uniforms.uWetTune = { value: new THREE.Vector4(0.30, 0.17, 1.0, 0.9) };
+    // Seeded from `st`, not from the constants, so a recompile preserves
+    // whatever the hooks were last set to. See `st` above.
+    sh.uniforms.uWet = { value: st.uWet };
+    sh.uniforms.uDetail = { value: st.uDetail };
+    sh.uniforms.uCrack = { value: st.uCrack };
+    sh.uniforms.uCrackTune = { value: new THREE.Vector4(...st.uCrackTune) };
+    sh.uniforms.uSpecTune = { value: new THREE.Vector2(...st.uSpecTune) };
+    sh.uniforms.uWetTune = { value: new THREE.Vector4(...st.uWetTune) };
+    sh.uniforms.uAblA = { value: new THREE.Vector4(...st.uAblA) };  // macro grit chip dab
+    sh.uniforms.uAblB = { value: new THREE.Vector4(...st.uAblB) };  // track gut  oil  joint
+    sh.uniforms.uAblC = { value: new THREE.Vector4(...st.uAblC) };  // seal
+    sh.uniforms.uAtlas = { value: new THREE.Vector2(...st.uAtlas) };// albedo, normal
     shaders.push(sh);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
@@ -645,11 +720,15 @@ function makeRoadMaterial(atlas) {
         uniform vec4 uCrackTune;
         uniform vec2 uSpecTune;
         uniform vec4 uWetTune;
+        uniform vec4 uAblA;      // ablation: macro, grit, chip, dab
+        uniform vec4 uAblB;      // ablation: track, gut,  oil,  joint
+        uniform vec4 uAblC;      // ablation: seal
+        uniform vec2 uAtlas;     // ablation: atlas albedo, atlas normal
         varying vec2 vSurf; varying vec2 vTile; varying float vRough;
         varying vec2 vWear; varying vec3 vWPos;
         // Resolved once in <map_fragment>, consumed by the roughness, normal,
         // specular and indirect-specular chunks further down main().
-        float gRough, gPuddle, gWet, gFlat, gPx, gEnvK, gF0;
+        float gRough, gPuddle, gWet, gFlat, gPx, gEnvK, gF0, gSeal;
         ${ROAD_NOISE_GLSL}
         vec4 atlasTex(sampler2D t, vec2 s, vec2 tile) {
           vec2 dx = dFdx(s) * 0.5, dy = dFdy(s) * 0.5;
@@ -657,6 +736,16 @@ function makeRoadMaterial(atlas) {
         }`)
       .replace('#include <map_fragment>', `
         vec4 sampledDiffuseColor = atlasTex(map, vSurf, vTile);
+        // Atlas ablation. The four constants are the measured mean LINEAR
+        // colour of each tile — the table at the top of this file — so at
+        // uAtlas.x = 0 the surface keeps its level and loses only its painted
+        // detail. See makeRoadMaterial's setAtlas.
+        if (uAtlas.x < 0.999) {
+          vec3 flatAlb = vTile.y < 0.25
+            ? (vTile.x < 0.25 ? vec3(0.1079, 0.1071, 0.1181) : vec3(0.2866, 0.2675, 0.2249))
+            : (vTile.x < 0.25 ? vec3(0.3021, 0.1114, 0.0676) : vec3(0.2073, 0.1855, 0.1703));
+          sampledDiffuseColor.rgb = mix(flatAlb, sampledDiffuseColor.rgb, uAtlas.x);
+        }
         vec2 W = vWPos.xz;
         float lane = vWear.x, kerb = vWear.y;
         bool isRoad = kerb > -0.5;
@@ -686,6 +775,7 @@ function makeRoadMaterial(atlas) {
         float tone = 1.0;
         gRough = roughness * vRough;
         gFlat = 0.0;
+        gSeal = 0.0;
         // Specular reflectance at normal incidence, per class, ABSOLUTE (not a
         // multiplier on three's 0.04). See SPEC_TUNE. The carriageway gets
         // uSpecTune.x; the mineral surfaces keep more of theirs because a sawn
@@ -806,6 +896,30 @@ function makeRoadMaterial(atlas) {
           float web  = smoothstep(uCrackTune.z, uCrackTune.z + 0.09, drive) * seam;
           float crack = min(1.0, bCrack(dBlk, 0.010, gPx) * open
                                 + bCrack(dWeb, 0.006, gPx) * web * 0.85) * uCrack;
+          // ---- crack sealant ("tar snakes") -------------------------------
+          // These used to be three round-capped random walks painted into the
+          // 2.4 m asphalt tile, which put the same metre-long squiggle every
+          // 2.4 m down every street in the city; four critic passes read them
+          // as "soft grey marker scribbles" and three of those blamed a shader
+          // term. See the removal note in TextureFactory.paintAsphalt for the
+          // full measurement — the motif carried 59% of all painted contrast on
+          // the carriageway at 7% coverage.
+          //
+          // Sealant is squeegeed INTO a crack, so it is not an independent
+          // stroke at all: it is this same block-crack distance field, three
+          // times wider, blacker and glossy. It inherits the network's
+          // straight segments and Y-junctions for free, it is world-space so
+          // it never repeats, and it can only appear where a crack was already
+          // open. The 27 m field is "has this stretch been maintained" — a
+          // sealed street is sealed in runs, not texel by texel.
+          float sealRun = smoothstep(0.56, 0.72, bNoise(W * 0.037 + 5.9));
+          float sealed = sealRun * open;
+          float seal = bCrack(dBlk, 0.030, gPx) * sealed * uAblC.x;
+          // A sealed crack is a FILLED one. The void and the shadow in it are
+          // what the rubber replaces, so the crack has to go away underneath —
+          // adding both would put a black core inside a black band and read as
+          // an outline.
+          crack *= 1.0 - sealed * 0.90;
           // ---- chip scatter and skin patching ------------------------------
           // Exposed aggregate, as discrete stone rather than a smooth blotch.
           // At eye height on the near carriageway one pixel is ~3.8 mm of road,
@@ -828,9 +942,14 @@ function makeRoadMaterial(atlas) {
           // Base 0.90, not 1.0: wear, grime and traffic film are a net loss of
           // reflectance, and scaling the base rather than the noise raises
           // relative contrast at the same time as it holds the level.
-          tone = 0.90 + macro * 1.00 + fill * 0.34 + grit * 0.80 + chip * 0.62
-               - track * 0.26 - gut * 0.34 - oil * 0.50 - dab * 0.30
-               - joint * 0.62 - crack * uCrackTune.w;
+          // uAblA = (macro, grit, chip, dab), uAblB = (track, gut, oil, joint).
+          // Ablation only — every component ships at 1.0. See setTerm/setDab.
+          tone = 0.90 + macro * 1.00 * uAblA.x + fill * 0.34
+               + grit * 0.80 * uAblA.y + chip * 0.62 * uAblA.z
+               - track * 0.26 * uAblB.x - gut * 0.34 * uAblB.y
+               - oil * 0.50 * uAblB.z - dab * 0.30 * uAblA.w
+               - joint * 0.62 * uAblB.w - crack * uCrackTune.w
+               - seal * 0.30;
           // The polish is what makes a wheel track read at a grazing angle — it
           // is a specular cue first and a tonal one second. Kept deliberately
           // moderate: smoothing and flattening a horizontal surface both raise
@@ -839,8 +958,16 @@ function makeRoadMaterial(atlas) {
           // the first cut of this at +8% mean, which put the asphalt brighter
           // than the concrete walk beside it.
           gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.04
-                 + crack * 0.12;               // a crack is a recess full of grit
-          gFlat = track * 0.22 + oil * 0.16;   // polished: flatten the aggregate
+                 + crack * 0.12               // a crack is a recess full of grit
+                 - seal * 0.40;               // cured rubber is the glossiest
+                                              // thing on a dry carriageway
+          gFlat = track * 0.22 + oil * 0.16;  // polished: flatten the aggregate
+          // Deliberately NOT folded into gFlat. gFlat is also the "this is a
+          // worn rut" signal the rain block uses to decide where water can
+          // stand, and sealant is proud of the surface, not a depression --
+          // sharing the channel would run a puddle ribbon along every sealed
+          // crack in the city. This one only reaches the normal map.
+          gSeal = seal * 0.55;                 // rubber floods the stone under it
         } else if (isVerge) {
           tone = 1.0 + macro * 0.60;
         } else {
@@ -940,7 +1067,7 @@ function makeRoadMaterial(atlas) {
         // roughness, no wet structure. See makeRoadMaterial's setDetail.
         tone = mix(1.0, tone, uDetail);
         gRough = mix(roughness * vRough, gRough, uDetail);
-        gFlat *= uDetail;
+        gFlat *= uDetail; gSeal *= uDetail;
         // Floor was 0.18, which is 20% of the 0.90 carriageway base — so a crack
         // authored to reach 6% of the surface around it was silently clipped to
         // a fifth of it, and no amount of amplitude in the crack term could get
@@ -950,7 +1077,7 @@ function makeRoadMaterial(atlas) {
         diffuseColor *= sampledDiffuseColor;`)
       .replace('#include <normal_fragment_maps>', `
         vec3 mapN = atlasTex(normalMap, vSurf, vTile).xyz * 2.0 - 1.0;
-        mapN.xy *= normalScale * (1.0 - gFlat);
+        mapN.xy *= normalScale * (1.0 - gFlat) * (1.0 - gSeal) * uAtlas.y;
         normal = normalize(tbn * mapN);`)
       .replace('#include <roughnessmap_fragment>', `
         float roughnessFactor = clamp(gRough, 0.045, 1.0);`)
