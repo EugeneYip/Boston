@@ -126,6 +126,30 @@ const STYLES = {
     cornice: 0.30, shutters: 0.35, chimneys: 1,
     facStrip: 'fac_brick',
   },
+  /**
+   * Post-war mid-rise — the shoulder between rowhouse and tower.
+   *
+   * Boston's 40–60 m band is one specific building: the 1960s–80s concrete or
+   * masonry frame, 10–18 storeys, punched or ribbon windows and a mechanical
+   * penthouse. Charles River Park, the Colonnade, the Sheraton, the Longwood
+   * hospitals, Kendall Square, the low half of the Seaport.
+   *
+   * Nothing in this catalogue covered it. The tallest non-tower style stopped at
+   * 8 storeys (`commercial`, 28.8 m) and the next rung up was a curtain-wall
+   * tower whose own roll starts at 14 storeys (57 m), so the histogram jumped
+   * that gap: 128 buildings in 40–60 m against 8,384 under 20 m. A skyline with
+   * no shoulders is what makes the real landmarks read as spikes on a plain.
+   */
+  midrise: {
+    storeys: [10, 18], storeyH: 3.30, groundH: 5.00, bayW: 2.30,
+    walls: ['concrete', 'brick_brown', 'limestone', 'metal_panel'],
+    trim: 'trim_stone', roof: 'roof_gravel',
+    tone: [[0.92, 0.92, 0.90], [0.90, 0.84, 0.78], [1.00, 0.98, 0.94], [0.94, 0.95, 0.96]],
+    winKind: 2, winW: 1.66, winH: 2.20, sillH: 0.86, reveal: 0.24,
+    bow: 0, bay: 0, mansard: 0, stoop: 0, shop: 0.62, awning: 0.18,
+    cornice: 0.22, panelBands: true, balcony: 0.18, mech: true, chimneys: 0,
+    facStrip: 'fac_stone',
+  },
   /** Infill commercial blocks — the connective tissue of every downtown. */
   commercial: {
     storeys: [3, 8], storeyH: 3.45, groundH: 4.60, bayW: 2.60,
@@ -139,26 +163,58 @@ const STYLES = {
   },
 };
 
-/** District -> weighted style mix. This is what makes a Bostonian nod. */
+/**
+ * District -> weighted style mix. This is what makes a Bostonian nod.
+ *
+ * `midrise` is only in the mixes for districts that really have post-war
+ * mid-rise. The low brownstone neighbourhoods — Beacon Hill, the North End, the
+ * South End, Charlestown, South Boston — and the Back Bay grid deliberately do
+ * NOT get it: their ceilings are the point of them.
+ */
 const DISTRICT_MIX = {
   backBay:    [['brownstone', 0.74], ['southEnd', 0.10], ['commercial', 0.10], ['stoneTower', 0.06]],
   beaconHill: [['federal', 0.88], ['brownstone', 0.09], ['commercial', 0.03]],
   northEnd:   [['tenement', 0.86], ['federal', 0.07], ['commercial', 0.07]],
   southEnd:   [['southEnd', 0.80], ['brownstone', 0.12], ['commercial', 0.08]],
-  financial:  [['stoneTower', 0.40], ['glassTower', 0.28], ['commercial', 0.24], ['loft', 0.08]],
-  downtown:   [['commercial', 0.52], ['stoneTower', 0.22], ['loft', 0.14], ['glassTower', 0.12]],
-  seaport:    [['seaport', 0.62], ['glassTower', 0.16], ['loft', 0.22]],
-  fenway:     [['brownstone', 0.34], ['commercial', 0.34], ['tenement', 0.20], ['seaport', 0.12]],
+  financial:  [['stoneTower', 0.32], ['glassTower', 0.24], ['commercial', 0.16],
+               ['midrise', 0.22], ['loft', 0.06]],
+  downtown:   [['commercial', 0.44], ['stoneTower', 0.18], ['midrise', 0.14],
+               ['loft', 0.12], ['glassTower', 0.12]],
+  seaport:    [['seaport', 0.48], ['loft', 0.16], ['midrise', 0.22], ['glassTower', 0.14]],
+  fenway:     [['brownstone', 0.30], ['commercial', 0.28], ['tenement', 0.16],
+               ['midrise', 0.20], ['seaport', 0.06]],
   charlestown:[['tripleDecker', 0.46], ['federal', 0.28], ['tenement', 0.16], ['commercial', 0.10]],
-  cambridge:  [['commercial', 0.36], ['tripleDecker', 0.28], ['federal', 0.18], ['loft', 0.18]],
+  cambridge:  [['commercial', 0.32], ['tripleDecker', 0.24], ['federal', 0.16],
+               ['loft', 0.12], ['midrise', 0.20]],
   southBoston:[['tripleDecker', 0.52], ['tenement', 0.24], ['commercial', 0.24]],
-  chinatown:  [['tenement', 0.52], ['commercial', 0.34], ['loft', 0.14]],
-  westEnd:    [['commercial', 0.44], ['glassTower', 0.28], ['tenement', 0.28]],
+  chinatown:  [['tenement', 0.46], ['commercial', 0.30], ['loft', 0.14], ['midrise', 0.10]],
+  westEnd:    [['commercial', 0.38], ['glassTower', 0.24], ['tenement', 0.24], ['midrise', 0.14]],
   default:    [['commercial', 0.5], ['tenement', 0.3], ['federal', 0.2]],
 };
 
-function pickStyle(district, r) {
-  const mix = DISTRICT_MIX[district] || DISTRICT_MIX.default;
+/**
+ * Inside a tower cluster the neighbourhood's own mix stops applying.
+ *
+ * The Prudential Center and Copley Place sit in the same neighbourhood as the
+ * Marlborough Street brownstones, and no reading of that neighbourhood's style
+ * mix will ever produce them. The cluster is a geographic fact, so it overrides
+ * geographically — see `TOWER_CORES`.
+ */
+const TOWER_MIX = [
+  ['glassTower', 0.36], ['stoneTower', 0.28], ['midrise', 0.24], ['commercial', 0.12],
+];
+
+/**
+ * @param {string} district
+ * @param {function():number} r sequential RNG — consumed exactly once, whichever
+ *   mix wins, so adding the cluster override leaves every later roll unchanged
+ * @param {number} coreW 0..1 tower-cluster weight at this parcel
+ * @param {number} seed
+ */
+function pickStyle(district, r, coreW, seed) {
+  // Keyed, not sequential: the gate must not shift the roll below it.
+  const inCluster = coreW > 0 && hash2(seed | 0, 773) < coreW * coreW * 0.92;
+  const mix = inCluster ? TOWER_MIX : (DISTRICT_MIX[district] || DISTRICT_MIX.default);
   let t = r(), acc = 0;
   for (const [name, w] of mix) { acc += w; if (t <= acc) return name; }
   return mix[0][0];
@@ -189,14 +245,22 @@ function pickStyle(district, r) {
  * Prudential 229 m; if generic infill could reach them they would stop reading
  * as landmarks at all, which is the whole point of putting them in.
  *
- * `floor` only bites when the published envelope is *lower* than the district
- * could plausibly build. On the live parcel path it never does — the city only
- * ever emits the nine districts `RoadNetwork.ZONING` knows, and its numbers are
- * sane for all of them. It matters on the `Buildings.fallbackPlots` path, which
- * is the only source of `downtown`, `westEnd`, `chinatown` and `southBoston`.
+ * `floor` bites when the published envelope is *lower* than the district could
+ * plausibly build. Mostly that is the `Buildings.fallbackPlots` path, which is
+ * the only source of `downtown`, `westEnd`, `chinatown` and `southBoston`. Two
+ * live districts need it too, and both are marked below: `RoadNetwork.ZONING`
+ * reads Fenway at 45 m and Cambridge at 60 m, which describes the residential
+ * half of each and not Longwood's hospital blocks or Kendall Square. Raising
+ * `floor` there is what lets `midrise` exist in them at all; it cannot raise a
+ * style whose own storey roll already fits under the published number, so the
+ * brownstone and tenement fabric of both is untouched.
+ *
+ * The low districts have no `floor` above their published height and no
+ * `midrise` in their mix, which is what holds Beacon Hill, the North End, the
+ * South End and Charlestown where they belong.
  */
 const DISTRICT_HEIGHT = {
-  financial:   { floor:  60, cap: 188, tail: 3.9 },
+  financial:   { floor:  60, cap: 205, tail: 3.7 },
   downtown:    { floor:  40, cap: 126, tail: 4.3 },
   westEnd:     { floor:  32, cap: 104, tail: 4.3 },
   chinatown:   { floor:  24, cap:  76, tail: 4.1 },
@@ -205,36 +269,83 @@ const DISTRICT_HEIGHT = {
   northEnd:    { floor:  16, cap:  25, tail: 3.0 },
   southEnd:    { floor:  16, cap:  27, tail: 3.4 },
   seaport:     { floor:  24, cap: 104, tail: 3.4 },  // newest, so the flattest tail
-  fenway:      { floor:  16, cap:  48, tail: 3.6 },
+  // Kenmore, Fenway and the Longwood hospital blocks: the published 45 m zoning
+  // is the residential half of the district, and the institutional half is
+  // visibly taller. `floor` is what lets a mid-rise use the room.
+  fenway:      { floor:  56, cap:  76, tail: 3.6 },
   charlestown: { floor:  11, cap:  19, tail: 3.0 },
-  cambridge:   { floor:  18, cap:  68, tail: 3.8 },
+  cambridge:   { floor:  62, cap:  84, tail: 3.8 },   // Kendall Square is not low-rise
   southBoston: { floor:  11, cap:  23, tail: 3.2 },
   default:     { floor:  16, cap:  42, tail: 3.4 },
 };
 
 /**
- * Where Boston's height actually is. Towers are not spread evenly across a
- * zoning district — they pile into two tight clusters, and everything between
- * them is low. Without this the Financial District becomes a uniform plateau
- * instead of a massing with a peak.
+ * Where Boston's height actually is.
+ *
+ * Height in Boston is **geographic, not per-neighbourhood**. Towers pile into
+ * three tight clusters and everything between them is low, and two of those
+ * clusters sit inside neighbourhoods whose published zoned height is a
+ * rowhouse's: `RoadNetwork.ZONING` gives every Back Bay parcel 26 m, which is
+ * right for Marlborough Street and absurd 300 m away at the Prudential Center.
+ * The old code took that flat number as a hard ceiling, which is why Back Bay
+ * came out 2,499 buildings with a 33.6 m ceiling standing under the site of the
+ * city's two tallest towers.
+ *
+ * So a cluster carries its own ceiling (`cap`), its own tail exponent and — for
+ * the two Back Bay ones — a `merge` radius, inside which `Buildings` fuses
+ * rowhouse lots into superblocks big enough to stand a tower on. That is not a
+ * cheat: Copley Place and the Prudential Center really were assembled out of
+ * Back Bay house lots in the 1960s.
+ *
+ * Every `cap` stays under the landmark it surrounds, because a landmark that
+ * generic infill can match stops being a landmark: 200 Clarendon is 241 m, the
+ * Prudential 229 m, One Dalton 226 m and Millennium Tower 208 m.
  */
 const TOWER_CORES = [
-  { lat: 42.3563, lon: -71.0565, r: 470 },   // Financial District
-  { lat: 42.3480, lon: -71.0790, r: 400 },   // Back Bay: Hancock / Prudential
+  // Financial District. Millennium Tower 208 m, One Post Office Square 183 m.
+  { lat: 42.35630, lon: -71.05650, r: 600, cap: 205, tail: 3.7, merge: 0 },
+  // 200 Clarendon / Copley Square. Copley Place and the Westin are the ~110 m
+  // shoulder under the 241 m landmark.
+  { lat: 42.34894, lon: -71.07485, r: 280, cap: 186, tail: 3.9, merge: 178 },
+  // Prudential Center / One Dalton. 111 Huntington 168 m, 101 Huntington 152 m.
+  { lat: 42.34672, lon: -71.08238, r: 300, cap: 196, tail: 3.9, merge: 185 },
 ];
 const _cores = TOWER_CORES.map((c) => {
   const p = geo(c.lat, c.lon);
-  return { x: p.x, z: p.z, r: c.r };
+  return { x: p.x, z: p.z, r: c.r, cap: c.cap, tail: c.tail, merge: c.merge };
 });
 
-/** 1 at the centre of the nearest tower cluster, 0 once you are outside it. */
-function coreWeight(cx, cz) {
-  let best = 0;
+/** Reused by `towerCoreAt` — resolved at init only, never inside `update()`. */
+const _coreHit = { w: 0, cap: 0, tail: 0, merge: 0, dist: Infinity };
+
+/**
+ * The tower cluster covering a point, as a plateau rather than a cone.
+ *
+ * A cone (the old `1 - d/r`) peaks on a single parcel, so the cluster's ceiling
+ * was reachable nowhere and the whole downtown sat on the slope: nothing
+ * procedural exceeded 162.5 m against a 188 m cap. A real downtown is tall
+ * across its whole core and then falls off at the edge, so `w` holds 1 over the
+ * inner 48% and eases to 0 at the rim. The plateau's width is what sets how
+ * many parcels can reach the top of the draw at all — at 38% only 45 parcels in
+ * the whole Financial District could, and the 165-225 m register stayed empty.
+ *
+ * @returns {{w:number, cap:number, tail:number, merge:number, dist:number}}
+ *   a SHARED object — read it, do not keep it.
+ */
+function towerCoreAt(cx, cz) {
+  _coreHit.w = 0; _coreHit.cap = 0; _coreHit.tail = 0;
+  _coreHit.merge = 0; _coreHit.dist = Infinity;
   for (const c of _cores) {
-    const t = 1 - Math.hypot(cx - c.x, cz - c.z) / c.r;
-    if (t > best) best = t;
+    const d = Math.hypot(cx - c.x, cz - c.z);
+    const t = Math.min(1, (c.r - d) / (c.r * 0.52));
+    if (t > _coreHit.w) {
+      _coreHit.w = t; _coreHit.cap = c.cap; _coreHit.tail = c.tail;
+      _coreHit.merge = c.merge; _coreHit.dist = d;
+    }
   }
-  return best > 0 ? best : 0;
+  // `w` starts at 0 and only a positive `t` can beat it, so a point outside
+  // every cluster comes back `{ w: 0, merge: 0 }` and nothing downstream fires.
+  return _coreHit;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -422,7 +533,12 @@ export function makeSpec(plot, baseY, seed) {
   if (area < 22) return null;
 
   const district = plot.district || 'downtown';
-  let styleName = plot.style || pickStyle(district, r);
+  // Resolved once, up here, because it decides the style AND the envelope. The
+  // centroid of the ring is the parcel's own position, not the block's.
+  const cen = polyCentroid(poly);
+  const hit = towerCoreAt(cen.x, cen.z);
+  const core = hit.w, coreCap = hit.cap, coreTail = hit.tail;
+  let styleName = plot.style || pickStyle(district, r, core, seed);
   const S = STYLES[styleName] || STYLES.commercial;
 
   // Storeys.
@@ -434,24 +550,62 @@ export function makeSpec(plot, baseY, seed) {
   // The envelope. `plot.maxHeight` is a hint, not truth — see DISTRICT_HEIGHT
   // for why it cannot be trusted on its own — so bracket it by what the
   // district is really allowed to do.
+  //
+  // …and then take the greater of that and what the *cluster* allows. A flat
+  // per-district zoned height is a ceiling for the neighbourhood's fabric, and
+  // the fabric is not what a tower cluster is made of. `min(HP.cap, …)` binds
+  // only the district term; the cluster term is deliberately outside it, or
+  // Back Bay's 62 m district cap would clip the Prudential Center back down to
+  // a brownstone block again.
   const HP = DISTRICT_HEIGHT[district] || DISTRICT_HEIGHT.default;
-  const envelope = Math.min(HP.cap, Math.max(plot.maxHeight || 0, HP.floor));
+  const zoned = Math.min(HP.cap, Math.max(plot.maxHeight || 0, HP.floor));
+  const envelope = core > 0
+    ? Math.max(zoned, HP.floor + (coreCap - HP.floor) * core)
+    : zoned;
   const fit = Math.max(2, Math.floor((envelope - groundH) / storeyH) + 1);
   storeys = Math.max(2, Math.min(storeys, fit));
 
   if (S.setbacks || S.curtain) {
-    // Most parcels zoned for height never use it. Draw the tower's share of its
-    // envelope from a power law so the mass sits low and the tail is genuinely
-    // rare, then gate it on the two things that decide height in a real city:
-    // how much land the parcel has, and how close it is to the tower cluster.
-    // The previous `max(storeys, floor(fit * 0.62))` gave every tower the same
-    // fraction of the same flat number, which is what welded the skyline shut.
-    const c = polyCentroid(poly);
+    // Most parcels zoned for height never use it. Draw the tower's share from a
+    // power law so the mass sits low and the tail is genuinely rare, gated on the
+    // two things that decide height in a real city: how much land the parcel has,
+    // and how close it is to the tower cluster.
+    //
+    // What the draw is stretched BETWEEN is the part that took three passes to
+    // get right. It used to run `2 .. fit`, i.e. from a two-storey shed to the
+    // whole envelope, and was then `max()`ed against the style's own uniform
+    // 14–40 storey roll. The uniform roll therefore won almost every time, the
+    // power law only ever contributed a rare topper on top of it, and reaching
+    // the envelope needed `u`, `land` and `core` ALL at 1 — three independent
+    // near-misses, so it never happened: nothing procedural passed 162.5 m
+    // against a 188 m cap, for three critic passes running.
+    //
+    // Draw between the style's own floor and a ceiling that follows the
+    // envelope instead. A curtain wall's 14–40 storeys is written for a
+    // mid-block site; on a full-block parcel in the middle of a cluster the top
+    // of that range is the envelope, and on a scrap of land at the edge of one
+    // it stays 40. `max()` with the uniform roll is kept, so the mid-band that
+    // is already right does not move — this only adds the top.
     const u = hash2(seed | 0, 991);
-    const land = Math.min(1, Math.max(0, (area - 300) / 900));
-    const core = coreWeight(c.x, c.z);
-    const t = Math.pow(u, HP.tail) * (0.26 + 0.74 * land) * (0.34 + 0.66 * core);
-    storeys = Math.max(storeys, Math.round(2 + (fit - 2) * t));
+    // `land = 1` at ~1040 m2, which is the Financial District's median parcel:
+    // the threshold has to be inside the distribution it gates or the top of the
+    // draw is unreachable for all but a handful of sites.
+    const land = Math.min(1, Math.max(0, (area - 280) / 760));
+    // Inside a cluster the cluster's own exponent applies, blended in by weight,
+    // so a Back Bay superblock is not drawn against the brownstone grid's tail.
+    const tail = core > 0 ? HP.tail + (coreTail - HP.tail) * core : HP.tail;
+    // Land dominates and the cluster modulates. The cluster term used to bottom
+    // out at 0.34, which held the top of the draw at 44 storeys for the 97 of 218
+    // Financial District tower parcels that fall outside the cluster radius at
+    // all — so almost the whole district was structurally incapable of the
+    // register above 165 m no matter what the cap said.
+    const reach = (0.20 + 0.80 * land) * (0.52 + 0.48 * core);
+    // `lo` collapses to `fit` on a parcel the envelope cannot even fit the
+    // style's minimum into, so a low district can never be raised from here.
+    const lo = Math.min(S.storeys[0], fit);
+    const top = Math.max(lo, Math.min(fit,
+      Math.round(S.storeys[1] + (fit - S.storeys[1]) * reach)));
+    storeys = Math.max(storeys, lo + Math.round((top - lo) * Math.pow(u, tail)));
   }
   // A parcel too small for a tower gets a mid-rise instead of a pencil.
   if ((S.setbacks || S.curtain) && area < 420) {
@@ -544,6 +698,7 @@ export function makeSpec(plot, baseY, seed) {
 
   const spec = {
     poly, base: baseY, style: styleName, S: St, setbackJit,
+    district, core,
     storeys, storeyH, groundH, h, area, seed,
     wallSurf, wallCol, trimSurf: St.trim,
     trimCol: [0.98 + r() * 0.06, 0.97 + r() * 0.05, 0.94 + r() * 0.06],
@@ -2112,4 +2267,4 @@ function buildShell(spec, mb) {
   }
 }
 
-export { STYLES, DISTRICT_MIX };
+export { STYLES, DISTRICT_MIX, DISTRICT_HEIGHT, TOWER_CORES, towerCoreAt };

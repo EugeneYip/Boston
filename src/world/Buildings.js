@@ -5,7 +5,7 @@ import {
   makeOpaqueMaterial, makeGlassMaterial,
   MeshBuf, GlassBuf, rng, hash2, polyCentroid,
 } from './BuildingKit.js';
-import { makeSpec, buildBuilding } from './Facades.js';
+import { makeSpec, buildBuilding, towerCoreAt } from './Facades.js';
 import { corridorHalf } from './RoadNetwork.js';
 import { isReserved } from '../data/landmarks.js';
 
@@ -263,6 +263,42 @@ function clipHalfPlane(poly, nx, nz, c) {
   }
   return { poly: out, cut };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Tower superblocks                                                          */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Under the Prudential and 200 Clarendon, every parcel the city publishes is a
+ * Back Bay house lot: measured, the largest parcel within 300 m of either tower
+ * is 297 m² and the median is 233 m². `RoadNetwork.ZONING` subdivides the whole
+ * neighbourhood at `w: 8.2` because that is right for Marlborough Street, and
+ * `Facades.makeSpec` demotes anything under 420 m² to a mid-rise on the grounds
+ * that a tower on a 8 x 30 m lot is a pencil, not a building. Both rules are
+ * correct, and between them no height policy of any kind could have put a tower
+ * in Back Bay — which is why the district came out 2,499 buildings with a
+ * 33.6 m ceiling for three critic passes running.
+ *
+ * So assemble the land first. Runs of adjacent lots along one frontage are
+ * fused into a superblock, and only inside the cluster radii in `TOWER_CORES`.
+ * This is what actually happened: Copley Place, the Prudential Center and the
+ * Christian Science plaza were all cleared out of Back Bay house lots between
+ * 1959 and 1983, and the surviving rowhouse streets a block away are why the
+ * merge radius is 178-185 m and not the whole 280-300 m cluster.
+ *
+ * The merged ring is a strict subset of the union of its parts — the lots must
+ * be collinear along the frontage and the run takes the SHALLOWEST depth in it —
+ * so nothing here can reach ground that a published parcel did not already own,
+ * and the road-corridor clip below still runs on the result regardless.
+ */
+const SB_MIN_W = 34;      // m of frontage: under this it is a wide house, not a block
+const SB_MAX_W = 82;
+const SB_MAX_LOTS = 14;
+const SB_LOT_AREA = 700;  // per lot; leaves the Financial District's real parcels alone
+const SB_COLLINEAR = 0.9995;
+
+/** Endpoint identity key, to the centimetre. Init-time only. */
+const ptKey = (q) => `${Math.round(q.x * 100)}_${Math.round(q.z * 100)}`;
 
 /** Twice the signed area of an XZ ring. */
 function polyArea2(poly) {
@@ -531,7 +567,7 @@ export default class Buildings {
     this._covered = new Set();
     /** @type {?{cells:Map<number,number[]>, segs:Array, cell:number, seen:Set<number>}} */
     this._roadIndex = null;
-    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0 };
+    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0, superblocks: 0 };
     // Teleport catch-up. Plain numbers, not a vector: update() must not allocate.
     this._lastCamX = NaN;
     this._lastCamZ = NaN;
@@ -583,7 +619,8 @@ export default class Buildings {
     console.info(`[buildings] ${this.specs.length} buildings, ` +
       `${this.sectors.size} shell sectors, ${(ms | 0)}ms` +
       ` (road corridor: ${cs.clipped} reshaped, ${cs.dropped} dropped,` +
-      ` ${cs.trimmed} stoops fitted to the pavement)` +
+      ` ${cs.trimmed} stoops fitted to the pavement;` +
+      ` ${cs.superblocks || 0} tower superblocks)` +
       (this._usedFallback ? ' (fallback parcels — city.plots not published)' : ''));
   }
 
@@ -601,6 +638,41 @@ export default class Buildings {
       this._usedFallback = true;
     }
     this._indexRoads(city);
+    // `districtAt` is nullable BY CONTRACT and in two distinct ways — outside the
+    // baked raster, and inside it on ground no neighbourhood claims (41% of
+    // cells). `_districtOf` below is the only place that decides what to do
+    // about that, and it never invents an answer it does not have.
+    this._districtAt = (typeof city?.districtAt === 'function')
+      ? (x, z) => city.districtAt(x, z)
+      : (typeof city?.districts?.districtAt === 'function')
+        ? (x, z) => city.districts.districtAt(x, z)
+        : null;
+  }
+
+  /**
+   * Which neighbourhood's rules a parcel is really built under.
+   *
+   * `RoadNetwork.buildPlots` stamps the district of the **midpoint of the whole
+   * frontage line** onto every lot subdivided from it, and a road runs from the
+   * middle of one junction to the middle of the next, so a street on a boundary
+   * hands one neighbourhood's zoning to lots standing in another. Measured: 30
+   * South End lots carrying Financial District zoning, which is where the South
+   * End's 150.6 m ceiling came from, plus 52 unzoned lots standing in Beacon
+   * Hill. The parcel's own centroid is a strictly better probe than a point up
+   * to 200 m away.
+   *
+   * Order of preference, and each step is deliberate:
+   *   1. the raster at the parcel's own centroid, when it names a buildable
+   *      neighbourhood — `park` and `water` are answers about ground, not about
+   *      what may be built on it, and a parcel already survived those tests;
+   *   2. what the city published, which at worst is a neighbouring street's;
+   *   3. `null`, and `makeSpec` spells its own default. Not resolved here: a
+   *      fallback hidden in a shared helper makes every caller wrong at once.
+   */
+  _districtOf(plot, cx, cz) {
+    const g = this._districtAt ? this._districtAt(cx, cz) : null;
+    if (g && g !== 'park' && g !== 'water') return g;
+    return plot.district ?? null;
   }
 
   /**
@@ -806,13 +878,149 @@ export default class Buildings {
     return { ...plot, polygon: poly, frontDirs: plot.frontDirs || dirs };
   }
 
+  /**
+   * Fuse rowhouse lots into tower superblocks inside the Back Bay clusters.
+   *
+   * Returns a NEW array in the input's order — `RoadNetwork.buildPlots` sorts by
+   * distance from the centre and `MAX_BUILDINGS` is a count cap, so re-ordering
+   * here would silently become a radius cap. A lot that is not merged is passed
+   * through by reference and keeps its `id`, so its seed, and therefore every
+   * roll in its spec, is bit-for-bit what it was before.
+   *
+   * The city's own parcels are never mutated: props, traffic and the minimap
+   * read the same array.
+   * @returns {Array<object>}
+   */
+  _superblocks(plots) {
+    // Pass 1 — which lots are even candidates, bucketed by the frontage they sit on.
+    const runs = new Map();
+    for (const p of plots) {
+      if (!p?.polygon || p.polygon.length !== 4 || !Number.isFinite(p.edgeId)) continue;
+      if (!p.frontage?.a || !p.frontage?.b || !(p.depth > 6)) continue;
+      const c = polyCentroid(p.polygon);
+      const hit = towerCoreAt(c.x, c.z);
+      if (!(hit.merge > 0) || !(hit.dist < hit.merge)) continue;
+      if (Math.abs(polyArea2(p.polygon)) * 0.5 > SB_LOT_AREA) continue;
+      const k = p.edgeId * 2 + (p.side > 0 ? 1 : 0);
+      let arr = runs.get(k); if (!arr) runs.set(k, arr = []);
+      arr.push(p);
+    }
+    if (!runs.size) return plots;
+
+    // Pass 2 — chain each frontage by exact endpoint identity rather than by
+    // emission order, then walk it accumulating compatible lots.
+    /** @type {Map<object, ?object>} lot -> merged plot, or null if consumed */
+    const fused = new Map();
+    let made = 0;
+    for (const list of runs.values()) {
+      const byStart = new Map(), isTail = new Set();
+      for (const p of list) { byStart.set(ptKey(p.frontage.a), p); isTail.add(ptKey(p.frontage.b)); }
+      const seen = new Set();
+      for (const head of list) {
+        if (isTail.has(ptKey(head.frontage.a)) || seen.has(head)) continue;
+        let run = [], acc = 0, want = 0;
+        const flush = () => {
+          const m = run.length >= 2 && acc >= SB_MIN_W ? this._fuse(run) : null;
+          if (m) {
+            fused.set(run[0], m);
+            for (let i = 1; i < run.length; i++) fused.set(run[i], null);
+            made++;
+          }
+          run = []; acc = 0;
+        };
+        for (let p = head; p && !seen.has(p); p = byStart.get(ptKey(p.frontage.b))) {
+          seen.add(p);
+          if (run.length) {
+            const compat = this._sbCompatible(run, p) &&
+              acc + p.width <= SB_MAX_W && run.length < SB_MAX_LOTS;
+            if (!compat) flush();
+          }
+          if (!run.length) {
+            // One target width per run, so the block sizes are not all identical.
+            want = SB_MIN_W + hash2(Math.round(p.frontage.a.x) | 0,
+                                    Math.round(p.frontage.a.z) | 0) * (SB_MAX_W - SB_MIN_W);
+          }
+          run.push(p); acc += p.width;
+          if (acc >= want) flush();
+        }
+        flush();
+      }
+    }
+    if (!made) return plots;
+
+    const out = [];
+    for (const p of plots) {
+      if (!fused.has(p)) { out.push(p); continue; }
+      const m = fused.get(p);
+      if (m) out.push(m);
+    }
+    this._clipStats.superblocks = made;
+    return out;
+  }
+
+  /** May `p` join this run? Collinear frontage and comparable depth, or no. */
+  _sbCompatible(run, p) {
+    const a = run[0].frontage, b = p.frontage;
+    const ax = a.b.x - a.a.x, az = a.b.z - a.a.z;
+    const bx = b.b.x - b.a.x, bz = b.b.z - b.a.z;
+    const la = Math.hypot(ax, az) || 1, lb = Math.hypot(bx, bz) || 1;
+    if ((ax * bx + az * bz) / (la * lb) < SB_COLLINEAR) return false;
+    let lo = Infinity, hi = 0;
+    for (const q of run) { if (q.depth < lo) lo = q.depth; if (q.depth > hi) hi = q.depth; }
+    if (p.depth < lo) lo = p.depth; if (p.depth > hi) hi = p.depth;
+    return hi <= lo * 1.30;
+  }
+
+  /**
+   * One superblock out of a run of lots.
+   *
+   * `depth` is the run's minimum and the frontage is collinear, so the emitted
+   * quad lies inside the union of the source parcels — it cannot reach land the
+   * city did not already sell, and in particular cannot reach a road corridor
+   * that every source parcel was already clear of.
+   * @returns {?object} a plot in the `city.plots` shape
+   */
+  _fuse(run) {
+    const first = run[0], last = run[run.length - 1];
+    const a = first.frontage.a, b = last.frontage.b;
+    // Outward is taken from the parcel itself: polygon is [p0, p1, q1, q0] with
+    // q0 = p0 + outward * depth.
+    const ox = first.polygon[3].x - first.polygon[0].x;
+    const oz = first.polygon[3].z - first.polygon[0].z;
+    const ol = Math.hypot(ox, oz);
+    if (ol < 1e-6) return null;
+    let depth = Infinity, y = 0, maxH = 0;
+    const votes = new Map();
+    for (const p of run) {
+      if (p.depth < depth) depth = p.depth;
+      y += Number.isFinite(p.y) ? p.y : 0;
+      if ((p.maxHeight || 0) > maxH) maxH = p.maxHeight || 0;
+      if (p.district) votes.set(p.district, (votes.get(p.district) || 0) + 1);
+    }
+    if (!(depth > 6)) return null;
+    const dx = (ox / ol) * depth, dz = (oz / ol) * depth;
+    let district = first.district ?? null, best = 0;
+    for (const [k, v] of votes) if (v > best) { best = v; district = k; }
+    return {
+      id: first.id,
+      polygon: [{ x: a.x, z: a.z }, { x: b.x, z: b.z },
+                { x: b.x + dx, z: b.z + dz }, { x: a.x + dx, z: a.z + dz }],
+      district, zoning: 'tower', maxHeight: maxH,
+      frontage: { a: { x: a.x, z: a.z }, b: { x: b.x, z: b.z } },
+      width: Math.hypot(b.x - a.x, b.z - a.z), depth,
+      edgeId: first.edgeId, side: first.side,
+      y: y / run.length,
+    };
+  }
+
   _buildSpecs() {
     const specs = [];
-    const n = Math.min(this.plots.length, MAX_BUILDINGS);
+    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0, superblocks: 0 };
+    const parcels = this._superblocks(this.plots);
+    const n = Math.min(parcels.length, MAX_BUILDINGS);
     let clipped = 0, dropped = 0;
-    this._clipStats = { clipped: 0, dropped: 0, trimmed: 0 };
     for (let i = 0; i < n; i++) {
-      const plot = this.plots[i];
+      const plot = parcels[i];
       if (!plot?.polygon || plot.polygon.length < 3) continue;
       const cut = this._clipParcel(plot.polygon);
       if (!cut) { dropped++; continue; }
@@ -827,7 +1035,9 @@ export default class Buildings {
       const base = g - 0.25;
       if (!Number.isFinite(base)) continue;
       const src = this._respec(plot, poly, cut.cutDirs);
-      const spec = makeSpec(src, base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
+      const dist = this._districtOf(plot, c.x, c.z);
+      const spec = makeSpec(dist === src.district ? src : { ...src, district: dist },
+        base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
       if (!spec) continue;
       this._fitOrnament(spec);
       spec.cx = c.x; spec.cz = c.z;
