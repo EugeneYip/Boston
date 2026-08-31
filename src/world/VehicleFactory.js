@@ -142,17 +142,44 @@ export default class VehicleFactory {
     const spec = this.specs[type] || this.specs.sedan;
     const color = opts.color ?? pickColor(spec);
     const visual = buildVehicleVisual(spec.type, {
-      kit: this.kit, color, lighting: this.lighting,
-      castShadow: opts.castShadow !== false,
+      kit: this.kit, color, castShadow: opts.castShadow !== false,
     });
+    const y = (pos.y ?? 0) + 0.05;
     const v = new Vehicle(this.ctx, spec, {
-      position: { x: pos.x, y: (pos.y ?? 0) + 0.05, z: pos.z },
+      position: { x: pos.x, y, z: pos.z },
       heading, visual, color, ai: !!opts.ai,
     });
     v.factory = this;
     this.group.add(visual.root);
+    // Place the root before registering: `registerVehicleLights` samples the
+    // anchors' world matrices, and `Vehicle` does not move the visual until its
+    // first update(), so registering here on an unplaced root would put a frame
+    // of headlight pool at the world origin.
+    visual.root.position.set(pos.x, y, pos.z);
+    visual.root.rotation.y = heading;
+    visual.lightRig = this._buildLightRig(visual, spec.type);
     this.list.push(v);
     return v;
+  }
+
+  /**
+   * A headlight/tail-lamp rig sized to this body, or null if the lighting agent
+   * is absent. Owned by the visual, which releases it in `VehicleVisual.dispose()`
+   * — so every teardown path frees the slots, not just `despawn()`.
+   */
+  _buildLightRig(visual, type) {
+    if (!this.lighting?.registerVehicleLights) return null;
+    try {
+      const a = getVehicleGeometry(type).anchors;
+      if (!a.head.length && !a.tail.length) return null;
+      return this.lighting.registerVehicleLights(visual.root, {
+        front: a.head.map(p => [p.x, p.y, p.z]),
+        rear: a.tail.map(p => [p.x, p.y, p.z]),
+      });
+    } catch (err) {
+      console.warn('[vehicles] light rig failed for', type, err);
+      return null;
+    }
   }
 
   /** @param {Vehicle} v */

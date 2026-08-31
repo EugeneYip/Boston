@@ -404,35 +404,75 @@ export default class Lighting {
    * Attach a matched headlight/tail-light rig to a vehicle. The Vehicle agent owns
    * `Vehicle.headlightsOn`; call `rig.setEnabled(v.headlightsOn)` when it changes,
    * or leave it alone and the lights follow the world clock.
+   *
+   * `root` must already be at the vehicle's transform: registration samples the
+   * anchors' world matrices, so a rig built on an unplaced root spends its first
+   * frame throwing a headlight pool wherever that root happened to be.
+   *
+   * The setters are latched, so driving them from a per-frame loop is free.
+   * **The caller MUST call `rig.release()` when the vehicle goes away** — the slot,
+   * pool and halo arrays are fixed at 6000/6000/8000 and a rig that is dropped
+   * rather than released holds its four of them forever.
    * @param {THREE.Object3D} root vehicle mesh; lamps are placed in its local space
+   * @param {{front?:number[][], rear?:number[][], range?:number}} [opts] lamp
+   *        positions in `root`'s local space; defaults are sedan-shaped, so a bus
+   *        or a truck should pass its own (`getVehicleGeometry(t).anchors`).
    */
   registerVehicleLights(root, { front = [[-0.68, 0.62, -2.05], [0.68, 0.62, -2.05]],
     rear = [[-0.7, 0.72, 2.2], [0.7, 0.72, 2.2]], range = 46 } = {}) {
     const rig = { heads: [], tails: [], nodes: [] };
-    for (const p of front) {
+    // A lamp never moves in the car's frame, so its local matrix is composed once
+    // and then frozen. `LightManager._refreshDynamic` calls `updateWorldMatrix` on
+    // every anchor every frame; with a city's worth of traffic that is ~500 needless
+    // position/quaternion/scale composes a frame, and this removes all of them.
+    const anchor = (p) => {
       const n = new THREE.Object3D();
       n.position.set(p[0], p[1], p[2]);
-      root.add(n); rig.nodes.push(n);
+      root.add(n);
+      n.updateMatrix();
+      n.matrixAutoUpdate = false;
+      rig.nodes.push(n);
+      return n;
+    };
+    for (const p of front) {
+      const n = anchor(p);
       rig.heads.push(this.manager.register(n, {
         type: 'headlight', color: '#f4f2ff', range, intensity: 62,
         poolRadius: 3.4, poolLength: 16, haloSize: 0.28, dynamic: true, cone: 0.55,
       }));
     }
     for (const p of rear) {
-      const n = new THREE.Object3D();
-      n.position.set(p[0], p[1], p[2]);
-      root.add(n); rig.nodes.push(n);
+      const n = anchor(p);
       rig.tails.push(this.manager.register(n, {
         type: 'tail', color: '#ff2410', range: 9, intensity: 7,
         poolRadius: 0, haloSize: 0.22, dynamic: true,
       }));
     }
-    rig.setEnabled = (on) => { for (const h of rig.heads) h.setEnabled(on); };
-    rig.setBraking = (on) => { for (const t of rig.tails) t.setIntensity(on ? 22 : 7); };
+    // Latched, because every setter writes an instance colour and flags the whole
+    // pool/glow buffer for re-upload. The natural caller is a per-frame presentation
+    // loop over every car in the city, so a setter that did the write unconditionally
+    // would dirty both buffers on every frame regardless of whether anything changed.
+    let heads = null, tails = null, braking = null;
+    rig.setEnabled = (on) => {
+      if (on === heads) return;
+      heads = on;
+      for (const h of rig.heads) h.setEnabled(on);
+    };
+    rig.setTailEnabled = (on) => {
+      if (on === tails) return;
+      tails = on;
+      for (const t of rig.tails) t.setEnabled(on);
+    };
+    rig.setBraking = (on) => {
+      if (on === braking) return;
+      braking = on;
+      for (const t of rig.tails) t.setIntensity(on ? 22 : 7);
+    };
     rig.release = () => {
       for (const h of rig.heads) h.release();
       for (const t of rig.tails) t.release();
       for (const n of rig.nodes) n.parent?.remove(n);
+      rig.heads.length = 0; rig.tails.length = 0; rig.nodes.length = 0;
     };
     return rig;
   }

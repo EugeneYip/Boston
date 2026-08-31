@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import Navigation, { MutablePath, Grid, Rng, GREEN, YELLOW, RED } from './Navigation.js';
 import {
   VEHICLE_TYPES, VEHICLE_SPECS, createMaterialKit, buildVehicleVisual, getShellGeometry,
+  getVehicleGeometry,
 } from '../world/VehicleModels.js';
 
 /**
@@ -164,6 +165,9 @@ class Car {
     this.claimedNode = -1;
     this.stuck = 0; this.age = 0; this.dist2 = 0;
     this.visual = null; this.lod = 2;
+    /** Bare transform carrying this car's lamps; see `Traffic._syncLights`. */
+    this.lightRoot = null;
+    this.rig = null;
     this.laneChange = 0;
     this.decideIn = 0;
     this.noise = 0;
@@ -187,6 +191,7 @@ export default class Traffic {
     this._order = [];
     this._pools = new Map();
     this._visualFree = new Map();
+    this._lampRigs = new Map();
     this._streamT = 0;
     this._lodT = 99;
     this._rng = new Rng(0xc0ffee);
@@ -274,17 +279,32 @@ export default class Traffic {
       } catch (err) { console.warn('[traffic] no shell geometry for', t, err); }
       this._visualFree.set(t, []);
     }
+
+    // Lamp positions per body, in model space, for `registerVehicleLights`. Its
+    // defaults are sedan-shaped: a bus would get its headlights four metres inside
+    // itself, at z = -2.05 against a real -6.04. The geometry already knows where
+    // the lenses are, and it is cached by the loop above, so read them from there.
+    if (this.lighting?.registerVehicleLights) {
+      for (const t of VEHICLE_TYPES) {
+        try {
+          const a = getVehicleGeometry(t).anchors;
+          if (!a.head.length && !a.tail.length) continue;
+          this._lampRigs.set(t, {
+            front: a.head.map(p => [p.x, p.y, p.z]),
+            rear: a.tail.map(p => [p.x, p.y, p.z]),
+          });
+        } catch (err) { console.warn('[traffic] no lamp anchors for', t, err); }
+      }
+    }
   }
 
   /** Grab (or build) an articulated visual of `type`. Pool never shrinks. */
-  _claimVisual(type, wantLights) {
+  _claimVisual(type) {
     const free = this._visualFree.get(type);
     if (free && free.length) { const v = free.pop(); v.root.visible = true; return v; }
     try {
       const v = buildVehicleVisual(type, {
-        kit: this.kit, color: 0xffffff,
-        lighting: wantLights ? this.lighting : null,
-        castShadow: true,
+        kit: this.kit, color: 0xffffff, castShadow: true,
       });
       this.group.add(v.root);
       return v;
@@ -300,6 +320,51 @@ export default class Traffic {
     this._visualFree.get(car.type)?.push(car.visual);
     car.visual = null;
     car.lod = 2;
+  }
+
+  /**
+   * Keep a car's headlights and tail lamps on the car, and their state in step
+   * with its driver.
+   *
+   * The rig hangs off a bare `Object3D` rather than off the articulated visual,
+   * which is the whole point: at 22:00 every one of the ~88 live cars has its
+   * headlights on, but at most ten of them have a visual and most frames have
+   * none at all within the 82 m detail radius. Registering through the visual
+   * therefore lit nothing — the critic's "cars are pale polystyrene" was cars
+   * emitting no light. Registered per car, the ninety per cent drawn as instanced
+   * shells still throw a pool and a halo, which is what a night street is made of.
+   *
+   * Registration happens here, from the presentation pass, rather than in
+   * `_spawnOne`: `register()` samples the anchors' world matrices, and a car that
+   * has just been recycled out of `_free` has not been placed yet, so a rig built
+   * at spawn spends its first frame lighting the road where the car last died.
+   *
+   * @param {Car} c
+   * @param {THREE.Quaternion} quat the body orientation already solved by `_present`
+   */
+  _syncLights(c, quat) {
+    const lamps = this._lampRigs.get(c.type);
+    if (!lamps) return;
+    const root = c.lightRoot || (c.lightRoot = new THREE.Object3D());
+    root.position.set(c.x, c.y + c.bob, c.z);
+    root.quaternion.copy(quat);
+    if (!c.rig) {
+      if (root.parent !== this.group) this.group.add(root);
+      root.updateWorldMatrix(true, false);
+      c.rig = this.lighting.registerVehicleLights(root, lamps);
+    }
+    // Latched setters — see `Lighting.registerVehicleLights`. Calling them every
+    // frame for every car costs nothing until one of them actually changes.
+    c.rig.setEnabled(c.headlightsOn);
+    c.rig.setTailEnabled(c.headlightsOn || c.brakeLightOn);
+    c.rig.setBraking(c.brakeLightOn);
+  }
+
+  /** Hand the rig's four LightManager slots back. Recycling a car without this
+   *  leaks them: the slot, pool and halo arrays are fixed at 6000/6000/8000. */
+  _detachLights(car) {
+    if (car.rig) { car.rig.release(); car.rig = null; }
+    car.lightRoot?.parent?.remove(car.lightRoot);
   }
 
   // -- contract --------------------------------------------------------------
@@ -437,6 +502,7 @@ export default class Traffic {
     car.active = false;
     if (car.claimedNode >= 0) { this.nav.release(car.claimedNode, car.id); car.claimedNode = -1; }
     this._releaseVisual(car);
+    this._detachLights(car);
     const i = this.vehicles.indexOf(car);
     if (i >= 0) this.vehicles.splice(i, 1);
     this._free.push(car);
@@ -468,6 +534,10 @@ export default class Traffic {
     } catch (err) {
       this.ready = false;
       if (this.group) this.group.visible = false;
+      // The lamps are LightManager proxies, not children of `this.group`, so
+      // hiding the group would otherwise leave a fleet of invisible cars still
+      // throwing headlight pools down the street.
+      for (const c of this.cars) this._detachLights(c);
       console.error('[traffic] disabled after an error in update():', err);
     }
   }
@@ -898,7 +968,7 @@ export default class Traffic {
         }
         if (want === 2) { if (c.visual) this._releaseVisual(c); c.lod = 2; continue; }
         if (!c.visual) {
-          c.visual = this._claimVisual(c.type, want === 0);
+          c.visual = this._claimVisual(c.type);
           if (!c.visual) { c.lod = 2; continue; }
           c.visual.setPaint?.(c.color);
           c.lod = -1;
@@ -911,6 +981,7 @@ export default class Traffic {
       const c = list[i];
       _e.set(c.pitch, c.rotY, c.roll);
       _q.setFromEuler(_e);
+      this._syncLights(c, _q);
       if (c.visual) {
         const r = c.visual.root;
         r.position.set(c.x, c.y + c.bob, c.z);
@@ -939,6 +1010,7 @@ export default class Traffic {
   dispose() {
     this.ctx?.bus.off?.('player:wanted', this._onWanted);
     for (const c of this.cars) {
+      this._detachLights(c);
       if (c.visual) { c.visual.dispose(); c.visual = null; }
     }
     for (const arr of this._visualFree.values()) for (const v of arr) v.dispose();

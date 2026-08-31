@@ -1846,7 +1846,7 @@ const SIREN_PATTERN = [
 export class VehicleVisual {
   /**
    * @param {string} type
-   * @param {object} opts { kit, color, lighting, castShadow }
+   * @param {object} opts { kit, color, castShadow }
    */
   constructor(type, opts = {}) {
     const geo = getVehicleGeometry(type);
@@ -1992,22 +1992,15 @@ export class VehicleVisual {
       this.wheelRoot.add(root);
     }
 
-    // --- optional real lights from the lighting agent
-    const lighting = opts.lighting;
-    this.lightHandles = [];
-    if (lighting?.registerLight && geo.anchors.head.length) {
-      for (const a of geo.anchors.head) {
-        const anchor = new THREE.Object3D();
-        anchor.position.set(a.x, a.y, a.z - 0.05);
-        this.lodGroups[0].add(anchor);
-        try {
-          const h = lighting.registerLight(anchor, {
-            type: 'headlight', range: 55, intensity: 0,
-          });
-          if (h) this.lightHandles.push(h);
-        } catch (e) { /* lighting agent not ready for this shape yet */ }
-      }
-    }
+    /**
+     * A `Lighting.registerVehicleLights` rig, if the owner of this visual gave it
+     * one. Set by `VehicleFactory.spawn`; released in `dispose()` below so that
+     * every teardown path frees its four LightManager slots.
+     *
+     * Traffic does NOT use this. Its visuals are pooled and only ten exist at a
+     * time, so it hangs its rigs off the car instead — see `Traffic._syncLights`.
+     */
+    this.lightRig = null;
 
     this.setLod(0);
   }
@@ -2071,9 +2064,10 @@ export class VehicleVisual {
       on('sirenB', v.sirenOn && step === 2, LAMP.sirenB.on);
     }
 
-    for (const h of this.lightHandles) {
-      if (h && h.light) h.light.intensity = v.headlightsOn ? (v.highBeams ? 90 : 48) : 0;
-      else if (h) h.intensity = v.headlightsOn ? 48 : 0;
+    if (this.lightRig) {
+      this.lightRig.setEnabled(v.headlightsOn);
+      this.lightRig.setTailEnabled(v.headlightsOn || v.brakeLightOn);
+      this.lightRig.setBraking(v.brakeLightOn);
     }
   }
 
@@ -2121,6 +2115,8 @@ export class VehicleVisual {
   }
 
   dispose() {
+    this.lightRig?.release();
+    this.lightRig = null;
     this.root.parent?.remove(this.root);
     for (const o of this._owned) o.dispose?.();
     this._owned.length = 0;
