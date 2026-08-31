@@ -80,6 +80,26 @@ function bench(n){const s=[];for(let i=0;i<n;i++){const t=performance.now();b.st
 ```
 Keep any single evaluation under ~40 `step()` calls; ~190 exceeds the tool timeout.
 
+**Bench in SHORT BURSTS WITH IDLE GAPS, or you will measure your own throttling.**
+A tight `step()` + `gl.finish()` loop saturates the GPU, and after roughly 50–60
+consecutive stepped frames the machine throttles hard. Measured on an unchanging
+frozen frame, with geometries, textures, programs, draws and triangles *identical*
+throughout: 6.1 → 5.8 → 4.4 → 4.7 → **32.3 → 42.9 ms**, then back to **4.3 ms after
+a 4-second idle**. It is not a leak and not scene state — it recovers completely.
+This is why several agents reported frame cost as "unmeasurable", quoting ranges
+like 2.3–95.8 ms or 114–217 ms and blaming sibling tabs: the long run was doing it
+to itself. Protocol that works:
+
+```js
+const idle = (ms) => new Promise(r => setTimeout(r, ms));
+await b.capture({ shot });
+await idle(1200); burst(10);              // discard: shader compilation
+await idle(1200); const a = burst(10);
+await idle(1200); const c = burst(10);
+const ms = Math.min(a, c);                // agreeing bursts, not a long median
+```
+Two bursts that agree are trustworthy; a long median is not.
+
 ## Non-negotiable rules
 1. **Y up. 1 unit = 1 metre. +X east, −Z north. Origin = Boston Common.** Place every
    real-world thing via `geo(lat, lon)` from `src/core/Geo.js`. Never hand-guess coords.
