@@ -1,3 +1,26 @@
+# PERF_REPORT.md
+
+> ## SUPERSEDED — read this before trusting any number below
+>
+> This report dates from **2026-08-27** and its absolute figures are **void**. Two
+> separate instrument defects invalidated them:
+>
+> 1. Every frame-time number predating 2026-08-30 was taken while **AO and SSR were
+>    silently absent from the compositor** (`BUDGET.high` gated them off while
+>    `Pass.enabled` reported `true` — fixed in `06ed84c`), so they do not describe the
+>    pipeline that ships.
+> 2. `engine.perf` and `measureFps()` read a **throttled rAF cadence** in the embedded
+>    preview pane, and reported 71.74 ms for a frame that genuinely cost 6.5 ms.
+>
+> **Current verified baseline** (short-burst protocol, 1920x1080 preset `high`, AO and
+> SSR live): 3.7-5.3 ms across `hero_skyline`, `overcast_wide`, `night_neon`,
+> `st_southend`, `st_beaconhill` and `rain_street` — worst case ~31% of the 16.7 ms
+> budget, with every triangle, draw and shadow budget met. See `docs/CURRENT_STATE.md`
+> §Status and `AI_HANDOFF.md` §6 for the measurement protocol.
+>
+> **Performance is not currently a priority.** There is roughly 11 ms of headroom to
+> spend on image quality. The methodology notes below remain useful; the numbers do not.
+
 # BOSTON — performance diagnosis
 
 Measured with `src/core/Profiler.js` (this report's companion deliverable).

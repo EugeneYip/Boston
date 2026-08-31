@@ -4,6 +4,39 @@ This file is the entry point for **any** coding AI (Claude, GPT, Gemini, Grok, C
 Aider, …). It is model-independent by design. If you are picking this project up cold,
 read `AI_HANDOFF.md` first, then this file.
 
+## Canonical repository — verify before any work
+**`/Volumes/Projects/boston`**, on an external SSD.
+
+```bash
+mount | grep /Volumes/Projects     # must be mounted
+pwd                                # /Volumes/Projects/boston
+git rev-parse --show-toplevel      # /Volumes/Projects/boston
+git status -sb
+```
+
+**If `/Volumes/Projects` is not mounted, STOP.** Never silently fall back to, recreate,
+or use another Boston checkout. `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE`;
+anything pointing there predates the migration of 2026-08-31.
+
+**Pushes are manual, performed by the repository owner.** Commit locally; do not push,
+and do not assume `origin/main` holds the newest commit.
+
+**Before deleting or moving any repository, inspect `git worktree list --porcelain`.**
+Auxiliary worktrees under `.claude/worktrees` can hold uncommitted work; a clean main
+worktree does not mean no auxiliary worktree has valuable state.
+
+## Resource policy — machine safety, not preference
+- Maximum **2 agents total**; maximum **1 WebGL/browser-heavy agent at a time**.
+- Internal free disk **>= 6 GiB** before heavy visual work; elevated swap is a reason
+  not to fan out. Below ~4-5 GiB, stop fan-out, close contexts, converge and commit.
+- **Close browser/WebGL contexts promptly** — a hidden context still holds a full city
+  scene.
+
+This is an operating-system margin, **not** a repository storage requirement: the repo
+lives on the SSD and is small. Internal disk is consumed by macOS swap, AI transcripts
+and browser caches. A three-agent wave once created three 1 GiB swapfiles and drove the
+machine to the point where a git object was corrupted mid-write.
+
 ## What this project is
 An open-world game set in a geographically real Boston, built in **Three.js**, targeting
 the highest visual quality achievable in a browser. Quality bar: *a hostile art director

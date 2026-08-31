@@ -3,7 +3,20 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: 2026-08-30, commit `754747a`.
+Last verified: **2026-08-31, commit `11c02f9`** (B1).
+
+> **Canonical repository is `/Volumes/Projects/boston`, on an external SSD. If
+> `/Volumes/Projects` is not mounted, STOP** — never fall back to or recreate another
+> checkout. `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is stale.
+>
+> **`AI_HANDOFF.md` is now the primary cold-start document.** It carries the canonical
+> repo rule, the current checkpoint, the attribution lessons, the full measurement-trap
+> list, the resource policy, worktree safety and the prioritised open work with an
+> explicit do-not-reopen list. Read it first; this file is the detailed living state
+> behind it. Do not duplicate that content here — update it there.
+>
+> **Pushes are manual.** Local `HEAD` may be ahead of `origin/main`; check
+> `git log --oneline origin/main..HEAD` rather than assuming.
 
 > **Note on verification while several agents are running.** `capture()` runs the engine's
 > `update()` chain, so a throw in *any* system aborts the shot. If you need a shot and
@@ -49,7 +62,9 @@ Last verified: 2026-08-30, commit `754747a`.
 | Budgets | **All budgets are met as of `d925cc1`.** Draws 597–667 of 1200 (down from 712–775). Camera triangles 1.82–2.51M of 3.5M. Shadow triangles, the last breach, are now **peak 2.22M / mean 2.03M at `night_neon`** and **1.75M / 1.59M at `st_beaconhill`**, against 2.5M. Attributed per cascade: Buildings LOD-0 chunks 45%, **Props 34%**, LOD-2 shell 18% — the shell was blamed for ~2M by two separate analyses and was never the problem. **`src/world/Props.js` is now the largest single item at 1.20M**: each prop type is one city-wide `InstancedMesh`, so its bounding sphere intersects every cascade and all 400k triangles go to all three every frame. Fix by splitting per streaming tile, sorting instances by distance so a per-cascade `object.count` gates them, or wiring those meshes to `onBeforeShadow` and the `csmTexel` that `CascadedShadows` now publishes. |
 | Draws / tris | 341 / 2.14M at boot default (2026-08-30, all of wave 1 in tree) — **inside** the 1200 / 3.5M budget. Buildings' facade-on-short-edge fix also cut LOD-0 opaque tris 30% (997,743 → 698,251 across 341 Beacon Hill buildings). |
 | Cold boot | ~8 s (was ~45 s) |
-| Visual quality | **~3/10.** Content is real; it does not yet look good. |
+| Visual quality | **6/10** as of the critic pass on `9bd5e55` (2026-08-31), up from 3/10. Content is real and materially complete; the remaining problem is surface quality and grade, not content. |
+| Daylight range | **Fixed by B1 (`11c02f9`).** The cause was NOT auto-exposure: the HDR buffer entering the tone mapper carries 3.5 stops of sky structure and only 0.005% of the frame exceeds AgX's clip point, but the grade's straight-line contrast about pivot 0.435 mapped everything above AgX 0.930 to >= 1.0 and `clamp()` flattened the top 7%. A highlight shoulder replaces the clamp (`highlightKnee` 0.86). Independently re-measured: `st_southend` clipped **3.08% -> 0.000%** with p99 245.1; `street_level` **3.35% -> 0.000%** with p99 248.2; `overcast_wide` p01 **54.9 -> 37.3**, p99 **200.6 -> 227.2**, frame sd **46.2 -> 60.3**. Night unregressed (mean 46.38 vs 46.2; below-L2 3.583% vs 3.59%). |
+| Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
 ## What exists and works
 - **Engine**: dependency-sorted system registry, fixed 60 Hz physics, clamped variable
