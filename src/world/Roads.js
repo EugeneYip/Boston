@@ -758,19 +758,40 @@ function makeRoadMaterial(atlas) {
         vec2 ddWx = dFdx(W), ddWy = dFdy(W);
         gPx = sqrt(max(length(ddWx), 1e-4) * max(length(ddWy), 1e-4));
 
-        // --- albedo variation across five non-harmonic scales ---------------
-        // 0.85 m, 2.7 m, 7.7 m and 23 m, plus a 0.24 m scatter that stands in
-        // for chip and sand once the atlas has been mipped away. None of these
-        // is a multiple of the 2.4 m atlas period or of each other, so there is
-        // nothing here for an autocorrelation to lock onto.
+        // --- albedo variation across four non-harmonic scales ----------------
+        // 0.85 m, 2.7 m, 7.7 m and 23 m. None of these is a multiple of the
+        // 2.4 m atlas period or of each other, so there is nothing here for an
+        // autocorrelation to lock onto.
+        //
+        // AMPLITUDES CUT 2.6x, AND NOT UNIFORMLY. Measured, st_southend near
+        // carriageway (1152x280 px, 10-frame averages, A/A floor sd 0.76):
+        // ablating this one term moved the rect by sd 18.41/255 against the
+        // rect's own sd of 26.89 -- 47% of the entire carriageway's variance --
+        // with a horizontal correlation length past 256 px (>1.1 m). That is
+        // the "soft grey metre-scale stroke" four critic passes have chased,
+        // and three of those passes blamed a different term for it.
+        //
+        // The 2.7 m octave is cut hardest (0.70 -> 0.15). Value noise on a
+        // 2.7 m lattice makes features about 1.35 m across, which is exactly
+        // the "1.1 m long soft grey marker stroke" that was reported. The 7.7 m
+        // and 23 m octaves survive at about half weight because at that size
+        // they read as a street that is not uniformly the same grey rather than
+        // as blotches, and the 0.85 m octave keeps a third of its weight as the
+        // only sub-metre member of the group.
+        //
+        // Scale, not magnitude, is the discriminator here: a 4x4 block
+        // Laplacian is a HIGH-frequency detector, so it indicts whichever term
+        // is finest. That is how 481c0c1 came to cut grit -- the one term in
+        // the surface with a correct fine-aggregate signature -- and leave this
+        // one at full weight. Measure correlation length before amplitude.
         float n0 = bNoise(W * 1.18);
         float n1 = bNoise(W * 0.37);
         float n2 = bNoise(W * 0.13);
         float n3 = bNoise(W * 0.043);
-        float macro = (n0 - 0.5) * 0.84 * bFade(0.85)
-                    + (n1 - 0.5) * 0.70
-                    + (n2 - 0.5) * 0.62
-                    + (n3 - 0.5) * 0.54;
+        float macro = (n0 - 0.5) * 0.34 * bFade(0.85)
+                    + (n1 - 0.5) * 0.15
+                    + (n2 - 0.5) * 0.24
+                    + (n3 - 0.5) * 0.30;
 
         float tone = 1.0;
         gRough = roughness * vRough;
@@ -815,7 +836,11 @@ function makeRoadMaterial(atlas) {
             // Kerb top: rounded, chipped arris and boot polish.
             tone *= 0.94 + bNoise(kq * 7.0) * 0.14;
           }
-          tone *= 1.0 + macro * 0.30;
+          // 0.72, not the old 0.30: macro's own amplitude was cut 2.56x above
+          // because it was owning the CARRIAGEWAY. Granite, concrete and turf
+          // were not the complaint, so their multipliers are re-scaled by the
+          // same factor and keep the weathering they had.
+          tone *= 1.0 + macro * 0.72;
           gRough = clamp(0.52 + (sp - 0.5) * 0.22 * kFine + bj * 0.24, 0.20, 0.95);
         } else if (isRoad) {
           // ---- wheel tracks ----------------------------------------------
@@ -930,10 +955,29 @@ function makeRoadMaterial(atlas) {
           // any entropy and it bands. The fold is invisible because the field is
           // uncorrelated per cell and gone by ~3 m out anyway.
           vec2 aw = W - floor(W * (1.0 / 128.0)) * 128.0;
-          vec2 ac = floor(aw * 71.4);
+          // Rotated 31 degrees off the street grid before flooring. The lattice
+          // is square and a kerb is straight, so an axis-aligned 14 mm cell grid
+          // lines up with the kerb, the lane markings and the wheel tracks; at
+          // 6x magnification on the near carriageway that read as fine corduroy
+          // hatching rather than as crushed stone. The rotation costs four
+          // multiplies and removes the preferred direction.
+          vec2 ar = vec2(aw.x * 0.857 - aw.y * 0.515, aw.x * 0.515 + aw.y * 0.857);
+          vec2 ac = floor(ar * 71.4);
           float grit = ((bHash(ac) - 0.5) * 1.30 - step(0.90, bHash(ac + 19.3)) * 0.26)
                      * bFade(0.026);
-          float chip = (bNoise(W * 1.85 + 23.1) - 0.5) * bFade(0.62);
+          // 0.095 m and 0.038 m, NOT the 0.54 m this shipped at. A term named
+          // for chipped aggregate had a measured horizontal correlation length
+          // past 256 px (>1.1 m) on the near carriageway -- 128x that of grit,
+          // and a second metre-scale blotch field sitting on top of macro. Real
+          // surface-course texture -- clusters of exposed stone against
+          // binder-rich fines -- lives between the 14 mm chipping and the
+          // half-metre patch, and that octave was simply missing from the
+          // surface. Two octaves rather than one so the band reads as mineral
+          // rather than as smooth blobs; the finer one carries its own bFade
+          // because 38 mm goes under a pixel first.
+          float chip = ((bNoise(W * 10.5 + 23.1) - 0.5) * 0.80
+                      + (bNoise(W * 26.0 + 7.70) - 0.5) * 0.50 * bFade(0.038))
+                     * bFade(0.105);
           // Cold-patch dabs: the shovel-and-stamp repairs around every gully and
           // trench, a third of a metre across and much darker than the mix.
           float dab = smoothstep(0.72, 0.93, bNoise(W * 2.6 + 61.4))
@@ -948,28 +992,31 @@ function makeRoadMaterial(atlas) {
           // template literal and a backtick would terminate it. That is the trap
           // this file documents, and it caught this very edit.
           //
-          // grit ships at 0.24, not the 0.80 it was authored at. A nine-term
-          // bisection found it carrying 81% of all mid-frequency structure in the
-          // near carriageway -- it, and not the crack field or dab, is what three
-          // critic passes called "soft grey marker scribbles". At 0.80 a 14 mm
-          // cell swung +/-0.52 against a 0.90 base, a +/-58% albedo step between
-          // neighbouring cells; real exposed aggregate is nearer +/-0.10-0.15,
-          // which is where 0.24 puts it (+/-0.16).
+          // grit ships at 0.34. It was cut to 0.24 by 481c0c1 on the strength of
+          // a 4x4 block Laplacian -- a HIGH-frequency detector, which will always
+          // indict whichever term is finest, and grit is the finest term here.
+          // That measurement inverted the answer. Measuring the SPATIAL SCALE of
+          // each term instead settles it (st_southend near carriageway, 1152x280
+          // px, 10-frame averages, difference field mean-subtracted, horizontal
+          // autocorrelation, first lag under 0.5):
           //
-          // Chosen by sweeping the ablation live rather than by taste, because the
-          // two things being traded move at very different rates -- stroke
-          // structure collapses while the surface variation the critic actually
-          // wants barely moves:
+          //   term    sd/255   correlation length
+          //   macro    18.41   > 256 px  (> 1.1 m)   <- the strokes
+          //   chip     10.68   > 256 px  (> 1.1 m)   <- a second one
+          //   grit      7.15       2 px  (~ 9 mm)    <- correct aggregate
+          //   track     5.90     128 px  (lane-wide, correct for a wheel path)
+          //   dab       3.66     128 px  (a cold patch IS ~0.4 m, correct)
+          //   crack     3.26       2 px  (thin and dark, correct)
+          //   A/A       0.76       2 px  (film grain)
           //
-          //   grit    1.00   0.60   0.40   0.30   0.10   0.00
-          //   struct 33.62  22.09  16.03  13.02   7.73   6.54
-          //   MAD    25.48  23.16  22.12  21.63  20.97  20.87
-          //
-          // 0.30 of the authored weight takes 61% off the strokes for 15% of the
-          // variation. Below ~0.2 the aggregate stops reading as stone at all; the
-          // floor of 6.54 is the surface with no grit in it whatsoever.
+          // grit dies within one lag step, which is what real fine aggregate
+          // does and what nothing else on this surface was doing. At 0.34 a
+          // 14 mm cell swings +/-0.22 against the 0.90 base -- about +/-25%
+          // between neighbouring stones, against the +/-58% of the authored 0.80
+          // that genuinely was too much and the +/-16% of 0.24 that was too
+          // little to read as stone at all.
           tone = 0.90 + macro * 1.00 * uAblA.x + fill * 0.34
-               + grit * 0.24 * uAblA.y + chip * 0.62 * uAblA.z
+               + grit * 0.34 * uAblA.y + chip * 0.70 * uAblA.z
                - track * 0.26 * uAblB.x - gut * 0.34 * uAblB.y
                - oil * 0.50 * uAblB.z - dab * 0.30 * uAblA.w
                - joint * 0.62 * uAblB.w - crack * uCrackTune.w
@@ -981,7 +1028,7 @@ function makeRoadMaterial(atlas) {
           // term is the larger half of the road's luminance. Ablation measured
           // the first cut of this at +8% mean, which put the asphalt brighter
           // than the concrete walk beside it.
-          gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.04
+          gRough = gRough * (1.0 - track * 0.20 - oil * 0.18) + gut * 0.02 + macro * 0.08
                  + crack * 0.12               // a crack is a recess full of grit
                  - seal * 0.40;               // cured rubber is the glossiest
                                               // thing on a dry carriageway
@@ -993,7 +1040,7 @@ function makeRoadMaterial(atlas) {
           // crack in the city. This one only reaches the normal map.
           gSeal = seal * 0.55;                 // rubber floods the stone under it
         } else if (isVerge) {
-          tone = 1.0 + macro * 0.60;
+          tone = 1.0 + macro * 1.45;   // see the kerb note: re-scaled, not raised
         } else {
           // ---- pavement ----------------------------------------------------
           // Slabs weather in patches; damp shadow lines and salt bloom leave
@@ -1008,8 +1055,8 @@ function makeRoadMaterial(atlas) {
           // crack across it or it does not, it is not uniformly crazed.
           float crk = bCrack(bCell(W * (1.0 / 1.75) + 8.5, 0.75) * 1.75, 0.006, gPx)
                     * smoothstep(0.58, 0.86, n2) * uCrack;
-          tone = 1.0 + macro * 0.66 - stain * 0.20 - gum * 0.42 - crk * 0.62;
-          gRough = gRough + macro * 0.06 + stain * 0.03 - gum * 0.18 + crk * 0.10;
+          tone = 1.0 + macro * 1.55 - stain * 0.20 - gum * 0.42 - crk * 0.62;
+          gRough = gRough + macro * 0.14 + stain * 0.03 - gum * 0.18 + crk * 0.10;
         }
 
         // ---- rain ----------------------------------------------------------
