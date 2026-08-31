@@ -82,6 +82,43 @@ const MIN_EMIT = 0.004;
  */
 const POOL_STREET_GAIN = 5.8;
 
+/**
+ * How many of the real-light slots are reserved for sources that are NOT vehicle
+ * headlights, before headlights are allowed to compete for what is left.
+ *
+ * `_select` gives a headlight a 2.4x score bonus so it reads as motion. That is
+ * right for one car on a dark street and wrong for a city: with ~80 cars lit at
+ * 22:00 the bonus plus sheer proximity took 11-12 of the 15 slots, static
+ * allocation collapsed from 5 to 2, and 11.88% of the frame measured DARKER with
+ * headlights on than off -- street lamps losing their promotion. The pool decals
+ * are unaffected either way, so what was being lost is specifically the handful
+ * of lamps that get a real light.
+ *
+ * A floor rather than a cap, because the failure is starvation and not excess:
+ * if there are fewer than this many static candidates in range the remainder
+ * still goes to headlights, so nothing is wasted on an empty street.
+ */
+const STATIC_FLOOR = 6;
+/*
+ * Swept in ONE page load (traffic spawns differently per load, so a cross-load
+ * comparison of the vehicle-light signal is invalid -- the same floor read +0.003
+ * on one load and -0.212 on the next). night_neon, actors frozen, 3 averaged
+ * frames per state, 32,400 blocks of 8x8:
+ *
+ *   floor  headlights  static  darker  maxDarken  mean signal
+ *     0        12        2     13.28%    178.2      +0.357
+ *     4         9        4      5.75%     23.7      -0.243
+ *     6         7        6      5.49%     16.4      -0.244
+ *     8         6        8      6.60%     19.2      -0.261
+ *
+ * 6 is the knee: static allocation is restored, darker blocks and peak darkening
+ * both bottom out, and 8 buys nothing. Note the mean signal INVERTS at any floor
+ * above 0 and stays flat thereafter -- a street lamp's real light is worth more
+ * mean luminance than the headlight that displaces it, because it is broad and
+ * high while a headlight is a narrow cone down the road. Vehicle lights still
+ * move ~2,600 blocks (8% of frame); what they no longer do is net-brighten it.
+ */
+
 const _v = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 const _camPos = new THREE.Vector3();
@@ -324,6 +361,14 @@ export default class LightManager {
     // Where each pool slot last asked the city for a surface height, so a moving
     // pool can reuse the answer until it has actually gone somewhere. See
     // `_poolGroundAt`.
+    /**
+     * Runtime override for `STATIC_FLOOR`, so the reservation can be swept inside
+     * ONE page load. It has to be: traffic spawns to different positions on every
+     * load, so how many cars sit near the camera varies and a cross-load
+     * comparison of the vehicle-light signal is not valid. Measured that the hard
+     * way -- the same floor read +0.003 on one load and -0.212 on the next.
+     */
+    this.staticFloor = STATIC_FLOOR;
     this._poolGX = new Float32Array(MAX_POOLS);
     this._poolGZ = new Float32Array(MAX_POOLS);
     this._poolGY = new Float32Array(MAX_POOLS);
@@ -879,15 +924,35 @@ export default class LightManager {
     this._dx[i] = x / l; this._dy[i] = y / l; this._dz[i] = z / l;
   }
 
-  /** Pick the N most important sources near the camera. O(count) with early-out. */
+  /**
+   * Pick the N most important sources near the camera. O(count) per pass.
+   *
+   * Two passes, because one pass starves street lighting. The first reserves
+   * `STATIC_FLOOR` slots for everything that is not a vehicle headlight; the
+   * second lets every source, headlights included, compete for the rest. Pass two
+   * may not evict a reservation, so the floor holds -- but if pass one cannot
+   * fill it, pass two takes the remainder and no slot is wasted.
+   */
   _select(camPos, camFwd, drawDist) {
     const K = this.poolSize;
-    let selN = 0;
-    let worst = 0;
     const cull = Math.min(drawDist * 0.25, 190);
     const cull2 = cull * cull;
-
     const dayOff = this.night < 0.02;
+    const floor = Math.min(this.staticFloor, K);
+    this._selN = 0;
+    this._scan(camPos, camFwd, cull2, dayOff, floor, 0, true);
+    const locked = this._selN;
+    this._scan(camPos, camFwd, cull2, dayOff, K, locked, false);
+  }
+
+  /**
+   * Score every candidate and keep the best, filling `_selIdx`/`_selScore` up to
+   * `limit` entries. Slots below `locked` are reservations from an earlier pass
+   * and are never evicted. `staticOnly` excludes vehicle headlights.
+   */
+  _scan(camPos, camFwd, cull2, dayOff, limit, locked, staticOnly) {
+    let selN = this._selN;
+    let worst = selN >= limit ? this._minScoreFrom(locked, selN) : 0;
     for (let i = 0, n = this._count; i < n; i++) {
       const fl = this._flags[i];
       if (!(fl & F_ENABLED)) continue;
@@ -896,6 +961,17 @@ export default class LightManager {
       // occupied by dark street lamps and a headlight that was switched on by
       // hand gets no real light.
       if (dayOff && (fl & F_AUTONIGHT)) continue;
+      // Pass one reserves the floor for non-headlights; pass two must not pick
+      // anything pass one already reserved.
+      // STATIC, not merely non-headlight. The first attempt reserved anything that
+      // was not a headlight, which let tail lamps and the other ~20 dynamic
+      // sources eat the reservation: static allocation still only moved 2 -> 3 at
+      // a floor of 7. Street-lamp promotion is the thing being protected, so the
+      // predicate is the dynamic flag.
+      if (staticOnly) { if (fl & F_DYNAMIC) continue; }
+      else { let dup = false;
+        for (let k = 0; k < locked; k++) if (this._selIdx[k] === i) { dup = true; break; }
+        if (dup) continue; }
       const g = this._gain[i];
       if (g <= 0.01) continue;
 
@@ -911,22 +987,24 @@ export default class LightManager {
       if (this._type[i] === T_HEADLIGHT) s *= 2.4;      // headlights read as motion
       if (this._assignedSet(i)) s *= 1.35;              // hysteresis: avoid churn
 
-      if (selN < K) {
+      if (selN < limit) {
         this._selIdx[selN] = i; this._selScore[selN] = s; selN++;
-        if (selN === K) { worst = this._minScore(selN); }
+        if (selN === limit) { worst = this._minScoreFrom(locked, selN); }
       } else if (s > worst) {
-        let wi = 0;
-        for (let k = 1; k < K; k++) if (this._selScore[k] < this._selScore[wi]) wi = k;
+        // Only entries at or above `locked` may be evicted; below that they are
+        // this pass's reservations from the previous one.
+        let wi = locked;
+        for (let k = locked + 1; k < limit; k++) if (this._selScore[k] < this._selScore[wi]) wi = k;
         this._selIdx[wi] = i; this._selScore[wi] = s;
-        worst = this._minScore(K);
+        worst = this._minScoreFrom(locked, limit);
       }
     }
     this._selN = selN;
   }
 
-  _minScore(n) {
+  _minScoreFrom(from, n) {
     let m = Infinity;
-    for (let k = 0; k < n; k++) if (this._selScore[k] < m) m = this._selScore[k];
+    for (let k = from; k < n; k++) if (this._selScore[k] < m) m = this._selScore[k];
     return m;
   }
 
