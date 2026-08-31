@@ -944,8 +944,32 @@ function makeRoadMaterial(atlas) {
           // relative contrast at the same time as it holds the level.
           // uAblA = (macro, grit, chip, dab), uAblB = (track, gut, oil, joint).
           // Ablation only — every component ships at 1.0. See setTerm/setDab.
+          // NOTE: no backticks anywhere in this comment -- it lives inside a GLSL
+          // template literal and a backtick would terminate it. That is the trap
+          // this file documents, and it caught this very edit.
+          //
+          // grit ships at 0.24, not the 0.80 it was authored at. A nine-term
+          // bisection found it carrying 81% of all mid-frequency structure in the
+          // near carriageway -- it, and not the crack field or dab, is what three
+          // critic passes called "soft grey marker scribbles". At 0.80 a 14 mm
+          // cell swung +/-0.52 against a 0.90 base, a +/-58% albedo step between
+          // neighbouring cells; real exposed aggregate is nearer +/-0.10-0.15,
+          // which is where 0.24 puts it (+/-0.16).
+          //
+          // Chosen by sweeping the ablation live rather than by taste, because the
+          // two things being traded move at very different rates -- stroke
+          // structure collapses while the surface variation the critic actually
+          // wants barely moves:
+          //
+          //   grit    1.00   0.60   0.40   0.30   0.10   0.00
+          //   struct 33.62  22.09  16.03  13.02   7.73   6.54
+          //   MAD    25.48  23.16  22.12  21.63  20.97  20.87
+          //
+          // 0.30 of the authored weight takes 61% off the strokes for 15% of the
+          // variation. Below ~0.2 the aggregate stops reading as stone at all; the
+          // floor of 6.54 is the surface with no grit in it whatsoever.
           tone = 0.90 + macro * 1.00 * uAblA.x + fill * 0.34
-               + grit * 0.80 * uAblA.y + chip * 0.62 * uAblA.z
+               + grit * 0.24 * uAblA.y + chip * 0.62 * uAblA.z
                - track * 0.26 * uAblB.x - gut * 0.34 * uAblB.y
                - oil * 0.50 * uAblB.z - dab * 0.30 * uAblA.w
                - joint * 0.62 * uAblB.w - crack * uCrackTune.w
