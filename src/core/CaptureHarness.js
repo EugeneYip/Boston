@@ -55,7 +55,20 @@ export default class CaptureHarness {
       night_neon:     { pos: [-1453.4, 4.85, 401.4], look: [-1200, 11, 470],
                         tod: 22.0, fov: 62, eye: 1.7 },
       hero_skyline:   { pos: [620, 150, 780],  look: [-200, 60, -300],tod: 17.8, fov: 40 },
-      golden_hour:    { pos: [-300, 18, 420],  look: [300, 40, -200], tod: 6.6,  fov: 50 },
+      // Re-authored: the old [-300,18,420] sat INSIDE a 20.7 m building. `unstick`
+      // did rescue it — the camera ended up genuinely outside — but only 14 m from
+      // a facade, so the frame was still a wall of brick and four consecutive
+      // critic passes reported it as "inside a building". Being outside the
+      // geometry is not the same as having a shot.
+      //
+      // Now an elevated vantage looking WEST at the Back Bay towers, which is the
+      // subject a golden-hour shot should have now that they exist (f4ee6d9). The
+      // sun is in the east at 6.6, i.e. behind the camera, so their faces are lit
+      // rather than silhouetted — the eastward framing that was tried instead
+      // shot into the sunrise and clipped 34.7% of the frame against this one's
+      // 13.2%. Verified clear: no building within 320 m along the view bearing,
+      // and 3.36M triangles in frame against the old 2.66M.
+      golden_hour:    { pos: [-300, 30, 700],  look: [-1150, 70, 860], tod: 6.6, fov: 50 },
       overcast_wide:  { pos: [0, 320, 900],    look: [0, 30, -400],   tod: 13.0, fov: 60,
                         weather: 'overcast' },
       // Re-authored off the Common for the same reason as street_level, and onto a
