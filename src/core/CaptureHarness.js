@@ -156,7 +156,12 @@ export default class CaptureHarness {
        * @param {boolean} on
        */
       pauseActors: (on = true) => {
-        const ids = ['traffic', 'vehicles', 'peds'];
+        // `weather` is here because rain PARTICLES animate under it. A critic pass
+        // measured a wet-carriageway A/A floor of 23.7% of blocks against 0.00%
+        // dry, purely from falling rain, and concluded the SSR contribution was
+        // unmeasurable as a result. Wetness STATE is held rather than reset, which
+        // is what a frozen shot wants.
+        const ids = ['traffic', 'vehicles', 'peds', 'weather'];
         for (const id of ids) {
           const sys = engine.systems.get(id);
           if (!sys) continue;
@@ -379,7 +384,8 @@ export default class CaptureHarness {
        * Set up a named (or ad-hoc) shot and render it deterministically.
        * Returns the perf numbers so the critic can enforce the frame budget.
        */
-      capture: async ({ shot, pos, look, tod, fov, weather, quality, warmup = 24 } = {}) => {
+      capture: async ({ shot, pos, look, tod, fov, weather, quality, warmup = 24,
+                        holdActors = false } = {}) => {
         const s = shot ? this.shots[shot] : null;
         if (shot && !s) throw new Error(`unknown shot "${shot}"`);
         api.freeze(true);
@@ -410,7 +416,16 @@ export default class CaptureHarness {
         }
         // Let the actors run through warm-up so traffic and crowds reach sensible
         // positions, then freeze them again below for the frame we hand back.
-        api.pauseActors(false);
+        //
+        // This is what makes two captures of the same shot differ: the actors
+        // advance from wherever they were, so they land somewhere new each time.
+        // Measured on st_southend by 8x8 block mean, against a same-capture A/A
+        // floor of 0.46: cross-capture 1.95. `holdActors: true` keeps them frozen
+        // through warm-up as well, which makes a capture deterministic for
+        // cross-capture comparison at the cost of a street that does not
+        // repopulate around a camera that has just teleported. Use it for A/B of
+        // static surfaces; leave it off for anything being judged as a picture.
+        if (!holdActors) api.pauseActors(false);
         // Warm up: lets IBL, LOD and temporal effects settle.
         api.step(warmup);
         // Then wait for streaming to ACTUALLY finish rather than assuming a frame
@@ -433,12 +448,56 @@ export default class CaptureHarness {
         // source of the ~18% luminance drift between captures minutes apart which
         // a critic pass previously wrote off as unavoidable auto-exposure noise.
         api.freeze(true);
+        // Converge, do not count. Auto-exposure adapts over time and the temporal
+        // effects carry history, so a fixed frame count does NOT settle them: a
+        // critic pass measured the same shot twice and got a 3.9/255 mean
+        // difference (9% spread), and its first albedo reading came back as
+        // exactly the pre-fix value from an unsettled capture -- it would have
+        // reported working code as having done nothing. Step until the frame stops
+        // moving, on a cheap strided sample.
+        // The metric must be BAND MEANS, not per-pixel differences. Film grain is
+        // re-randomised every frame at roughly 2.3 luma/pixel, so a per-pixel
+        // delta can never fall below it and a convergence loop written that way
+        // simply runs to its cap on every shot. Averaging over a band cancels the
+        // grain and leaves the thing actually being waited on -- auto-exposure
+        // adaptation and temporal history.
+        const gl2 = engine.renderer.getContext();
+        const BANDS = 6;
+        const sample = () => {
+          const w = gl2.drawingBufferWidth, h = gl2.drawingBufferHeight;
+          if (w < 2 || h < 2) return null;
+          const px = new Uint8Array(w * h * 4);
+          gl2.readPixels(0, 0, w, h, gl2.RGBA, gl2.UNSIGNED_BYTE, px);
+          const sums = new Float64Array(BANDS), cnt = new Float64Array(BANDS);
+          const rows = Math.floor(h / BANDS);
+          for (let y = 0; y < h; y += 2) {
+            const band = Math.min(BANDS - 1, Math.floor(y / rows));
+            for (let x = 0; x < w; x += 7) {
+              const i = (y * w + x) * 4;
+              sums[band] += px[i] + px[i + 1] + px[i + 2]; cnt[band]++;
+            }
+          }
+          return Array.from(sums, (v, i) => v / (cnt[i] * 3));
+        };
+        let prev = null, converged = 0, spent = 0;
+        for (; spent < 180; spent += 3) {
+          api.step(3);
+          const cur = sample();
+          if (!cur) break;
+          if (prev) {
+            let d = 0;
+            for (let i = 0; i < cur.length; i++) d = Math.max(d, Math.abs(cur[i] - prev[i]));
+            if (d < 0.05) { if (++converged >= 2) break; } else converged = 0;
+          }
+          prev = cur;
+        }
+        const settledFrames = spent;
         const stats = api.step(6);
         if (!api.settled()) {
           console.warn(`[capture] streaming did not settle in ${guard} frames; `
             + 'the shot may contain LOD-2 shell where detail was expected.');
         }
-        return { shot: shot || 'custom', weather: w, streamed,
+        return { shot: shot || 'custom', weather: w, streamed, settledFrames,
                  timeScale: engine.settings.timeScale,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
       },
