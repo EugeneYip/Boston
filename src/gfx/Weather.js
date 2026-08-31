@@ -4,9 +4,15 @@ import {
 } from '../shaders/sky/precip.glsl.js';
 
 const TRANSITION = 20;      // seconds for a full state change — never a hard cut
-const RAIN_MAX = 90000;
+// Sized against the 42 x 30 x 42 m rain box, not a drop count pulled from air:
+// 42k over 52,920 m3 is 0.79 drops/m3 at full storm, of which the distance
+// thinning in RAIN_VERT draws only the near shell.
+const RAIN_MAX = 42000;
 const SNOW_MAX = 40000;
-const SPLASH_MAX = 2600;
+// Raised because roughly 45% of impacts now draw spray instead of a ring, the
+// surface gate removes every impact that is not on something hard, and the
+// rings are a quarter of the diameter they were.
+const SPLASH_MAX = 11000;
 
 /**
  * Weather states. Every number here is linearly blended toward over
@@ -115,14 +121,24 @@ export default class Weather {
     sky.weather = this;
 
     const quad = new THREE.PlaneGeometry(1, 1);
+    // Rain lives in a 42 m box, not a 95 m one. Streaks are only legible in the
+    // near field; past ~30 m rain is haze, and `fog.hazeSigma`/`fogAlbedo`
+    // already draw that. Drawing individual streaks out to 46 m at undimmed
+    // alpha is what put 70% of the visible drops beyond 30 m. See
+    // precip.glsl.js for the measurements this whole layer answers.
     this.rain = this._makeLayer(quad, RAIN_MAX, RAIN_VERT, RAIN_FRAG, {
-      uBox: { value: new THREE.Vector3(95, 62, 95) },
-      uBoxOffset: { value: new THREE.Vector3(0, 14, 0) },
+      uBox: { value: new THREE.Vector3(42, 30, 42) },
+      uBoxOffset: { value: new THREE.Vector3(0, 7, 0) },
       uWind: { value: new THREE.Vector3() },
       uFall: { value: 9.2 },
-      uStreak: { value: 0.075 },
-      uWidth: { value: 0.028 },
-      uFadeR: { value: 46 },
+      uStreak: { value: 0.014 },   // shutter, seconds
+      uWidth: { value: 0.011 },
+      uMinPx: { value: 2.2 },
+      uMaxPx: { value: 76 },
+      uJitter: { value: 2.4 },
+      uNear: { value: 12 },
+      uFadeR: { value: 32 },
+      uViewport: { value: new THREE.Vector2(1920, 1080) },
       uColor: { value: new THREE.Color().setStyle('#c2cfe0') },
       uOpacity: { value: 0.45 },
     }, THREE.NormalBlending);
@@ -139,12 +155,28 @@ export default class Weather {
     }, THREE.NormalBlending);
 
     this.splash = this._makeLayer(quad, SPLASH_MAX, SPLASH_VERT, SPLASH_FRAG, {
-      uRadius: { value: 27 },
-      uSize: { value: 0.30 },
+      // A raindrop ring is 10-25 cm across, not 86. At uSize 0.30 the ring grew
+      // to 0.86 m and read as a row of painted hoops on the pavement; the fix
+      // is smaller and many more of them, over a tighter radius so they land
+      // where they are actually resolvable.
+      uRadius: { value: 18 },
+      uSize: { value: 0.070 },
       uColor: { value: new THREE.Color().setStyle('#b9cadd') },
       uOpacity: { value: 0.55 },
     }, THREE.AdditiveBlending);
     quad.dispose();
+
+    // Per-impact surface, filled from the CPU: x = hardness (asphalt 1,
+    // pavement 0.65, unpaved 0), y = that point's true world height. Zeroed
+    // means "not looked up yet", which the shader reads as unpaved and skips —
+    // the safe default is no ripple rather than a ripple in the wrong place.
+    this._splashSeeds = this.splash.geo.getAttribute('aSeed').array;
+    this._surfBuf = new Float32Array(SPLASH_MAX * 2);
+    this._surfCell = new Int32Array(SPLASH_MAX * 2).fill(0x7fffffff);
+    this._surfAttr = new THREE.InstancedBufferAttribute(this._surfBuf, 2);
+    this._surfAttr.setUsage(THREE.DynamicDrawUsage);
+    this.splash.geo.setAttribute('aSurf', this._surfAttr);
+    this._surfCursor = 0;
 
     // Lightning fill light. No shadows: a strike lasts three frames and a
     // shadow pass at that moment would cost more than the whole flash.
@@ -241,13 +273,23 @@ export default class Weather {
     const r = this.cur.rain;
     this.rain.mesh.visible = r > 0.01;
     if (this.rain.mesh.visible) {
+      const ru = this.rain.uniforms;
       this.rain.geo.instanceCount = Math.round(RAIN_MAX * Math.min(1, r * r * 1.15));
-      this.rain.uniforms.uTime.value = t;
-      this.rain.uniforms.uGroundY.value = this._groundY;
-      this.rain.uniforms.uWind.value.set(this._wind.x, 0, this._wind.z);
-      this.rain.uniforms.uFall.value = 8.0 + 4.0 * r;
-      this.rain.uniforms.uOpacity.value = 0.20 + 0.34 * r;
-      this.rain.uniforms.uColor.value.setRGB(0.62 * lit, 0.68 * lit, 0.80 * lit);
+      ru.uTime.value = t;
+      ru.uGroundY.value = this._groundY;
+      ru.uWind.value.set(this._wind.x, 0, this._wind.z);
+      ru.uFall.value = 8.0 + 4.0 * r;
+      // Turbulence scales with the wind, so a squall combs harder than drizzle
+      // but never to a single angle.
+      ru.uJitter.value = 1.3 + 0.16 * Math.hypot(this._wind.x, this._wind.z);
+      ru.uOpacity.value = 0.26 + 0.50 * r;
+      // Drops refract the sky, they do not emit. The old multipliers put the
+      // streak colour at (1.83, 2.01, 2.36) linear in daylight -- brighter than
+      // white, and 29% bluer in B than R, which is where the fringing came
+      // from. Roughly sky luminance and near-neutral instead.
+      ru.uColor.value.setRGB(0.400 * lit, 0.415 * lit, 0.442 * lit);
+      const gl = ctx.engine.renderer.getContext();
+      ru.uViewport.value.set(gl.drawingBufferWidth, gl.drawingBufferHeight);
     }
 
     // --- snow ---
@@ -267,11 +309,61 @@ export default class Weather {
     const sp = this.cur.rain * this._wet;
     this.splash.mesh.visible = sp > 0.02 && cam.position.y - this._groundY < 26;
     if (this.splash.mesh.visible) {
-      this.splash.geo.instanceCount = Math.round(SPLASH_MAX * Math.min(1, sp));
+      const n = Math.round(SPLASH_MAX * Math.min(1, sp));
+      this.splash.geo.instanceCount = n;
       this.splash.uniforms.uTime.value = t;
       this.splash.uniforms.uGroundY.value = this._groundY;
-      this.splash.uniforms.uOpacity.value = (0.14 + 0.5 * sp) * (0.35 + 1.6 * day);
+      this.splash.uniforms.uOpacity.value = (0.10 + 0.34 * sp) * (0.35 + 1.6 * day);
+      this._refreshImpacts(city, cam, n);
     }
+  }
+
+  /**
+   * Look up what each impact point is standing on.
+   *
+   * The ripple lattice wraps on a fixed `2 * uRadius` period, so an instance's
+   * world position is CONSTANT until the camera crosses a cell boundary and it
+   * jumps a whole period. Only the ones that just jumped need re-querying —
+   * a couple of dozen a second at driving speed. That matters: `surfaceAt` is
+   * 5.6 us a call measured, so asking for all 11,000 every frame would be 62 ms.
+   * A wrap needs 36 m of camera travel, so scanning a third of the set per
+   * frame still catches every one of them within about 50 ms.
+   *
+   * A teleport dirties every instance at once, hence the per-frame budget; the
+   * lattice refills over the next few frames and unfilled entries simply do not
+   * draw.
+   */
+  _refreshImpacts(city, cam, n) {
+    if (!city || typeof city.surfaceAt !== 'function') {
+      // No surface oracle: fall back to the old flat behaviour rather than
+      // showing nothing at all.
+      if (this._surfBuf[0] !== 1) {
+        for (let i = 0; i < this._surfBuf.length; i += 2) {
+          this._surfBuf[i] = 1; this._surfBuf[i + 1] = this._groundY;
+        }
+        this._surfAttr.needsUpdate = true;
+      }
+      return;
+    }
+    const span = this.splash.uniforms.uRadius.value * 2;
+    const seeds = this._splashSeeds, buf = this._surfBuf, cell = this._surfCell;
+    const camX = cam.position.x, camZ = cam.position.z, camY = cam.position.y;
+    let budget = 288, dirty = false;
+    const scan = Math.min(n, 3600);
+    for (let i = 0; i < scan && budget > 0; i++) {
+      const j = this._surfCursor;
+      this._surfCursor = this._surfCursor + 1 >= n ? 0 : this._surfCursor + 1;
+      const sx = (seeds[j * 3] - 0.5) * span, sz = (seeds[j * 3 + 1] - 0.5) * span;
+      const kx = Math.floor((sx - camX) / span + 0.5);
+      const kz = Math.floor((sz - camZ) / span + 0.5);
+      if (cell[j * 2] === kx && cell[j * 2 + 1] === kz) continue;
+      cell[j * 2] = kx; cell[j * 2 + 1] = kz;
+      const s = city.surfaceAt(sx - span * kx, sz - span * kz, camY);
+      buf[j * 2] = s.kind === 'road' ? 1 : s.kind === 'pavement' ? 0.65 : 0;
+      buf[j * 2 + 1] = s.y;
+      budget--; dirty = true;
+    }
+    if (dirty) this._surfAttr.needsUpdate = true;
   }
 
   // ------------------------------------------------------------------------
