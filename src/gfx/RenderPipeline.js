@@ -325,6 +325,25 @@ export default class RenderPipeline {
       // Only the bottom of the histogram is touched, at either end of the day.
       shadowContrast: 0.52,
       shadowToeStops: 7.0,
+      // Display-referred highlight rolloff, in GradeEffect. 1.0 = the old hard clamp.
+      //
+      // The daylight sky window was not an exposure fault and not a tone-curve fault.
+      // Measured at `st_southend` 11:12, one frozen capture, full 1920x1080 readback:
+      // the HDR buffer entering the tone mapper has a sky region running 0.48 -> 5.21
+      // (p01 -> p99) with a max of 5.94, and at the metered exposure of 1.117x only
+      // **0.005%** of the frame reaches AgX's own clip point of 16.29. AgX hands the
+      // grade a sky spanning roughly 201..246/255 with a standard deviation of 25.
+      // The grade's contrast (1.131 about pivot 0.435) then maps everything above
+      // 0.930 to >= 1.0 and `clamp()` flattens it. Ablation, same capture:
+      //   contrast 1.131 -> 1.000 : clipped 1.551% -> 0.000%, p99 254.7 -> 246.7,
+      //                             black 1.56% -> 0.16%, frame mean 108.4 -> 109.0.
+      // A straight line into a clamp is the whole defect. Lowering exposure would
+      // only move the same wall down the histogram.
+      //
+      // 0.86 was picked by sweeping the knee against three shots at once, keeping the
+      // sky's structure while leaving `hero_skyline` (already 0.00% clipped, its sky
+      // at mean 203 / sd 34.7) as close to untouched as a rolloff allows.
+      highlightKnee: 0.86,
       grain: 0.015,
       // Per-channel radial offset AT THE CORNER, in pixels. See LensFinalEffect for
       // what 1.15 was actually producing (1.73 px per channel over the whole outer
@@ -855,6 +874,7 @@ export default class RenderPipeline {
     this.exposure.setShadowRecovery(o.shadowContrast, o.shadowToeStops);
 
     this.gradeEffect.applyLook(look);
+    this.gradeEffect.setShoulder(o.highlightKnee);
     this.grain.setAmount(o.grain * look.grain);
     this.lensFinal.aberration = o.aberration;
     this.lensFinal.sharpness = o.sharpen;

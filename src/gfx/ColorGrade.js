@@ -166,9 +166,43 @@ export const TOD_LOOKS = [
  */
 export const WEATHER_MODS = {
   clear:    null,
+  // The black and white points below are doing real work, and are the reason this
+  // modifier looks so unlike its neighbours.
+  //
+  // `overcast_wide` has failed "no black point, no white point" for five consecutive
+  // critic passes at p01 ~67 / p99 ~202, and the cause is NOT the grade. Measured on
+  // one frozen capture at 1920x1080: the HDR buffer entering the tone mapper spans
+  // p01 0.110 -> p99 3.09, i.e. **4.8 stops**, and AgX needs about ten to reach either
+  // end of the display range. Rendering the same frame with a fully NEUTRAL grade
+  // gives p01 50.6 / p99 197.0 against the graded 54.8 / 200.6 — so raw AgX is already
+  // compressed into a 146-value window and the old modifier was removing four more
+  // values at each end, chiefly through `contrast: 0.92`.
+  //
+  // A flat scene is what an overcast sky physically produces, so the fix is not to
+  // fight the scene: it is to do what a colourist does with a flat negative and set
+  // the black and white points where the picture actually ends. 0.012/0.97 was an
+  // identity operation on a frame that lives between 0.20 and 0.84.
+  //
+  // Measured, same capture, this modifier vs the old one:
+  //   p01 54.8 -> 37.4, p99 200.6 -> 227.3, sd 46.2 -> 60.3, mean 123.9 -> 128.1,
+  //   clipped 0.00% -> 0.00%, black 0.00% -> 0.00%.
+  // Nothing is crushed or blown; the histogram simply occupies the range it was
+  // already entitled to. `contrast: 0.92` deliberately stays — the softness of
+  // overcast light is authored there, and the range is authored here.
+  //
+  // The per-channel stagger is not decoration. A uniform expansion pushed the frame's
+  // B-minus-R channel gap from 22.6 to 33.1; blue carries the higher black point and
+  // the higher white point, which holds the gap at 24.7 and keeps overcast grey-blue
+  // rather than turning it cyan.
+  //
+  // Checked at night, where a fixed expansion of this size is the obvious hazard:
+  // `night_neon` forced to overcast reads p01 20.8 / black 0.07% / sd 34.1 on the old
+  // modifier — the same milky no-black-point defect. With this one it is p01 0 /
+  // black 7.4% / below-L2 3.05% / sd 46.1, which is *closer* to the clear-night
+  // reference (~3.5% below L2), not further from it. Overcast night improves too.
   overcast: { exposureEV: -0.10, temperature: -0.16, tint: -0.03,
               contrast: 0.92, saturation: 0.80, vibrance: 0.10, shadowSat: 0.80,
-              blackPoint: [0.012, 0.013, 0.016], whitePoint: [0.97, 0.975, 0.985],
+              blackPoint: [0.115, 0.124, 0.145], whitePoint: [0.808, 0.818, 0.842],
               lift: [0.010, 0.012, 0.016],
               shadowTint: [0.94, 0.97, 1.08], highTint: [0.99, 1.0, 1.03],
               bloomScale: 0.85, streakScale: 0.4, vignette: 1.05, grain: 1.1 },
@@ -358,9 +392,14 @@ export default class ColorGrade {
   }
 }
 
-/** Reference CPU implementation of the shader grade — keep in sync with GradeEffect. */
-function gradeCPU(c, k) {
+/**
+ * Reference CPU implementation of the shader grade — keep in sync with GradeEffect.
+ * `knee` mirrors GradeEffect's highlight shoulder (RenderPipeline.options.highlightKnee).
+ */
+function gradeCPU(c, k, knee = 0.86) {
   const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const w = Math.max(1 - knee, 1e-3);
+  const shoulder = (x) => Math.min(x, 1 - w * Math.exp(-Math.max(x - knee, 0) / w));
   const ws = (x) => { const s = clamp01(1 - x / 0.5); return s * s; };
   const wh = (x) => { const s = clamp01((x - 0.5) / 0.5); return s * s; };
   for (let i = 0; i < 3; i++) {
@@ -372,8 +411,10 @@ function gradeCPU(c, k) {
     const s = ws(v), hgh = wh(v), m = Math.max(0, 1 - s - hgh);
     v += cv[0] * s + cv[1] * m + cv[2] * hgh;
     v *= k.shadowTint[i] * s + k.midTint[i] * m + k.highTint[i] * hgh;
-    c[i] = clamp01(v);
+    c[i] = Math.max(v, 0);
   }
   const lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  for (let i = 0; i < 3; i++) c[i] = clamp01(lum + (c[i] - lum) * k.saturation);
+  for (let i = 0; i < 3; i++) {
+    c[i] = clamp01(shoulder(Math.max(lum + (c[i] - lum) * k.saturation, 0)));
+  }
 }
