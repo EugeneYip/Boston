@@ -25,77 +25,78 @@ import GpuTimer from './effects/GpuTimer.js';
 /**
  * What each quality preset is actually allowed to run, and how hard.
  *
- * ## The measured post budget (read this before adding anything back)
+ * ## Read this before taking anything out of `high` again
  *
- * Paired A/B, median of 4 alternations, measured as the **median gap between rAF
- * callbacks** in a visible, compositing window at 1920x1080 on an M2, `st_beaconhill`.
- * That instrument is the only honest one here; see `profile()` for the three that
- * are not, and why.
+ * This table is the mechanism by which ambient occlusion and screen-space reflections
+ * were absent from the shipping build for several iterations while `rp.ao.enabled` and
+ * `rp.ssr.enabled` both reported `true`. `Settings.high` asks for `ssao: true` and
+ * `ssr: true`; `_rebuild` computes `_aoOn = s.ssao && q.ao`, this table had `q.ao` and
+ * `q.ssr` false on every preset except `ultra`, and the default preset is `high`. So
+ * `pass(this.ao)` and `pass(this.ssr)` simply never ran, three separate critic passes
+ * measured "SSR contributes 0.00", and "there are no contact shadows anywhere" became a
+ * standing rubric complaint. Nothing was broken. The passes were not in the list.
  *
- * | stage                                   |  ms |
- * |-----------------------------------------|----:|
- * | N8AO                                    | 7.6 |
- * | TAA + Velocity + FrameState jitter      | 5.0 |
- * | FX[LensComposite+Exposure+ToneMap+Grade]| 2.7 |
- * | LensPass (bloom pyramid)                | 2.4 |
- * | atmosphere (clouds + aerial perspective)| 2.1 |
- * | AutoExposure                            | 0.4 |
- * | **whole composer vs scene straight to canvas** | **16.6** |
+ * Two things kept that invisible, and both are fixed now:
  *
- * The whole frame at that shot is ~63 ms, so post is ~26% of it and the scene render
- * is the other ~47 ms (`buildings` alone is 22.6 ms). **Post-processing is not what
- * stops this game reaching 60 fps** — but a 60 fps frame is 16.7 ms in total, so a
- * post stack that costs 16.6 ms on its own cannot be called a 60 fps configuration
- * either. `high` therefore keeps only the stages that are load-bearing for the look
- * and cost about a millimetre each.
+ *  1. `Pass.enabled` defaults to `true` and nothing ever cleared it for a pass that was
+ *     never added, so the only handle an agent would think to check reported the
+ *     opposite of the truth. `_rebuild` now clears `enabled` on every optional pass it
+ *     leaves out, so `enabled` means "in the chain and armed" and nothing else.
+ *  2. The 7.6 ms AO figure this table used to quote was measured against a hazard that
+ *     does not exist in this build. The old `_adoptAoBeautyTarget()` existed to stop
+ *     N8AO rendering the whole city a second time — but that double render belongs to
+ *     `N8AOPass`, the three.js-composer variant. We import `N8AOPostPass`, which has no
+ *     `beautyRenderTarget` at all (verified at runtime: `'beautyRenderTarget' in rp.ao`
+ *     is `false`) and reads the composer's `inputBuffer` like any other pass. The
+ *     adopt method was therefore a no-op writing a property nobody reads, and the cost
+ *     it was blamed for was never being paid.
  *
- * ## What that means per preset
- *  - **N8AO is off below `ultra`.** 7.6 ms is 45% of an entire 60 fps frame for a
- *    half-res, 6-sample AO. Its cost is almost all fixed overhead: sweeping
- *    `aoRadius` 2.6 -> 0.4 m, `aoSamples` 6 -> 4 and `denoiseSamples` 3 -> 0 each
- *    moved the frame by less than the noise floor, so there is no cheap tier of it to
- *    buy. It is a render-target-bind cost (depth downsample + AO + two denoise +
- *    composite), not a sampling cost.
- *  - **TAA is off below `ultra`.** TAA + its velocity buffer is 5.0 ms — 30% of the
- *    budget — and `_rebuild` substitutes SMAA when it is off, which is one pass.
- *  - DOF, motion blur and SSR were already `ultra`-only and stay there.
+ * ## What each preset runs now
+ *  - **AO from `medium` up.** It is the single largest look-per-millisecond item in the
+ *    stage: it is what puts geometry in contact with the ground instead of decalled
+ *    onto it. Measured cost and contribution are in `docs/CRITIC_REPORT.md` §5.1.
+ *  - **SSR from `high` up.** It self-gates on wetness in `update()` — in clear weather
+ *    the pass is in the list with `enabled === false` and costs nothing, so the price
+ *    is only paid on the frames that show the payoff.
+ *  - **TAA stays `ultra`-only.** TAA plus its velocity buffer is the most expensive
+ *    optional stage and `_rebuild` substitutes SMAA when it is off, which is one pass.
+ *    (SSR needs the velocity buffer too, so on `high` the velocity pass is now paid for
+ *    by SSR — and only while SSR is armed.)
+ *  - DOF and motion blur stay `ultra`-only.
  *
  * On this tile-based driver the *number of render-target binds* costs more than the
- * shading inside them, which is why the levers above are all "one fewer pass" rather
- * than "fewer samples", and why bloom builds its pyramid from quarter resolution.
+ * shading inside them, which is why the per-preset levers below are mostly "one fewer
+ * bind" (`aoDenoise: 1` on medium) rather than "fewer samples", and why bloom builds
+ * its pyramid from quarter resolution.
  *
- * Settings.js asks for SSR, DOF and motion blur on `high`; this table narrows that.
- * It can only ever take features away, never add them back.
+ * This table can only ever *narrow* what `Settings.js` asks for, never add to it.
  */
 const BUDGET = {
   low: {
     pixels: 1280 * 720,
     ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 4, aoDenoise: 2, bloomLevels: 3, streaks: false,
+    aoSamples: 4, aoDenoise: 2, aoIterations: 1, bloomLevels: 3, streaks: false,
     dofRings: 2, dofMaxCoC: 8, mbSamples: 6,
     ssrSteps: 12, ssrRefine: 3, ssrDistance: 60,
   },
   medium: {
     pixels: 1600 * 900,
-    ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 6, aoDenoise: 2, bloomLevels: 3, streaks: false,
+    ao: true, taa: false, dof: false, motionBlur: false, ssr: false,
+    aoSamples: 6, aoDenoise: 2, aoIterations: 1, bloomLevels: 3, streaks: false,
     dofRings: 2, dofMaxCoC: 8, mbSamples: 6,
     ssrSteps: 14, ssrRefine: 3, ssrDistance: 80,
   },
   high: {
     pixels: 1920 * 1080,
-    // AO and TAA measured 7.6 ms and 5.0 ms — together 75% of a whole 60 fps frame,
-    // for a stage that is meant to be a garnish on the scene render. Both move to
-    // `ultra`; `high` gets SMAA instead of TAA and no ambient occlusion.
-    ao: false, taa: false, dof: false, motionBlur: false, ssr: false,
-    aoSamples: 6, aoDenoise: 3, bloomLevels: 4, streaks: false,
+    ao: true, taa: false, dof: false, motionBlur: false, ssr: true,
+    aoSamples: 8, aoDenoise: 3, aoIterations: 2, bloomLevels: 4, streaks: false,
     dofRings: 3, dofMaxCoC: 10, mbSamples: 8,
     ssrSteps: 16, ssrRefine: 4, ssrDistance: 110,
   },
   ultra: {
     pixels: 2560 * 1440,
     ao: true, taa: true, dof: true, motionBlur: true, ssr: true,
-    aoSamples: 12, aoDenoise: 6, bloomLevels: 5, streaks: true,
+    aoSamples: 12, aoDenoise: 6, aoIterations: 2, bloomLevels: 5, streaks: true,
     dofRings: 4, dofMaxCoC: 13, mbSamples: 14,
     ssrSteps: 24, ssrRefine: 5, ssrDistance: 150,
   },
@@ -105,11 +106,15 @@ const BUDGET = {
  * Owns the WebGL renderer and the entire HDR post stack.
  * NOTHING else in the codebase may call renderer.render().
  *
- * Chain:
- *   FrameState -> Render -> N8AO -> AutoExposure -> [Velocity] -> [SSR] -> [TAA]
- *              -> [MotionBlur] -> [DOF] -> [Lens/bloom]
- *              -> [LensComposite, Exposure, AGX ToneMap, Grade, Grain]
- *              -> [SMAA] -> [CA + Sharpen]
+ * Chain (square brackets are preset-gated; `foreign` is whatever other systems inserted):
+ *   FrameState -> Render -> [N8AO] -> foreign(atmosphere) -> AutoExposure
+ *              -> [Velocity] -> [SSR] -> [TAA] -> [MotionBlur] -> [DOF] -> [Lens/bloom]
+ *              -> [LensComposite, Exposure, AGX ToneMap, Grade]
+ *              -> [SMAA] -> [LensFinal(CA + Sharpen), Grain]
+ *
+ * The bracket is not decoration. Whether a stage is in that list is the single thing
+ * most worth checking before tuning it: `composer.passes.map(p => p.name)` is the truth,
+ * and `_rebuild` now keeps `pass.enabled` honest so the object agrees with the list.
  *
  * postprocessing's own SSAOEffect is deliberately NOT used: at city scale it reports
  * full occlusion and, MULTIPLY-blended, takes the whole frame to black.
@@ -152,19 +157,63 @@ export default class RenderPipeline {
     this.renderPass = new RenderPass(scene, camera);
 
     // --- Ambient occlusion (N8AO handles large outdoor scenes correctly) ---
+    //
+    // `N8AOPostPass` — the postprocessing-composer variant, NOT `N8AOPass`. The two
+    // differ in ways that have already misled this file once: `N8AOPass` follows the
+    // three.js `render(renderer, writeBuffer, readBuffer)` convention and fills its own
+    // `beautyRenderTarget` by re-rendering the scene, which is where the "the whole
+    // world is drawn twice" note came from. `N8AOPostPass` takes the composer's
+    // `inputBuffer` as its colour source and the composer's depth texture as its depth,
+    // writes to `outputBuffer`, and has no `beautyRenderTarget` field at all.
     this.ao = new N8AOPostPass(scene, camera, window.innerWidth, window.innerHeight);
     // It inherits postprocessing's base name, "Pass", which is useless in a profile.
     this.ao.name = 'N8AOPostPass';
     const ao = this.ao.configuration;
-    ao.aoRadius = 2.6;              // metres — tuned for street-level geometry
-    ao.distanceFalloff = 1.1;
-    ao.intensity = 2.8;
-    ao.aoSamples = 16;
-    ao.denoiseSamples = 8;
+    // 1.4 m, not 2.6. The rubric complaint AO is here to answer is "everything reads as
+    // decals on flat planes" — that is a *contact* failure: the 20-40 cm where a bollard,
+    // kerb, bin or tree trunk meets the pavement. A 2.6 m radius at half resolution
+    // spends its samples on broad inter-building darkening and leaves the contact band
+    // to a single sample, which is exactly the wrong trade for a street-level camera.
+    ao.aoRadius = 1.4;
+    ao.distanceFalloff = 1.0;
+    ao.intensity = 2.4;
+    ao.aoSamples = 16;              // overridden per preset in _rebuild
+    ao.denoiseSamples = 8;          // overridden per preset in _rebuild
     ao.denoiseRadius = 12;
     ao.screenSpaceRadius = false;
     ao.halfRes = true;
+    // NOT pure black: occlusion in daylight is filled by sky bounce, so the darkest an
+    // occluded crevice gets is a cold blue-grey, never a hole.
     ao.color = new THREE.Color(0x0a1018);
+    ao.colorMultiply = true;
+    // Transparency awareness OFF, and it has to be turned off on the pass, not the
+    // configuration proxy.
+    //
+    // N8AO ships with `autoDetectTransparency`, which `scene.traverse()`s the WHOLE
+    // scene graph every frame looking for `material.transparent`. The city has plenty
+    // (glass, foliage cards, rain), so on the first frame it latches
+    // `configuration.transparencyAware` on, and from then on every frame does three
+    // more full traversals to save/override/restore `visible`, plus TWO extra
+    // `renderer.render(scene, camera)` calls at full resolution, plus two full-res
+    // half-float targets of GPU memory.
+    //
+    // Measured at `st_beaconhill` by resetting `renderer.info` around a single
+    // `composer.render()`: arming AO with auto-detection left on cost **+121 draw
+    // calls and +151k triangles per frame** — AO was quietly re-rendering every
+    // transparent object in the city twice. Without it the same AO costs +2 draws.
+    //
+    // Writing `configuration.transparencyAware = false` does NOT stop this: the key
+    // already defaults to false, the proxy's setter only acts when the value *changes*,
+    // and `detectTransparency()` then sets it to true on the first frame anyway. Clear
+    // the detector itself.
+    this.ao.autoDetectTransparency = false;
+    if (ao.transparencyAware) ao.transparencyAware = false;   // free the targets if latched
+    // Transparent surfaces now neither cast nor receive AO, which is what we want:
+    // windows, rain and foliage cards must not occlude.
+    // `gammaCorrection` must stay untouched. N8AO's `autosetGamma` follows
+    // `renderToScreen` while nobody assigns this key, which is what we want mid-chain on
+    // an HDR buffer (no correction). Writing it — even writing `true` — latches
+    // `autosetGamma` to false and gamma-corrects the linear scene into the tone mapper.
 
     // --- Grading ---
     this.grade = new ColorGrade();
@@ -261,7 +310,10 @@ export default class RenderPipeline {
       shadowContrast: 0.62,
       shadowToeStops: 7.0,
       grain: 0.015,
-      aberration: 1.15,
+      // Per-channel radial offset AT THE CORNER, in pixels. See LensFinalEffect for
+      // what 1.15 was actually producing (1.73 px per channel over the whole outer
+      // fifth of the frame in daylight, 2.19 px at night) and why that is 3-5x a lens.
+      aberration: 0.35,
       sharpen: 0.0,
       bloomCore: 0.42,        // tight PSF lobe
       bloomWide: 0.55,        // broad veiling glare
@@ -388,11 +440,13 @@ export default class RenderPipeline {
       ao.aoSamples = q.aoSamples;
       ao.denoiseSamples = q.aoDenoise;
       ao.denoiseRadius = q.aoDenoise * 1.5;
+      ao.denoiseIterations = q.aoIterations;
       pass(this.ao);
-      this._adoptAoBeautyTarget();
     }
     // Foreign scene-stage passes (aerial perspective, volumetrics) belong here: on
-    // the HDR scene, before anything temporal or optical touches it.
+    // the HDR scene, before anything temporal or optical touches it — and, for AO,
+    // *after* it, so aerial perspective washes out distant occlusion instead of the
+    // occlusion darkening the fog.
     for (const p of foreign) pass(p);
     pass(this.autoExposure);
 
@@ -436,6 +490,17 @@ export default class RenderPipeline {
     // The A/B profiler disables passes to measure them; make sure a rebuild always
     // leaves everything armed.
     for (const p of this.composer.passes) p.enabled = true;
+    // ...and everything we chose NOT to build is marked as such. `Pass.enabled`
+    // defaults to true, so an optional pass that was never added still answered
+    // `enabled === true` forever. That is how `rp.ao.enabled` and `rp.ssr.enabled`
+    // both read `true` for several iterations while neither pass was in the chain,
+    // and how three critic passes spent their time tuning an effect that was not
+    // running. After this, `enabled` means exactly one thing: this pass is in the
+    // list and will render this frame.
+    const built = new Set(this.composer.passes);
+    for (const p of [this.ao, this.velocity, this.ssr, this.taa, this.motionBlur, this.dof]) {
+      if (!built.has(p)) p.enabled = false;
+    }
     this._syncPassList();
     console.info('[render] ' + this._passNames.join(' -> '));
   }
@@ -470,35 +535,6 @@ export default class RenderPipeline {
       for (const e of pass.effects) e.removeEventListener('change', pass.listener);
     }
     pass.fullscreenMaterial?.dispose();
-  }
-
-  /**
-   * Stop N8AO from rendering the entire city a second time.
-   *
-   * N8AOPostPass is built to be used standalone: it ignores the `readBuffer` the
-   * composer hands it and instead fills its own `beautyRenderTarget` by calling
-   * renderer.render(scene, camera) every frame. Dropped into a chain that already has
-   * a RenderPass, that means the whole world is drawn twice — measured at 19.5 ms of a
-   * 16.6 ms budget on the street_level shot, by far the most expensive thing in the
-   * stage.
-   *
-   * The pass only ever *reads* `beautyRenderTarget.texture` and `.depthTexture`, so
-   * pointing it at the composer's input buffer (which already holds exactly that, and
-   * carries a depth texture because the pass declares needsDepthTexture) gives it the
-   * same data for free.
-   */
-  _adoptAoBeautyTarget() {
-    const input = this.composer.inputBuffer;
-    if (!input?.depthTexture) return;            // no depth attached: leave it alone
-    if (this.ao.beautyRenderTarget !== input) {
-      // Free the target it allocated for itself, once.
-      if (!this._aoBeautyReplaced) {
-        this.ao.beautyRenderTarget?.dispose();
-        this._aoBeautyReplaced = true;
-      }
-      this.ao.beautyRenderTarget = input;
-    }
-    this.ao.configuration.autoRenderBeauty = false;
   }
 
   /**
@@ -772,6 +808,11 @@ export default class RenderPipeline {
       // makes SSR cost literally zero in clear weather instead of paying for a march
       // that every pixel discards.
       const worthIt = wet * o.ssrIntensity > 0.02 || o.dryGloss > 0.02;
+      // The velocity buffer is in the chain only because SSR, TAA or motion blur asked
+      // for it. On `high` SSR is the sole consumer, so when SSR skips a frame the
+      // velocity pass must skip with it — otherwise clear weather pays a full-screen
+      // reprojection every frame for a texture nothing samples.
+      if (!this._taaOn && !this._motionBlurOn) this.velocity.enabled = worthIt;
       if (this.ssr.enabled !== worthIt) {
         this.ssr.enabled = worthIt;
         if (worthIt) this.ssr.reset();
