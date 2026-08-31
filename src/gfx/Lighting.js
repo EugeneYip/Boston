@@ -567,7 +567,10 @@ export default class Lighting {
         const dist = city.districtAt ? city.districtAt(x, z) : 'financial';
         if (!COMMERCIAL.has(dist)) continue;
         if (rnd() > (dist === 'financial' || dist === 'northEnd' ? 0.55 : 0.34)) continue;
-        const g = city.groundHeight ? city.groundHeight(x, z) : 0;
+        // Drawn surface, not the terrain raster: `groundHeight` is stamped
+        // 0.4-0.75 m below the carriageway, which put every sign's ground pool
+        // under the pavement it was meant to light. See `LightManager._groundAt`.
+        const g = city.surfaceHeight ? city.surfaceHeight(x, z) : city.groundHeight(x, z);
         this.manager.register(null, {
           type: 'sign',
           position: [x, g + 3.3 + rnd() * 1.9, z],
@@ -600,7 +603,8 @@ export default class Lighting {
           const t = (rnd() - 0.5) * HALF_BLOCK * 1.5;
           const x = cx + nx * (HALF_BLOCK + 0.6) - nz * t;
           const z = cz + nz * (HALF_BLOCK + 0.6) + nx * t;
-          const g = city?.groundHeight ? city.groundHeight(x, z) : 0;
+          const g = city?.surfaceHeight ? city.surfaceHeight(x, z)
+            : city?.groundHeight ? city.groundHeight(x, z) : 0;
           this.manager.register(null, {
             type: 'sign',
             position: [x + nx * 0.9, g + 3.4 + rnd() * 1.6, z + nz * 0.9],

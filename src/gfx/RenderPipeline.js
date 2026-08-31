@@ -307,7 +307,23 @@ export default class RenderPipeline {
       // compression over more stops and therefore lifts the deepest shadows **less**
       // (night_neon pure-black 5.4% at 7 stops, 8.9% at 9). Tune the contrast, not the
       // width.
-      shadowContrast: 0.62,
+      //
+      // 0.62 -> 0.52. `night_neon`'s black crush is an automatic fail and had got
+      // worse for three passes; a sweep on one frozen capture says the toe owns it
+      // and owns it cheaply (mean / % below luminance 2 / p05):
+      //   0.62  46.69  7.20%  1     0.45  50.87  1.02%   8
+      //   0.52  48.85  2.91%  3     0.38  53.20  0.29%  14
+      // 0.52 removes 60% of the pure black for +4.6% on the frame mean. It is
+      // deliberately NOT taken further: a previous attempt at this fail reached
+      // 1.56% black by more than doubling night to a mean of 106.9, which is
+      // twilight, not night. Darkness is the point; the black *clip* is not.
+      //
+      // Verified not to be a daylight regression, because the toe is not gated on
+      // the clock. Same sweep at `street_level` 09:30 and `st_beaconhill` 16:00:
+      // p05 10 -> 18 and 12 -> 19, while p50 (71 -> 72, 82 -> 82), p95 (218, 216)
+      // and the clipped fraction (2.51% -> 2.50%, 0.94% -> 0.93%) are unmoved.
+      // Only the bottom of the histogram is touched, at either end of the day.
+      shadowContrast: 0.52,
       shadowToeStops: 7.0,
       grain: 0.015,
       // Per-channel radial offset AT THE CORNER, in pixels. See LensFinalEffect for

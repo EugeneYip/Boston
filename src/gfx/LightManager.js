@@ -48,6 +48,37 @@ const GLOW_BOUND_SLACK = 6;
  */
 const MIN_EMIT = 0.004;
 
+/**
+ * Additive gain of a street lamp's ground pool.
+ *
+ * The proxy exists to stand in for the real Point/SpotLight that the fixed pool
+ * cannot afford to spend on this lamp, so its one correctness criterion is that
+ * it lands the same light on the road that the real light would. It did not: it
+ * landed an eighth of it, which is why 2,235 lamps produced no measurable pool
+ * while the fifteen that hold a real light produce an obvious one.
+ *
+ * Calibrated rather than guessed. At `night_neon`, road luminance averaged over
+ * the carriageway width in a +/-2.5 m band under the two nearest lamp stations,
+ * converted to linear, with the pool quads already lifted onto the drawn surface:
+ *
+ *   real pooled lights only (proxies hidden)   0.02566
+ *   proxies only (street lamp power zeroed)    0.00312   <- at the old 1.5
+ *   neither (ambient alone)                    baseline
+ *
+ * i.e. the proxy was **8.23x** short. 1.5 x 8.23 = 12.3 at the old 1.45 x h
+ * radius, and 12.3 x 0.47 = **5.8** at the 1.8 x h radius that replaced it
+ * (`buildStreetLights`) — a wider quad delivers the same road luminance from a
+ * lower peak, and delivering it that way measures better (see there).
+ *
+ * This is a gain on an additive quad, not a physical intensity: `POOL_FRAG`
+ * writes radiance straight into the HDR buffer, so it never went through the
+ * same falloff, BRDF and unit chain as `_power`, and there was nothing keeping
+ * the two in step. The measurement above is that missing link. Re-measure it if
+ * the pool radius, the falloff in `POOL_FRAG` or the exposure key changes —
+ * energy per pool scales with the area, so widening the quad dilutes this.
+ */
+const POOL_STREET_GAIN = 5.8;
+
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
@@ -408,7 +439,7 @@ export default class LightManager {
     // for a fixed fitting (another system pooling its lamps) gets no proxy: it
     // already has the geometry, and a pool sliding down the street looks wrong.
     const anchored = !!obj3d && (type === T_STREET || type === T_WINDOW);
-    const groundY = o.groundY ?? this._groundAt(_v.x, _v.z);
+    const groundY = o.groundY ?? this._groundAt(_v.x, _v.z, _v.y);
     const pr = o.poolRadius ?? (anchored ? 0 : type === T_HEADLIGHT ? 4.2 : type === T_TAIL ? 0 :
       type === T_SIGN ? 3.6 : Math.max(4, (_v.y - groundY) * 1.15));
     if (pr > 0 && (this._poolFree.length || this._poolCount < MAX_POOLS)) {
@@ -513,7 +544,22 @@ export default class LightManager {
         color: L.led ? LED : L.mercury ? MERCURY : SODIUM,
         range: L.h * 3.4,
         intensity: L.led ? 130 : 108,
-        poolRadius: L.h * 1.45,
+        // 1.45 -> 1.8 x the mounting height. A luminaire's useful throw is about
+        // twice its height; at 1.45 the quad stopped short of the far side of the
+        // carriageway, and since the pool is centred under the post — on the
+        // pavement, ~6.6 m off the centreline on this street — that left the
+        // middle of the road outside every pool.
+        //
+        // Swept at the graded `night_neon` framing, road luminance averaged across
+        // the carriageway in +/-2.5 m bands, gain compensated each time to hold the
+        // frame mean (under lamp / between lamps / ratio):
+        //   no pools      54.2 / 35.2 / 1.54     1.8x h   71.9 / 36.5 / **1.97**
+        //   1.45x h       65.2 / 35.5 / 1.84     2.0x h   76.2 / 39.2 / 1.94
+        //                                        2.3x h   81.7 / 43.0 / 1.90
+        // Past 1.8 the pools start merging and the ratio turns over — the light
+        // arrives, but between the lamps as well, which is the wash this is meant
+        // to replace. Fill cost of the whole sweep is 0.2 ms of a 3.1 ms frame.
+        poolRadius: L.h * 1.8,
         haloSize: L.led ? 0.5 : 0.62,
       });
       if (h.id >= 0) this._lampIds.push(h.id);
@@ -545,7 +591,11 @@ export default class LightManager {
     for (let si = 0; si < sites.length; si += stride) {
       const s = sites[si];
       if (!isFinite(s.x) || !isFinite(s.y) || !isFinite(s.z)) continue;
-      const g = city?.groundHeight ? city.groundHeight(s.x, s.z) : (s.g ?? 0);
+      // The DRAWN surface, not the terrain raster (see `_groundAt`). This is also
+      // what makes `h` the real mounting height: against `groundHeight` it read
+      // 4.46 m for a 3.85 m heritage acorn, which oversized both the pool and the
+      // range by the same 14%.
+      const g = this._groundAt(s.x, s.z, s.y);
       const h = Math.max(2.5, s.y - g);
       const heritage = h < 6;
       const dist = city?.districtAt ? city.districtAt(s.x, s.z) : 'financial';
@@ -589,7 +639,7 @@ export default class LightManager {
         const side = (i & 1) ? 1 : -1;
         const px = s.x + -tz * off * side;
         const pz = s.z + tx * off * side;
-        const g = city.groundHeight ? city.groundHeight(px, pz) : (s.y || 0);
+        const g = this._groundAt(px, pz, s.y);
         const dist = city.districtAt ? city.districtAt(px, pz) : 'financial';
         out.push({
           x: px, z: pz, g, y: g + h, h,
@@ -605,8 +655,7 @@ export default class LightManager {
   /** Placeholder-city fallback: a lit grid so night is testable pre-City-agent. */
   _lampsFallback(ctx, out) {
     const PITCH = 90, HALF = 45, KERB = 15, SPAN = 620, STEP = 34;
-    const city = ctx.get('city');
-    const gh = (x, z) => (city?.groundHeight ? city.groundHeight(x, z) : 0);
+    const gh = (x, z) => this._groundAt(x, z, undefined);
     const kn = Math.floor(SPAN / PITCH), jn = Math.floor(SPAN / STEP);
     for (let k = -kn; k <= kn; k++) {
       const line = k * PITCH + HALF;
@@ -786,7 +835,7 @@ export default class LightManager {
       if (pi >= 0) {
         const dx = this._dx[i], dz = this._dz[i];
         const l = Math.hypot(dx, dz) || 1;
-        const g = this._groundAt(_v.x, _v.z);
+        const g = this._groundAt(_v.x, _v.z, _v.y);
         const throwLen = this._type[i] === T_HEADLIGHT ? 11 : 0;
         const px = _v.x + (dx / l) * throwLen, pz = _v.z + (dz / l) * throwLen;
         this._poolPos.setXYZ(pi, px, g + 0.035, pz);
@@ -929,7 +978,7 @@ export default class LightManager {
     const t = this._type[id];
     const pi = this._poolIdx[id];
     if (pi >= 0) {
-      const k = (t === T_HEADLIGHT ? 1.7 : t === T_SIGN ? 1.15 : 1.5) * g * scale;
+      const k = (t === T_HEADLIGHT ? 1.7 : t === T_SIGN ? 1.15 : POOL_STREET_GAIN) * g * scale;
       this._poolCol.setXYZW(pi, this._cr[id], this._cg[id], this._cb[id], k * clock);
       this._poolDirty = true;
     }
@@ -965,8 +1014,29 @@ export default class LightManager {
     }
   }
 
-  _groundAt(x, z) {
+  /**
+   * Height of the surface a light pool lands on.
+   *
+   * This used `city.groundHeight()`, and that is the single reason a city with
+   * 2,876 registered ground pools had none you could see. `City.groundHeight` is
+   * the TERRAIN raster, which `Terrain` deliberately stamps below the carriageway
+   * so the ground can never poke through asphalt — `City.js` says so in as many
+   * words and publishes `surfaceHeight()` as the thing to stand objects on.
+   *
+   * Measured at `night_neon`, raycasting the drawn mesh under the seven nearest
+   * lamps: road surface y 4.31-4.44, `groundHeight` 3.38-3.86. Every pool quad
+   * was therefore authored **0.45-0.98 m under the tarmac** and depth-rejected.
+   * Confirmed by ablation: multiplying every pool's gain by 20 moved the frame
+   * by 0.05/255 against an A/A floor of 0.83, while `depthTest = false` on the
+   * same frame moved it by 138 at peak. The light was being drawn; the road was
+   * in front of it.
+   *
+   * `nearY` disambiguates a flyover deck from the ground beneath it, which is
+   * why every caller passes the light's own height.
+   */
+  _groundAt(x, z, nearY) {
     const c = this.ctx?.get('city');
+    if (c?.surfaceHeight) return c.surfaceHeight(x, z, nearY);
     return c?.groundHeight ? c.groundHeight(x, z) : 0;
   }
 
