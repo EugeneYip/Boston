@@ -33,10 +33,7 @@ export default class PhysicsWorld {
     this.bus = ctx.bus;
 
     // Debug wireframe renderer (toggle with the dev overlay)
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3));
-    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(0), 4));
-    this.debugMesh = new THREE.LineSegments(g,
+    this.debugMesh = new THREE.LineSegments(this._debugGeometry(0),
       new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false, toneMapped: false }));
     this.debugMesh.frustumCulled = false;
     this.debugMesh.visible = false;
@@ -113,15 +110,61 @@ export default class PhysicsWorld {
     }
   }
 
+  /**
+   * Debug-draw geometry sized for `cap` vertices. The attributes are long-lived and
+   * rewritten in place; `update()` explains why they are never swapped on a live one.
+   */
+  _debugGeometry(cap) {
+    const g = new THREE.BufferGeometry();
+    const pos = new THREE.BufferAttribute(new Float32Array(cap * 3), 3);
+    const col = new THREE.BufferAttribute(new Float32Array(cap * 4), 4);
+    pos.setUsage(THREE.DynamicDrawUsage);
+    col.setUsage(THREE.DynamicDrawUsage);
+    g.setAttribute('position', pos);
+    g.setAttribute('color', col);
+    g.setDrawRange(0, 0);
+    return g;
+  }
+
   update(dt, ctx) {
     if (!this.debugEnabled) { this.debugMesh.visible = false; return; }
     this.debugMesh.visible = true;
     const { vertices, colors } = this.world.debugRender();
-    this.debugMesh.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-    this.debugMesh.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 4));
+    const n = vertices.length / 3;
+    let g = this.debugMesh.geometry;
+    const pos = g.attributes.position, col = g.attributes.color;
+    if (vertices.length > pos.array.length || colors.length > col.array.length) {
+      // Growth is the only case that needs new attributes, and it must retire the
+      // whole geometry to get them. `setAttribute` in three r171 is just
+      // `this.attributes[name] = attribute` -- it never looks at what it displaced,
+      // and the ONLY paths that reach `WebGLAttributes.remove` (and so
+      // `gl.deleteBuffer`) are WebGLGeometries.onGeometryDispose, which walks the
+      // attributes still attached at that moment, the wireframe-index special case,
+      // and InstancedMesh teardown. A BufferAttribute has no dispose() of its own.
+      // So replacing these two every frame -- which is what this method used to do
+      // -- orphaned two GL buffers per frame for as long as F2 was held, invisibly:
+      // renderer.info counts geometries and textures, not buffers. Disposing the old
+      // geometry WHILE its attributes are still on it is the public boundary that
+      // actually frees them.
+      //
+      // Doubling bounds capacity by the largest frame ever seen rather than by how
+      // long the overlay has been open, and capacity never shrinks, so a smaller
+      // frame reallocates nothing.
+      const cap = Math.ceil(Math.max(n, colors.length / 4, (pos.array.length / 3) * 2));
+      this.debugMesh.geometry = this._debugGeometry(cap);
+      g.dispose();
+      g = this.debugMesh.geometry;
+    }
+    g.attributes.position.array.set(vertices);
+    g.attributes.color.array.set(colors);
+    g.attributes.position.needsUpdate = true;
+    g.attributes.color.needsUpdate = true;
+    // Without this the tail of a larger previous frame would keep drawing.
+    g.setDrawRange(0, n);
   }
 
   dispose() {
+    this.debugMesh?.parent?.remove(this.debugMesh);
     this.debugMesh?.geometry.dispose();
     this.debugMesh?.material.dispose();
     this.world?.free();
