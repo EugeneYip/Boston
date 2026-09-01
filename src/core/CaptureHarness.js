@@ -626,8 +626,37 @@ export default class CaptureHarness {
     this.api = api;
 
     // Collect runtime errors so the critic can fail a shot that logged one.
+    //
+    // Both histories are bounded from BOTH ends. A fault that repeats every frame
+    // is the normal case here rather than the exception -- LensPass once had its
+    // draw rejected with GL_INVALID_OPERATION on every frame of a whole session
+    // (docs/CURRENT_STATE.md, Resolved) -- so an uncapped array grows at frame
+    // rate for as long as the bug lives, and this is the instrumentation that is
+    // supposed to be running precisely when something is broken. Keeping only the
+    // newest would be worse than useless: it would push the boot-time root cause
+    // out and leave a full array of copies of the symptom. So the head keeps the
+    // first faults and the tail tracks the current state.
+    //
+    // 32 is taken from the largest structurally-bounded burst in the codebase:
+    // Engine.dispose reports at most one failure per system (25) and loadOptional
+    // at most one per optional file (23). Anything past that is repetition.
+    const HISTORY = 32;
+    const recorder = (list) => {
+      let dropped = 0;
+      return (msg) => {
+        if (list.length < HISTORY * 2) { list.push(msg); return; }
+        // The marker itself consumes a slot, so the first overflow loses two.
+        dropped += dropped === 0 ? 2 : 1;
+        list[HISTORY] = `... ${dropped} entries suppressed ...`;
+        list.splice(HISTORY + 1, 1);
+        list.push(msg);
+      };
+    };
+    const recordError = recorder(api.errors);
+    const recordFault = recorder(api.glFaults);
+
     const origErr = console.error;
-    console.error = (...a) => { api.errors.push(a.map(String).join(' ')); origErr(...a); };
+    console.error = (...a) => { recordError(a.map(String).join(' ')); origErr(...a); };
 
     // GL driver faults arrive as console.warn, NOT console.error. A sampler-unit
     // collision that rejected every building draw call hid behind this for an
@@ -636,7 +665,7 @@ export default class CaptureHarness {
     const GL_FAULT = /GL_INVALID|INVALID_OPERATION|INVALID_VALUE|INVALID_ENUM|Framebuffer is incomplete|program not valid|feedback loop|not renderable/i;
     console.warn = (...a) => {
       const msg = a.map(String).join(' ');
-      if (GL_FAULT.test(msg)) api.glFaults.push(msg.slice(0, 300));
+      if (GL_FAULT.test(msg)) recordFault(msg.slice(0, 300));
       origWarn(...a);
     };
   }
