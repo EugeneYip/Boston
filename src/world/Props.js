@@ -688,7 +688,13 @@ const facing = (fx, fz) => Math.atan2(fx, fz);
 export default class Props {
   static id = 'props';
   static label = 'Street furniture';
-  static deps = ['assets'];
+  // `lighting` is an ordering edge, like `materials`' dep on `sky`: init() reaches
+  // `_buildLightPool`, which calls `lighting.registerLight` -- and that dereferences
+  // a `manager` built inside Lighting.init(). Initialised the other way round it
+  // throws, the catch below logs a bare console.info and breaks, and the street-lamp
+  // pool is silently gone. Declaring it also keeps Props ahead of Lighting at
+  // teardown, where the handles are released.
+  static deps = ['assets', 'lighting'];
 
   async init(ctx) {
     this.ctx = ctx;
