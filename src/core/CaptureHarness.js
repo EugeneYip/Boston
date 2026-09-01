@@ -105,6 +105,12 @@ export default class CaptureHarness {
     // Any system id that may write to the camera. `setCamera` stands these down,
     // but the transform lock below is what actually guarantees the shot.
     const CAMERA_DRIVERS = new Set(['cameraRig', 'player', 'gameplay', 'missions']);
+    // Systems whose per-frame updates a frozen shot must stop. `weather` is included
+    // because rain PARTICLES animate under it.
+    const PAUSE_IDS = ['traffic', 'vehicles', 'peds', 'weather'];
+    // The timeScale in force before the first freeze(), so unfreezing restores what
+    // the caller actually had rather than a hardcoded default. null = not frozen.
+    let _preFreezeScale = null;
     const camLock = { active: false, pos: new THREE.Vector3(),
                       quat: new THREE.Quaternion(), fov: null };
     const _lookTmp = new THREE.Vector3();
@@ -135,6 +141,7 @@ export default class CaptureHarness {
         engine.stop();
         const realDelta = engine._clock.getDelta;
         engine._clock.getDelta = () => dt;
+        try {
         for (let i = 0; i < n; i++) {
           // Re-assert before the frame, not just in updateMatrixWorld. The render
           // was always correct, but systems reading camera.position during their
@@ -147,10 +154,17 @@ export default class CaptureHarness {
           }
           engine.frame();
         }
-        engine._clock.getDelta = realDelta;
-        if (wasRunning) engine.start();
         return { frames: n, fps: engine.perf.fps, draws: engine.perf.drawCalls,
                  tris: engine.perf.tris };
+        } finally {
+          // `engine.frame()` runs every system's update and only Traffic guards
+          // itself, so a throw anywhere in the world used to leave the clock stubbed
+          // at this fixed dt AND the rAF loop stopped, permanently. `start()` stays
+          // conditional on `wasRunning`: a caller already stopped stays stopped, and
+          // since we stopped it ourselves there is no way to end up with two loops.
+          engine._clock.getDelta = realDelta;
+          if (wasRunning) engine.start();
+        }
       },
       /**
        * Stop the systems that animate under their own dt rather than off the
@@ -168,13 +182,12 @@ export default class CaptureHarness {
        * ever settling.
        * @param {boolean} on
        */
-      pauseActors: (on = true) => {
+      pauseActors: (on = true, ids = PAUSE_IDS) => {
         // `weather` is here because rain PARTICLES animate under it. A critic pass
         // measured a wet-carriageway A/A floor of 23.7% of blocks against 0.00%
         // dry, purely from falling rain, and concluded the SSR contribution was
         // unmeasurable as a result. Wetness STATE is held rather than reset, which
         // is what a frozen shot wants.
-        const ids = ['traffic', 'vehicles', 'peds', 'weather'];
         for (const id of ids) {
           const sys = engine.systems.get(id);
           if (!sys) continue;
@@ -202,7 +215,17 @@ export default class CaptureHarness {
        * also paused the actors, they did not.
        */
       freeze: (on = true) => {
-        engine.settings.timeScale = on ? 0 : 40;
+        // Restore the rate the caller actually had, not a hardcoded 40: the menu's
+        // time-flow control writes timeScale directly, so unfreezing used to reset a
+        // fast-forwarded or paused world to normal speed. Captured on the FIRST
+        // freeze only, so a nested freeze(true) cannot overwrite it with 0.
+        if (on) {
+          if (_preFreezeScale === null) _preFreezeScale = engine.settings.timeScale;
+          engine.settings.timeScale = 0;
+        } else {
+          engine.settings.timeScale = _preFreezeScale ?? 40;
+          _preFreezeScale = null;
+        }
         api.pauseActors(on);
       },
       setTime: (h) => { engine.settings.timeOfDay = h % 24; engine.time.timeOfDay = h % 24; },
@@ -401,6 +424,18 @@ export default class CaptureHarness {
                         holdActors = false } = {}) => {
         const s = shot ? this.shots[shot] : null;
         if (shot && !s) throw new Error(`unknown shot "${shot}"`);
+        // Everything below mutates world state and almost every step can throw:
+        // setQuality and setWeather run bus handlers, groundedY and unstick raycast,
+        // and step() runs every system's update. On SUCCESS the frozen, camera-locked
+        // world is the product and must survive. On FAILURE it is stranded state -- a
+        // pinned clock, stubbed actors, and least obviously a camera left locked so
+        // the player can no longer move. Snapshot now; restore only on the throw path.
+        const _pre = {
+          timeScale: engine.settings.timeScale,
+          paused: PAUSE_IDS.filter((id) => !!engine.systems.get(id)?._capturePaused),
+          camLocked: camLock.active,
+        };
+        try {
         api.freeze(true);
         if (quality) api.setQuality(quality);
         const w = weather ?? s?.weather ?? 'clear';
@@ -513,6 +548,16 @@ export default class CaptureHarness {
         return { shot: shot || 'custom', weather: w, streamed, settledFrames,
                  timeScale: engine.settings.timeScale,
                  tod: +engine.settings.timeOfDay.toFixed(2), ...stats };
+        } catch (err) {
+          // Restore, then rethrow the ORIGINAL error. A cleanup failure must not mask
+          // the fault that caused it, nor stop the remaining restoration, so each step
+          // is guarded independently.
+          try { api.pauseActors(false); } catch { /* keep the original error */ }
+          try { if (_pre.paused.length) api.pauseActors(true, _pre.paused); } catch { /* as above */ }
+          try { engine.settings.timeScale = _pre.timeScale; _preFreezeScale = null; } catch { /* as above */ }
+          try { if (!_pre.camLocked) api.releaseCamera(); } catch { /* as above */ }
+          throw err;
+        }
       },
       /**
        * Measure REAL frame rate from the natural rAF loop.

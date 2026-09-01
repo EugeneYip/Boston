@@ -585,15 +585,20 @@ export default class Profiler {
     engine.stop();
     const realDelta = engine._clock.getDelta;
     engine._clock.getDelta = () => 1 / 60;
-    for (let i = 0; i < warm; i++) engine.frame();
-    this._sync();
-    const t0 = performance.now();
-    for (let i = 0; i < frames; i++) engine.frame();
-    this._sync();
-    const ms = (performance.now() - t0) / frames;
-    engine._clock.getDelta = realDelta;
-    if (wasRunning) engine.start();
-    return ms;
+    try {
+      for (let i = 0; i < warm; i++) engine.frame();
+      this._sync();
+      const t0 = performance.now();
+      for (let i = 0; i < frames; i++) engine.frame();
+      this._sync();
+      return (performance.now() - t0) / frames;
+    } finally {
+      // Same hazard as CaptureHarness.step: engine.frame() runs every system, and a
+      // throw used to strand the fixed-dt clock and a stopped rAF loop. start() stays
+      // conditional on wasRunning so a stopped caller stays stopped.
+      engine._clock.getDelta = realDelta;
+      if (wasRunning) engine.start();
+    }
   }
 
   /**
