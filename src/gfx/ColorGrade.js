@@ -135,15 +135,68 @@ export const TOD_LOOKS = [
       bloomTint: [1.0, 0.92, 0.80], bloomScale: 1.6, streakScale: 1.35,
       vignette: 1.10, grain: 0.75 }) },
 
+  // Dusk / civil twilight. Warm key against a cool sky, sodium windows starting to win.
+  //
+  // This key used to be authored MAGENTA, and it was the whole of the "dusk reads
+  // magenta, not amber" defect (`downtown_dusk` R 140.0 / G 76.6 / B 79.3, i.e.
+  // R > B > G, at 53.3% whole-frame saturation).
+  //
+  // The atmosphere was NOT guilty, and the obvious suspects — B1's highlight shoulder,
+  // the sun colour ramp, the exposure stage — were not either. Measured on one frozen
+  // `downtown_dusk` capture at 1920x1080, `gradeIntensity(0)` (a true identity grade:
+  // NEUTRAL is black 0 / white 1 / contrast 1 / gain 1 / tints 1 / sat 1) gives
+  // R 130.3 / G 94.8 / B 78.2 — **R > G > B, correctly amber** — and splitting the
+  // frame by a sky-dome visibility mask puts BOTH regions in the right order:
+  // sky 181.9 / 140.2 / 122.8 and city 123.4 / 88.6 / 72.2. The scene through AgX is
+  // already a credible sunset. Turning the grade back on inverted it: sky
+  // 204.5 / 124.5 / 129.1, city 131.2 / 70.1 / 72.6. The grade was removing ~17 of
+  // green from every region of the frame and adding ~10 points of saturation on top.
+  //
+  // Five separate terms were pushing blue over green, and ablating ANY ONE of them
+  // alone flipped the whole-frame ordering back to amber (whole-frame B minus G,
+  // baseline +2.73, round-trip drift 0.03/255):
+  //     midTint [1.02, 0.96, 1.08] -> 1,1,1        B-G  +2.73 -> -4.84
+  //     gain    [1.02, 0.97, 1.04] -> flat          "   +2.73 -> -2.53
+  //     shadowTint blue-over-green removed          "   +2.73 -> -1.49
+  //     curveR/G/B -> 0                             "   +2.73 -> -0.41
+  //     tint 0.22 -> 0 (white balance)              "   +2.73 -> +1.54
+  //
+  // The rewrite below is NOT a hue rotation. Green was the MINIMUM channel, so raising
+  // green fixes the ordering and lowers saturation at the same time — saturation is
+  // (max-min)/max, and green was the min. The first attempt did the opposite, pushing
+  // blue down instead, which drove blue below green and took saturation UP (53.3 ->
+  // 54.9) while satisfying the ordering test. That is the trap this key is here to
+  // document: **do not chase G >= B by cutting B.**
+  //
+  // What is deliberately kept: the warm/cool split, which is what makes dusk read as
+  // dusk. shadowTint stays strongly blue (R/B 0.69) because shadows at this hour are
+  // lit by the sky dome, and highTint stays warm (R/B 1.20). Only shadow GREEN moves,
+  // 0.92 -> 0.95, which is the difference between a blue shadow and a violet one.
+  // `tint` is white balance and is scene-referred: +0.22 magenta tinted the sun itself,
+  // and real low-CCT sunlight sits on the Planckian locus, not under it.
+  //
+  // Measured, `downtown_dusk`: R 140.0 / G 76.6 / B 79.3 -> 132.5 / 88.3 / 76.7
+  // (R > G > B), saturation 53.3% -> 46.9%, clipping 0.000% both, mean 90.2 -> 96.8.
+  // `st_seaport` (20:00, looking AWAY from the sun): 71.5 / 55.3 / 87.8 ->
+  // 68.4 / 63.8 / 78.9, saturation 48.7% -> 37.9%. Blue stays the top channel there
+  // and that is correct, not a residual defect: with the grade fully bypassed the
+  // scene itself reads 79.0 / 75.4 / 81.2, B > R > G — blue twilight sky plus warm
+  // sodium windows. The grade's job is to stop EXAGGERATING that, and the B-minus-G
+  // distortion it adds over the raw scene falls 26.7 -> 9.3 there and 19.3 -> 5.0 at
+  // `downtown_dusk`.
+  //
+  // Editing this key alone is sufficient and safe. `downtown_dusk` (19.4) is 89.6%
+  // this key, `st_seaport` (20.0) is 89.6% this key, and no other named shot blends it
+  // at all — `night_neon` 22.0, `golden_hour` 6.6, `st_southend` 11.2, `street_level`
+  // 9.5, `overcast_wide` 13.0 and `hero_skyline` 17.8 all bracket between other keys.
   { hour: 19.7, look: L({
-      // Dusk / civil twilight. Violet sky, sodium windows starting to win.
-      exposureEV: -0.26, temperature: 0.12, tint: 0.22,
+      exposureEV: -0.26, temperature: 0.12, tint: 0.03,
       blackPoint: [0.010, 0.008, 0.004], whitePoint: [0.99, 0.99, 1.0],
-      contrast: 1.15, lift: [0.008, 0.004, 0.018],
-      gamma: [1.0, 1.02, 1.02], gain: [1.02, 0.97, 1.04],
-      curveR: [0.006, 0.012, 0.020], curveG: [-0.006, -0.002, 0.004], curveB: [0.016, 0.006, -0.006],
-      shadowTint: [0.86, 0.92, 1.26], midTint: [1.02, 0.96, 1.08], highTint: [1.14, 1.00, 0.92],
-      saturation: 1.02, vibrance: 0.26, shadowSat: 0.72,
+      contrast: 1.15, lift: [0.007, 0.006, 0.016],
+      gamma: [1.0, 1.02, 1.02], gain: [1.02, 1.005, 1.02],
+      curveR: [0.006, 0.012, 0.016], curveG: [0.004, 0.008, 0.014], curveB: [0.014, 0.004, -0.008],
+      shadowTint: [0.86, 0.95, 1.24], midTint: [1.015, 1.01, 1.045], highTint: [1.12, 1.03, 0.93],
+      saturation: 0.89, vibrance: 0.12, shadowSat: 0.72,
       bloomTint: [1.0, 0.93, 0.84], bloomScale: 1.7, streakScale: 1.45,
       vignette: 1.15, grain: 1.05 }) },
 
