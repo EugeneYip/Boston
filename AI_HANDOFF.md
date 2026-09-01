@@ -281,6 +281,83 @@ content is already in the history.
 ### Completed
 - **B2: dusk hue — DONE, `1beada1`, pushed.** See §5 for the lesson.
 
+#### Daylight-hue candidate — static attribution done, runtime attribution NOT done
+
+Read-only trace at `2f60c59`. **Nothing here is a confirmed defect.** This exists so the
+next session does not repeat the trace.
+
+**Current static state.** `st_southend` is tod **11.2**, weather **clear**, and grades
+between keys **8.2** and **11.6** with `smooth(t)` = **0.9616** — i.e. 96% the midday
+key. Effective interpolated look:
+
+| param | effective at 11.2 |
+|---|---|
+| `shadowTint` | **[0.926, 0.968, 1.103]** — B over G by ~0.135 |
+| `midTint` | [0.9985, 0.9996, 1.0027] — effectively neutral |
+| `highTint` | [1.029, 1.010, 0.973] — warm, R > G > B |
+| saturation | ~0.955 |
+| contrast | ~1.131 |
+| white balance | temperature ~-0.071, tint ~**-0.021** |
+
+**Attribution result — do NOT "fix daylight tint".** `whiteBalanceGains`
+(`ColorGrade.js:339`) is the codebase's magenta axis: positive `tint` raises R
+(+0.045), **lowers G (-0.11)** and raises B (+0.055). That is exactly why B2 worked at
+dusk, where `tint` ran 0.22. **At daylight the effective tint is NEGATIVE (~-0.021),
+so it is slightly green-POSITIVE and structurally opposes the observed deficit.**
+Changing it without new evidence would make things worse.
+
+The strongest remaining grade-side hypothesis is **`shadowTint`**, B/G ratio ~**1.139**
+applied across whatever shadow area the mask actually covers. **It is a hypothesis, not
+a finding.**
+
+**WHOLE-FRAME RGB DOES NOT ESTABLISH A DEFECT.** The observation R 111.5 / G 105.3 /
+B 111.2 is *not* evidence of magenta on its own. Warm sun (R>G>B) plus cool skylight
+fill (B>G>R) plus blue sky plus red-brown brick plus almost no green material composes
+naturally to R > B > G, with green simply being the channel nothing boosts.
+
+**Better metric — on KNOWN-NEUTRAL surfaces only:**
+
+> **M = G - (R + B) / 2**
+
+Near zero means no green deficiency; materially negative means a genuine magenta bias.
+Warm light and cool light both leave M near zero, which is precisely why it separates
+grading bias from a legitimate warm/cool split. **Do not use whole-frame M** — sky and
+material composition confound it. Measure separately on **sunlit neutral pavement**,
+**shadowed neutral pavement**, and **sky**. Two isolation mechanisms already exist: the
+road material's `setAtlas(0, 1)`, which substitutes each tile's measured mean linear
+colour and so gives a known reference, and the sky-dome visibility raycast mask already
+used in the dusk work.
+
+**Minimum future experiment — one page load, and step 3 renders nothing:**
+1. `capture({ shot: 'st_southend', holdActors: true })` — baseline regional M.
+2. `__boston.gradeIntensity(0)` (exists, `RenderPipeline.js:398`) — does the grade
+   create the neutral-surface deficit at all?
+3. Drive **`gradeCPU`** with the effective 11.2 look on a known-neutral input and ablate
+   `shadowTint`, `highTint` and white-balance `tint` **separately, on a copy of the
+   look**. CPU only — no shader edit, no extra pass.
+4. Confirm only the winning hypothesis with one targeted GPU capture.
+
+**Limitation:** `gradeCPU` omits vibrance and shadowSat and hardcodes the shoulder knee,
+so validate its prediction against at least one GPU result before treating it as
+authoritative.
+
+**Plausibility ranking:** (1) scene composition / legitimate warm-cool split, possibly
+benign; (2) `shadowTint` B/G applied over too much shadow area; (3) blue-sky coverage
+contaminating whole-frame statistics; (4) sun colour, which can raise R but does not
+obviously explain a G deficit.
+
+**Structurally unlikely or incapable:** AutoExposure (achromatic); daylight white-balance
+tint (sign opposes magenta); `midTint` (neutral); `highTint` (warm, not magenta); the B1
+shoulder (per-channel, compresses the *highest* channel — B in a sky frame — so it
+reduces B>G rather than causing it).
+
+**RULE FOR THE NEXT SESSION.** Do not modify any daylight colour parameter until neutral
+sunlit and neutral shadowed surfaces have been measured separately. **If M is near zero
+on both neutral classes, CLOSE this candidate as scene composition rather than "fixing"
+it.** Additional traps: stay within one page load (traffic respawns); use block/region
+statistics (grain never converges per-pixel); do not assume B2's dusk attribution
+transfers to daylight; and do not read whole-frame R > B > G as magenta.
+
 ### Open risks from the static audit at `b12497d` — unconfirmed, cheap to test
 A read-only audit of B1/B2 found **no deterministic defect**: the highlight shoulder is
 C0 and C1 at the knee, NaN-safe, and correct at 0, 1, >1 and negative inputs; B2's
