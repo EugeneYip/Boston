@@ -25,8 +25,8 @@ An older copy at `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is s
 Anything referring to `~/Desktop/boston` predates the migration of 2026-08-31.
 
 ### Current checkpoint (2026-08-31)
-Local `HEAD` is **`11c02f9`** (B1, the grade highlight shoulder).
-The last commit confirmed pushed to `origin/main` is **`19f32f4`** (Wave A).
+Local `HEAD` is **`1beada1`** (B2, dusk hue), and it **has been pushed** —
+`origin/main` is at the same commit.
 
 **Pushes are performed manually by the repository owner.** Do not assume
 `origin/main` contains the newest commit, and do not push. Check with
@@ -49,6 +49,7 @@ Recent completed sequence, newest last:
 - fresh critic pass on `9bd5e55`
 - **Wave A** road material rebalance — `19f32f4`
 - **B1** grade highlight shoulder and overcast black/white points — `11c02f9`
+- **B2** dusk hue, magenta to amber — `1beada1`
 
 ---
 
@@ -152,6 +153,24 @@ standard deviation in one crop: a critic pass called them inert because they wer
 absent from the single rect it measured, and they are in fact spatially gated —
 `joint` peaks at 76-100 luma against an A/A maximum of 39-64 on other shots.
 
+### Dusk grade — the scene was innocent, and the fix direction mattered
+`downtown_dusk` read **R > B > G (magenta)** where a real sunset is R > G > B. The
+scene was **not** at fault: with `gradeIntensity(0)`, which is a true identity grade,
+it already read ~**130.3 / 94.8 / 78.2 — correctly amber**. The time-of-day grade was
+removing ~17 points of green everywhere and adding ~10 of saturation. Sky, sun ramp,
+exposure and B1's highlight shoulder were all uninvolved. B2 (`1beada1`) changed
+**only the 19.7 keyframe**.
+
+Verified before → after: `downtown_dusk` 139.9/76.6/79.3 (R>B>G, sat 53.3%) →
+**132.4/88.2/76.6 (R>G>B, sat 46.9%)**, clipping 0.000% both. `golden_hour`
+essentially unchanged at 140.7/130.2/127.6, sat 18.1%. `st_southend` clipping stays
+0.000% with p99 245.1. `night_neon` mean 46.49, black 3.563% — no material regression.
+
+**The dead end is the important part.** Green was the *minimum* channel, so raising
+green fixes the ordering **and** lowers saturation. Lowering blue instead also makes
+R > G > B pass — while driving saturation **up** (53.3% → 54.9%) and making the frame
+visibly worse. **Do not game the channel-order metric; restore the deficient channel.**
+
 ### Lighting / vehicles
 - Vehicle lights attach to the **physical vehicle**, not to the visual LOD. At 22:00
   all ~80 cars have headlights on but at most ten have a visual inside the 82 m detail
@@ -235,9 +254,16 @@ content is already in the history.
 ## 9. Current open work — prioritised, and what NOT to reopen
 
 ### Next
-- **B2: dusk hue.** `downtown_dusk` reads magenta rather than amber — mean RGB
-  140.1 / 76.7 / 79.4, with **green the lowest channel**. Deliberately untouched by B1.
-  Re-confirm it still reproduces before acting.
+- **CURRENT CANDIDATE / NEEDS FRESH ATTRIBUTION — possible daylight magenta
+  tendency.** `st_southend` in daylight measures approximately **R 111.5 / G 105.3 /
+  B 111.2**, i.e. **R > B > G**, the same channel ordering dusk had. This is recorded
+  as a candidate only. It is **NOT** established as the same cause as dusk, and
+  `ColorGrade` is **NOT** implicated — B2 touched only the 19.7 keyframe and cannot
+  have produced it. A future session must **reproduce it on current pixels and do
+  fresh attribution before ranking it**.
+
+### Completed
+- **B2: dusk hue — DONE, `1beada1`, pushed.** See §5 for the lesson.
 
 ### Known current defects
 - **Rain may now read below the grain floor.** The rebuild closed an automatic fail and
