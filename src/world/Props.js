@@ -700,6 +700,10 @@ export default class Props {
     this.decals = new Decals();
     this.wires = null;
     this._lightPool = [];
+    // Handles for the registrations in `_lightPool`. `LightManager.register` returns
+    // `{ id, setEnabled, ..., release }`, and the release is the ONLY way to give the
+    // slot back -- see `_releaseLightPool`.
+    this._lightHandles = [];
     this._lampSites = [];
     this._lastCamX = 1e9; this._lastCamZ = 1e9;
     this._lastScale = -1;
@@ -847,14 +851,39 @@ export default class Props {
       o.visible = false;
       ctx.scene.add(o);
       try {
-        lighting.registerLight(o, { type: 'street', range: 26, intensity: 42 });
+        // Keep the handle. Dropping it is what stranded these registrations: a
+        // quality change calls `_rebuild`, which scene-removes these anchors and
+        // empties `_lightPool`, then rebuilds -- so without the handle the previous
+        // N stayed registered forever. `_refreshDynamic` skips a parentless anchor
+        // (`!o.parent`), so a stranded one freezes at its last position, but `_select`
+        // gates only on F_ENABLED / F_AUTONIGHT / gain -- never on `parent` or
+        // `visible` -- so it keeps competing for one of the fifteen real-light slots
+        // from wherever it happened to stop.
+        const h = lighting.registerLight(o, { type: 'street', range: 26, intensity: 42 });
         this._lightPool.push(o);
+        this._lightHandles.push(h);
       } catch (e) {
         ctx.scene.remove(o);
         console.info('[props] lighting.registerLight declined:', e.message);
         break;
       }
     }
+  }
+
+  /**
+   * Give every pooled street-light registration back and detach its anchor.
+   *
+   * Symmetric with `_buildLightPool`. Scene-removing the anchor is not enough on its
+   * own: the registration outlives it, and an orphan still competes for a real-light
+   * slot at a stale position. Idempotent, so a rebuild followed by a dispose is safe.
+   */
+  _releaseLightPool(ctx) {
+    for (const h of this._lightHandles) {
+      try { h?.release?.(); } catch { /* manager already gone */ }
+    }
+    this._lightHandles.length = 0;
+    for (const o of this._lightPool) ctx?.scene?.remove(o);
+    this._lightPool.length = 0;
   }
 
   _updateLightPool(camX, camZ) {
@@ -956,8 +985,7 @@ export default class Props {
     this.decals.dispose(ctx);
     for (const m of this.wires || []) { ctx.scene.remove(m); m.geometry.dispose(); }
     this.wires = null;
-    for (const o of this._lightPool) ctx.scene.remove(o);
-    this._lightPool.length = 0;
+    this._releaseLightPool(ctx);
     this._lampSites.length = 0;
     this._wireRuns = null;
     this.batcher = new PropBatcher(ctx.scene);
@@ -974,7 +1002,7 @@ export default class Props {
     this.batcher?.dispose();
     this.decals?.dispose(ctx);
     for (const m of this.wires || []) { ctx.scene.remove(m); m.geometry.dispose(); }
-    for (const o of this._lightPool) ctx.scene.remove(o);
+    this._releaseLightPool(ctx);
     ctx?.bus.off?.('quality:changed', this._onQuality);
     ctx?.bus.off?.('weather:set', this._onWeather);
     _layouts.delete(ctx?.engine);
