@@ -109,6 +109,21 @@ export class EngineVoice {
     const hifi = !!opt.hifi;
     this.nodes = [];
     const keep = (n) => { this.nodes.push(n); return n; };
+    // Edges from the kit's SHARED looping noise sources into this voice.
+    //
+    // `noiseTap()` is a selector, not a factory: it returns one of the seven
+    // `k.noise[*]` sources that live for the whole AudioContext. `dispose()` walks
+    // `this.nodes` and calls `n.disconnect()`, which severs only each node's OUTGOING
+    // edges -- so without this the shared source kept a strong reference to every
+    // retired filter and gain in the voice, still feeding it noise, for the life of the
+    // context. Voices are created and retired continuously as cars cross the cull
+    // radius, so this accumulated without bound in ordinary play.
+    //
+    // Record the pair and sever it with the DESTINATION argument, which removes only
+    // this edge and leaves every other live voice on the same tap untouched. The shared
+    // source is never stopped here: it belongs to the kit, not to any one voice.
+    this._srcLinks = [];
+    const tapTo = (src, dest) => { src.connect(dest); this._srcLinks.push([src, dest]); return dest; };
 
     const orders = ORDERS[cfg.engine] || ORDERS.I4;
     const waveSmooth = cachedWave(k, cfg.engine + '|s', () => periodicWaveFromOrders(actx, orders, { seed: 7 }));
@@ -156,7 +171,7 @@ export class EngineVoice {
     this.jitLP = keep(actx.createBiquadFilter());
     this.jitLP.type = 'lowpass'; this.jitLP.frequency.value = 18;
     this.jitDepth = keep(actx.createGain()); this.jitDepth.gain.value = 0;
-    k.noise[6].connect(this.jitLP); this.jitLP.connect(this.jitDepth);
+    tapTo(k.noise[6], this.jitLP); this.jitLP.connect(this.jitDepth);
     this.jitDepth.connect(this.oscA.frequency);
     this.jitDepth.connect(this.oscB.frequency);
 
@@ -167,7 +182,7 @@ export class EngineVoice {
     this.exBP.type = 'bandpass'; this.exBP.frequency.value = 320; this.exBP.Q.value = 0.9;
     this.gEx = keep(actx.createGain()); this.gEx.gain.value = 0;
     this.exDepth = keep(actx.createGain()); this.exDepth.gain.value = 0.9;
-    noiseTap(k, tap).connect(this.exBP);
+    tapTo(noiseTap(k, tap), this.exBP);
     this.exBP.connect(this.gEx); this.gEx.connect(this.sum);
     this.fireMod.connect(this.exDepth); this.exDepth.connect(this.gEx.gain);
 
@@ -179,7 +194,7 @@ export class EngineVoice {
       this.clMod = keep(actx.createOscillator());
       this.clMod.setPeriodicWave(cachedWave(k, 'pulse40', () => pulseWave(actx, 40)));
       this.clDepth = keep(actx.createGain()); this.clDepth.gain.value = 1.4;
-      noiseTap(k, tap + 1).connect(this.clBP);
+      tapTo(noiseTap(k, tap + 1), this.clBP);
       this.clBP.connect(this.gCl); this.gCl.connect(this.sum);
       this.clMod.connect(this.clDepth); this.clDepth.connect(this.gCl.gain);
     }
@@ -188,7 +203,7 @@ export class EngineVoice {
     this.inBP = keep(actx.createBiquadFilter());
     this.inBP.type = 'bandpass'; this.inBP.frequency.value = 700; this.inBP.Q.value = 1.1;
     this.gIn = keep(actx.createGain()); this.gIn.gain.value = 0;
-    noiseTap(k, tap, true).connect(this.inBP);
+    tapTo(noiseTap(k, tap, true), this.inBP);
     this.inBP.connect(this.gIn); this.gIn.connect(this.sum);
 
     // --- overrun burble: sparse exhaust pops off-throttle -------------------
@@ -202,10 +217,10 @@ export class EngineVoice {
     this.popBP = keep(actx.createBiquadFilter());
     this.popBP.type = 'bandpass'; this.popBP.frequency.value = 190; this.popBP.Q.value = 2.2;
     this.gPop = keep(actx.createGain()); this.gPop.gain.value = 0;
-    k.noise[6].connect(this.popRate);
+    tapTo(k.noise[6], this.popRate);
     this.popRate.connect(this.popShape); this.popShape.connect(this.popDepth);
     this.popDepth.connect(this.gPop.gain);
-    noiseTap(k, tap + 2).connect(this.popBP);
+    tapTo(noiseTap(k, tap + 2), this.popBP);
     this.popBP.connect(this.gPop); this.gPop.connect(this.sum);
 
     // --- turbo: intake-side, so it bypasses the exhaust tone stack ----------
@@ -220,7 +235,7 @@ export class EngineVoice {
       this.turboBP = keep(actx.createBiquadFilter());
       this.turboBP.type = 'bandpass'; this.turboBP.frequency.value = 3400; this.turboBP.Q.value = 2.4;
       this.gTurboNoise = keep(actx.createGain()); this.gTurboNoise.gain.value = 0.5;
-      noiseTap(k, tap + 3).connect(this.turboBP);
+      tapTo(noiseTap(k, tap + 3), this.turboBP);
       this.turboBP.connect(this.gTurboNoise); this.gTurboNoise.connect(this.turboOut);
     }
     if (cfg.blower > 0) {
@@ -374,6 +389,16 @@ export class EngineVoice {
   }
 
   dispose() {
+    // Sever the shared-source edges FIRST, by destination, so the kit's looping taps
+    // stop referencing this voice. `n.disconnect()` below cannot do it: it clears only
+    // outgoing edges, and these arrive from a source this voice does not own. Never
+    // call `src.disconnect()` without the destination -- that would cut every other
+    // live voice sharing the tap. Idempotent: the list is emptied, so a second dispose
+    // finds nothing to do. Guarded because not every voice owns shared edges.
+    for (const [src, dest] of this._srcLinks || []) {
+      try { src.disconnect(dest); } catch { /* already severed */ }
+    }
+    if (this._srcLinks) this._srcLinks.length = 0;
     for (const n of this.nodes) {
       try { n.stop?.(); } catch { /* not a source */ }
       n.disconnect();
@@ -403,6 +428,21 @@ export class TyreVoice {
     const tap = opt.tap ?? 0;
     this.nodes = [];
     const keep = (n) => { this.nodes.push(n); return n; };
+    // Edges from the kit's SHARED looping noise sources into this voice.
+    //
+    // `noiseTap()` is a selector, not a factory: it returns one of the seven
+    // `k.noise[*]` sources that live for the whole AudioContext. `dispose()` walks
+    // `this.nodes` and calls `n.disconnect()`, which severs only each node's OUTGOING
+    // edges -- so without this the shared source kept a strong reference to every
+    // retired filter and gain in the voice, still feeding it noise, for the life of the
+    // context. Voices are created and retired continuously as cars cross the cull
+    // radius, so this accumulated without bound in ordinary play.
+    //
+    // Record the pair and sever it with the DESTINATION argument, which removes only
+    // this edge and leaves every other live voice on the same tap untouched. The shared
+    // source is never stopped here: it belongs to the kit, not to any one voice.
+    this._srcLinks = [];
+    const tapTo = (src, dest) => { src.connect(dest); this._srcLinks.push([src, dest]); return dest; };
 
     this.out = keep(actx.createGain()); this.out.gain.value = 1;
     this.out.connect(dest);
@@ -411,14 +451,14 @@ export class TyreVoice {
     this.roarBP = keep(actx.createBiquadFilter());
     this.roarBP.type = 'bandpass'; this.roarBP.frequency.value = 130; this.roarBP.Q.value = 1.0;
     this.gRoar = keep(actx.createGain()); this.gRoar.gain.value = 0;
-    noiseTap(k, tap).connect(this.roarBP);
+    tapTo(noiseTap(k, tap), this.roarBP);
     this.roarBP.connect(this.gRoar); this.gRoar.connect(this.out);
 
     // ... and tread hiss (air pumping out of the tread blocks, high).
     this.hissBP = keep(actx.createBiquadFilter());
     this.hissBP.type = 'bandpass'; this.hissBP.frequency.value = 1500; this.hissBP.Q.value = 0.7;
     this.gHiss = keep(actx.createGain()); this.gHiss.gain.value = 0;
-    noiseTap(k, tap + 1, true).connect(this.hissBP);
+    tapTo(noiseTap(k, tap + 1, true), this.hissBP);
     this.hissBP.connect(this.gHiss); this.gHiss.connect(this.out);
 
     // Cobblestone: rhythmic amplitude modulation whose rate is speed / stone pitch.
@@ -438,7 +478,7 @@ export class TyreVoice {
     this.skidBroad.type = 'bandpass'; this.skidBroad.frequency.value = 700; this.skidBroad.Q.value = 0.6;
     this.gSkidBroad = keep(actx.createGain()); this.gSkidBroad.gain.value = 0;
     const nt = noiseTap(k, tap + 2);
-    nt.connect(this.sqBP); nt.connect(this.sqBP2); nt.connect(this.skidBroad);
+    tapTo(nt, this.sqBP); tapTo(nt, this.sqBP2); tapTo(nt, this.skidBroad);
     this.sqBP.connect(this.gSkid); this.sqBP2.connect(this.gSkid);
     this.gSkid.connect(this.out);
     this.skidBroad.connect(this.gSkidBroad); this.gSkidBroad.connect(this.out);
@@ -446,7 +486,7 @@ export class TyreVoice {
     this.sqWob = keep(actx.createBiquadFilter());
     this.sqWob.type = 'lowpass'; this.sqWob.frequency.value = 9;
     this.sqWobDepth = keep(actx.createGain()); this.sqWobDepth.gain.value = 150;
-    k.noise[6].connect(this.sqWob); this.sqWob.connect(this.sqWobDepth);
+    tapTo(k.noise[6], this.sqWob); this.sqWob.connect(this.sqWobDepth);
     this.sqWobDepth.connect(this.sqBP.frequency);
 
     for (const n of this.nodes) if (n.start) { try { n.start(now); } catch { /* ignore */ } }
@@ -490,6 +530,16 @@ export class TyreVoice {
   }
 
   dispose() {
+    // Sever the shared-source edges FIRST, by destination, so the kit's looping taps
+    // stop referencing this voice. `n.disconnect()` below cannot do it: it clears only
+    // outgoing edges, and these arrive from a source this voice does not own. Never
+    // call `src.disconnect()` without the destination -- that would cut every other
+    // live voice sharing the tap. Idempotent: the list is emptied, so a second dispose
+    // finds nothing to do. Guarded because not every voice owns shared edges.
+    for (const [src, dest] of this._srcLinks || []) {
+      try { src.disconnect(dest); } catch { /* already severed */ }
+    }
+    if (this._srcLinks) this._srcLinks.length = 0;
     for (const n of this.nodes) {
       try { n.stop?.(); } catch { /* not a source */ }
       n.disconnect();
@@ -599,6 +649,16 @@ export class SirenVoice {
   update(now) { if (this._on) this._apply(now); }
 
   dispose() {
+    // Sever the shared-source edges FIRST, by destination, so the kit's looping taps
+    // stop referencing this voice. `n.disconnect()` below cannot do it: it clears only
+    // outgoing edges, and these arrive from a source this voice does not own. Never
+    // call `src.disconnect()` without the destination -- that would cut every other
+    // live voice sharing the tap. Idempotent: the list is emptied, so a second dispose
+    // finds nothing to do. Guarded because not every voice owns shared edges.
+    for (const [src, dest] of this._srcLinks || []) {
+      try { src.disconnect(dest); } catch { /* already severed */ }
+    }
+    if (this._srcLinks) this._srcLinks.length = 0;
     for (const n of this.nodes) {
       try { n.stop?.(); } catch { /* not a source */ }
       n.disconnect();
