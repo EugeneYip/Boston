@@ -3,7 +3,7 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` is B2 itself). Verify with `git rev-parse --short HEAD` rather than trusting this line.
+Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` is B2 itself). Verify with `git rev-parse --short HEAD` rather than trusting this line. **The runtime figures below still date from that commit.** The lifecycle audit that followed (through `8e3a825`, see §Lifecycle audit) was static/Node-only and changed no rendering behaviour, so it neither refreshes nor invalidates them.
 
 > **Canonical repository is `/Volumes/Projects/boston`, on an external SSD. If
 > `/Volumes/Projects` is not mounted, STOP** — never fall back to or recreate another
@@ -55,7 +55,7 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 ## Status at a glance
 | | |
 |---|---|
-| Boots | Yes — 22 systems, `bootReport.failed` is `[]` |
+| Boots | Yes — `bootReport.failed` is `[]`. The "22 systems" figure here was stale: static registration is **25** (4 core + 21 optional), counted from source during the D2 teardown work — `Missions.js` is the only `OPTIONAL` entry that does not exist. That is a source count, **not** a re-measured boot figure. |
 | Console | `__boston.errors` is `[]` and `__boston.glFaults` is `[]`. The `glDrawArrays: Feedback loop formed between Framebuffer and active Texture` warning is **gone** — it was `LensPass`; see §Resolved. Stubbing every pass but one and reading `gl.getError()` now returns `NONE` for all ten. |
 | Frame cost | **Inside budget. Perf is no longer the headline problem — stop optimising.** Settled medians at 1920×1080 `high`, measured 90 frames past the streaming catch-up window with `gl.finish()` (critic pass on `4311bd1`): `st_backbay` 4.7 ms · `st_northend` 6.7 · `st_southend` 6.9 · `night_neon` 6.6 · `st_beaconhill` 11.8 — all inside 16.7 ms. **Every absolute fps figure recorded before 2026-08-30 is void**, including "8 fps at 1080p high is now the headline problem" in PROGRESS iteration 6: they came from `engine.perf`, which times the throttled rAF cadence rather than work done and reported 71.74 ms on a frame that really costs 6.5 ms. `measureFps()` cannot help — `document.hidden` stays `true` for the embedded pane even when it is visible. Use the synchronous bench above. |
 | Frame time (AO+SSR live) | **Re-verified 2026-08-30 at `da004e2`, the first measurement taken with AO and SSR actually in the compositor** — every earlier figure was taken while both were silently absent. Short-burst protocol, 1920×1080 preset `high`, two agreeing bursts per shot: `hero_skyline` 3.7 ms · `overcast_wide` 3.7 · `night_neon` 4.5 · `st_southend` 4.7 · `st_beaconhill` 5.0 · **`rain_street` 5.1 with AO, SSR and Velocity all live**. Worst case is **31% of the 16.7 ms budget**. AO's measured cost is **0.15 ms** — it had been restricted to `ultra` on the strength of a 7.6 ms figure measured against a double-render that cannot happen in this build. SSR and Velocity correctly self-gate off in dry weather, so only wet frames pay them. |
@@ -147,6 +147,30 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
   the harness left the camera.
 - **Capture harness** (`window.__boston`): 8 named shots, deterministic stepping,
   `measureFps()` that refuses to lie about a backgrounded tab.
+
+## Lifecycle audit (post-`5f0966d`) — CLOSED, do not reopen from the report
+Seven static/Node-verified waves, no visual change in any of them. Every finding was
+re-derived from source before editing; the audit report was wrong in detail more often
+than it was right, so **the dispositions below supersede it.** Reopening any of these
+requires new evidence measured against the current baseline.
+
+| SHA | Wave | Pre-fix → post-fix | Disposition |
+|---|---|---|---|
+| `cecc01c` | D1 audio graph | 200 churn cycles left **2,222** shared-source edges → **0** | confirmed, fixed |
+| `e5a83a5` | D4 props lights | **20 → 260** registrations over 12 rebuilds → 20 stable, 0 after teardown | real; audit overstated the resource (a selection candidate, not a pool quad or halo; `F_DYNAMIC`, so `STATIC_FLOOR` was never touched) |
+| `d0bd886` | D5 instrumentation | failure injection **13/30 → 0/30** | real, narrower/different (camera-lock strand unreported; `pauseActors` corruption did not reproduce) |
+| `09ea530` | D2 engine teardown | dependency-first order reversed; repeat-dispose, renderer double-dispose and kit paint ownership fixed | confirmed, mechanism and scope corrected |
+| `5141c08` | dependency hardening | `Props → lighting` declared; init and teardown order **byte-identical** | follow-up, fixed |
+| `af5a3b4` | D3 physics debug draw | 300 enabled frames → **300** attribute pairs → **1** | confirmed, fixed |
+| `8e3a825` | D6 diagnostics | 10,000 appends → **10,000** entries → **64** | D6b real, lower severity (strings only); **D6a intentional, unchanged** |
+
+Three things worth not rediscovering: **three is 0.171.0** and does not reclaim a
+`BufferAttribute` displaced by `setAttribute` — only `onGeometryDispose` frees what is
+still attached. **`Engine.dispose()` has no caller** and was repaired for contract, not
+reachability. And the `console` interception is deliberate page-lifetime
+instrumentation — **do not add restore-on-teardown**, since it could clobber a wrapper
+another subsystem installed later. Full detail and the residual Traffic-ordering caveat
+live in `AI_HANDOFF.md` §9.
 
 ## Resolved root causes — do not re-debug these
 | Symptom | Root cause | Fixed in |

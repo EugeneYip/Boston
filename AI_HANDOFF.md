@@ -24,12 +24,18 @@ git status -sb
 An older copy at `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is stale.
 Anything referring to `~/Desktop/boston` predates the migration of 2026-08-31.
 
-### Current checkpoint (2026-08-31)
-Local `HEAD` is **`b12497d`** (continuity fixes from the cold-start test). `1beada1` is B2 itself,
-the last *source* commit. Both are pushed; `origin/main` is at `3874d16`.
+### Current checkpoint (2026-09-01)
+The **static lifecycle audit is closed.** Seven source waves landed on top of B2 —
+D1, D4, D5, D2 (+ dependency hardening), D3, D6 — the last being `8e3a825`. The
+documentation commit that records them supersedes that SHA. See §9.
 
-**Verify rather than trust this line** — it is written by hand and has been stale
-before: `git rev-parse --short HEAD` and `git rev-parse --short origin/main`.
+**Do not trust this line; verify it.** It is hand-written and has been stale before.
+A copied SHA is not a checkpoint — these three commands are:
+```
+git rev-parse --short HEAD
+git rev-parse --short origin/main
+git status -sb
+```
 
 **Pushes are performed manually by the repository owner.** Do not assume
 `origin/main` contains the newest commit, and do not push. Check with
@@ -53,6 +59,8 @@ Recent completed sequence, newest last:
 - **Wave A** road material rebalance — `19f32f4`
 - **B1** grade highlight shoulder and overcast black/white points — `11c02f9`
 - **B2** dusk hue, magenta to amber — `1beada1`
+- **static lifecycle audit** — resource and teardown correctness, seven commits
+  through `8e3a825`. No visual change in any of them. See §9.
 
 ---
 
@@ -238,6 +246,12 @@ visibly worse. **Do not game the channel-order metric; restore the deficient cha
 - **Close browser/WebGL contexts promptly** after verification. A hidden context still
   holds a full city scene.
 
+**Reading at lifecycle-audit close (2026-09-01):** no WebGL, browser or vite context
+was open; internal free ~7 GiB; swap elevated at ~3.35 GiB of 4. Swap did **not** fall
+across the audit even though every wave was static/Node-only. Treat these as one
+sample, not a new limit — **re-measure before opening a visual/WebGL wave.** The policy
+above governs.
+
 **This is an operating-system safety margin, not a repository storage requirement.**
 The repository lives on the external SSD and is small. What consumes the *internal*
 disk is macOS swap, AI transcripts, browser/WebGL caches and temp files. A three-agent
@@ -277,6 +291,44 @@ content is already in the history.
   `[0.93,0.97,1.10]`, 15.6 `[0.92,0.97,1.12]`. Treat those keys as the **first**
   hypothesis, not an excluded one — but still reproduce on current pixels and attribute
   by ablation before changing anything.
+
+### Lifecycle audit (opened after `5f0966d`) — CLOSED
+Seven waves, all static/Node-verified, none touching rendering appearance. Each was
+re-derived from source before editing rather than taken from the audit report, and the
+report was wrong in detail more often than not. **Do not reopen any of these from the
+original audit text. Reopening requires new evidence against the current baseline.**
+
+| SHA | Wave | What it actually was |
+|---|---|---|
+| `cecc01c` | D1 audio | Retired voices left shared noise-source edges connected. 200 churn cycles → **2,222** retained destination edges; now **0**, with live voices still connected and all seven shared kit sources running. Invariant: a voice disconnects only the source→destination pairs it recorded. **Never** call bare `source.disconnect()` on a shared tap. |
+| `e5a83a5` | D4 props | Quality rebuild dropped LightManager handles: **20 → 260** registrations over 12 rebuilds; now 20 stable, 0 after teardown. **Correction to the audit:** orphans consumed a real-light *selection candidate*, not a pool quad or halo, and being `F_DYNAMIC` they never touched `STATIC_FLOOR`. |
+| `d0bd886` | D5 instrumentation | A throw in `capture()`/`step()`/`measureFrame` stranded the fixed clock delta, a stopped rAF loop, `timeScale`, actor stubs and — unreported — the **camera lock**. Failure injection **13/30 → 0/30**; success paths unchanged. The audit's `pauseActors` double-pause corruption **did not reproduce**. |
+| `09ea530` | D2 teardown | `order` is dependency-**first** and dispose walked it forward, freeing providers under live consumers. Now reverse order, best-effort, errors reported after. Also fixed repeat-dispose re-running everything (WASM double-free), renderer double-dispose, and `createMaterialKit.paint()` treating a Materials/Assets-owned carPaint as kit-owned. Vehicle shared geometry needed **no** ownership rewrite — reverse order alone makes Traffic release first. |
+| `5141c08` | dep hardening | `Props` now declares `lighting`: its `init()` already calls `lighting.registerLight`, which needs `Lighting.manager`. Init and teardown order stayed **byte-identical**. |
+| `af5a3b4` | D3 physics | F2 debug draw replaced both `BufferAttribute`s every frame; three **0.171.0** (verified in `node_modules`) never reclaims a displaced attribute's GL buffer. 300 frames → **300** attribute pairs, now **1**. Growth replaces and disposes the whole geometry explicitly; 400 growing frames → 10 generations, each retired one disposed once. Teardown now also unparents the debug mesh. |
+| `8e3a825` | D6 diagnostics | `errors`/`glFaults` were genuinely unbounded `Array<string>`, and a GL fault has historically fired **every frame** for a session. Now 64 slots: first 32, a suppression marker, latest 31. 10,000 appends → 64. |
+
+**Disposition of the original findings** — D1 confirmed; D2 confirmed but mechanism and
+scope corrected; D3 confirmed; D4 real, resources overstated; D5 real but narrower and
+different in places; **D6a intentional, no change made**; D6b real but far lower
+retention severity than implied (strings only — no Error, GL, DOM or system object
+graphs were ever held).
+
+**`Engine.dispose()` still has no caller** — no unload, HMR, restart or test path. It
+was repaired because its contract is unambiguous, not because it is reachable.
+
+**D6a, explicitly:** the `console.warn`/`error` interception is deliberate
+page-lifetime instrumentation. It installs once, keeps the originals in closures and
+forwards correctly. **Do not add naive restore-on-teardown logic** — `console.error =
+origErr` would silently destroy a wrapper installed later by other code, and there is
+no ownership check available to prevent it.
+
+**Residual caveat, carried forward from `5141c08`.** Traffic tears down before Lighting
+and Vehicles today only because of **registration order**, not a declared edge. Both
+relationships are acquired lazily in `_lazyBuild` *after* system init — deliberately,
+per its docstring — so **do not add `Traffic → Lighting` or `Traffic → Vehicles` as
+init deps** without real architecture work. The order is safe as it stands; just do not
+casually reorder the `OPTIONAL` list in `main.js` without re-checking it.
 
 ### Completed
 - **B2: dusk hue — DONE, `1beada1`, pushed.** See §5 for the lesson.
@@ -413,6 +465,8 @@ of the shots it was swept on.
   the frame was a facade 14 m away. Being outside geometry is not the same as having
   a shot.
 - **"`oil`/`joint` are inert"** — crop-specific claim; they are spatially gated.
+- **The whole static lifecycle audit (D1–D6)** — closed; see §9 for the corrected
+  findings. The original audit report is superseded by that table.
 
 ## 10. Your first commit
 Make a local commit as soon as you have a verified-bootable state, before changing
