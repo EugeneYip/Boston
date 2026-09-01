@@ -25,7 +25,7 @@ An older copy at `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is s
 Anything referring to `~/Desktop/boston` predates the migration of 2026-08-31.
 
 ### Current checkpoint (2026-08-31)
-Local `HEAD` is **`3874d16`** (the B2 documentation record). `1beada1` is B2 itself,
+Local `HEAD` is **`b12497d`** (continuity fixes from the cold-start test). `1beada1` is B2 itself,
 the last *source* commit. Both are pushed; `origin/main` is at `3874d16`.
 
 **Verify rather than trust this line** — it is written by hand and has been stale
@@ -266,13 +266,50 @@ content is already in the history.
 - **CURRENT CANDIDATE / NEEDS FRESH ATTRIBUTION — possible daylight magenta
   tendency.** `st_southend` in daylight measures approximately **R 111.5 / G 105.3 /
   B 111.2**, i.e. **R > B > G**, the same channel ordering dusk had. This is recorded
-  as a candidate only. It is **NOT** established as the same cause as dusk, and
-  `ColorGrade` is **NOT** implicated — B2 touched only the 19.7 keyframe and cannot
-  have produced it. A future session must **reproduce it on current pixels and do
-  fresh attribution before ranking it**.
+  as a candidate only, and is **NOT** established as the same cause as dusk.
+
+  **Correction (static audit at `b12497d`).** An earlier version of this entry said
+  `ColorGrade` was *not* implicated, on the grounds that B2 touched only the 19.7
+  keyframe. That is a **non-sequitur** — B2's innocence says nothing about the daylight
+  keys, and the wording risked steering a session away from the prime suspect.
+  Statically, the daylight keys carry the **same B > G authoring pattern** B2 diagnosed
+  at dusk: `shadowTint` blue over green at 8.2 `[0.83,0.93,1.18]`, 11.6
+  `[0.93,0.97,1.10]`, 15.6 `[0.92,0.97,1.12]`. Treat those keys as the **first**
+  hypothesis, not an excluded one — but still reproduce on current pixels and attribute
+  by ablation before changing anything.
 
 ### Completed
 - **B2: dusk hue — DONE, `1beada1`, pushed.** See §5 for the lesson.
+
+### Open risks from the static audit at `b12497d` — unconfirmed, cheap to test
+A read-only audit of B1/B2 found **no deterministic defect**: the highlight shoulder is
+C0 and C1 at the knee, NaN-safe, and correct at 0, 1, >1 and negative inputs; B2's
+interpolation wraps correctly and leaks through no shared reference. Four risks remain
+that need runtime confirmation. Four captures settle all of them; tests 3 and 4 share a
+shot and one page load:
+
+| # | shot / state | ablation | statistic |
+|---|---|---|---|
+| 1 | `night_neon` | `options.grain` 0.015 → 0 | fraction of final canvas at 255 |
+| 2 | `overcast_wide` | staggered vs uniform black point | B−R in sky mask; channel means below L10 |
+| 3 | `downtown_dusk` | `highlightKnee` 0.86 → 1.0 | sky-mask R/G/B means (ΔG > 2/255 ⇒ B1 and B2 interact) |
+| 4 | `downtown_dusk`, `weather='rain'` | none | whole-frame B−G sign |
+
+What each is about: (1) `FilmGrainEffect` is the last pass and adds grain **unclamped**,
+with a highlight response flooring at 0.35 rather than 0 — so it can reintroduce a hard
+top the shoulder just removed. (2) The new overcast black point `[0.115,0.124,0.145]`
+sits against a hard `max(c,0)` with no toe, so values in that range drive B to 0 with
+R,G > 0 — a warm cast in the deepest shadows. (3) B2's `tint` change is scene-referred
+and moves which channels cross the fixed display-referred knee, so the per-channel
+shoulder may compress the newly-raised green in the brightest ~14%. (4) `rain` and
+`storm` modifiers keep `shadowTint` with B > G and blend at w 0.90/1.00 over the
+corrected dusk key, so dusk-in-rain is outside everything B2 measured.
+
+Two further notes, neither a defect: the shoulder is **per-channel, not luminance**, so
+saturated highlights in 0.86–1.0 desaturate slightly where the old clamp was identity;
+and the knee is a fixed display-referred constant while auto-exposure moves the
+histogram beneath it, so the 0.86 sweep is only strictly valid at the metered exposures
+of the shots it was swept on.
 
 ### Known current defects
 - **Rain may now read below the grain floor.** The rebuild closed an automatic fail and
