@@ -96,7 +96,11 @@ window.__boston.bootReport            // { loaded, missing, failed } — `failed
 await window.__boston.measureFps(2)   // real fps; refuses if the tab is backgrounded
 window.__boston.stats()               // draws / tris / geometries / textures / programs
 await window.__boston.capture({ shot: 'street_level' })   // park camera + render deterministically
-window.__boston.shotNames()           // the 8 named review viewpoints
+window.__boston.shotNames()           // AUTHORITATIVE list of review viewpoints.
+                                      // Do NOT trust a fixed count in prose: the set
+                                      // has grown (8 -> 13), and a "sweep all 8 shots"
+                                      // review silently skips st_southend -- the shot
+                                      // the current open item is defined on.
 ```
 The browser console must be **clean** — zero errors.
 

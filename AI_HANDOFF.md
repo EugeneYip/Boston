@@ -25,8 +25,11 @@ An older copy at `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is s
 Anything referring to `~/Desktop/boston` predates the migration of 2026-08-31.
 
 ### Current checkpoint (2026-08-31)
-Local `HEAD` is **`1beada1`** (B2, dusk hue), and it **has been pushed** —
-`origin/main` is at the same commit.
+Local `HEAD` is **`3874d16`** (the B2 documentation record). `1beada1` is B2 itself,
+the last *source* commit. Both are pushed; `origin/main` is at `3874d16`.
+
+**Verify rather than trust this line** — it is written by hand and has been stale
+before: `git rev-parse --short HEAD` and `git rev-parse --short origin/main`.
 
 **Pushes are performed manually by the repository owner.** Do not assume
 `origin/main` contains the newest commit, and do not push. Check with
@@ -99,9 +102,15 @@ is a hypothesis; the measurement decides. Say so plainly rather than forcing a t
 
 **Concurrency is capped for machine safety, not preference — see §7.**
 
-If you are a single agent without the ability to fan out, work the ranked list in
-`docs/CURRENT_STATE.md` §Next priorities from the top. It is kept in
-highest-leverage-first order.
+If you are a single agent without the ability to fan out, work **§9 of this file**
+from the top. That is the live priority list.
+
+> **Do NOT work `docs/CURRENT_STATE.md` §Next priorities.** That section is an
+> **ARCHIVED pre-2026-08-30 performance log**, kept for history. Its numbers are void
+> (see `docs/PERF_REPORT.md`), several of its items are already implemented, and its
+> top entry would have you trade image quality for frame time that is already free.
+> Performance is **not** currently a problem: worst shot ~5 ms against a 16.7 ms budget
+> with every budget met.
 
 ## 4. Hard-won lessons — do not relearn these
 - **`measureFps()` REFUSES BY DESIGN and always will in the embedded preview pane**:

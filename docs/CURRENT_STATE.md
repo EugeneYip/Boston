@@ -3,7 +3,7 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: **2026-08-31, commit `1beada1`** (B2, pushed).
+Last verified: **2026-08-31, commit `3874d16`** (the B2 docs record; `1beada1` is B2 itself). Verify with `git rev-parse --short HEAD` rather than trusting this line.
 
 > **Canonical repository is `/Volumes/Projects/boston`, on an external SSD. If
 > `/Volumes/Projects` is not mounted, STOP** — never fall back to or recreate another
@@ -48,7 +48,7 @@ Last verified: **2026-08-31, commit `1beada1`** (B2, pushed).
 >
 > **Disk pressure here is swap, not transcripts.** Concurrent hidden WebGL contexts each
 > hold a full city scene; three 1 GiB swapfiles appeared during one 3-agent wave and were
-> reclaimed when the agents exited. Close browser tabs when done and keep waves to 3-4.
+> reclaimed when the agents exited. Close browser tabs when done and keep waves to a maximum of 2 agents, and only 1 WebGL-heavy at a time (see AGENTS.md).
 
 ---
 
@@ -678,7 +678,12 @@ move. Also: `measureFps()` correctly refuses when the tab is backgrounded, and a
 tool call that is not a screenshot will not front it — re-front before every measurement or
 you will collect a page of `hidden: true`.
 
-## Next priorities (highest leverage first)
+## Next priorities — **ARCHIVED, DO NOT WORK THIS LIST**
+
+> This is a **pre-2026-08-30 performance backlog**, retained only as history. Its
+> figures are void (`docs/PERF_REPORT.md` is banner-marked SUPERSEDED), several items
+> are already implemented in the tree, and at least one is disproved elsewhere in this
+> same file. **The live priority list is `AI_HANDOFF.md` §9.**
 | # | Action | Est. gain | File |
 |---|---|---|---|
 | 1 | `PRESETS.high.pixelRatioCap` 1.5 → 1.25 or 1.0 — on a DPR-2 display `high` renders 2.26× the pixels the budget is written against | **18–36 ms** | `src/core/Settings.js` |

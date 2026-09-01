@@ -1,3 +1,16 @@
+> ## SUPERSEDED — DO NOT FOLLOW THIS FILE'S PATHS OR INSTRUMENTS
+>
+> Retained for historical context only. Two things in it are actively dangerous:
+>
+> 1. It points at **`/Users/eugene/Desktop/boston/...`**, which is the OLD checkout,
+>    now renamed `boston-OLD-DO-NOT-USE`. The canonical repository is
+>    **`/Volumes/Projects/boston`**. See `AGENTS.md`.
+> 2. It presents **`measureFps()`** and **`stats().fps` / `stats().ms`** as trustworthy.
+>    They are not — they read a throttled rAF cadence and one reported 71.74 ms for a
+>    frame that cost 6.5 ms. See `AI_HANDOFF.md` §6 for the instruments that work.
+>
+> **Read `AI_HANDOFF.md` instead.**
+
 # Agent brief — read this first, every time
 
 You are one of several agents building **BOSTON**, an open-world game in Three.js whose

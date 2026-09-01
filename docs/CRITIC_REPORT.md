@@ -1,3 +1,13 @@
+> ## STALE — measured at `9bd5e55`, three landed waves ago
+>
+> This report is a **historical diagnostic**, not a current work list. Wave A
+> (`19f32f4`), B1 (`11c02f9`) and B2 (`1beada1`) have landed since, and its road,
+> daylight-clipping and dusk findings are **already addressed**. By this project's own
+> rule, critic findings go stale within one or two waves.
+>
+> **The live priority list is `AI_HANDOFF.md` §9.** Re-measure on current pixels before
+> acting on anything below.
+
 # Visual critic report — BOSTON
 
 | | |
