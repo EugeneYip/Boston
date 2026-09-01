@@ -1682,10 +1682,20 @@ export function createMaterialKit(ctx) {
     paint(hex) {
       const key = hex >>> 0;
       if (paintCache.has(key)) return paintCache.get(key);
+      // `M.carPaint()` hands back a material the Materials system caches in
+      // `_carPaints` AND registers through `assets.material()`, so Assets disposes
+      // it and every caller asking for the same colour gets the same instance --
+      // more of them than it looks, because carPaint snaps colours to a 5-bit grid.
+      // Pushing that into `owned` made kit.dispose() destroy a material Materials,
+      // Assets and every other vehicle still held, and the cache went on handing
+      // out the disposed instance afterwards. Only the clone and the standalone
+      // fallback are ours to free. `shared()` above already draws this line;
+      // `paint()` was the one place that crossed it.
       let m = M?.carPaint?.(hex);
+      let mine = false;
       if (!m) {
         const base = M?.get?.('car_paint');
-        if (base && base.isMaterial) { m = base.clone(); m.color.setHex(hex); }
+        if (base && base.isMaterial) { m = base.clone(); m.color.setHex(hex); mine = true; }
       }
       if (!m) {
         // Standalone fallback — used only when the materials system is absent.
@@ -1701,9 +1711,11 @@ export function createMaterialKit(ctx) {
         });
         m.userData.envBase = 1.25;
         wet(m);
+        mine = true;
       }
-      m.name = 'car_paint_' + key.toString(16);
-      owned.push(m);
+      // Naming is a mutation too: on the shared path it clobbered the key
+      // `assets.material()` set.
+      if (mine) { m.name = 'car_paint_' + key.toString(16); owned.push(m); }
       paintCache.set(key, m);
       return m;
     },

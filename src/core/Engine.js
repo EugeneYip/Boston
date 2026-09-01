@@ -171,8 +171,38 @@ export default class Engine {
 
   dispose() {
     this.stop();
-    for (const s of this.order) s.dispose?.();
-    this.systems.clear(); this.bus.clear();
-    this.renderer?.dispose();
+    // Teardown walks `this.order` BACKWARDS. That array is a dependency-FIRST
+    // topological sort built for init, so running it forwards freed every provider
+    // while its consumers were still holding what it owned: `physics.world.free()`
+    // ran at index 2, before City (10) and Player (18) removed their rigid bodies
+    // from that freed Rapier world, and RenderPipeline went first of all,
+    // destroying the renderer under the ten systems that depend on it. Reversed,
+    // a consumer always releases before the provider it borrowed from.
+    const errs = [];
+    for (let i = this.order.length - 1; i >= 0; i--) {
+      const s = this.order[i];
+      // Best-effort, the same way `loadOptional` treats a system that fails at
+      // boot: one broken teardown must not strand the other 24 half-alive, which
+      // is what the bare loop did -- a throw in City left 14 systems, and the
+      // clears below, unreached. Nothing is swallowed; see the rethrow.
+      try { s.dispose?.(); }
+      catch (e) {
+        errs.push(e);
+        console.error(`[engine] dispose failed for "${s.constructor.id}":`, e);
+      }
+    }
+    // `order` has to be dropped as well. It used to survive `systems.clear()`, so
+    // a second dispose() re-ran all 25 teardowns -- and a second `world.free()` is
+    // a WASM double-free, not a no-op.
+    this.order = []; this.systems.clear(); this.bus.clear();
+    // The renderer and composer belong to RenderPipeline, which disposes them in
+    // its own dispose() -- now last, after every GPU consumer. Engine calling
+    // `renderer.dispose()` here as well was a straight double-dispose. Drop the
+    // references and let the owner do the freeing.
+    this.renderer = null; this.composer = null;
+    if (errs.length) {
+      throw errs.length === 1 ? errs[0]
+        : new AggregateError(errs, `engine teardown: ${errs.length} systems failed to dispose`);
+    }
   }
 }
