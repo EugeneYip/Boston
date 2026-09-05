@@ -608,41 +608,37 @@ export default class Traffic {
     if (!near || near.distance > 9) return;
     const e = this.city.roads.edges[near.edgeId];
     if (!e) return;
-    // Which lane of that edge is the player actually sitting in?
-    let bestKey = -1, bestD = 5.5;
+    // EVERY lane he is standing in, not just the nearest one. Picking a single
+    // best lane is what let traffic drive through him: measured, a player planted
+    // 22 m in front of a car on lane 2515 was injected into lane 2513 instead --
+    // one lane over -- so the car never saw an obstacle at all and accelerated
+    // through him from 11.3 to 12.9 m/s, closing to 0.02 m. A body on the road
+    // blocks whichever lane it is actually in, and near a lane boundary that can
+    // legitimately be two. The threshold is physical rather than generous: half a
+    // car plus a person, so he does not brake the whole street from the pavement.
+    const REACH = 2.2;
+    const ghosts = this._playerGhosts || (this._playerGhosts = []);
+    let used = 0;
     const n = this.nav.laneCount(e);
     for (let i = 0; i < n; i++) {
       const k = Navigation.laneKey(e.id, i);
       const p = this.nav.lanePath(k);
       if (!p) continue;
-      const s = near.t * p.length;
-      p.at(this._laneS(p, px, pz, s), _pt);
-      const d = Math.hypot(_pt.x - px, _pt.z - pz);
-      if (d < bestD) { bestD = d; bestKey = k; }
+      const s = p.nearestS(px, pz);
+      p.at(s, _pt);
+      if (Math.hypot(_pt.x - px, _pt.z - pz) > REACH) continue;
+      const ghost = ghosts[used] || (ghosts[used] = {
+        id: -1, isGhost: true, s: 0, _s: 0, v: 0, halfLen: 2.4, len: 4.8, active: true,
+      });
+      used++;
+      ghost.s = ghost._s = s;
+      ghost.v = pv0; ghost.len = plen; ghost.halfLen = plen * 0.5;
+      let arr = this._laneLists.get(k);
+      if (!arr) this._laneLists.set(k, arr = []);
+      arr.push(ghost);
     }
-    if (bestKey < 0) return;
-    const p = this.nav.lanePath(bestKey);
-    const ghost = this._playerGhost || (this._playerGhost = {
-      id: -1, isGhost: true, s: 0, _s: 0, v: 0, halfLen: 2.4, len: 4.8, active: true,
-    });
-    ghost.s = ghost._s = this._laneS(p, px, pz, near.t * p.length);
-    ghost.v = pv0; ghost.len = plen; ghost.halfLen = plen * 0.5;
-    let arr = this._laneLists.get(bestKey);
-    if (!arr) this._laneLists.set(bestKey, arr = []);
-    arr.push(ghost);
   }
 
-  /** Refine an arc-length guess by sampling a couple of neighbours. */
-  _laneS(p, x, z, guess) {
-    let best = guess, bd = Infinity;
-    for (let i = -2; i <= 2; i++) {
-      const s = Math.max(0, Math.min(p.length, guess + i * 4));
-      p.at(s, _pt2);
-      const d = (_pt2.x - x) ** 2 + (_pt2.z - z) ** 2;
-      if (d < bd) { bd = d; best = s; }
-    }
-    return best;
-  }
 
   _stream(dt, cam) {
     this._streamT -= dt;

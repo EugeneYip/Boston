@@ -142,6 +142,34 @@ export class Path {
     }
   }
 
+  /**
+   * Exact nearest arc length to (x, z), by projecting onto every segment.
+   *
+   * Callers used to seed a short local search with `nearestEdge().t * length`.
+   * That quietly assumes a lane runs the same way as the edge it was offset
+   * from, and half of them do not: a reverse-direction lane measures arc length
+   * from the other end, so the seed arrives mirrored -- `L - s`. On edge 314
+   * (432.3 m) a player standing dead on lane 2514 seeds at 174 m when the truth
+   * is 258 m, and a +-8 m refinement cannot climb out of an 84 m hole, so the
+   * caller concluded the point lay 76 m off the lane and dropped it. A lane is
+   * only a couple of dozen points; solve it exactly instead of guessing.
+   */
+  nearestS(x, z) {
+    const p = this.p, n = this.n;
+    let bestS = 0, bestD = Infinity;
+    for (let i = 0; i < n - 1; i++) {
+      const ax = p[i * 3], az = p[i * 3 + 2];
+      const vx = p[(i + 1) * 3] - ax, vz = p[(i + 1) * 3 + 2] - az;
+      const L2 = vx * vx + vz * vz;
+      let u = L2 > 1e-9 ? ((x - ax) * vx + (z - az) * vz) / L2 : 0;
+      u = u < 0 ? 0 : u > 1 ? 1 : u;
+      const dx = x - (ax + vx * u), dz = z - (az + vz * u);
+      const d = dx * dx + dz * dz;
+      if (d < bestD) { bestD = d; bestS = this.cum[i] + u * (this.cum[i + 1] - this.cum[i]); }
+    }
+    return bestS;
+  }
+
   /** Segment index containing arc length `s`. */
   index(s) {
     const c = this.cum;
@@ -660,6 +688,7 @@ export class MutablePath {
   }
   index(s) { return Path.prototype.index.call(this, s); }
   at(s, out) { return Path.prototype.at.call(this, s, out); }
+  nearestS(x, z) { return Path.prototype.nearestS.call(this, x, z); }
   speedCap(s, ahead) { return Path.prototype.speedCap.call(this, s, ahead); }
 }
 
