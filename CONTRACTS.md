@@ -177,6 +177,59 @@ that the path exists and the player should lean along the flank to find a slot
 1.75 m away -- is superseded and is no longer the product behaviour.**
 
 ---
+## Kerbs: how the step is supposed to feel
+
+Crossing a kerb keeps the player's speed. Holding a steady jog at an ordinary
+0.285 m kerb, actual travel dips below 80% of approach for a **median 0.033 s
+and no more than 0.05 s**, bottoming around 2.4 m/s of a 3.40 m/s approach and
+returning to 3.37 m/s immediately. If that ever becomes a visible near-stop
+again, something has regressed.
+
+It is `Player._stepOver` that delivers this, and it exists because **Rapier's
+autostep never fires on Boston's kerbs**. The road collider comes from the far
+LOD, three times coarser longitudinally, so a kerb is a ramp of conflicting
+faces -- one contact reported normals of 1.00, 0.21, 0.62 and 0.66 at once --
+not the clean vertical step autostep wants. The controller reads it as a
+walkable slope and slides up it, which is what ate the speed: 0.50 m/s minimum
+and 0.167 s under 80%. Do not try to tune this with controller settings.
+Autostep height, its landing-width requirement, and slope climb angles from 35
+to 52 degrees were all swept and it never stepped once; asking for extra upward
+movement (0.10, 0.18, 0.30 m) produced byte-identical profiles.
+
+`_stepOver` raises the capsule by the rise the walking surface reports ahead,
+only after checking the raised pose is clear, and lets the controller do the
+same horizontal move from there. It cannot climb what it should not, because the
+rise comes from the walking surface: a parked car reports none.
+
+---
+## Vehicle cabins: what is modelled and what is not
+
+Every vehicle body is a hollow loft. There is **no seat, dashboard or floor
+geometry anywhere**, and LOD1 does not even carry `under`. What exists is an
+*occluder*: `cabinShell` builds a dark shell inside the greenhouse so you cannot
+see through a car or a bus to the street behind it. Do not describe this as a
+vehicle interior -- it is exterior-view occlusion and nothing more.
+
+| | cabin occluder | glazing |
+|---|---|---|
+| moving traffic + drivable, LOD0/LOD1 | yes | `glass_car`, 0.30 opacity, double-sided |
+| parked props (built from LOD1/LOD2) | yes, inherited | opaque body class -- see below |
+| any vehicle, LOD2 shell | **no, deliberately** | LOD2 carries no glass at all |
+
+LOD2 is left bare on purpose: the distant shell has no glass, so there is
+nothing to see through and a cabin there would be invisible cost. Cost where it
+is built is 32-56 triangles per vehicle, 0.4-0.7% of that vehicle's LOD0, on the
+existing `under` / `trimDark` buckets -- no new material and no new draw call.
+
+Two traps if you touch this. These geometries are **indexed**, so
+`position.count / 3` is vertices over three and will make a 56-triangle addition
+look like 7. And the shell is emitted in **both windings** deliberately: the
+buckets it rides are FrontSide, which way a face should point depends on which
+window you are looking through, and orienting them by the documented winding
+rule produced geometry that measured present at exactly the right coordinates
+and changed not one pixel.
+
+---
 ## Parked cars are glazed differently from moving ones
 
 `CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the
