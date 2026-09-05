@@ -18,8 +18,14 @@ const ACTIONS = {
   lights:    ['KeyL'],
   camera:    ['KeyV'],
   map:       ['KeyM'],
-  pause:     ['Escape'],
-  photo:     ['KeyP'],
+  // Escape stays bound, but it is NOT the only way to reach the pause menu. In
+  // browser fullscreen and/or pointer lock the browser owns Escape: it uses it to
+  // release those privileged states and the keydown may never reach us, so a game
+  // that binds pause to Escape alone is unreachable exactly when the player most
+  // wants out. `KeyP` is the conventional second binding and was free -- `photo`
+  // claimed it but had no consumer anywhere in the tree, only a controls-list row
+  // advertising a mode that was never implemented.
+  pause:     ['Escape', 'KeyP'],
   gearUp:    ['KeyQ'],
   gearDown:  ['KeyZ'],
 };
@@ -31,6 +37,8 @@ export default class Input {
     this.pressed = new Set();   // edge: this frame only
     this.released = new Set();
     this.mouse = { x: 0, y: 0, dx: 0, dy: 0, wheel: 0, locked: false };
+    /** Observed from fullscreenchange, never assumed from a key press. */
+    this.fullscreen = false;
     this.gamepad = null;
     this.gpAxes = [0, 0, 0, 0];
     this.gpButtons = [];
@@ -68,6 +76,17 @@ export default class Input {
       this.mouse.locked = document.pointerLockElement === this.dom;
       this.bus?.emit('pointerlock', this.mouse.locked);
     });
+    // Fullscreen is a privileged browser state that Escape can drop without ever
+    // telling the page through a key event, so OBSERVE the state change rather
+    // than inferring it from keys. Safari still needs the webkit-prefixed event.
+    const onFs = () => {
+      const was = this.fullscreen;
+      this.fullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (was !== this.fullscreen) this.bus?.emit('fullscreen', this.fullscreen);
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
+    onFs();
     this.dom.addEventListener('click', () => {
       if (!this.mouse.locked) this.dom.requestPointerLock?.();
     });

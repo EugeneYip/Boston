@@ -19,7 +19,7 @@ const KEYMAP = [
   ['Move', 'W A S D'], ['Sprint', 'Shift'], ['Jump / Brake', 'Space'], ['Crouch', 'C'],
   ['Enter / exit vehicle', 'F'], ['Interact', 'E'], ['Fire', 'LMB'], ['Aim', 'RMB'],
   ['Reload', 'R'], ['Horn', 'H'], ['Headlights', 'L'], ['Camera', 'V'],
-  ['Shift up / down', 'Q / Z'], ['Map', 'M'], ['Pause', 'Esc'], ['Photo mode', 'P'],
+  ['Shift up / down', 'Q / Z'], ['Map', 'M'], ['Pause', 'Esc or P'], ['Fullscreen', 'Pause menu'],
   ['Minimap north lock', 'N'], ['Toggle HUD', 'F3'], ['Perf overlay', 'F1'], ['Physics debug', 'F2'],
 ];
 
@@ -80,7 +80,8 @@ export default class Menu {
       { id: 'stats', label: 'Stats', hint: 'F1' },
       { id: 'settings', label: 'Settings' },
       { id: 'controls', label: 'Controls' },
-      { id: 'resume', label: 'Resume', hint: 'Esc', danger: true, action: () => this._close() },
+      { id: 'fullscreen', label: 'Fullscreen', hint: '\u21F1', action: () => this._toggleFullscreen() },
+      { id: 'resume', label: 'Resume', hint: 'Esc / P', danger: true, action: () => this._close() },
     ];
     this.tabEls = {}; this.paneEls = {};
     for (const t of this.tabDefs) {
@@ -103,7 +104,7 @@ export default class Menu {
       '<div><kbd>&larr; &rarr;</kbd>Adjust</div>' +
       '<div><kbd>Enter</kbd>Select</div>' +
       '<div><kbd>M</kbd>Map</div>' +
-      '<div><kbd>Esc</kbd>Resume</div>';
+      '<div><kbd>Esc</kbd> / <kbd>P</kbd>Resume</div>';
 
     this.pauseEl = mo;
     this._tab('settings');
@@ -570,7 +571,10 @@ export default class Menu {
   /* ------------------------------------------------------------ open/close --- */
 
   _key(code) {
-    if (code === 'Escape') {
+    if (code === 'Escape' || code === 'KeyP') {
+      // Both, deliberately. Escape is the browser's escape hatch first and ours
+      // second: in fullscreen or pointer lock it may be consumed before we ever
+      // see it, so `KeyP` is the binding that is always reachable.
       if (this.open) this._close(); else this._openPause();
       return;
     }
@@ -628,6 +632,26 @@ export default class Menu {
     this._pause(true);
     requestAnimationFrame(() => { this._sizeMap(); this._readout(); });
   }
+  /**
+   * Enter or leave browser fullscreen.
+   *
+   * Boston had no fullscreen control at all, so the only way in or out was the
+   * browser's own chrome -- which is why Escape felt ambiguous: it could drop
+   * pointer lock, leave fullscreen, open this menu, or some combination, and the
+   * player could not tell which. This gives fullscreen an explicit control, and
+   * `Input` observes `fullscreenchange` so the game never holds a stale idea of
+   * the state. It deliberately does NOT re-request pointer lock afterwards; a
+   * click on the canvas does that.
+   */
+  _toggleFullscreen() {
+    const doc = document, el = doc.documentElement;
+    const active = doc.fullscreenElement || doc.webkitFullscreenElement;
+    try {
+      if (active) (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+      else (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+    } catch { /* a rejected request is the browser's call, not an error state */ }
+  }
+
   _show(mo) {
     mo.classList.remove('close');
     mo.classList.add('open');
