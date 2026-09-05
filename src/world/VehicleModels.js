@@ -212,6 +212,61 @@ function ringOf(s, halfBuf, entries, out) {
  * `body.keys` fields are splined; `by` (the underside) is analytic so the wheel arches
  * stay crisp arcs no matter how the rest of the surface is smoothed.
  */
+/**
+ * A dark shell inside the greenhouse, so a cabin is not a window onto the street.
+ *
+ * Every body is a hollow loft: nothing has ever been emitted into the `interior`
+ * bucket, and LOD1 does not even carry `under`, so a car is a shell with no
+ * cabin and no floor. On its own that is invisible -- what exposes it is the
+ * glazing, which is 0.30 opacity and double-sided, so from outside you look in
+ * one window, through the empty body, and out of the far one to the background.
+ * The bus is the worst of it: 154 glass triangles at LOD0 over a 12.3 m body.
+ *
+ * A single box will not do. The greenhouse profile changes a lot along its
+ * length -- a sedan's roof runs from 1.052 to 1.462 over its glass span -- so a
+ * box sized to the lowest point leaves 0.41 m of daylight under the crown. This
+ * follows the same keys the body loft uses, insetting inside the glass so it can
+ * never poke through, and skips a floor because the body sides below the belt
+ * are opaque anyway.
+ *
+ * `interior` is remapped to `under` at LOD0 and `trimDark` at LOD1, both already
+ * opaque and near-black, so this needs no new material and reaches parked cars
+ * through the same route.
+ */
+function cabinShell(mb, body) {
+  // Both windings. The cabin renders on `under`/`trimDark`, which are FrontSide,
+  // and an occluder that faces the wrong way is simply not there -- the first
+  // attempt oriented these by the documented winding rule and produced geometry
+  // that measured present at the right coordinates and changed not one pixel.
+  // Which way any given face should point also depends on which window you are
+  // looking through, so the honest answer is both. It is 28 extra triangles.
+  const face = (p0, p1, p2, p3) => {
+    mb.quad('interior', 74, p0, p1, p2, p3);
+    mb.quad('interior', 74, p0, p3, p2, p1);
+  };
+  for (const span of body.glassSpans || []) {
+    const z0 = span[0], z1 = span[1];
+    if (z1 - z0 < 0.25) continue;
+    const ring = [];
+    for (const k of body.keys) {
+      if (k.z < z0 - 1e-3 || k.z > z1 + 1e-3) continue;
+      const hw = k.gw - 0.05;
+      if (hw < 0.06) continue;
+      ring.push({ z: k.z, hw, yt: k.ry - 0.03, yb: k.ty - 0.12 });
+    }
+    if (ring.length < 2) continue;
+    for (let i = 0; i < ring.length - 1; i++) {
+      const a = ring[i], b = ring[i + 1];
+      face([-a.hw, a.yb, a.z], [-b.hw, b.yb, b.z], [-b.hw, b.yt, b.z], [-a.hw, a.yt, a.z]);
+      face([a.hw, a.yb, a.z], [b.hw, b.yb, b.z], [b.hw, b.yt, b.z], [a.hw, a.yt, a.z]);
+      face([-a.hw, a.yt, a.z], [a.hw, a.yt, a.z], [b.hw, b.yt, b.z], [-b.hw, b.yt, b.z]);
+    }
+    const f = ring[0], r = ring[ring.length - 1];
+    face([-f.hw, f.yb, f.z], [f.hw, f.yb, f.z], [f.hw, f.yt, f.z], [-f.hw, f.yt, f.z]);
+    face([-r.hw, r.yb, r.z], [r.hw, r.yb, r.z], [r.hw, r.yt, r.z], [-r.hw, r.yt, r.z]);
+  }
+}
+
 function makeStations(body, step, coarse = false, minGap = 0) {
   const keys = body.keys;
   const zs = keys.map(k => k.z);
@@ -1588,6 +1643,7 @@ export function getVehicleGeometry(type) {
     const anchors = emptyAnchors();
 
     if (lod < 2) {
+      cabinShell(mb, body);
       archLips(mb, surf, d, lod);
       frontFascia(mb, surf, d, anchors);
       rearFascia(mb, surf, d, anchors);
