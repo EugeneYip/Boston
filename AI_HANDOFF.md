@@ -258,6 +258,42 @@ disk is macOS swap, AI transcripts, browser/WebGL caches and temp files. A three
 wave once created three 1 GiB swapfiles and took the machine to the point where a git
 object was corrupted mid-write.
 
+## 7b. Deployment — GitHub Pages
+Pushing to `main` builds and publishes the site through `.github/workflows/pages.yml`.
+No `gh-pages` branch, nothing committed back, `dist/` stays gitignored.
+
+**The base path is not hardcoded.** Boston is a *project* site, so it is served below
+`/Boston/`, and `vite.config.js` reads `process.env.BASE_PATH`, which the workflow feeds
+from `actions/configure-pages`' `base_path` output. Unset — every local invocation —
+means `/`, so `npm run dev`, `npm run preview` and the `:5290` verify server all stay at
+the root. A rename, or a move to a user site (where `base_path` is `""`), needs no edit.
+`vite.verify.config.js` sets `configFile: false`, so it never reads `vite.config.js` at
+all and cannot be affected.
+
+Reproduce the deployed layout locally:
+```
+npm run build:pages     # BASE_PATH=/Boston/ vite build
+npm run preview:pages   # serves the built dist at http://localhost:5291/Boston/
+```
+
+**Verified at `/Boston/`:** every asset request 200 with the `/Boston/` prefix, no 404s,
+CSS included, and `bootReport.failed []` / `errors []` / `glFaults []` /
+`validate().ok true` with a live Rapier world. **No `.wasm` file is emitted at all** —
+`@dimforge/rapier3d-compat` inlines it as base64, so there is no WASM fetch to break
+under a subpath.
+
+**Known local flakiness, not a deployment problem.** `vite preview` in the embedded
+Browser pane often stalls at "Initializing" with no console output and no canvas. It does
+this **identically at `/` and at `/Boston/`** — that control is what proves the base is
+not involved. Production boot is also genuinely slow (physics 11.4 s, buildings 8.4 s,
+city 6.3 s, so ~40 s before the first frame), so give it real time before concluding
+anything, and read the console rather than `#stat` for progress. The console buffer
+survives navigation, so a "successful" log tail may belong to the previous load.
+
+**One-time repository setting, which no workflow can do for itself:** Settings → Pages →
+Build and deployment → Source → **GitHub Actions**. Until that is set the build succeeds
+and the deploy step fails.
+
 ## 8. GitHub and worktree safety
 **Before deleting or moving a canonical repository, always inspect:**
 

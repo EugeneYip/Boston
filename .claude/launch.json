@@ -1,7 +1,41 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "boston", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5273 },
-    { "name": "boston-verify", "runtimeExecutable": "npm", "runtimeArgs": ["run", "verify"], "port": 5290 }
+    {
+      "name": "boston",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 5273
+    },
+    {
+      "name": "boston-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "verify"
+      ],
+      "port": 5290
+    },
+    {
+      "name": "boston-pages",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview:pages"
+      ],
+      "port": 5291
+    },
+    {
+      "name": "boston-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview"
+      ],
+      "port": 5273
+    }
   ]
 }

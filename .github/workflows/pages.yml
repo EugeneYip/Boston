@@ -1,0 +1,79 @@
+# Build Boston and publish it to GitHub Pages.
+#
+# The repository stays the only source of truth: nothing is committed back, there is
+# no gh-pages branch, and `dist/` stays gitignored. The built artifact is handed
+# straight to the Pages deployment.
+#
+# This needs a ONE-TIME repository setting that a workflow cannot make for itself:
+#   Settings -> Pages -> Build and deployment -> Source -> "GitHub Actions".
+# Until that is set, this workflow builds fine and the deploy step fails.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only what Pages deployment needs. No `contents: write` -- this workflow never
+# pushes anything back to the repository.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deployment finish rather than cancelling it half-published, but do
+# not queue up more than one obsolete build behind it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Install from lockfile
+        run: npm ci
+
+      # The repository's own gate: parsecheck + scopecheck. Neither boots the app,
+      # but between them they catch the truncated-file and undefined-identifier
+      # classes that would otherwise deploy a black screen.
+      - name: Validate sources
+        run: npm run check
+
+      # Boston is a GitHub *project* site, so it is served below /Boston/ rather than
+      # at the origin root. `base_path` comes from the Pages metadata above, so the
+      # repository name is not hardcoded and a rename or a move to a user site (where
+      # base_path is "") needs no change here -- vite.config.js falls back to "/".
+      - name: Build
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

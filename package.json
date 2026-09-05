@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --port 5273 --strictPort",
     "build": "vite build",
+    "build:pages": "BASE_PATH=/Boston/ vite build",
     "preview": "vite preview --port 5273 --strictPort",
+    "preview:pages": "BASE_PATH=/Boston/ vite preview --port 5291 --strictPort",
     "verify": "vite --config vite.verify.config.js",
     "check": "node tools/parsecheck.mjs && node tools/scopecheck.mjs"
   },
