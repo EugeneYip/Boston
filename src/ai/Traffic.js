@@ -4,6 +4,7 @@ import {
   VEHICLE_TYPES, VEHICLE_SPECS, createMaterialKit, buildVehicleVisual, getShellGeometry,
   getVehicleGeometry,
 } from '../world/VehicleModels.js';
+import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 /**
  * Traffic.
@@ -565,6 +566,78 @@ export default class Traffic {
     }
 
     this._present(dt, ctx);
+    this._syncCarProxies(ctx);
+  }
+
+  /**
+   * A handful of kinematic boxes shadowing the traffic nearest the player.
+   *
+   * Traffic stays body-free on purpose -- Rapier's raycast-vehicle solve costs
+   * about 21 ms for 60 cars -- but "no body" also meant a pedestrian walked
+   * clean through a moving car. Braking (see `_injectPlayer`) handles cars that
+   * can see him in time; this is the envelope for the rest: stepping off a kerb
+   * beside a car already alongside, or walking into a flank. Only cars that
+   * could plausibly touch him get a box, and the box is filtered to the
+   * character alone, so it cannot perturb other traffic, the parked-car
+   * colliders, or the drivable vehicle's suspension rays.
+   */
+  _syncCarProxies(ctx) {
+    const phys = ctx.physics ?? ctx.get?.('physics');
+    if (!phys?.world || !phys.RAPIER) return;
+    const pl = ctx.get('player');
+    const pool = this._proxies || (this._proxies = []);
+    let used = 0;
+    if (pl?.position && pl.mode === 'onFoot') {
+      const px = pl.position.x, pz = pl.position.z;
+      for (const c of this.vehicles) {
+        if (used >= PROXY_MAX) break;
+        if (!c.active) continue;
+        const dx = c.x - px, dz = c.z - pz;
+        if (dx * dx + dz * dz > PROXY_RANGE * PROXY_RANGE) continue;
+        this._placeProxy(phys, used++, c);
+      }
+    }
+    for (let i = used; i < pool.length; i++) {
+      const q = pool[i];
+      if (q.parked) continue;
+      q.body.setTranslation({ x: 0, y: PROXY_PARK_Y, z: 0 }, false);
+      q.parked = true;
+    }
+  }
+
+  /** Point proxy `i` at car `c`, growing the pool on demand. */
+  _placeProxy(phys, i, c) {
+    const R = phys.RAPIER;
+    let q = this._proxies[i];
+    if (!q) {
+      const body = phys.world.createRigidBody(
+        R.RigidBodyDesc.kinematicPositionBased().setTranslation(0, PROXY_PARK_Y, 0));
+      const col = phys.world.createCollider(
+        R.ColliderDesc.cuboid(0.93, PROXY_H, 2.4)
+          .setCollisionGroups(groups(GROUP.VEHICLE, GROUP.CHARACTER)),
+        body);
+      q = this._proxies[i] = { body, col, hx: 0.93, hz: 2.4, parked: true };
+    }
+    const hx = c.width * 0.5, hz = c.halfLen;
+    if (Math.abs(hx - q.hx) > 0.01 || Math.abs(hz - q.hz) > 0.01) {
+      q.col.setShape(new R.Cuboid(hx, PROXY_H, hz));
+      q.hx = hx; q.hz = hz;
+    }
+    // Teleport rather than setNextKinematicTranslation: a proxy reassigned to a
+    // different car would otherwise sweep the whole gap between them.
+    q.body.setTranslation({ x: c.x, y: c.y + PROXY_H, z: c.z }, false);
+    q.body.setRotation({ x: 0, y: Math.sin(c.rotY * 0.5), z: 0, w: Math.cos(c.rotY * 0.5) }, false);
+    q.parked = false;
+  }
+
+  _releaseCarProxies() {
+    const phys = this.ctx?.physics ?? this.ctx?.get?.('physics');
+    if (this._proxies && phys?.world) {
+      for (const q of this._proxies) {
+        try { phys.world.removeRigidBody(q.body); } catch { /* world already gone */ }
+      }
+    }
+    this._proxies = null;
   }
 
   /** Bucket every car by the lane it is on so the leader search is O(1). */
@@ -1005,6 +1078,7 @@ export default class Traffic {
 
   dispose() {
     this.ctx?.bus.off?.('player:wanted', this._onWanted);
+    this._releaseCarProxies();
     for (const c of this.cars) {
       this._detachLights(c);
       if (c.visual) { c.visual.dispose(); c.visual = null; }
@@ -1021,6 +1095,13 @@ export default class Traffic {
 }
 
 /* -- helpers ------------------------------------------------------------- */
+
+// Enough boxes to wrap the player in dense traffic, reaching just past the
+// distance a car can cross in the time he can react.
+const PROXY_MAX = 12;
+const PROXY_RANGE = 22;
+const PROXY_H = 0.75;
+const PROXY_PARK_Y = -600;
 
 const LEFT_FIRST = [-1, 1];
 const RIGHT_FIRST = [1, -1];
