@@ -1759,6 +1759,17 @@ export default class Roads {
       // crosswalks only where it is a real junction and a real street
       const cwA = net.nodes[e.a].edges.length > 2 && e.type !== 'alley' && e.type !== 'highway';
       const cwB = net.nodes[e.b].edges.length > 2 && e.type !== 'alley' && e.type !== 'highway';
+      // The far LOD spans the arm BEFORE the crosswalk bands are cut out of it.
+      // `_crosswalk` paints the zebra and then advances d0/d1, so `_span` -- used by
+      // the far strip as well as the near ones -- excluded a 3 m ring at every
+      // crosswalked junction arm. `_crosswalk` writes through `_batch()`, i.e. near
+      // only, so that ring had no far geometry and therefore no collider: it was
+      // 93.6% of all remaining collider misses, a median 0.433 m deep. Measured
+      // against the shipped suspension test, a settled wheel has 0.115 m of droop
+      // headroom (toi 0.560 against maxT 0.675), so every one of those bands drops
+      // `w.contact` to false in Vehicle.js -- twice per junction crossing. The far
+      // LOD carries no markings anyway, so it just spans the whole arm as asphalt.
+      const farD0 = d0, farD1 = d1;
       if (cwA && d1 - d0 > CROSSWALK * 2 + 6) { this._crosswalk(e, sec, d0, d0 + CROSSWALK); d0 += CROSSWALK; }
       if (cwB && d1 - d0 > CROSSWALK + 6) { this._crosswalk(e, sec, d1 - CROSSWALK, d1); d1 -= CROSSWALK; }
       e._span = [d0, d1];
@@ -1770,7 +1781,7 @@ export default class Roads {
         this._stripChunked(band.dash ? fine : coarse, band, sec, phase, false);
       }
       // low-detail version: bare carriageway + pavement, no markings
-      const lo = this._frames(e, d0, d1, STEP * 3);
+      const lo = this._frames(e, farD0, farD1, STEP * 3);
       // `laneOff: 2.2` parks the far LOD outside every wheel-track lobe. The band
       // is the whole carriageway in two vertices, so a real lane offset would
       // interpolate straight across it and paint one bogus track down the middle;
