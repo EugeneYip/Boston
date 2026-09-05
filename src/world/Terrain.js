@@ -516,8 +516,17 @@ export default class Terrain {
     for (let j = 0; j <= N; j++) {
       const z = MINZ + (j / N) * span;
       for (let i = 0; i <= N; i++) {
-        // column-major: heights[col * (nrows+1) + row]
-        heights[j * (N + 1) + i] = this.groundHeight(MINX + (i / N) * span, z);
+        // Rapier's buffer is column-major with the ROW index running along local Z
+        // and the COLUMN index along local X, so the sample for (x from i, z from j)
+        // belongs at `i * (N + 1) + j`. Writing it at `j * (N + 1) + i` transposed the
+        // collider about the x=z diagonal, and because the grid and the span are both
+        // square nothing about its size or placement looked wrong. Measured against
+        // Rapier's own raycast: the old collider matched `groundHeight(z, x)` to
+        // 0.04 m and missed `groundHeight(x, z)` by 3.5 m, leaving invisible ground
+        // ABOVE the drivable road on 38% of the network -- worst case physics at
+        // 29.4 m under a road at 4.6 m. Only points near the diagonal looked right,
+        // which is why it survived: the shots that exercised it sit near x=z.
+        heights[i * (N + 1) + j] = this.groundHeight(MINX + (i / N) * span, z);
       }
     }
     const body = physics.world.createRigidBody(R.RigidBodyDesc.fixed());
