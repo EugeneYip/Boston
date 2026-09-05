@@ -444,35 +444,19 @@ apply: stay within one page load; use block/region statistics (grain never conve
 per-pixel); do not assume B2's dusk attribution transfers to daylight; and do not read
 whole-frame R > B > G as magenta.
 
-### Open risks from the static audit at `b12497d` — unconfirmed, cheap to test
-A read-only audit of B1/B2 found **no deterministic defect**: the highlight shoulder is
-C0 and C1 at the knee, NaN-safe, and correct at 0, 1, >1 and negative inputs; B2's
-interpolation wraps correctly and leaks through no shared reference. Four risks remain
-that need runtime confirmation. Four captures settle all of them; tests 3 and 4 share a
-shot and one page load:
+### B1/B2 four-risk sweep — CLOSED 2026-09-01, none require a source change
+All four were measured on current pixels at `9fa7a68`, one WebGL context, block/region
+statistics. **No source change was made.** Do not re-run these without new evidence.
 
-| # | shot / state | ablation | statistic |
+| # | risk | verdict | evidence |
 |---|---|---|---|
-| 1 | `night_neon` | `options.grain` 0.015 → 0 | fraction of final canvas at 255 |
-| 2 | `overcast_wide` | staggered vs uniform black point | B−R in sky mask; channel means below L10 |
-| 3 | `downtown_dusk` | `highlightKnee` 0.86 → 1.0 | sky-mask R/G/B means (ΔG > 2/255 ⇒ B1 and B2 interact) |
-| 4 | `downtown_dusk`, `weather='rain'` | none | whole-frame B−G sign |
+| 1 | final grain reintroduces top clipping | **NOT REPRODUCED** | `night_neon`, grain 0.015 vs 0: **0.0000% of pixels at 255 either way**. The ≥250 fraction is identical within noise (0.1432% vs 0.1449%). |
+| 2 | no-toe black point zeroes a channel and warms deep shadows | **NOT REPRODUCED, mechanism inverted** | `overcast_wide` has **no pixel below luma 10** at all (min luma 22.6) and **zero pixels with B=0**. The darkest 0.5% is R 14.6 / G 34.9 / B 47.6 — **B−R +33**, i.e. blue, not warm. A uniform black point makes it *bluer* (B−R +40), so staggering reduces the cast rather than causing one. |
+| 3 | scene-referred B2 tint interacts with the fixed B1 shoulder | **NOT REPRODUCED** | `downtown_dusk`, `highlightKnee` 0.86 → 1.0: sky **ΔG +0.08/255** against the 2/255 criterion this list set. ΔR +1.78, ΔB −0.04 — the shoulder compresses the top channel (R) as designed and does not touch the newly-raised green. Restores exactly. |
+| 4 | rain undoes the dusk correction | **REAL BUT IMMATERIAL** | `downtown_dusk` clear R132.4 / G88.2 / B76.6 (B−G −11.56) vs rain R117.7 / G93.6 / B87.9 (B−G **−5.75**). Rain halves the amber margin but the channel order stays **R > G > B**; the pre-B2 failure was R > B > G. Correction holds. |
 
-What each is about: (1) `FilmGrainEffect` is the last pass and adds grain **unclamped**,
-with a highlight response flooring at 0.35 rather than 0 — so it can reintroduce a hard
-top the shoulder just removed. (2) The new overcast black point `[0.115,0.124,0.145]`
-sits against a hard `max(c,0)` with no toe, so values in that range drive B to 0 with
-R,G > 0 — a warm cast in the deepest shadows. (3) B2's `tint` change is scene-referred
-and moves which channels cross the fixed display-referred knee, so the per-channel
-shoulder may compress the newly-raised green in the brightest ~14%. (4) `rain` and
-`storm` modifiers keep `shadowTint` with B > G and blend at w 0.90/1.00 over the
-corrected dusk key, so dusk-in-rain is outside everything B2 measured.
-
-Two further notes, neither a defect: the shoulder is **per-channel, not luminance**, so
-saturated highlights in 0.86–1.0 desaturate slightly where the old clamp was identity;
-and the knee is a fixed display-referred constant while auto-exposure moves the
-histogram beneath it, so the 0.86 sweep is only strictly valid at the metered exposures
-of the shots it was swept on.
+The one thing worth carrying forward is #4: rain roughly halves dusk's amber margin. It
+is not a defect, but if dusk-in-rain is ever tuned, that is the interaction to watch.
 
 ### Known current defects
 - **Rain may now read below the grain floor.** The rebuild closed an automatic fail and
