@@ -221,7 +221,7 @@ export default class CameraRig {
     // from him reads as a glitch.
     if (free < this._dist) this._dist = free;
     else this._dist = Math.min(free, this._dist + (2.6 + this._dist) * dt);
-    this._dist = Math.max(0.42, this._dist);
+    this._dist = Math.max(ctx.camera.near + 0.02, this._dist);
 
     const shrink = dist > 0.01 ? Math.min(1, this._dist / dist) : 1;
     this.pos.copy(_want)
@@ -277,7 +277,16 @@ export default class CameraRig {
       console.warn('[camera] collision sweep disabled:', err?.message || err);
       return dist;
     }
-    return Math.max(0.42, best);
+    // Floor the arm at the near plane, not at a fixed 0.42. Against a building
+    // the player's own capsule stops with his centre 0.32 m from the facade, so a
+    // 0.42 m arm sits 0.10 m INSIDE the wall -- measured 7 of 36 orbit angles
+    // inside a building before this. The clamp also silently defeated `pad`
+    // above, which had already reduced the allowance to 0.10. Shortening the arm
+    // only ever moves the camera toward the pivot, and the pivot rides the player,
+    // who is outside geometry by construction -- so this is monotonically safer,
+    // never less safe. `player.visible` below already drops the body when the
+    // camera comes inside near + 0.33.
+    return Math.max(cam.near + 0.02, best);
   }
 
   // -- free fly --------------------------------------------------------------
