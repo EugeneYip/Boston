@@ -155,7 +155,15 @@ export default class CameraRig {
     const fovBase = ctx.settings.fov;
     const fovWant = fovBase + (player.sprinting ? 5.5 : 0);
     this._apply(dt, ctx, _pivot, dist, lift, this._shoulder, fovWant, 16, player);
-    player.visible = this._dist > 0.95;
+    // Hide him only once he is genuinely through the near plane, not merely
+    // close. His capsule is 0.30 m in radius and the near plane sits `near`
+    // ahead of the camera, so his own body starts eating the frame at about
+    // `near + 0.30` of arm -- 0.55 m. The old 0.95 m threshold hid him while
+    // nothing was wrong: standing 2.4 m clear of a parked car on an ordinary
+    // street, the sweep legitimately pulls the arm under 0.95 m at 22 of 36
+    // orbit angles, because the lower near-plane rays reach the bodywork even
+    // when the camera axis is clear. He vanished for most of a turn on the spot.
+    player.visible = this._dist > ctx.camera.near + 0.33;
   }
 
   _solveDriving(dt, ctx, player) {
