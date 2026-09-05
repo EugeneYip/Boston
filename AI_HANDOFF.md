@@ -258,40 +258,44 @@ disk is macOS swap, AI transcripts, browser/WebGL caches and temp files. A three
 wave once created three 1 GiB swapfiles and took the machine to the point where a git
 object was corrupted mid-write.
 
-## 7c. Shipped-build defects found on the live site (2026-09-01)
-**The deployed Pages site is now a real evidence surface.** Both items below came from
-the owner looking at `https://eugeneyip.github.io/Boston/`, not from a local capture.
+## 7c. Live-site defects and the rules that came out of them
+**The deployed Pages site is the authority.** Twice now a local "fixed" conclusion has
+been overruled by the owner looking at `https://eugeneyip.github.io/Boston/`. Treat a
+local visual read as evidence, never as proof.
 
-**Parked cars floated metres above Tremont Street — fixed (`bee0da5`).** `L.surfaceY` in
-`Props.js` interpolated between a segment's two ENDPOINT elevations, which assumes a
-constant grade. Edge 314 is a 432 m arterial that sits flat at 3.33 m for 200 m then ramps
-to 9.91 m, so the lerp overshot the drawn road by up to 3.40 m. It now asks
-`roadMesh.surfaceAt` what is actually drawn — the datum `City.surfaceHeight` publishes —
-and keeps the lerp only as the `nearY` bridge-deck hint. Measured over 17,952 points on all
-509 segments: mean |error| **0.302 → 0.120 m**, within 10 cm **63% → 93%**.
-`L.surfaceY` is shared with Vegetation's grass and Decals, so those move too — correctly.
+### Escape belongs to the browser (`e6a1794`)
+**Rule: Boston owns no Escape behaviour at all. `P` is pause/menu.** Escape is a
+privileged browser key — it releases pointer lock and exits fullscreen, and whether the
+keydown ever reaches the page depends on the browser and the state it was in. Binding
+pause to it (even *also* to P, as `c1901f6` did) still let one press mean three things in
+Safari. Escape is now absent from the action map, the menu key handler, and every hint
+string; nothing preventDefaults it, and nothing calls `exitPointerLock`/`exitFullscreen`
+in response to it. `Input` observes `pointerlockchange` and `fullscreenchange` instead,
+and fullscreen has an explicit pause-menu control because `F` is enter/exit vehicle.
 
-**STILL OPEN: kerbside placement drifts sideways on curves.** These segments are the
-straight CHORD between two nodes while roads follow `edge.pts`. On edge 245, a 643 m
-curve, a parked car lands **12.07 m** from the real carriageway — far enough that
-`surfaceAt` returns null. That is the residual 1.8% of points still over 1 m out, and it
-is a *placement* defect, not a height one. Fixing it means walking the polyline instead of
-the chord, which touches every prop, and is its own wave.
+### Parked cars: measure four wheels against the drawn road (`60cd119`)
+**Rule: never accept "origin Y ≈ surfaceHeight" as grounding.** `bee0da5` did exactly
+that, and also used overall bbox `minY` as a stand-in for the wheel bottom. Both are the
+wrong instrument. The metric is the four contact patches raycast against the actual road
+triangles. Under it, the "fixed" build still showed −0.183…+0.185 m per wheel, 0.265 m of
+tilt, and 7 of 40 cars with no road under a wheel.
 
-**Escape was the only way in or out — fixed (`c1901f6`).** `pause` was bound to Escape
-alone, and there was no fullscreen support at all: no request, no exit, no
-`fullscreenchange` listener. Escape is a privileged browser key first, so in fullscreen or
-pointer lock it can be consumed before the page sees it. Now: **pause is `Escape` or `P`**
-(P was nominally `photo`, which had no consumer anywhere — only a controls row advertising
-an unimplemented mode); **fullscreen is an explicit pause-menu control** because every
-conventional key including `F` was already shipped; and `Input` observes
-`fullscreenchange`/`webkitfullscreenchange` and exposes `input.fullscreen`. Escape is still
-not preventDefaulted, and nothing re-requests pointer lock behind the player.
+Three real mechanisms, now fixed: placement followed the straight **chord** between nodes
+instead of `edge.pts` (12 m of drift on edge 245, and one shared heading per segment);
+cars sat **level** on graded and cambered streets; and the distant **shell has no tyres at
+all** (`lods[2]` is only `trim`/`paint`), so its lowest vertex is the sill, 0.045 m above
+LOD 1's real contact patch. Result: **−0.009…+0.007 m per wheel, tilt ≤ 0.007 m, 0 of 58
+cars off-road**, confirmed in the Pages artifact.
 
-**Outstanding owner check:** the embedded pane refuses `requestFullscreen` and
-`requestPointerLock` without user activation, so real fullscreen enter/exit, real
-pointer-lock capture, and anything Safari-specific are **unverified** and need the owner on
-the deployed build.
+**Still open, deliberately:** `L.roadPoint` is used only by parked cars, so Vegetation and
+Decals keep the old chord placement and still drift laterally on curves. And the distant
+car shell genuinely has no wheels modelled — it now *sits* correctly, but close inspection
+at distance shows a body on the road, not tyres.
+
+### Outstanding owner checks (cannot be done here)
+The embedded pane refuses `requestFullscreen` and `requestPointerLock` without user
+activation, so these need Safari on the live site: click → pointer capture; Escape →
+release; click → reacquire; fullscreen → Escape; `P` → pause in every combination.
 
 ## 7b. Deployment — GitHub Pages
 Pushing to `main` builds and publishes the site through `.github/workflows/pages.yml`.
