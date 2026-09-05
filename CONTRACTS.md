@@ -138,34 +138,43 @@ Two consequences worth knowing before filing a bug:
   wrong; do not tune the clamp to compensate.
 
 ---
-## Getting off the road: what is actually true
+## Getting off the road is free — the movement system routes, you do not
 
-Kerbside parking is dense on purpose and it is solid. Measured across the city,
-the parked row occupies a band about 2.5 m deep hard against the kerb and roughly
-two thirds of the kerb's length, with no channel behind it. At the owner's own
-reported spot (Tremont St, edge 314) the lateral profile from the traffic lane
-is: clear road to 4.5 m, **parked cars 5.0-7.0 m, pavement from 7.5 m**.
+Boston is a free-roam city, so crossing from the carriageway back to the
+pavement is available **anywhere**, including straight opposite a parked car.
+The player never has to find the gap between two cars, and there is no marker,
+arrow or designated entrance. Two mechanisms in `Player` deliver that, and both
+matter.
 
-Two things follow, and the second is the one people get wrong.
+**The kerb.** `_move` bleeds horizontal speed when the controller reports no
+progress, so he cannot shove at a wall and shoot sideways when it ends. A kerb is
+not a wall, and Rapier's autostep only lifts him when the horizontal step he asks
+for is big enough to land on top: against a real 0.28 m Boston kerb, 0.2-2.0 m/s
+all fail and 3.0 m/s clears it. The bleed drove him under that floor, so contact
+bled the speed and the lost speed starved the step. `_stepUpAhead` exempts a
+climbable rise from the bleed, probing two distances because some kerbs ramp over
+about a metre rather than stepping.
 
-- Walking *straight* at the pavement fails most of the time, and that is
-  correct: you walked into the side of a car. Measured, a perpendicular walk
-  from the centre line covered 4.77 m of 9.0 m and stopped on a parked car.
-- Walking at the pavement while leaning along the street does work. On the same
-  12 start points at the same site, **11 of 12** reached the pavement, median
-  path 10.2 m. The nearest clear bay slot at the owner's exact spot was 1.75 m
-  along the street, and walking from inside it up the 0.28 m kerb succeeds.
+**The cars.** `_kerbBypass` steers around them. Parked cars stay exactly as solid
+as they look -- they are **not** shrunk, and must not be: the channel between a
+car's kerb-side face and the pavement is 0.29-0.34 m against a capsule needing
+0.64 m, so fitting through would cost a third of the collider's half-width and he
+would walk visibly through the doors. Instead, when a crossing is blocked by a
+PROP collider (the durable owner tag) and the street says pavement lies a few
+metres the way he is pushing, he is steered along the car's own long axis toward
+whichever end he is nearer, latched so he cannot dither, and released the moment
+it stops blocking him. Only the direction handed to the controller changes.
 
-So the return path exists, is close, and is mechanically sound. What it is not
-is *legible*: from the carriageway you are looking at an unbroken flank, and
-nothing tells you the way through is two metres to your left.
+Measured over 36 trials on four streets, holding one unchanging intent with no
+steering along the kerb: **36 of 36** reached the pavement in 1.60-2.20 s, worst
+penetration into a visible car body **0.000**. Cars remain solid to a direct
+approach -- nose-on, flank-from-the-pavement and tail-on all stop him with the
+assist never engaging.
 
-**A forced-gap experiment was tried and reverted.** Guaranteeing a 4-9 m opening
-every 26 m of kerb removed 1,860 cars and measured *worse* on the walk-and-lean
-test (10 of 12 against 11 of 12). Density is not the blocker; do not spend cars
-on it again without new evidence. If this is reopened, the honest lever is an
-affordance -- something that shows the player where the gap is -- not spacing,
-and that is a design decision rather than a tuning one.
+The assist deliberately ignores moving traffic, drivable vehicles, buildings and
+walls; it is for decorative kerbside parking only. **The previous rule here --
+that the path exists and the player should lean along the flank to find a slot
+1.75 m away -- is superseded and is no longer the product behaviour.**
 
 ---
 ## Parked cars are glazed differently from moving ones
