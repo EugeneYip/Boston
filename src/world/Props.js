@@ -377,6 +377,10 @@ function makeSegment(ax, az, bx, bz, opts) {
     // which is what Roads.js actually builds the carriageway from. This is NOT
     // `groundHeight()`; see `surfaceY` below.
     ay: opts.ay ?? null, by: opts.by ?? null,
+    // Edge-arc-length fractions the trimmed segment spans, so a caller can ask
+    // the road graph for the real elevation at an interior point instead of
+    // assuming the grade between `ay` and `by` is linear. It very often is not.
+    at: opts.at ?? null, bt: opts.bt ?? null,
     // Kerbside parking bay published by the city: { width, offset }, where
     // offset is the lateral distance from the road centreline to the middle of
     // the bay. Null on streets too narrow to have one.
@@ -475,6 +479,7 @@ function fromCityGraph(ctx, city) {
         frontage: null, district: districtFor((a.x + b.x) / 2, (a.z + b.z) / 2),
         edgeId: e.id, parking: e.parking || null,
         ay: R.sample(e.id, t)?.y ?? null, by: R.sample(e.id, 1 - t)?.y ?? null,
+        at: t, bt: 1 - t,
       }));
   }
 
@@ -523,10 +528,43 @@ function finishLayout(L) {
    * where a segment has no road graph behind it (the synthesised grid).
    */
   L.surfaceY = (s, x, z) => {
-    if (s.ay == null || s.by == null) return L.gh(x, z);
-    const t = s.len ? ((x - s.ax) * s.dx + (z - s.az) * s.dz) / s.len : 0;
-    const u = t < 0 ? 0 : t > 1 ? 1 : t;
-    return s.ay + (s.by - s.ay) * u;
+    // The endpoint lerp is a LAST RESORT, not the answer. It assumes the grade
+    // between the two segment ends is linear, and on a long edge it is not:
+    // edge 314 is a 432 m arterial that sits flat at 3.33 m for its first 200 m
+    // and then ramps to 9.91 m, so interpolating its endpoints overshoots the
+    // real carriageway by up to 3.40 m across that flat run. That is what left
+    // rows of parked cars hanging ~3 m over Tremont Street in the shipped
+    // build -- 59.7% of parked instances were more than 1 m high, median 1.87 m.
+    //
+    // Ask the road mesh what is actually DRAWN at this point instead. That is
+    // the same datum `City.surfaceHeight` publishes, it answers per point
+    // rather than per segment, and it already carries the crown and the kerb.
+    // The lerp is still computed first, because it is the best available
+    // `nearY` hint for telling a bridge deck from the street beneath it.
+    let lerp = null;
+    if (s.ay != null && s.by != null) {
+      const t = s.len ? ((x - s.ax) * s.dx + (z - s.az) * s.dz) / s.len : 0;
+      const u = t < 0 ? 0 : t > 1 ? 1 : t;
+      lerp = s.ay + (s.by - s.ay) * u;
+    }
+    const hit = L.city?.roadMesh?.surfaceAt?.(x, z, lerp ?? undefined);
+    if (hit) return hit.y;
+    // `surfaceAt` answers null when the point is outside the carriageway and its
+    // pavement, which happens on curved edges because these segments are the
+    // straight CHORD between two nodes: edge 245 is a 643 m curve whose chord
+    // leaves a kerbside prop 12 m from the real road. The lateral drift is a
+    // separate defect and is not fixed here, but the height need not compound
+    // it -- sample the graph's own polyline at the same fraction instead of
+    // interpolating the two ends. On that edge the ends are 3.93 m and 20.20 m,
+    // so the lerp reads 11.05 m where the road is really 9.91 m.
+    const net = L.city?.roads;
+    if (net?.sample && s.edgeId != null && s.at != null && s.bt != null) {
+      const t2 = s.len ? ((x - s.ax) * s.dx + (z - s.az) * s.dz) / s.len : 0;
+      const u2 = t2 < 0 ? 0 : t2 > 1 ? 1 : t2;
+      const y = net.sample(s.edgeId, s.at + u2 * (s.bt - s.at))?.y;
+      if (Number.isFinite(y)) return y;
+    }
+    return lerp != null ? lerp : L.gh(x, z);
   };
 
   L.groundHeight = L.gh;
