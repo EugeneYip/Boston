@@ -267,9 +267,16 @@ export default class CaptureHarness {
        * buildings change height or a new block lands, a shot that was in open air
        * ends up buried inside a tower and the capture is a wall of facade.
        *
-       * Buildings have no physics colliders -- only terrain and roads do -- so this
-       * tests the render geometry directly: fire rays along the six axes and treat
-       * the point as enclosed if nearly all of them hit something close by.
+       * This tests the RENDER geometry directly -- fire rays along the six axes and
+       * treat the point as enclosed if nearly all of them hit something close by --
+       * because a shot position is authored against pixels, not against physics.
+       *
+       * It does NOT mean buildings are non-solid. They have had one oriented-box
+       * collider each since the baseline commit; this comment used to claim
+       * otherwise and was simply wrong. Their colliders are also LOD-0 gated, so
+       * they do not exist for a camera parked somewhere nothing has streamed --
+       * which is the other reason a physics query is the wrong tool here.
+       * See CONTRACTS.md, "Building collision".
        *
        * @returns {{moved:number, pos:number[]}} how far it had to retreat
        */

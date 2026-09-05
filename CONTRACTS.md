@@ -230,6 +230,78 @@ rule produced geometry that measured present at exactly the right coordinates
 and changed not one pixel.
 
 ---
+## Building collision: what is solid, when, and how big
+
+**Buildings have always had colliders.** `CaptureHarness.unstick` carries a comment
+saying they do not -- "Buildings have no physics colliders -- only terrain and roads
+do" -- which was wrong when it was written (`f9dc75f`) and is wrong now.
+`Buildings._addColliders` has built one collider per building since the baseline
+commit. A collider inventory that finds none has almost certainly been taken at
+`time.frame === 0`: nothing has streamed yet, so no chunk is at LOD 0 and the
+building population is genuinely zero *at that instant*. Step the engine before
+counting.
+
+**Ownership and shape.** One `RigidBodyDesc.fixed()` per LOD-0 chunk, one
+`ColliderDesc.cuboid` per building on it, oriented to the footprint's longest edge.
+Groups are `groups(GROUP.STATIC, 0xFFFF)`. They were previously left at Rapier's
+default, which made every building a member of every group -- CHARACTER, WHEEL,
+TRIGGER, PROJECTILE, WATER -- by accident rather than intent. STATIC preserves every
+interaction that actually exists: the player capsule, the camera ray
+(`STATIC|PROP|VEHICLE`), the vehicle chassis, and the suspension ray
+(`STATIC|PROP|WATER`) all still test true against it.
+
+**A box is exact here, not an approximation.** 10,045 of the 10,048 footprints are
+convex quads and the other 3 are convex pentagons; footprint area over oriented-box
+area is 1.000 at every percentile, with only 3 buildings below 0.9. Do not "upgrade"
+this to a trimesh or a footprint-prism decomposition -- there is no accuracy to buy,
+and a trimesh of the rendered shell would drag in window and cornice relief.
+
+**The two ways this went wrong, so they are not reintroduced.** `ang` is a BEARING,
+`atan2(dx, dz)`, measured from +Z toward +X. The projection that measures the
+half-extents is the frame a Three Y-rotation of **`+ang`** produces: local +Z along
+the longest edge. Rotating the collider by `-ang` mirrors the box about that edge --
+same size, wrong place. Median 7.96 m of real facade then lay outside its own
+collider, 9,949 buildings over 1 m and 3,177 over 10 m. Separately, half-extents
+taken as `max(|u|)` about the **centroid** and applied symmetrically inflate any
+footprint whose centroid is off-centre in its own bounding rectangle: 7,050 of
+10,048 by more than 0.5 m, worst 3.56 m, and every surplus metre is invisible wall
+standing in the street. Centre the box on the extents, not on the centroid.
+
+**Streaming and reach.** Colliders are added when a chunk reaches LOD 0
+(`r0 = 175 * scale`, scale from `drawDist/2200` clamped to 0.55-1.4) and are NOT
+dropped when it falls back to LOD 1 -- `_stepChunk` calls `_disposeChunk(ch, false)`
+across an LOD swap and `_addColliders` early-returns on an existing `ch.body`. They
+are released only when the chunk unloads past `r1 = 410 * scale`. So collision
+covers everything within 175 m of the camera plus anything that has been there since
+it last unloaded. The player cannot outrun it: a chunk enters r0 175 m ahead, which
+is 13 s at the drivable car's ~13 m/s, and a dense chunk finishes in about 0.45 s at
+the steady 6 ms/frame `_pump` budget.
+
+**Cost.** One cuboid per building, no trimesh, no per-frame collider churn. The
+worst chunk measured (84 buildings, Back Bay) takes **1.2 ms** to build its whole
+body, 14.3 microseconds per building, once. In the densest place measured the world
+carries 523 building colliders of 16,565 total; `world.step()` averaged
+0.006-0.018 ms over batches of 200.
+
+**What this buys, measured.** Open street wrongly blocked by a building collider:
+23.2% -> 0% in the Financial District, 6.4% -> 0% in Back Bay, ~1.8% -> 0% in the
+North and South Ends (n = 220 open points per site). Interior points blocked by
+their own building: 1,200 of 1,200 across 40 buildings, 4 in each of 10 districts.
+Player walking at a facade, 40 trials: 0 entered, and where a building is what
+stopped him the stop distance is a median of **0.32 m** -- capsule radius 0.30 plus
+the KCC's 0.02 offset, i.e. the geometric minimum. Drivable sedan at 13.3 m/s
+head-on and at 30 degrees off the normal: chassis never enters, stops 2.4 m out
+(half a sedan, so nose flush), tilt under 8 degrees, reverses out 8-10 m.
+
+**Known not solid.** Landmarks have no colliders of any kind, and `isReserved` keeps
+procedural buildings off their footprints, so they get no building collider either.
+Measured 0 of 5 interior sample points blocked at 200 Clarendon (241 m), the
+Prudential Tower (229 m), the Custom House (151 m), the State House, Faneuil Hall
+and Trinity Church -- you can walk straight through all of them. Do not fix this by
+extruding `keepout`: that is a generator exclusion radius, up to 150 m at Fenway and
+128 m at Faneuil, and using it as a collider would recreate exactly the
+invisible-wall defect described above.
+
 ## Parked cars are glazed differently from moving ones
 
 `CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the
