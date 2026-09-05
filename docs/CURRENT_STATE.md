@@ -130,12 +130,14 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
-**Residual: camera, 10 of 216 orbit angles behind a landmark surface.** The
-earlier "fan is lifted too high" explanation was wrong — the lift is 0.20 m and
-`FAN` already has a centre ray. The real cause is that `_sweep` is passed the full
-`shoulder` while `_apply` places the camera at `shoulder * shrink`, so the sweep
-probes a column of space the camera does not occupy. The proposed un-lifted extra
-ray is refuted by measurement. See CONTRACTS.md, "Landmark collision".
+**Camera vs landmarks: CLOSED 2026-09-05 (`bce6c00`).** The residual 10 of 216
+orbit angles are gone. The cause was not the vertical fan -- it was that `_sweep`
+was passed the full `shoulder` while `_apply` placed the camera at
+`shoulder * shrink`, so the sweep cleared a column the camera never occupied.
+`_apply` now re-probes at the shoulder the camera actually lands on, monotonic and
+capped at 2 passes. Pages build: 0 behind of 216 landmark angles, bus 0 of 36, open
+street arm 3.35 with 0 at floor. Cost: at a building the arm sits at the 0.27 m
+floor at 27 of 36 angles instead of 21. See CONTRACTS.md, "Landmark collision".
 
 ## What exists and works
 - **Engine**: dependency-sorted system registry, fixed 60 Hz physics, clamped variable
