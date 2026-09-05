@@ -138,6 +138,50 @@ Two consequences worth knowing before filing a bug:
   wrong; do not tune the clamp to compensate.
 
 ---
+## Getting off the road: what is actually true
+
+Kerbside parking is dense on purpose and it is solid. Measured across the city,
+the parked row occupies a band about 2.5 m deep hard against the kerb and roughly
+two thirds of the kerb's length, with no channel behind it. At the owner's own
+reported spot (Tremont St, edge 314) the lateral profile from the traffic lane
+is: clear road to 4.5 m, **parked cars 5.0-7.0 m, pavement from 7.5 m**.
+
+Two things follow, and the second is the one people get wrong.
+
+- Walking *straight* at the pavement fails most of the time, and that is
+  correct: you walked into the side of a car. Measured, a perpendicular walk
+  from the centre line covered 4.77 m of 9.0 m and stopped on a parked car.
+- Walking at the pavement while leaning along the street does work. On the same
+  12 start points at the same site, **11 of 12** reached the pavement, median
+  path 10.2 m. The nearest clear bay slot at the owner's exact spot was 1.75 m
+  along the street, and walking from inside it up the 0.28 m kerb succeeds.
+
+So the return path exists, is close, and is mechanically sound. What it is not
+is *legible*: from the carriageway you are looking at an unbroken flank, and
+nothing tells you the way through is two metres to your left.
+
+**A forced-gap experiment was tried and reverted.** Guaranteeing a 4-9 m opening
+every 26 m of kerb removed 1,860 cars and measured *worse* on the walk-and-lean
+test (10 of 12 against 11 of 12). Density is not the blocker; do not spend cars
+on it again without new evidence. If this is reopened, the honest lever is an
+affordance -- something that shows the player where the gap is -- not spacing,
+and that is a design decision rather than a tuning one.
+
+---
+## Parked cars are glazed differently from moving ones
+
+`CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the
+shared `prop_glass`. That is deliberate. `prop_glass` is a bus shelter's
+material -- pale blue-grey at 0.20 opacity -- and a car body is empty: no LOD
+produces the `interior` bucket `CAR_SLOT` names, and LOD1 (what parked cars use
+up close) also drops `under`, so there is no floor either. Clear glazing over
+that shell let you see straight through a parked car and out the far side.
+Moving cars were never affected because `VehicleModels` glazes them at 0.62
+opacity on near-black.
+
+If you ever want real transparent car glass, close the shell first.
+
+---
 ## Escape belongs to the browser, not to Boston
 
 Escape is not bound to anything, is not in the `keydown` preventDefault list, and
