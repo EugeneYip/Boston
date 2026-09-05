@@ -471,9 +471,15 @@ is not a defect, but if dusk-in-rain is ever tuned, that is the interaction to w
 - **Rain may now read below the grain floor.** The rebuild closed an automatic fail and
   may have overshot; animating, it adds ~1.65/255 of vertical HF against a ~3.3 grain
   floor.
-- **`overcast_wide` flatness is a SCENE defect, not a post one** — the HDR buffer spans
-  only 4.8 stops where AgX needs about ten. B1 made the display use the range it has;
-  it cannot invent shadow. Owner: lighting/atmosphere.
+- ~~**`overcast_wide` flatness is a SCENE defect**~~ — **CLOSED 2026-09-01, does not
+  reproduce.** Re-measured on the real HDR buffer (`composer.inputBuffer`, HalfFloat,
+  decoded per pixel over the whole 1920×1080 frame): **6.33 stops p01→p99**, 6.85
+  p0.1→p99.9, 7.08 min→max, with the sky band at median 0.781 against a ground band
+  median of 0.0401 — **4.28 stops of sky-to-ground separation**. Display side uses 74%
+  of the range with no clipping and no crushed black. The old 4.8-stop figure is either
+  superseded by intervening lighting work or was itself measured on a partial frame.
+  **Measure the whole buffer**: a `readRenderTargetPixels(0, 0, 480, 270)` corner read
+  on this same shot returns 3.15 stops, because it misses the sky entirely.
 - **`street_level` sky structure is marginal** (sd 4.86 against a >4 bar). Widening it
   needs lower exposure, which reintroduces other problems.
 - Shadow crush: the same grade clamp B1 replaced also crushed shadows. A matching toe
