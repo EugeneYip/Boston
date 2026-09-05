@@ -1797,7 +1797,21 @@ const CAR_SLOT = {
   // `carPaint`, not `paint`: the `paint` class is also the hydrant bonnet, the
   // bench slat, the BigBelly shell and the bollard, and none of those is
   // lacquered. Only the body loft goes on the glossy class.
-  paint: 'carPaint', glass: 'glass', glassDark: 'glass', chrome: 'chrome',
+  // Car glazing does NOT go on the shared prop glass. That material is a bus
+  // shelter's: pale blue-grey (0xa9bcc6) at 0.20 opacity, which is right for a
+  // shelter you are meant to see through and catastrophic on a car, because a
+  // car body has nothing inside it. No LOD carries an `interior` bucket -- the
+  // mapping below has named one for a long time and `getVehicleGeometry` has
+  // never produced it -- and LOD1, the tier parked cars use up close, also
+  // drops `under`, so the shell has no floor either. Eighty per cent
+  // transparent glass over an empty, floorless shell whose inner faces are
+  // back-face culled means you look straight through a parked car and out the
+  // far side: the owner's "some cars you can see right through". The moving
+  // cars do not do this because VehicleModels glazes them at 0.62 opacity on
+  // near-black. Put car glazing on the body's own opaque class instead and it
+  // reads as dark tinted glass, which is what `CAR_COL.glass` (#20272b) was
+  // already asking for. Nothing else that uses prop glass is touched.
+  paint: 'carPaint', glass: 'carPaint', glassDark: 'carPaint', chrome: 'chrome',
   trimDark: 'rough', trim: 'rough', under: 'rough', tire: 'rough',
   interior: 'rough', lensRed: 'paint', lensClear: 'chrome', gap: 'rough',
 };
