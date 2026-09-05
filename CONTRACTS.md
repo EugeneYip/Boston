@@ -302,6 +302,75 @@ extruding `keepout`: that is a generator exclusion radius, up to 150 m at Fenway
 128 m at Faneuil, and using it as a collider would recreate exactly the
 invisible-wall defect described above.
 
+## Landmark collision: the drawn triangles are the collider
+
+**Owner: `Landmarks._addColliders`.** One `RigidBodyDesc.fixed()` for all twenty
+landmarks, carrying one `ColliderDesc.trimesh` each, grouped
+`groups(GROUP.STATIC, 0xFFFF)` to match the building contract. Released in
+`dispose()` with the meshes.
+
+**`keepout` is NOT a collision footprint and must never be used as one.** In
+`src/data/landmarks.js` it is the radius inside which the generic building
+generator must not place anything -- 150 m at Fenway, 130 m at Zakim, 128 m at
+Faneuil. Extruding those discs would wall off whole blocks of open street, which
+is the exact defect that was removed from `Buildings._addColliders` one batch
+earlier. Landmarks are individually modelled and carry no footprint polygon, so
+the rendered geometry is the only honest description of their shape.
+
+**How the slice works.** Every landmark is emitted into one shared `MeshBuf`
+inside the `for (const d of LANDMARKS)` loop in `init`. `MeshBuf.build(false)`
+copies indices through 1:1 and leaves positions in world space, so recording
+`mb.ni` either side of each builder call gives an exact index range into the
+finished geometry. `this.parts` holds those ranges; each becomes one trimesh with
+its vertices compacted out of the 44k-vertex merged buffer. If you ever make
+`build()` reorder or weld, this breaks -- the ranges are the whole mechanism.
+
+**Taking the shape from the geometry is what makes the awkward cases work, and
+they need no special case.** Fenway's bowl is open to the sky (verified: no
+vertical hit above the centre) and its field is a drawn ground-level surface, so
+the collider is a floor there rather than a lid. The space under the Zakim deck
+has 26-45 m of clearance and is fully walkable -- three traversals covered the
+whole 11.1 m free-run distance with zero stalled frames. Faneuil's colonnade and
+every arch stay open because there are no triangles in them.
+
+**Deliberately not collidable.** The Zakim cables and the Citgo sign are separate
+meshes (`zakim_cables`, `citgo_sign`) and never enter the shared buffer, so they
+are excluded for free -- catching a player on a suspension cable would be worse
+than passing through one. The glass buffer is excluded too: curtain walls are
+coincident with the opaque shell they hang on, so including them would only
+duplicate surfaces.
+
+**A trimesh is a surface, not a volume.** A capsule teleported inside a landmark
+reports no overlap from `intersectionsWithShape`, because it intersects no
+triangle. That is expected and is NOT evidence that the landmark is hollow --
+interior-point coverage, which is the right test for the building cuboids, means
+nothing here. Traversal is the only test that does. The drivable chassis has
+`setCcdEnabled(true)` and soft-CCD prediction, so it does not tunnel: measured
+head-on at 14.1-14.4 m/s it stops with its centre 2.39-2.48 m out, half a sedan,
+nose flush.
+
+**Measured contracts.** Player, 60 trials over all 20 landmarks at three bearings:
+56 of 58 valid trials stopped by the landmark collider, distance from the stop
+point to the nearest visible triangle median **0.32 m** (min 0.29, max 0.81) --
+capsule radius 0.30 plus the KCC's 0.02 offset -- with **0** trials stopping more
+than 1 m out and **0** unable to retreat. Open ground wrongly blocked: 0 of 200
+samples at Zakim, Faneuil, TD Garden, Prudential and Hancock; 7 of 200 at Fenway,
+all within 0.9 m of real geometry. Camera: orbit intrusion fell from **68 of 180**
+angles to **8 of 216** (see below). Cost: 20 colliders, 22,078 collision
+triangles, ~1 MB, one-time build, and a `world.step()` cost indistinguishable
+from noise with the colliders switched on or off (0.006-0.038 ms either way).
+
+**Known residual: the camera sweep has a blind spot below its fan.** `_sweep`
+originates its five rays at the pivot lifted by `lift` (0.55 m in third person),
+so geometry lower than that -- a plinth, a stair, a buttress at a landmark base --
+can pass under the fan. Measured 8 of 216 orbit angles with the camera behind a
+landmark surface, all of them at landmark bases and all with an arm of 0.9-2.0 m.
+This is a pre-existing property of the sweep that landmark geometry now exposes;
+before this batch the camera passed through landmarks at every angle, so the
+change is strictly an improvement. A likely fix is one extra sweep ray from the
+un-lifted pivot, which can only ever shorten the arm and so is monotonically
+safe -- but it is unmeasured and was not attempted.
+
 ## Parked cars are glazed differently from moving ones
 
 `CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the

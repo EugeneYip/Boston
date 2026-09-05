@@ -94,6 +94,30 @@ procedural buildings off their footprints, so you can walk through 200 Clarendon
 the Prudential, the Custom House and the State House. Do not extrude `keepout` to
 fix it — see CONTRACTS.md, "Building collision".
 
+## Landmark collision — added 2026-09-05 (`57cdebe`)
+
+**Landmarks are solid now.** They previously had no colliders of any kind, and
+because `isReserved` keeps the procedural generator off their footprints there was
+no building collider underneath either — you could walk through 200 Clarendon,
+the Prudential, the Custom House, the State House, Faneuil Hall and Trinity
+Church. That was the largest free-roam hole in the city.
+
+Each landmark now carries one static trimesh collider cut from its own slice of
+the merged opaque mesh, on a single shared fixed body. `keepout` is NOT used and
+must never be — it is a generator exclusion radius of up to 150 m. See
+CONTRACTS.md, "Landmark collision".
+
+Measured: 60 player trials over all 20 landmarks, 56 of 58 valid stopped by the
+landmark collider at a median 0.32 m from the nearest visible triangle (capsule
+radius + KCC offset), 0 stopping more than 1 m out, 0 unable to retreat. Drivable
+sedan at 14.1–14.4 m/s never enters and reverses out. Camera orbit intrusion fell
+from 68 of 180 angles to 8 of 216. Cost is 20 colliders / 22,078 triangles / ~1 MB
+and a physics step cost indistinguishable from noise.
+
+**Residual:** the camera sweep fans its rays from the pivot lifted 0.55 m, so low
+geometry at a landmark base can pass beneath it — 8 of 216 angles. Unfixed and
+unmeasured; the likely one-line fix is an extra ray from the un-lifted pivot.
+
 ## What exists and works
 - **Engine**: dependency-sorted system registry, fixed 60 Hz physics, clamped variable
   render step, `import.meta.glob` auto-loading of subsystems.
