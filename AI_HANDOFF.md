@@ -258,6 +258,41 @@ disk is macOS swap, AI transcripts, browser/WebGL caches and temp files. A three
 wave once created three 1 GiB swapfiles and took the machine to the point where a git
 object was corrupted mid-write.
 
+## 7c. Shipped-build defects found on the live site (2026-09-01)
+**The deployed Pages site is now a real evidence surface.** Both items below came from
+the owner looking at `https://eugeneyip.github.io/Boston/`, not from a local capture.
+
+**Parked cars floated metres above Tremont Street — fixed (`bee0da5`).** `L.surfaceY` in
+`Props.js` interpolated between a segment's two ENDPOINT elevations, which assumes a
+constant grade. Edge 314 is a 432 m arterial that sits flat at 3.33 m for 200 m then ramps
+to 9.91 m, so the lerp overshot the drawn road by up to 3.40 m. It now asks
+`roadMesh.surfaceAt` what is actually drawn — the datum `City.surfaceHeight` publishes —
+and keeps the lerp only as the `nearY` bridge-deck hint. Measured over 17,952 points on all
+509 segments: mean |error| **0.302 → 0.120 m**, within 10 cm **63% → 93%**.
+`L.surfaceY` is shared with Vegetation's grass and Decals, so those move too — correctly.
+
+**STILL OPEN: kerbside placement drifts sideways on curves.** These segments are the
+straight CHORD between two nodes while roads follow `edge.pts`. On edge 245, a 643 m
+curve, a parked car lands **12.07 m** from the real carriageway — far enough that
+`surfaceAt` returns null. That is the residual 1.8% of points still over 1 m out, and it
+is a *placement* defect, not a height one. Fixing it means walking the polyline instead of
+the chord, which touches every prop, and is its own wave.
+
+**Escape was the only way in or out — fixed (`c1901f6`).** `pause` was bound to Escape
+alone, and there was no fullscreen support at all: no request, no exit, no
+`fullscreenchange` listener. Escape is a privileged browser key first, so in fullscreen or
+pointer lock it can be consumed before the page sees it. Now: **pause is `Escape` or `P`**
+(P was nominally `photo`, which had no consumer anywhere — only a controls row advertising
+an unimplemented mode); **fullscreen is an explicit pause-menu control** because every
+conventional key including `F` was already shipped; and `Input` observes
+`fullscreenchange`/`webkitfullscreenchange` and exposes `input.fullscreen`. Escape is still
+not preventDefaulted, and nothing re-requests pointer lock behind the player.
+
+**Outstanding owner check:** the embedded pane refuses `requestFullscreen` and
+`requestPointerLock` without user activation, so real fullscreen enter/exit, real
+pointer-lock capture, and anything Safari-specific are **unverified** and need the owner on
+the deployed build.
+
 ## 7b. Deployment — GitHub Pages
 Pushing to `main` builds and publishes the site through `.github/workflows/pages.yml`.
 No `gh-pages` branch, nothing committed back, `dist/` stays gitignored.
