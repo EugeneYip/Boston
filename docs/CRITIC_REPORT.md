@@ -73,17 +73,41 @@ source change was made.** If this is revisited, the open question is lamp spacin
 spill on the kerbside rank, not car materials or models — and note that `prop_surf` is
 shared by every prop type, so it cannot be retuned for cars alone without splitting it.
 
-### 3. Distant towers are plain boxes
-`hero_skyline`: the mid and far towers are near-uniform pale slabs carrying a simple window
-grid, with little silhouette or material variety and no roof clutter, and heavy haze washes
-what variety exists. This is the classic "browser render" tell at a distance. Salience is
-high for skyline shots specifically, lower for street-level play.
+### 3. Distant towers — **FIXED 2026-09-01 (`ec5dfca`), atmosphere was the owner**
+The towers were never the problem. Raycasting hero_skyline identifies them all as
+Buildings `shell` sector meshes on `building_facade` at 199–896 m, and `buildShell` gives
+them correct setback massing, a plinth/shaft split and a facade strip texture carrying the
+window rhythm. At full resolution the near and mid towers visibly have it.
 
-### 4. Daylight road reads flat — LOW CONFIDENCE, do not act on this alone
-The carriageway occupies roughly 45% of the `st_southend` frame and reads as a broad, even
-grey. Recorded only for completeness: Wave A (`19f32f4`) already rebalanced road material on
-spatial scale, and `AI_HANDOFF.md` §5 records that `grit` was wrongly blamed once on a
-high-frequency detector. **Do not reopen this without a fresh spatial-scale measurement.**
+The clear-weather preset's `hazeSigma` was 0.00034 — a Koschmieder range of 11.5 km, and
+**4× the extinction of Fog.js's own documented clear-day default** of 8.5e-5 (~46 km).
+Ablating it moved the 776–896 m band 1.91× and the 199 m band only 1.16×, i.e. correctly
+distance-weighted, and at σ=0 the far cluster resolved into individual towers with readable
+glazing — so the detail was there underneath. Halved to 0.00017 (23 km): far-band gradient
+2.868 → 3.843, sd 27.72 → 35.43, veiling mean 98.6 → 83.8. See the commit for the five-shot
+regression.
+
+### 4. Daylight road brightness — measured 2026-09-01, NOT a defect
+The carriageway does read as a broad pale mass, and it is much brighter than the facades:
+at `st_southend` the road (verified `road_-1,0` by raycast) reads luma 126.8 at 3 m and
+143.0 at 21 m against sunlit brick facades at 79–83, a gap of 44–48. But with the sun at
+~66° elevation a horizontal surface takes sin(66°)=0.91 of normal irradiance where even a
+sun-facing wall takes cos(66°)=0.41, so the road should be roughly 1.7× brighter in linear
+terms before any material difference. Most of the gap is geometry, not a defect. **Do not
+reopen road attribution on brightness alone** — and `AI_HANDOFF.md` §5 records that `grit`
+was already wrongly blamed once on a bad detector.
+
+### 5. Parked cars read flat in DAYLIGHT too — current top open item
+New evidence against the night-lighting explanation offered in `fad079f`. The same
+`prop:car*` instances that looked flat at night measure luma 82.3 at `st_southend` in
+full midday sun, essentially the same as the brick facades beside them (79–83), and read
+visually as pale low-contrast shapes at 11 m. Since they are flat in both a dark and a
+bright composition, weak night lighting cannot be the explanation, and the earlier
+disproofs still stand: `envMapIntensity` does nothing and the asset is 4,660 triangles with
+a clearcoat physical material. **Still unattributed to a narrow term.** The next candidate
+to test is the per-instance colour/ORM path — whether `prop_surf`'s shared ORM map gives a
+car body any specular break-up at all — and note `prop_surf` is shared with every other
+prop type, so it cannot be retuned for cars without splitting it.
 
 ### Not found
 No new clipping, no console errors, no GL faults, and the B1/B2 four-risk list closed clean
