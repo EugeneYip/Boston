@@ -172,6 +172,43 @@ instrumentation — **do not add restore-on-teardown**, since it could clobber a
 another subsystem installed later. Full detail and the residual Traffic-ordering caveat
 live in `AI_HANDOFF.md` §9.
 
+## Physics ground truth — verified after the heightfield transpose fix (`af773bd`)
+Downstream re-verification of `af773bd`, measured at that commit. **The transpose fix is
+good and introduced no regression**, and it settles the resolution question: the 300x300
+heightfield (22.67 m cells) tracks `groundHeight()` to a mean **0.039 m** (worst 0.85 m
+over 2,565 samples), so its resolution is *not* a binding approximation — the transpose
+was the entire error. Traffic sits correctly on the carriageway (car y minus road surface
+**+0.031 m** mean over 39 live cars).
+
+**What is still wrong is older than the transpose and independent of it.** The road
+collider is built from each chunk's `farMesh` (`City._colliders`), i.e. the LOD geometry,
+and it under-covers the surface people actually drive and walk on:
+
+| surface | has a collider at the visible surface | falls through to terrain | collider minus surface, where present |
+|---|---|---|---|
+| carriageway (centreline) | 84.1% | **15.9%** | −0.028 m |
+| pavement | 90.9% | **9.1%** | −0.006 m |
+
+Where a collider exists it is excellent — within 3 cm. The gaps are not missing chunks
+(all 44 chunks have a `farMesh` and a collider, and the misses are spread across 134 of
+189 tiles rather than clustered), so this is far-LOD geometry not covering everything.
+In a gap the next surface down is the terrain heightfield, which sits a median **0.43 m**
+(p95 1.53 m) below the road, because the road network's own elevation runs ~0.53 m above
+`groundHeight()`.
+
+Consequence worth knowing: the player is grounded by the Rapier character controller, so
+in a gap they rest on terrain rather than on the pavement. Measured at the default spawn,
+the player's feet settle at 3.100 against a pavement surface of 3.667 — **0.567 m sunk**,
+and it persists across 60 simulated frames. This is a *local* gap, not every pavement.
+`Player` spawn and vehicle-exit compound it by placing him at `groundHeight + 0.05`
+directly (`Player.js:147`, `:422`), which is ~0.53 m below the surface he is standing on.
+
+**Do not "fix" this by changing `Player` alone** — the controller would just pull him back
+down to whatever collider is there. The causal fix is collider coverage, and it is a cost
+decision, not a one-liner: building the colliders from `nearMesh` instead of `farMesh`
+takes road collision geometry from **34,906 to 375,881 triangles (10.8x)**. Needs an
+explicit call on that trade before anyone implements it.
+
 ## Resolved root causes — do not re-debug these
 | Symptom | Root cause | Fixed in |
 |---|---|---|
