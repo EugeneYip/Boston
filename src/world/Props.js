@@ -4,6 +4,7 @@ import {
   RNG, getPropMaterials, buildFurnitureLibrary, clearGeoCache, PARKED_CARS,
 } from './StreetFurniture.js';
 import Decals from './Decals.js';
+import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 /**
  * Props — everything bolted to, dropped on, strung over or left lying in a
@@ -791,6 +792,7 @@ export default class Props {
     const spread = populate(this, L, density);
     this.decals.register(ctx, L, density, this.batcher);
     const n = this.batcher.build();
+    this._buildCarColliders(ctx);
     this.decals.afterBuild(this.batcher);
     this._buildWires(ctx, L);
     this._buildLightPool(ctx);
@@ -938,6 +940,78 @@ export default class Props {
    * own: the registration outlives it, and an orphan still competes for a real-light
    * slot at a stale position. Idempotent, so a rebuild followed by a dispose is safe.
    */
+  /**
+   * Solid volumes for parked cars.
+   *
+   * Props creates no physics at all otherwise, so a parked car was a picture:
+   * measured on the shipped build, a KinematicCharacterController move of 3.0 m
+   * straight at a parked SUV returned 2.998 m and left the player 0.335 m inside
+   * the body. Rays fired through the car from four directions hit nothing.
+   *
+   * One oriented cuboid per car, all on a single fixed body. Transforms come
+   * from the batch's baked `mats`, so the collider inherits the final placement
+   * -- polyline position, yaw, and the pitch/roll fitted to the road in 60cd119
+   * -- rather than any earlier approximation. The box is inset slightly in x and
+   * z so wing mirrors do not widen it, and spans the full height from road to
+   * roof.
+   *
+   * Global rather than pooled, and that is measured, not assumed: 17,282 cars
+   * cost 98.5 ms once at build and moved the mean fixed step from 0.006 ms to
+   * 0.007 ms, i.e. nothing. Static colliders on a fixed body are broad-phase
+   * only. Pooling would have bought noise and cost hysteresis and ghost-collider
+   * bugs.
+   *
+   * The filter is deliberately narrow -- PROP colliding with CHARACTER alone --
+   * so vehicle suspension rays, traffic spacing, projectiles and audio occlusion
+   * see nothing new. Making cars solid to VEHICLE too is a separate decision.
+   */
+  _buildCarColliders(ctx) {
+    const p = ctx.physics ?? ctx.get?.('physics');
+    if (!p?.world || !p.RAPIER || !this.batcher) return;
+    this._releaseCarColliders(ctx);
+    const R = p.RAPIER;
+    const body = p.world.createRigidBody(R.RigidBodyDesc.fixed());
+    const m4 = new THREE.Matrix4(), pos = new THREE.Vector3();
+    const qt = new THREE.Quaternion(), sc = new THREE.Vector3(), off = new THREE.Vector3();
+    const bits = groups(GROUP.PROP, GROUP.CHARACTER);
+    let made = 0;
+    for (const name of new Set(PARKED_CARS.map(([nm]) => nm))) {
+      const batch = this.batcher.batches.get(name);
+      if (!batch?.mats) continue;
+      const g = batch.lods?.[0]?.geometry;
+      if (!g) continue;
+      if (!g.boundingBox) g.computeBoundingBox();
+      const bb = g.boundingBox;
+      const hx = (bb.max.x - bb.min.x) * 0.46;      // inset: skip the mirrors
+      const hy = (bb.max.y - bb.min.y) * 0.5;
+      const hz = (bb.max.z - bb.min.z) * 0.485;
+      const cy = (bb.max.y + bb.min.y) * 0.5;
+      for (let i = 0, n2 = batch.mats.length / 16; i < n2; i++) {
+        m4.fromArray(batch.mats, i * 16);
+        m4.decompose(pos, qt, sc);
+        off.set(0, cy * sc.y, 0).applyQuaternion(qt);
+        p.world.createCollider(
+          R.ColliderDesc.cuboid(hx * sc.x, hy * sc.y, hz * sc.z)
+            .setTranslation(pos.x + off.x, pos.y + off.y, pos.z + off.z)
+            .setRotation({ x: qt.x, y: qt.y, z: qt.z, w: qt.w })
+            .setCollisionGroups(bits),
+          body);
+        made++;
+      }
+    }
+    if (made) { this._carBody = body; this._carColliders = made; }
+    else { p.world.removeRigidBody(body); this._carBody = null; this._carColliders = 0; }
+  }
+
+  /** Drop the parked-car collision body. Safe to call twice. */
+  _releaseCarColliders(ctx) {
+    const p = ctx?.physics ?? ctx?.get?.('physics');
+    if (this._carBody && p?.world) {
+      try { p.world.removeRigidBody(this._carBody); } catch { /* world already gone */ }
+    }
+    this._carBody = null; this._carColliders = 0;
+  }
+
   _releaseLightPool(ctx) {
     for (const h of this._lightHandles) {
       try { h?.release?.(); } catch { /* manager already gone */ }
@@ -1042,6 +1116,7 @@ export default class Props {
   }
 
   _rebuild(ctx) {
+    this._releaseCarColliders(ctx);
     this.batcher.dispose();
     this.decals.dispose(ctx);
     for (const m of this.wires || []) { ctx.scene.remove(m); m.geometry.dispose(); }
@@ -1059,6 +1134,7 @@ export default class Props {
   stats() { return { ...this.batcher.stats(), decals: this.decals?.stats() }; }
 
   dispose() {
+    this._releaseCarColliders(this.ctx);
     const ctx = this.ctx;
     this.batcher?.dispose();
     this.decals?.dispose(ctx);
