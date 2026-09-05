@@ -277,8 +277,11 @@ content is already in the history.
 ## 9. Current open work — prioritised, and what NOT to reopen
 
 ### Next
-Nothing is queued. The daylight-hue candidate — the only item that was — is now
-closed; see below. Pick the next item deliberately rather than inheriting one.
+A fresh current-pixels critic ran on 2026-09-01 at `319c092` and its ranked list is in
+`docs/CRITIC_REPORT.md`. The top finding is **night has no highlight range** —
+`night_neon` reaches p99 153.5 where daylight shots reach ~245, and buildings carry almost
+no lit windows. **Nothing on that list is attributed to a causal term yet**, so attribute
+before repairing, and note the night black-crush fix (`98cad4c`) must not be undone.
 
 ### Daylight hue at `st_southend` — CLOSED, no defect (runtime, 2026-09-01)
 Measured on current pixels at `dbcb1d1`, one page load, `holdActors: true`. The old

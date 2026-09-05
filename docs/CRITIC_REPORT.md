@@ -1,3 +1,55 @@
+# CRITIC_REPORT.md — current-pixels critic, 2026-09-01 at `319c092`
+
+**This supersedes the 6/10 pass on `9bd5e55` as the active list.** Four shots captured on
+current pixels in one page load, 8×8 block statistics (grain-immune). Nothing below is
+attributed to a causal term yet — these are ranked observations with evidence, not work
+orders. Attribute before repairing.
+
+| shot | block mean | block sd | p01 | p99 | dynamic range |
+|---|---|---|---|---|---|
+| `st_southend` | 104.9 | 56.1 | 8.6 | 244.7 | 236.1 |
+| `hero_skyline` | 131.6 | 66.8 | 22.1 | 245.1 | 223.0 |
+| `overcast_wide` | 128.1 | 60.0 | 38.6 | 226.9 | 188.3 |
+| `night_neon` | 50.2 | 35.1 | 9.1 | **153.5** | **144.4** |
+
+### 1. Night has no highlight range — the strongest finding
+`night_neon` tops out at **p99 = 153.5** where every daylight shot reaches ~245, and only
+9.9% of blocks sit more than 60 above the frame median. Visually the buildings are near-black
+masses with almost no lit windows; street lamps make soft pools but nothing in frame reads as
+an intense source. A night city is *defined* by small very bright sources against dark
+surroundings, and this frame has none — it is uniformly dim instead of high-contrast.
+Salience high, confidence high (measured, current), gain large. Candidate causes to separate
+before touching anything: lit-window emissive intensity and density, whether window emissives
+are gated by the same auto-night path as street lamps, and the real-light budget. Regression
+risk is real — night black-crush was fixed once already (`98cad4c`) and must not be undone.
+
+### 2. Vehicles read as featureless pale blobs
+Most visible at `night_neon`, where the parked rank along the kerb is a row of pale untextured
+shapes with no panel, glass or trim separation, but the same cars are pale and flat in
+`st_southend` too. Cars are everywhere in a city, so this is high salience. Not attributed:
+could be the shell/far visual LOD standing in at close range, car paint response under low
+light, or missing glass/trim material distinction. Check what visual a kerbside parked car
+actually gets before assuming it is a material problem.
+
+### 3. Distant towers are plain boxes
+`hero_skyline`: the mid and far towers are near-uniform pale slabs carrying a simple window
+grid, with little silhouette or material variety and no roof clutter, and heavy haze washes
+what variety exists. This is the classic "browser render" tell at a distance. Salience is
+high for skyline shots specifically, lower for street-level play.
+
+### 4. Daylight road reads flat — LOW CONFIDENCE, do not act on this alone
+The carriageway occupies roughly 45% of the `st_southend` frame and reads as a broad, even
+grey. Recorded only for completeness: Wave A (`19f32f4`) already rebalanced road material on
+spatial scale, and `AI_HANDOFF.md` §5 records that `grit` was wrongly blamed once on a
+high-frequency detector. **Do not reopen this without a fresh spatial-scale measurement.**
+
+### Not found
+No new clipping, no console errors, no GL faults, and the B1/B2 four-risk list closed clean
+(`319c092`). `overcast_wide`'s narrow range (p01 38.6, range 188.3) is the already-attributed
+scene defect, not a post one — owner: lighting/atmosphere.
+
+---
+
 > ## STALE — measured at `9bd5e55`, three landed waves ago
 >
 > This report is a **historical diagnostic**, not a current work list. Wave A
