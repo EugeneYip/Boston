@@ -277,20 +277,50 @@ content is already in the history.
 ## 9. Current open work — prioritised, and what NOT to reopen
 
 ### Next
-- **CURRENT CANDIDATE / NEEDS FRESH ATTRIBUTION — possible daylight magenta
-  tendency.** `st_southend` in daylight measures approximately **R 111.5 / G 105.3 /
-  B 111.2**, i.e. **R > B > G**, the same channel ordering dusk had. This is recorded
-  as a candidate only, and is **NOT** established as the same cause as dusk.
+Nothing is queued. The daylight-hue candidate — the only item that was — is now
+closed; see below. Pick the next item deliberately rather than inheriting one.
 
-  **Correction (static audit at `b12497d`).** An earlier version of this entry said
-  `ColorGrade` was *not* implicated, on the grounds that B2 touched only the 19.7
-  keyframe. That is a **non-sequitur** — B2's innocence says nothing about the daylight
-  keys, and the wording risked steering a session away from the prime suspect.
-  Statically, the daylight keys carry the **same B > G authoring pattern** B2 diagnosed
-  at dusk: `shadowTint` blue over green at 8.2 `[0.83,0.93,1.18]`, 11.6
-  `[0.93,0.97,1.10]`, 15.6 `[0.92,0.97,1.12]`. Treat those keys as the **first**
-  hypothesis, not an excluded one — but still reproduce on current pixels and attribute
-  by ablation before changing anything.
+### Daylight hue at `st_southend` — CLOSED, no defect (runtime, 2026-09-01)
+Measured on current pixels at `dbcb1d1`, one page load, `holdActors: true`. The old
+whole-frame reading reproduces (**R 109.7 / G 103.5 / B 109.5**, M −6.05) — and is
+**legitimate scene composition**. Do not reopen it from the whole-frame numbers.
+
+The premise that the pavement classes are "known-neutral" is **false for this scene**,
+and that is the whole answer. Both road materials carry their own chroma in the baked
+atlas (`src/world/Roads.js`, tile table): asphalt `[0.1079,0.1071,0.1181]` is
+**−5.31%** on M/mean, concrete `[0.2866,0.2675,0.2249]` is **+4.53%**. So M on those
+surfaces measures the *material*, not the pipeline.
+
+The test that does work is `setAtlas(0, 1)`, which pins albedo to those known means:
+
+| region | albedo M/mean | rendered M/mean | rendered M (0–255) |
+|---|---|---|---|
+| asphalt, sunlit (n=223) | −5.31% | **−2.96%** | −3.81 |
+| asphalt, shadowed (n=11) | −5.31% | **−4.12%** | −3.71 |
+| concrete pavement, sunlit (n=35) | **+4.53%** | **+0.66%** | +1.08 |
+
+Every region keeps the **sign** of its input and **shrinks** its magnitude: the pipeline
+compresses chroma toward neutral, it does not add a green deficiency. Concrete is
+green-*positive* going in and stays green-positive coming out, which a magenta-injecting
+pipeline could not do. Sky is B>G>R with **M +2.44** (a blue sky is allowed to be blue);
+the upper frame is red brick (R 107.5 / G 93.3 / B 95.7), which is brick's albedo
+`[0.3021,0.1114,0.0676]` behaving normally. Whole-frame M is negative because green is
+nobody's dominant channel in a red-brick city under a blue sky over grey-blue asphalt.
+
+`gradeIntensity(0)` was run in the same page load for attribution: asphalt M −3.65 →
+−2.75, concrete +0.79 → +0.63. The grade contributes about a quarter of asphalt's
+deviation and moves the two materials in **opposite** directions — it is acting on each
+material's existing hue, not applying a tint. **No source change was made, and the
+daylight `ColorGrade` keys were not touched.** Phases 3 and 4 (CPU ablation, GPU
+confirmation) were correctly not reached: the gate closed at Phase 2.
+
+**Two traps found while measuring, worth keeping.** Physics raycasting is *not* a valid
+proxy for visual sun occlusion here — a ray straight up from the camera hits a
+downward-facing collider **1.11 m overhead** (`normal (0,−1,−0.05)`, handle 0) where the
+frame plainly shows sky, and using it classified 100% of samples as shadowed. Use
+`THREE.Raycaster` over `scene.traverseVisible` meshes instead. And a sampler that closes
+over the pixel buffer at definition time will silently return the *first* frame for
+every later ablation — three identical result sets is the tell.
 
 ### Lifecycle audit (opened after `5f0966d`) — CLOSED
 Seven waves, all static/Node-verified, none touching rendering appearance. Each was
@@ -333,10 +363,11 @@ casually reorder the `OPTIONAL` list in `main.js` without re-checking it.
 ### Completed
 - **B2: dusk hue — DONE, `1beada1`, pushed.** See §5 for the lesson.
 
-#### Daylight-hue candidate — static attribution done, runtime attribution NOT done
+#### Daylight-hue candidate — the static trace that preceded the closure
 
-Read-only trace at `2f60c59`. **Nothing here is a confirmed defect.** This exists so the
-next session does not repeat the trace.
+Read-only trace at `2f60c59`, kept as reference. **The candidate is now CLOSED as no
+defect** — see the runtime result above. Nothing below is a defect; it is retained so
+nobody repeats the trace, and because its predictions were borne out.
 
 **Current static state.** `st_southend` is tod **11.2**, weather **clear**, and grades
 between keys **8.2** and **11.6** with `smooth(t)` = **0.9616** — i.e. 96% the midday
@@ -403,12 +434,15 @@ tint (sign opposes magenta); `midTint` (neutral); `highTint` (warm, not magenta)
 shoulder (per-channel, compresses the *highest* channel — B in a sky frame — so it
 reduces B>G rather than causing it).
 
-**RULE FOR THE NEXT SESSION.** Do not modify any daylight colour parameter until neutral
-sunlit and neutral shadowed surfaces have been measured separately. **If M is near zero
-on both neutral classes, CLOSE this candidate as scene composition rather than "fixing"
-it.** Additional traps: stay within one page load (traffic respawns); use block/region
-statistics (grain never converges per-pixel); do not assume B2's dusk attribution
-transfers to daylight; and do not read whole-frame R > B > G as magenta.
+**HOW IT RESOLVED (2026-09-01).** The rule this section set — measure neutral surfaces
+before touching any daylight colour parameter — was followed, and the candidate closed as
+scene composition. The refinement worth carrying forward is that **the road surfaces are
+not neutral**, so the metric had to be run against each tile's known baked albedo via
+`setAtlas(0, 1)` rather than assumed. The static prediction above was right: the grade was
+not injecting magenta, and daylight `tint` was correctly left alone. Standing traps still
+apply: stay within one page load; use block/region statistics (grain never converges
+per-pixel); do not assume B2's dusk attribution transfers to daylight; and do not read
+whole-frame R > B > G as magenta.
 
 ### Open risks from the static audit at `b12497d` — unconfirmed, cheap to test
 A read-only audit of B1/B2 found **no deterministic defect**: the highlight shoulder is
@@ -467,6 +501,9 @@ of the shots it was swept on.
 - **"`oil`/`joint` are inert"** — crop-specific claim; they are spatially gated.
 - **The whole static lifecycle audit (D1–D6)** — closed; see §9 for the corrected
   findings. The original audit report is superseded by that table.
+- **Daylight magenta at `st_southend`** — closed 2026-09-01 as legitimate scene
+  composition, measured on current pixels. The surfaces are not neutral; the pipeline
+  compresses chroma toward neutral rather than adding a green deficiency.
 
 ## 10. Your first commit
 Make a local commit as soon as you have a verified-bootable state, before changing
