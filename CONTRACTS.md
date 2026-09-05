@@ -92,6 +92,60 @@ ctx.bus.emit('player:enterVehicle', v) / ('player:exitVehicle', v)
 ```
 
 ---
+## Cars are three different things, and each owns its collision separately
+
+Nothing in Boston called "a car" shares one representation. Visual placement is
+not gameplay collision, and getting a car to *look* right on the road says
+nothing about whether anything can hit it.
+
+| | drawn by | physics representation | collides with |
+|---|---|---|---|
+| **parked cars** | `Props.js`, one InstancedMesh per model | 17,282 static cuboids on one shared fixed body, built from `batch.mats` | `PROP` vs `CHARACTER` only |
+| **AI traffic** | `Traffic.js`, `VehicleVisual` / shell LODs | none on the cars themselves; ≤12 pooled kinematic boxes shadow traffic within 22 m of the on-foot player | `VEHICLE` vs `CHARACTER` only |
+| **drivable vehicle** | `VehicleFactory` / `Vehicle.js` | full Rapier raycast vehicle, chassis + suspension casts | chassis `VEHICLE` vs everything; wheel rays `WHEEL` vs `STATIC\|PROP\|WATER` |
+
+Traffic stays path-driven on purpose: a full raycast-vehicle solve costs about
+21 ms for 60 cars. Do not "fix" a traffic collision problem by promoting traffic
+cars to real vehicles, and do not create hundreds of rigid bodies to give the
+player something to bump into — the proxy pool exists for exactly that.
+
+The narrow filters are load-bearing. Parked-car boxes are invisible to the
+drivable vehicle's suspension because those rays cast as `WHEEL` and `PROP` is in
+their mask but `CHARACTER` is not; traffic proxies are invisible to each other,
+to parked cars, and to the drivable chassis for the same kind of reason. Widening
+either filter re-couples systems that were deliberately kept apart.
+
+Two consequences worth knowing before filing a bug:
+- Traffic brakes for the player because `Traffic._injectPlayer` puts him into the
+  lane list as a stationary obstacle, and IDM does the rest. That lookup needs an
+  *exact* arc length on the lane: half of all lanes run against the edge they
+  were offset from, so anything derived from `nearestEdge().t` is mirrored on
+  those. Use `Path.nearestS`.
+- A **stationary** player can still be overlapped. Rapier's character controller
+  only resolves movement the character asked for, so a kinematic box that drives
+  into a standing capsule is not pushed back by it. Braking is the defence;
+  the proxies are solidity for movement the player initiates.
+
+---
+## Escape belongs to the browser, not to Boston
+
+Escape is not bound to anything, is not in the `keydown` preventDefault list, and
+no code reads it. What the player sees when they press it is browser chrome —
+Safari's own "your pointer is hidden" notice — releasing pointer lock or leaving
+fullscreen.
+
+Boston only *observes* the consequences: `Input` listens to `pointerlockchange`
+and `fullscreenchange` (plus the webkit-prefixed variant) and updates
+`mouse.locked` / `fullscreen`. `mouse.locked` gates mouse-look accumulation and
+`CameraRig`; nothing pauses, opens the menu, or touches `settings.timeScale`.
+`KeyP` is the pause key and fullscreen is toggled from the pause menu.
+
+So a report that "Escape does something" is expected and correct: the camera
+stops following the mouse because the browser dropped the lock. Do not add an
+Escape binding to "fix" it, and do not conclude Boston owns the key from a grep
+for the string — trace the indirect path through those two events instead.
+
+---
 ## `lighting` — owned by the Lighting agent
 ```js
 lighting.sun            // THREE.DirectionalLight
