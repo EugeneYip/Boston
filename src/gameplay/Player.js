@@ -36,6 +36,7 @@ const ACCEL_AIR = 2.2;
 const JUMP_V = 6.05;                 // ~0.92 m of clearance against GRAVITY
 const GRAVITY = 20.0;                // heavier than real: games always are
 const SNAP_GROUND = 0.35;
+const AUTOSTEP = 0.45;               // tallest rise the controller will step up
 const ENTER_RANGE = 4.6;
 
 const _v = new THREE.Vector3();
@@ -43,6 +44,11 @@ const _v2 = new THREE.Vector3();
 const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 const _delta = { x: 0, y: 0, z: 0 };
 const _next = { x: 0, y: 0, z: 0 };
+const _bypass = { x: 0, y: 0, z: 0 };
+// Longest a kerbside bypass may steer before it gives up and lets the player
+// simply stop. Two seconds is far more than the ~2.75 m of tangential travel
+// the measured worst case needs, and short enough that a bad latch cannot run.
+const BYPASS_MAX = 2.0;
 
 export default class Player {
   static id = 'player';
@@ -78,6 +84,9 @@ export default class Player {
     this._coyote = 0;                // grace period for a late jump press
     this._jumpBuffer = 0;
     this._exitCooldown = 0;
+    this._byCar = -1;                // collider handle of the car being routed around
+    this._bySign = 1;                // which end of it, latched
+    this._byTimer = 0;
     this._actor = null;
     this._ready = false;
   }
@@ -107,7 +116,7 @@ export default class Player {
     // on the pavement crossing a camber instead of launching off it.
     this.ctrl = P.world.createCharacterController(0.02);
     this.ctrl.setUp({ x: 0, y: 1, z: 0 });
-    this.ctrl.enableAutostep(0.45, 0.20, true);
+    this.ctrl.enableAutostep(AUTOSTEP, 0.20, true);
     this.ctrl.enableSnapToGround(0.35);
     this.ctrl.setMaxSlopeClimbAngle(52 * Math.PI / 180);
     this.ctrl.setMinSlopeSlideAngle(38 * Math.PI / 180);
@@ -263,7 +272,14 @@ export default class Player {
     _delta.z = this.velocity.z * fdt;
 
     this.ctrl.computeColliderMovement(this.collider, _delta);
-    const m = this.ctrl.computedMovement();
+    let solved = this.ctrl.computedMovement();
+    // Kerbside bypass: if that solve was stopped by a parked car while he was
+    // crossing to the pavement, steer around its nearer end instead of stopping.
+    if (this._kerbBypass(t, _delta, solved.x, solved.z, fdt)) {
+      this.ctrl.computeColliderMovement(this.collider, _bypass);
+      solved = this.ctrl.computedMovement();
+    }
+    const m = solved;
     _next.x = t.x + m.x; _next.y = t.y + m.y; _next.z = t.z + m.z;
 
     const wasGrounded = this.grounded;
@@ -280,7 +296,15 @@ export default class Player {
     if (fdt > 0) {
       const actual = Math.hypot(m.x, m.z) / fdt;
       const wanted = Math.hypot(this.velocity.x, this.velocity.z);
-      if (wanted > 0.2 && actual < wanted * 0.6) {
+      // ...but a kerb is not a wall, and bleeding into one locks him out of the
+      // pavement. Autostep only fires when the horizontal step he asks for is
+      // big enough to land on top: measured against a real 0.28 m Boston kerb,
+      // 0.2-2.0 m/s all fail (he rises 0.03 m and stays on the road) and 3.0 m/s
+      // clears it. The bleed drives him straight through that floor -- observed
+      // speeds while stuck against a kerb were 0.06 to 1.56 m/s -- so contact
+      // bleeds the speed, the lost speed starves the step, and he is held on the
+      // carriageway by the very thing meant to stop him shoving at walls.
+      if (wanted > 0.2 && actual < wanted * 0.6 && !this._stepUpAhead(t)) {
         const s = Math.max(0.0, actual / wanted);
         this.velocity.x *= s; this.velocity.z *= s;
       }
@@ -298,6 +322,131 @@ export default class Player {
     this.body.setNextKinematicTranslation(_next);
     this.position.set(_next.x, _next.y - this._hh - CAP_R, _next.z);
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  /**
+   * Is the thing he is walking into a step he could climb rather than a wall?
+   *
+   * Asked of the drawn surface, so it costs two lookups and no physics query.
+   */
+  _stepUpAhead(pos) {
+    const c = this.city;
+    if (!c?.surfaceAt) return false;
+    const sp = Math.hypot(this.velocity.x, this.velocity.z);
+    if (sp < 1e-3) return false;
+    const here = c.surfaceAt(pos.x, pos.z, pos.y);
+    if (!here) return false;
+    // `surfaceAt` hands back one reused record, so read the height out before
+    // asking again -- otherwise both names point at the second answer and every
+    // rise measures zero.
+    const hereY = here.y;
+    const dx = this.velocity.x / sp, dz = this.velocity.z / sp;
+    // Look at two distances. Not every kerb is a clean step: some are ramped
+    // over about a metre, and a single 0.55 m probe reads that as level road,
+    // bleeds his speed and leaves him stuck on a 46 degree face with the
+    // pavement 1.2 m away.
+    for (let d = 0.55; d <= 1.25; d += 0.7) {
+      const ahead = c.surfaceAt(pos.x + dx * d, pos.z + dz * d, pos.y);
+      if (!ahead) continue;
+      const rise = ahead.y - hereY;
+      if (rise > 0.02 && rise <= AUTOSTEP) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Which parked car just stopped us, if any.
+   *
+   * Ownership comes from the collision group, not from a mesh name: the kerbside
+   * cars are the only PROP members, and PROP is the durable tag `Props` stamps
+   * on them. A near-vertical contact normal is the road or a kerb, not a flank.
+   */
+  _blockingProp() {
+    const n = this.ctrl.numComputedCollisions();
+    for (let i = 0; i < n; i++) {
+      const c = this.ctrl.computedCollision(i);
+      const nrm = c?.normal1;
+      if (!nrm || Math.abs(nrm.y) > 0.6) continue;
+      const col = c.collider;
+      if (col && (((col.collisionGroups() >>> 16) & 0xFFFF) & GROUP.PROP)) return col;
+    }
+    return null;
+  }
+
+  /**
+   * Is he crossing to the pavement, or did he just walk into something?
+   *
+   * Asked of the street itself rather than any world axis: he has to be standing
+   * on carriageway, and the way he is pushing has to arrive at pavement within a
+   * few metres. Walking *along* the road, or along a car, keeps finding road
+   * ahead and so never qualifies.
+   */
+  _sidewalkAhead(pos, dx, dz) {
+    const c = this.city;
+    if (!c?.surfaceAt) return false;
+    const here = c.surfaceAt(pos.x, pos.z, pos.y);
+    if (!here || here.kind !== 'road') return false;
+    for (let d = 2.5; d <= 4.5; d += 1.0) {
+      const s = c.surfaceAt(pos.x + dx * d, pos.z + dz * d, pos.y);
+      if (s && s.kind === 'pavement') return true;
+    }
+    return false;
+  }
+
+  /**
+   * Route around a parked car instead of stopping dead against it.
+   *
+   * Boston is meant to be walked freely: crossing back to the pavement should
+   * not require finding the gap between two parked cars. It cannot be solved by
+   * shrinking the car either -- measured, the channel between a car's kerb-side
+   * face and the pavement is 0.29-0.34 m against a capsule needing 0.64 m, so
+   * the collider would have to lose a third of its half-width and he would walk
+   * visibly through the doors.
+   *
+   * So keep the car exactly as solid as it looks and steer instead. When a
+   * crossing is genuinely blocked by a parked car, take the car's own axis --
+   * it is a box, its local Z is the street -- and push along it toward whichever
+   * end he is already nearer, keeping a little of his own direction so he peels
+   * off across the moment the end clears. Measured, that end is 2.73-2.75 m away
+   * and the crossing beyond it is 1.25-1.50 m, and both ends were clear on every
+   * car sampled. The end is latched on first contact so he cannot dither between
+   * nose and tail, and nothing is stored once the car stops blocking him.
+   *
+   * He is never moved through anything: this only rewrites the direction handed
+   * to the controller, which still resolves the car normally.
+   */
+  _kerbBypass(pos, delta, mx, mz, fdt) {
+    if (this._byTimer > 0) this._byTimer -= fdt;
+    const wx = delta.x, wz = delta.z;
+    const want = Math.hypot(wx, wz);
+    const drop = () => { this._byCar = -1; return false; };
+    if (this.mode !== 'onFoot' || want < 1e-5) return drop();
+    // Did he actually go where he asked? Then nothing is in the way.
+    if (Math.hypot(mx, mz) > want * 0.5) return drop();
+    const car = this._blockingProp();
+    if (!car) return drop();
+    if (!this._sidewalkAhead(pos, wx / want, wz / want)) return drop();
+
+    const q = car.rotation();
+    const yaw = 2 * Math.atan2(q.y, q.w);
+    const zx = Math.sin(yaw), zz = Math.cos(yaw);
+    if (this._byCar !== car.handle) {
+      const t = car.translation();
+      const lz = (pos.x - t.x) * zx + (pos.z - t.z) * zz;
+      this._byCar = car.handle;
+      this._bySign = lz >= 0 ? 1 : -1;
+      this._byTimer = BYPASS_MAX;
+    }
+    if (this._byTimer <= 0) return false;      // safe abort: let him stop
+
+    const sgn = this._bySign;
+    let bx = zx * sgn + (wx / want) * 0.35;
+    let bz = zz * sgn + (wz / want) * 0.35;
+    const bl = Math.hypot(bx, bz) || 1;
+    _bypass.x = (bx / bl) * want;
+    _bypass.y = delta.y;
+    _bypass.z = (bz / bl) * want;
+    return true;
   }
 
   /**
