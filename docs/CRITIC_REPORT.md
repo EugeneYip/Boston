@@ -49,13 +49,29 @@ individual windows are sub-pixel.
 add windows to chase this.** If night is revisited, judge it on per-pixel max(R,G,B)
 percentiles and a spatial ablation, never on block-mean luma.
 
-### 2. Vehicles read as featureless pale blobs
-Most visible at `night_neon`, where the parked rank along the kerb is a row of pale untextured
-shapes with no panel, glass or trim separation, but the same cars are pale and flat in
-`st_southend` too. Cars are everywhere in a city, so this is high salience. Not attributed:
-could be the shell/far visual LOD standing in at close range, car paint response under low
-light, or missing glass/trim material distinction. Check what visual a kerbside parked car
-actually gets before assuming it is a material problem.
+### 2. Night vehicles — investigated 2026-09-01, NOT attributable to a vehicle defect
+First, they are not vehicles. Raycasting the actual shapes in `night_neon` identifies every
+one of them as a **`prop:car*` InstancedMesh from `Props`** — `carSedanB`, `carSuvB`, and
+the dark "box" nearest the camera is `carPickupA` at **4.2 m**. 16 prop-car meshes carrying
+**401 instances** are visible, all sharing one `prop_surf | prop_glass` material pair. The
+VehicleFactory and Traffic systems are not involved in this composition at all.
+
+Two plausible mechanisms were tested and **both disproven**:
+
+- **Environment response.** `prop_surf` runs `envMapIntensity` **0.46** against real car
+  paint's **1.25**, which looked like the answer. Raising it to 1.25 moved the car region
+  by **sd −0.54, mean +0.32, p95 range −2** — nothing. At night the environment map is
+  nearly black, so scaling it cannot manufacture contrast.
+- **Asset fidelity.** The prop car is **4,660 triangles** with a `MeshPhysicalMaterial`
+  (clearcoat 1.0 / 0.06), albedo, normal and ORM maps, and per-instance colour. That is
+  not a low-poly stand-in.
+
+What is left is that a parked car sitting between street lamps is dimly and fairly evenly
+lit — the car region reads mean 64 against a frame p50 of 73, i.e. slightly below median,
+not anomalously dark. That may simply be correct. **No narrow causal term was found, so no
+source change was made.** If this is revisited, the open question is lamp spacing and
+spill on the kerbside rank, not car materials or models — and note that `prop_surf` is
+shared by every prop type, so it cannot be retuned for cars alone without splitting it.
 
 ### 3. Distant towers are plain boxes
 `hero_skyline`: the mid and far towers are near-uniform pale slabs carrying a simple window
