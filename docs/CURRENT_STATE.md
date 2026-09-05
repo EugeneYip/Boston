@@ -114,9 +114,28 @@ sedan at 14.1–14.4 m/s never enters and reverses out. Camera orbit intrusion f
 from 68 of 180 angles to 8 of 216. Cost is 20 colliders / 22,078 triangles / ~1 MB
 and a physics step cost indistinguishable from noise.
 
-**Residual:** the camera sweep fans its rays from the pivot lifted 0.55 m, so low
-geometry at a landmark base can pass beneath it — 8 of 216 angles. Unfixed and
-unmeasured; the likely one-line fix is an extra ray from the un-lifted pivot.
+**Pages production verification — DONE 2026-09-05 (`a1fc320` build).** The gate
+the previous batch could not finish now passes: 26 systems, `bootReport.failed`
+`[]`, errors `[]`, glFaults `[]`, `__boston.render.validate().ok === true`, Rapier
+live, 16,060 colliders, landmark body present with **20 colliders / 22,078
+collision tris**, and every resource 200 or 304 with zero 404s. Player controls in
+production: 11 of 12 trials blocked by the landmark collider at 0.32 m, all six
+named landmarks solid, 0 unable to retreat; Zakim under-deck traversable (3 walks,
+full 11 m, 0 stalled frames); sedan at 13.3 m/s contacts and stops 2.40 m out,
+tilt 5.2 degrees, reverses 8.17 m.
+
+**Note on the previous batch's "wedge".** It was not a code failure and not swap.
+Production boot on this machine takes about **four minutes**, and it was being
+interrupted by repeated navigations — the network log showed three overlapping
+`/Boston/` document loads each cancelling the previous one's module fetches. Load
+once and wait.
+
+**Residual: camera, 10 of 216 orbit angles behind a landmark surface.** The
+earlier "fan is lifted too high" explanation was wrong — the lift is 0.20 m and
+`FAN` already has a centre ray. The real cause is that `_sweep` is passed the full
+`shoulder` while `_apply` places the camera at `shoulder * shrink`, so the sweep
+probes a column of space the camera does not occupy. The proposed un-lifted extra
+ray is refuted by measurement. See CONTRACTS.md, "Landmark collision".
 
 ## What exists and works
 - **Engine**: dependency-sorted system registry, fixed 60 Hz physics, clamped variable

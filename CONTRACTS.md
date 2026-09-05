@@ -360,16 +360,45 @@ angles to **8 of 216** (see below). Cost: 20 colliders, 22,078 collision
 triangles, ~1 MB, one-time build, and a `world.step()` cost indistinguishable
 from noise with the colliders switched on or off (0.006-0.038 ms either way).
 
-**Known residual: the camera sweep has a blind spot below its fan.** `_sweep`
-originates its five rays at the pivot lifted by `lift` (0.55 m in third person),
-so geometry lower than that -- a plinth, a stair, a buttress at a landmark base --
-can pass under the fan. Measured 8 of 216 orbit angles with the camera behind a
-landmark surface, all of them at landmark bases and all with an arm of 0.9-2.0 m.
-This is a pre-existing property of the sweep that landmark geometry now exposes;
-before this batch the camera passed through landmarks at every angle, so the
-change is strictly an improvement. A likely fix is one extra sweep ray from the
-un-lifted pivot, which can only ever shorten the arm and so is monotonically
-safe -- but it is unmeasured and was not attempted.
+**Known residual: the sweep probes a different column of space than the camera
+occupies.** Measured 10 of 216 orbit angles in the Pages build with the camera
+behind a landmark surface. The cause is NOT what an earlier note guessed:
+
+* It is not a vertical blind spot. The lift is **0.20 m**, not 0.55, and `FAN`
+  already contains a centre ray `[0, 0]`, so nothing passes under the fan.
+* It is the **shoulder**. `_apply` calls `_sweep(..., shoulder)` with the full
+  shoulder, and every fan ray is offset by `right * (ox + shoulder)`. It then
+  places the camera at `right * (shoulder * shrink)`, where
+  `shrink = min(1, _dist / dist)`. The two agree only when `shrink === 1` -- that
+  is, only when the arm was NOT shortened. Whenever the sweep does its job, the
+  camera lands somewhere the sweep never probed.
+
+Instrumented at 200 Clarendon, orbit yaw 190 degrees, with `_sweep` wrapped to log
+its own inputs and return: `dist` 3.35, `shoulder` 0.46, returned arm 1.50, and
+`shrink` 0.448 so the camera sits at lateral 0.21. Casting the centre ray by hand
+along the same direction:
+
+    lateral 0.46 (what the sweep probes)   no hit at all
+    lateral 0.21 (where the camera lands)  landmark at toi 0.71, allowance 0.49
+    lateral 0.00 (an un-lifted centre ray) landmark at toi 1.88, allowance 1.66
+
+**The "extra un-lifted pivot ray" candidate is refuted, do not ship it.** In all
+ten production failures the un-lifted ray's `toi` was LARGER than the existing
+fan's, and at the angle above it would have allowed 1.66 m where 0.49 was needed.
+It cannot fix a lateral mismatch because it does not change the lateral offset.
+
+The obvious correction -- sweeping at `shoulder * shrink` instead of `shoulder` --
+is the change that was tried and reverted in an earlier batch for putting the
+camera inside a car at one angle, and it is circular besides (`shrink` depends on
+`_dist`, which depends on the sweep). The next thing to try is sweeping the whole
+shoulder RANGE, e.g. fan rays at both `shoulder` and `shoulder * shrink_prev` and
+taking the tighter result, which stays monotonic. That is unmeasured. Do not ship
+any of it without the parked-car, traffic, building, open-street and kerb orbit
+regressions -- camera envelope changes have failed twice here.
+
+Context for whoever picks this up: this is still strictly better than before
+landmark collision existed, when the camera passed through landmarks at 68 of 180
+angles with the arm never shortening at all.
 
 ## Parked cars are glazed differently from moving ones
 
