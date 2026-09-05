@@ -504,6 +504,11 @@ of the shots it was swept on.
 - **Daylight magenta at `st_southend`** — closed 2026-09-01 as legitimate scene
   composition, measured on current pixels. The surfaces are not neutral; the pipeline
   compresses chroma toward neutral rather than adding a green deficiency.
+- **Physics ground truth** — closed 2026-09-01 by `af773bd`…`c7954f6`: the terrain
+  heightfield was transposed about x=z, the road collider had a hole at every junction,
+  and Player stood on the terrain raster instead of the drawn surface. See
+  `docs/CURRENT_STATE.md` §Physics ground truth for the measurements and the two
+  measurement traps. Heightfield *resolution* is not a problem and needs no work.
 
 ## 10. Your first commit
 Make a local commit as soon as you have a verified-bootable state, before changing

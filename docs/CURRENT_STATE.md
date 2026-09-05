@@ -172,42 +172,52 @@ instrumentation — **do not add restore-on-teardown**, since it could clobber a
 another subsystem installed later. Full detail and the residual Traffic-ordering caveat
 live in `AI_HANDOFF.md` §9.
 
-## Physics ground truth — verified after the heightfield transpose fix (`af773bd`)
-Downstream re-verification of `af773bd`, measured at that commit. **The transpose fix is
-good and introduced no regression**, and it settles the resolution question: the 300x300
-heightfield (22.67 m cells) tracks `groundHeight()` to a mean **0.039 m** (worst 0.85 m
-over 2,565 samples), so its resolution is *not* a binding approximation — the transpose
-was the entire error. Traffic sits correctly on the carriageway (car y minus road surface
-**+0.031 m** mean over 39 live cars).
+## Physics ground truth — resolved, 2026-09-01 (`af773bd` … `c7954f6`)
+A four-commit chain that started from one stray raycast during the daylight
+attribution. All of it is measured; none of it changes rendering appearance.
 
-**What is still wrong is older than the transpose and independent of it.** The road
-collider is built from each chunk's `farMesh` (`City._colliders`), i.e. the LOD geometry,
-and it under-covers the surface people actually drive and walk on:
+**1. The terrain heightfield collider was transposed** (`af773bd`). It was written with
+the sample for (x from `i`, z from `j`) at `heights[j*(N+1)+i]`; Rapier indexes rows along
+Z and columns along X, so the world was mirrored about the x=z diagonal. Grid and span are
+both square, so nothing about its size or placement looked wrong, and points near x=z read
+correctly. Against Rapier's own raycast, mean error vs `groundHeight(x,z)` went **3.508 m →
+0.042 m**. It was gameplay-reachable: invisible ground sat ABOVE the drivable road at
+**38.2%** of road points (worst 29.4 m over a road at 4.6 m); now 0%.
 
-| surface | has a collider at the visible surface | falls through to terrain | collider minus surface, where present |
-|---|---|---|---|
-| carriageway (centreline) | 84.1% | **15.9%** | −0.028 m |
-| pavement | 90.9% | **9.1%** | −0.006 m |
+**This also settles the resolution question** — 300×300 over 6.8 km (22.67 m cells) tracks
+`groundHeight()` to a mean **0.039 m**, so heightfield resolution was never the problem.
 
-Where a collider exists it is excellent — within 3 cm. The gaps are not missing chunks
-(all 44 chunks have a `farMesh` and a collider, and the misses are spread across 134 of
-189 tiles rather than clustered), so this is far-LOD geometry not covering everything.
-In a gap the next surface down is the terrain heightfield, which sits a median **0.43 m**
-(p95 1.53 m) below the road, because the road network's own elevation runs ~0.53 m above
-`groundHeight()`.
+**2. The road collider had holes at every junction** (`801554f`). `City._colliders` builds
+it from `farMesh`, and the far LOD is emitted per-edge by `_stripChunked` over `e._span`,
+which is trimmed back to clear junction corners — while `_emitNode`, `_crosswalk` and the
+stop bars all wrote through `_batch()`, which returns the NEAR batch only. Miss rate for a
+collider at the carriageway was **99.4% within 4 m of a node** and 0.1% beyond 32 m, with
+89.5% of misses inside 12 m of a junction. `_emitNode` now emits into both batches:
 
-Consequence worth knowing: the player is grounded by the Rapier character controller, so
-in a gap they rest on terrain rather than on the pavement. Measured at the default spawn,
-the player's feet settle at 3.100 against a pavement surface of 3.667 — **0.567 m sunk**,
-and it persists across 60 simulated frames. This is a *local* gap, not every pavement.
-`Player` spawn and vehicle-exit compound it by placing him at `groundHeight + 0.05`
-directly (`Player.js:147`, `:422`), which is ~0.53 m below the surface he is standing on.
+| | before | after |
+|---|---|---|
+| carriageway with a collider at the surface | 84.1% | **95.4%** |
+| pavement with a collider at the surface | 90.9% | **95.7%** |
+| far-mesh triangles | 34,906 | 44,917 (**1.29×**) |
 
-**Do not "fix" this by changing `Player` alone** — the controller would just pull him back
-down to whatever collider is there. The causal fix is collider coverage, and it is a cost
-decision, not a one-liner: building the colliders from `nearMesh` instead of `farMesh`
-takes road collision geometry from **34,906 to 375,881 triangles (10.8x)**. Needs an
-explicit call on that trade before anyone implements it.
+Building the colliders from `nearMesh` instead would have cost **375,881 triangles
+(10.8×)** — this recovered most of the coverage for 1.29×, and no render regression: a
+fresh-boot `st_southend` capture reports 440 draws (unchanged) and +649 triangles in frame,
+since far chunks only draw past 290 m. The residual ~4.5% sits within 16 m of junctions and
+is most likely the far LOD's 3× coarser longitudinal step cutting corners on bends.
+
+**3. Player stood on the terrain raster, not the drawn surface** (`c7954f6`).
+`City.surfaceHeight()` already existed and its docstring already said to use it rather than
+`groundHeight`, which "is 0.4-0.6 m too low anywhere near a street"; Lighting and
+LightManager followed it, Player did not. Placement error over 300 spawn points: **0.554 m
+→ 0.000 m**. At the default spawn he sat **0.572 m under the pavement** and stayed there;
+he now stands 0.118 m above it and holds across 45 stepped frames.
+
+**Two traps worth not repeating.** Physics queries return nothing until `world.step()` has
+run, which in a hidden pane means driving frames manually — that is why an early ray
+"missed". And verifying a heights buffer by re-reading it with the same index formula that
+wrote it is circular: it reported a perfect RMS 0.0000 match while the collider was in fact
+transposed. Only Rapier's own raycast settles that convention.
 
 ## Resolved root causes — do not re-debug these
 | Symptom | Root cause | Fixed in |
