@@ -278,10 +278,12 @@ content is already in the history.
 
 ### Next
 A fresh current-pixels critic ran on 2026-09-01 at `319c092` and its ranked list is in
-`docs/CRITIC_REPORT.md`. The top finding is **night has no highlight range** —
-`night_neon` reaches p99 153.5 where daylight shots reach ~245, and buildings carry almost
-no lit windows. **Nothing on that list is attributed to a causal term yet**, so attribute
-before repairing, and note the night black-crush fix (`98cad4c`) must not be undone.
+`docs/CRITIC_REPORT.md`. Its top finding — *night has no highlight range* — was **WITHDRAWN on 2026-09-01 as a
+measurement artifact**: p99 153.5 was 8×8 block-mean luma, which averages away sparse
+small highlights. Per-pixel max(R,G,B) gives p99 192 / p99.9 251 / max 253 with 0.26% of
+pixels ≥240 and no clipping, and the window term supplies ~15% of that population.
+**Do not raise night exposure or add windows.** The remaining entries (vehicles, distant
+towers) are still open and still unattributed.
 
 ### Daylight hue at `st_southend` — CLOSED, no defect (runtime, 2026-09-01)
 Measured on current pixels at `dbcb1d1`, one page load, `holdActors: true`. The old

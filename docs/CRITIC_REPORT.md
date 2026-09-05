@@ -10,18 +10,44 @@ orders. Attribute before repairing.
 | `st_southend` | 104.9 | 56.1 | 8.6 | 244.7 | 236.1 |
 | `hero_skyline` | 131.6 | 66.8 | 22.1 | 245.1 | 223.0 |
 | `overcast_wide` | 128.1 | 60.0 | 38.6 | 226.9 | 188.3 |
-| `night_neon` | 50.2 | 35.1 | 9.1 | **153.5** | **144.4** |
+| `night_neon` | 50.2 | 35.1 | 9.1 | 153.5 | 144.4 | ← block-mean luma; see §1, this is the WRONG instrument for night |
 
-### 1. Night has no highlight range — the strongest finding
-`night_neon` tops out at **p99 = 153.5** where every daylight shot reaches ~245, and only
-9.9% of blocks sit more than 60 above the frame median. Visually the buildings are near-black
-masses with almost no lit windows; street lamps make soft pools but nothing in frame reads as
-an intense source. A night city is *defined* by small very bright sources against dark
-surroundings, and this frame has none — it is uniformly dim instead of high-contrast.
-Salience high, confidence high (measured, current), gain large. Candidate causes to separate
-before touching anything: lit-window emissive intensity and density, whether window emissives
-are gated by the same auto-night path as street lamps, and the real-light budget. Regression
-risk is real — night black-crush was fixed once already (`98cad4c`) and must not be undone.
+### 1. Night highlight range — **WITHDRAWN 2026-09-01, measurement artifact**
+The original entry below claimed night had no highlight range on the strength of
+`night_neon` p99 = 153.5. **That figure was 8×8 block-mean *luma*, and it is the wrong
+instrument for this question.** Block-averaging destroys exactly what it was meant to
+find — a lit window a few pixels across is averaged with the dark facade around it — and
+luma weighting further suppresses saturated coloured sources (a saturated amber window
+carries high R but modest luma).
+
+Re-measured per pixel on **max(R,G,B)** at `efb1cf6`, `night_neon` at tod 22:00:
+
+| p50 | p90 | p95 | p99 | p99.5 | p99.9 | max |
+|---|---|---|---|---|---|---|
+| 73 | 145 | 163 | **192** | 210 | **251** | **253** |
+
+with **2.05% ≥180, 0.71% ≥200, 0.26% ≥240** and **0.0000% pure white**. That is a sparse
+strong-highlight population with no clipping — the thing the entry said was missing.
+
+The window term is also live and responsive. Forcing `uNight` on `Buildings.matOpaque`
+and `matGlass` (it must be forced *after* `Buildings.update`, which rewrites it from
+time-of-day every frame — an ablation set before stepping is silently overwritten):
+
+| | px ≥200 | px ≥240 | mean max(R,G,B) |
+|---|---|---|---|
+| windows off | 12,445 | 4,582 | 78.153 |
+| windows on | 14,781 | 5,356 | 79.065 |
+| windows ×2 | 20,253 | 6,211 | 79.636 |
+
+Windows supply **15.8% of the ≥200 population and 14.4% of ≥240**, and their contribution
+touches **27% of the frame**, roughly half of it in the top third. Confirmed visually at
+full resolution: the brick facades carry lit windows, street lamps read, and the distant
+street shows a window row. The original impression came from a 440×248 thumbnail in which
+individual windows are sub-pixel.
+
+**Classification: E — no defect. Do not raise night exposure, lift the black floor, or
+add windows to chase this.** If night is revisited, judge it on per-pixel max(R,G,B)
+percentiles and a spatial ablation, never on block-mean luma.
 
 ### 2. Vehicles read as featureless pale blobs
 Most visible at `night_neon`, where the parked rank along the kerb is a row of pale untextured
