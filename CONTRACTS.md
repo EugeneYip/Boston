@@ -121,10 +121,21 @@ Two consequences worth knowing before filing a bug:
   *exact* arc length on the lane: half of all lanes run against the edge they
   were offset from, so anything derived from `nearestEdge().t` is mirrored on
   those. Use `Path.nearestS`.
-- A **stationary** player can still be overlapped. Rapier's character controller
-  only resolves movement the character asked for, so a kinematic box that drives
-  into a standing capsule is not pushed back by it. Braking is the defence;
-  the proxies are solidity for movement the player initiates.
+- The character controller only resolves movement the character *asked for*, so
+  a kinematic box driving into a standing capsule is never pushed back by it.
+  That is why a **stationary** player is protected by prevention rather than
+  reaction: `Traffic._clampToPlayer` runs immediately before `_pose` commits a
+  car's body transform and refuses a step that would land on him, bisecting back
+  along the arc to the last clear position. Do not replace it with a push-out --
+  one was tried and removed, because the controller cannot clear an initial
+  penetration and shoving the player directly can post him inside a wall.
+- The clamp exists because the lane ghost is *bookkeeping* and a car's body is
+  not: measured, a shell sits up to 3.46 m from the centreline its ghost is keyed
+  to, and a lane change re-keys the car instantly while the shell crosses over
+  gradually. Braking is still the visible defence and does almost all the work --
+  the clamp fired in 2 of 26 staged encounters and never at all while the player
+  is off the carriageway. If it starts firing constantly, something upstream is
+  wrong; do not tune the clamp to compensate.
 
 ---
 ## Escape belongs to the browser, not to Boston
