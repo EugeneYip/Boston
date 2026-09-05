@@ -1593,11 +1593,23 @@ export default class Roads {
     return { x: ax + A.dx * tc, z: az + A.dz * tc, A, B };
   }
 
-  /** Fill the junction polygon and the pavement corners around it. */
-  _emitNode(n) {
+  /**
+   * Fill the junction polygon and the pavement corners around it.
+   *
+   * Emitted into BOTH batches. The far LOD is built per-edge by `_stripChunked`
+   * over `e._span`, which is trimmed back to clear the junction corners, so
+   * without this the far mesh has a hole at every intersection. That hole is
+   * also the road COLLIDER's hole, because `City._colliders` builds the collider
+   * from `farMesh`: measured, the miss rate for a physics surface at the
+   * carriageway was 99.4% within 4 m of a node and 0.1% beyond 32 m, with 89.5%
+   * of all misses inside 12 m of a junction. Markings (`_crosswalk` and the stop
+   * bars) stay near-only -- the far LOD is deliberately "bare carriageway +
+   * pavement, no markings".
+   */
+  _emitNode(n, far = false) {
     const { arms, corners } = this._nodeGeom.get(n.id);
     if (arms.length < 2) return;
-    const bat = this._batch(n.x, n.z);
+    const bat = far ? this._chunk(n.x, n.z).far : this._batch(n.x, n.z);
     const tile = TILE_UV[T_ASPHALT];
     const loop = [];
     const ends = [];
@@ -1773,7 +1785,7 @@ export default class Roads {
       }
     }
 
-    for (const n of net.nodes) this._emitNode(n);
+    for (const n of net.nodes) { this._emitNode(n); this._emitNode(n, true); }
 
     // stop lines: a solid bar across the approach lanes, just past the zebra
     this._stopLines();
