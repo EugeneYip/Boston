@@ -45,6 +45,8 @@ const _e = new THREE.Euler(0, 0, 0, 'YXZ');
 const _delta = { x: 0, y: 0, z: 0 };
 const _next = { x: 0, y: 0, z: 0 };
 const _bypass = { x: 0, y: 0, z: 0 };
+const _stepReq = { x: 0, y: 0, z: 0 };
+const _IDENT = { x: 0, y: 0, z: 0, w: 1 };
 // Longest a kerbside bypass may steer before it gives up and lets the player
 // simply stop. Two seconds is far more than the ~2.75 m of tangential travel
 // the measured worst case needs, and short enough that a bad latch cannot run.
@@ -273,14 +275,24 @@ export default class Player {
 
     this.ctrl.computeColliderMovement(this.collider, _delta);
     let solved = this.ctrl.computedMovement();
+    let base = t;
     // Kerbside bypass: if that solve was stopped by a parked car while he was
     // crossing to the pavement, steer around its nearer end instead of stopping.
     if (this._kerbBypass(t, _delta, solved.x, solved.z, fdt)) {
       this.ctrl.computeColliderMovement(this.collider, _bypass);
       solved = this.ctrl.computedMovement();
     }
+    // Still pinned? If what is in the way is a kerb, lift over it in one move
+    // rather than grinding up its face.
+    const req = this._byCar !== -1 ? _bypass : _delta;
+    if (Math.hypot(solved.x, solved.z) < Math.hypot(req.x, req.z) * 0.5
+        && this.ctrl.computedGrounded() && this._stepOver(t, req)) {
+      this.ctrl.computeColliderMovement(this.collider, _stepReq);
+      solved = this.ctrl.computedMovement();
+      base = this.body.translation();
+    }
     const m = solved;
-    _next.x = t.x + m.x; _next.y = t.y + m.y; _next.z = t.z + m.z;
+    _next.x = base.x + m.x; _next.y = base.y + m.y; _next.z = base.z + m.z;
 
     const wasGrounded = this.grounded;
     const onGround = this.ctrl.computedGrounded();
@@ -322,6 +334,61 @@ export default class Player {
     this.body.setNextKinematicTranslation(_next);
     this.position.set(_next.x, _next.y - this._hh - CAP_R, _next.z);
     this.speed = Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  /**
+   * Lift over a kerb instead of grinding up its face.
+   *
+   * Rapier's autostep never fires on Boston's kerbs. The road collider is built
+   * from the far LOD, which is three times coarser longitudinally, so a kerb
+   * arrives as a little ramp of conflicting faces -- measured at one contact,
+   * normals of 1.00, 0.21, 0.62 and 0.66 at once -- rather than the clean
+   * vertical step autostep looks for. The controller therefore treats it as a
+   * walkable slope and climbs it by sliding, which costs almost all the forward
+   * speed: holding a steady 3.40 m/s at an ordinary 0.285 m kerb, actual travel
+   * collapsed to 0.50 m/s and stayed under 80% of approach for 0.167 s, and the
+   * biggest single rise in any frame was 0.058 m. None of the controller's own
+   * knobs move that -- autostep height, its landing-width requirement and slope
+   * climb angles from 35 to 52 degrees were all swept and it never once stepped.
+   *
+   * So do the step here. Raise the capsule by the rise the street reports ahead,
+   * but only after checking the raised pose is clear of everything, then let the
+   * controller carry out the same horizontal move from up there and snap-to-
+   * ground settle him. Measured, one lift per kerb turns that 0.167 s near-stop
+   * into 0.017 s and lifts the minimum from 0.50 to 2.40 m/s.
+   *
+   * This cannot climb what it should not: the rise comes from the drawn walking
+   * surface, so a building, a wall or a parked car reports no rise at all, and
+   * anything taller than the controller's own autostep limit is refused.
+   */
+  _stepOver(pos, req) {
+    const world = this.P?.world;
+    const c = this.city;
+    if (!world || !c?.surfaceAt) return false;
+    const asked = Math.hypot(req.x, req.z);
+    if (asked < 1e-5) return false;
+    const dx = req.x / asked, dz = req.z / asked;
+    const here = c.surfaceAt(pos.x, pos.z, pos.y);
+    if (!here) return false;
+    const hereY = here.y;              // one reused record: read it out first
+    let rise = 0;
+    for (let d = 0.35; d <= 0.75; d += 0.4) {
+      const ahead = c.surfaceAt(pos.x + dx * d, pos.z + dz * d, pos.y);
+      if (ahead && ahead.y - hereY > rise) rise = ahead.y - hereY;
+    }
+    if (rise <= 0.02 || rise > AUTOSTEP) return false;
+
+    const lift = rise + 0.03;
+    let blocked = false;
+    world.intersectionsWithShape({ x: pos.x, y: pos.y + lift, z: pos.z }, _IDENT,
+      this.collider.shape, () => { blocked = true; return false; },
+      undefined, groups(GROUP.CHARACTER, 0xFFFF), this.collider, this.body);
+    if (blocked) return false;
+
+    this.body.setTranslation({ x: pos.x, y: pos.y + lift, z: pos.z }, true);
+    world.propagateModifiedBodyPositionsToColliders();
+    _stepReq.x = req.x; _stepReq.y = 0; _stepReq.z = req.z;
+    return true;
   }
 
   /**
