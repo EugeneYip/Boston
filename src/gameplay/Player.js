@@ -144,7 +144,12 @@ export default class Player {
       }
       if (best) out.set(best.x, best.y ?? 0, best.z);
     }
-    out.y = (c?.groundHeight?.(out.x, out.z) ?? 0) + 0.06;
+    // `surfaceHeight`, not `groundHeight`: the raster is stamped below the
+    // carriageway on purpose, so `groundHeight` is 0.4-0.6 m too low near a
+    // street and spawned him under the pavement (measured 0.57 m at the default
+    // spawn). City.js:172 states the rule; Lighting and LightManager already
+    // follow it. `out.y` disambiguates a bridge deck from the ground beneath.
+    out.y = (c?.surfaceHeight?.(out.x, out.z, out.y) ?? c?.groundHeight?.(out.x, out.z) ?? 0) + 0.06;
     return out;
   }
 
@@ -282,7 +287,8 @@ export default class Player {
     }
 
     // Never let a solver hiccup drop him through the world.
-    const ground = this.city?.groundHeight?.(_next.x, _next.z);
+    const ground = this.city?.surfaceHeight?.(_next.x, _next.z, _next.y)
+      ?? this.city?.groundHeight?.(_next.x, _next.z);
     if (ground !== undefined && _next.y < ground - 6) {
       _next.y = ground + this._hh + CAP_R + 0.1;
       this._vy = 0;
@@ -419,7 +425,10 @@ export default class Player {
       const L = Math.hypot(lx, lz) || 1;
       const x = v.position.x + (lx / L) * 1.75;
       const z = v.position.z + (lz / L) * 1.75;
-      const g = this.city?.groundHeight?.(x, z) ?? v.position.y;
+      // Stand him on what is drawn, and pass the car's height so leaving a
+      // vehicle on a flyover does not drop him to the street underneath.
+      const g = this.city?.surfaceHeight?.(x, z, v.position.y)
+        ?? this.city?.groundHeight?.(x, z) ?? v.position.y;
       this.position.set(x, g + 0.05, z);
       this._yaw = Math.atan2(-(lx / L), -(lz / L));
       this.body.setTranslation(
