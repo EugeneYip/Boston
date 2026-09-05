@@ -18,14 +18,14 @@ const ACTIONS = {
   lights:    ['KeyL'],
   camera:    ['KeyV'],
   map:       ['KeyM'],
-  // Escape stays bound, but it is NOT the only way to reach the pause menu. In
-  // browser fullscreen and/or pointer lock the browser owns Escape: it uses it to
-  // release those privileged states and the keydown may never reach us, so a game
-  // that binds pause to Escape alone is unreachable exactly when the player most
-  // wants out. `KeyP` is the conventional second binding and was free -- `photo`
-  // claimed it but had no consumer anywhere in the tree, only a controls-list row
-  // advertising a mode that was never implemented.
-  pause:     ['Escape', 'KeyP'],
+  // Escape is deliberately NOT here. It belongs to the browser: it releases
+  // pointer lock and leaves fullscreen, and whether the keydown ever reaches the
+  // page depends on the browser and the privileged state it was in. Binding a
+  // game action to it made one keypress mean three different things in Safari
+  // and the player could not tell which they would get. Boston now owns no
+  // Escape behaviour at all and instead observes `pointerlockchange` and
+  // `fullscreenchange`, which are authoritative. `KeyP` is the pause key.
+  pause:     ['KeyP'],
   gearUp:    ['KeyQ'],
   gearDown:  ['KeyZ'],
 };

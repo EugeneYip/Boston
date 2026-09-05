@@ -19,7 +19,7 @@ const KEYMAP = [
   ['Move', 'W A S D'], ['Sprint', 'Shift'], ['Jump / Brake', 'Space'], ['Crouch', 'C'],
   ['Enter / exit vehicle', 'F'], ['Interact', 'E'], ['Fire', 'LMB'], ['Aim', 'RMB'],
   ['Reload', 'R'], ['Horn', 'H'], ['Headlights', 'L'], ['Camera', 'V'],
-  ['Shift up / down', 'Q / Z'], ['Map', 'M'], ['Pause', 'Esc or P'], ['Fullscreen', 'Pause menu'],
+  ['Shift up / down', 'Q / Z'], ['Map', 'M'], ['Pause / menu', 'P'], ['Fullscreen', 'Pause menu'],
   ['Minimap north lock', 'N'], ['Toggle HUD', 'F3'], ['Perf overlay', 'F1'], ['Physics debug', 'F2'],
 ];
 
@@ -81,7 +81,7 @@ export default class Menu {
       { id: 'settings', label: 'Settings' },
       { id: 'controls', label: 'Controls' },
       { id: 'fullscreen', label: 'Fullscreen', hint: '\u21F1', action: () => this._toggleFullscreen() },
-      { id: 'resume', label: 'Resume', hint: 'Esc / P', danger: true, action: () => this._close() },
+      { id: 'resume', label: 'Resume', hint: 'P', danger: true, action: () => this._close() },
     ];
     this.tabEls = {}; this.paneEls = {};
     for (const t of this.tabDefs) {
@@ -104,7 +104,7 @@ export default class Menu {
       '<div><kbd>&larr; &rarr;</kbd>Adjust</div>' +
       '<div><kbd>Enter</kbd>Select</div>' +
       '<div><kbd>M</kbd>Map</div>' +
-      '<div><kbd>Esc</kbd> / <kbd>P</kbd>Resume</div>';
+      '<div><kbd>P</kbd>Resume</div>';
 
     this.pauseEl = mo;
     this._tab('settings');
@@ -324,7 +324,7 @@ export default class Menu {
     item('dot', { background: '#ffc247' }, 'Objective');
     item('dot', { background: '#3ea0ff' }, 'GPS route');
     const hint = el('div', 'map-read card', bot,
-      '<b>Drag</b> pan &nbsp; <b>Wheel</b> zoom<br><b>Click</b> set waypoint &nbsp; <b>Right-click</b> clear<br><b>Esc / M</b> close');
+      '<b>Drag</b> pan &nbsp; <b>Wheel</b> zoom<br><b>Click</b> set waypoint &nbsp; <b>Right-click</b> clear<br><b>M</b> close');
     hint.style.textAlign = 'right';
 
     // Interaction
@@ -571,10 +571,12 @@ export default class Menu {
   /* ------------------------------------------------------------ open/close --- */
 
   _key(code) {
-    if (code === 'Escape' || code === 'KeyP') {
-      // Both, deliberately. Escape is the browser's escape hatch first and ours
-      // second: in fullscreen or pointer lock it may be consumed before we ever
-      // see it, so `KeyP` is the binding that is always reachable.
+    if (code === 'KeyP') {
+      // Escape is intentionally absent. It is the browser's key: it releases
+      // pointer lock and exits fullscreen, and in Safari one press could do
+      // either, both, or additionally toggle this menu, which is exactly the
+      // ambiguity being removed. Boston observes the resulting state changes
+      // instead of claiming the key.
       if (this.open) this._close(); else this._openPause();
       return;
     }
