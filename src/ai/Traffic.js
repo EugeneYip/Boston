@@ -188,6 +188,8 @@ export default class Traffic {
     this.ready = false;
     this.wanted = 0;
     this._laneLists = new Map();
+    this._playerPos = null;
+    this._clampHits = 0;        // how often the safety net actually fires
     this._free = [];
     this._order = [];
     this._pools = new Map();
@@ -640,8 +642,80 @@ export default class Traffic {
     this._proxies = null;
   }
 
+  /**
+   * Where the on-foot player is this update, or null.
+   *
+   * Resolved once and shared by the lane ghost and the advancement clamp so the
+   * two can never disagree about whether he is there. Null while he is driving:
+   * his car is a physics body and handles itself.
+   */
+  _resolvePlayer(ctx) {
+    const pl = ctx.get('player');
+    if (!pl || pl.mode !== 'onFoot' || !pl.position) { this._playerPos = null; return; }
+    const p = this._playerPos || (this._playerPos = { x: 0, z: 0 });
+    p.x = pl.position.x; p.z = pl.position.z;
+  }
+
+  /** Would this car's body contain the player if it sat at arc length `s`? */
+  _playerBlocks(c, s) {
+    const path = c.cur;
+    if (!path) return false;
+    path.at(s < 0 ? 0 : s, _cpt);
+    const bx = _cpt.x - _cpt.dz * c.latOff;
+    const bz = _cpt.z + _cpt.dx * c.latOff;
+    const p = this._playerPos;
+    const dx = p.x - bx, dz = p.z - bz;
+    const cs = Math.cos(_cpt.rotY), sn = Math.sin(_cpt.rotY);
+    const lx = dx * cs - dz * sn, lz = dx * sn + dz * cs;
+    const m = PLAYER_R + CLAMP_SKIN;
+    return Math.abs(lx) < c.width * 0.5 + m && Math.abs(lz) < c.halfLen + m;
+  }
+
+  /**
+   * Refuse to commit a step that would put the bodywork through the player.
+   *
+   * IDM braking is the visible, believable defence and does almost all the work,
+   * but it is expressed in lane bookkeeping and a car's body is only on its lane
+   * centreline when it is keyed to that lane, not mid-lane-change, and not on a
+   * junction link. Measured, a car's body sits up to 3.46 m from the centreline
+   * its ghost is keyed to -- outside the 2.2 m the ghost reaches -- and a car
+   * that changes lane re-keys instantly while its shell crosses over gradually,
+   * dropping the obligation while still physically arriving. Braking is also
+   * only ever marginal: when it does see him it stops with 0.20-0.32 m to spare.
+   *
+   * So do not argue about lanes. Take the pose this step would actually commit,
+   * and if the player is inside it, bisect back to the last arc length that
+   * clears him. This is prevention rather than depenetration: nothing is ever
+   * moved out of anything, the car simply does not take the step.
+   */
+  _clampToPlayer(c, step) {
+    const p = this._playerPos;
+    if (!p) return;
+    // Cheap reject against last frame's pose, widened by this step.
+    const dx = c.x - p.x, dz = c.z - p.z;
+    const reach = c.halfLen + step + PLAYER_R + CLAMP_SKIN + 0.5;
+    if (dx * dx + dz * dz > reach * reach) return;
+    if (!this._playerBlocks(c, c.s)) return;
+
+    let lo = c.s - step;
+    if (lo < 0) lo = 0;
+    this._clampHits++;
+    if (this._playerBlocks(c, lo)) {
+      // Already touching before the step: hold position rather than push on.
+      c.s = lo; c.v = 0; c.a = 0;
+      return;
+    }
+    let hi = c.s;
+    for (let i = 0; i < 7; i++) {
+      const mid = (lo + hi) * 0.5;
+      if (this._playerBlocks(c, mid)) hi = mid; else lo = mid;
+    }
+    c.s = lo; c.v = 0; c.a = 0;
+  }
+
   /** Bucket every car by the lane it is on so the leader search is O(1). */
   _buildLaneLists(ctx) {
+    this._resolvePlayer(ctx);
     for (const a of this._laneLists.values()) a.length = 0;
     const list = this.vehicles;
     for (let i = 0; i < list.length; i++) {
@@ -854,6 +928,7 @@ export default class Traffic {
 
     if (c.blinkFor > 0) { c.blinkFor -= dt; if (c.blinkFor <= 0) c.indicator = 0; }
 
+    this._clampToPlayer(c, c.v * dt);
     this._pose(c, dt, ctx);
   }
 
@@ -1098,10 +1173,18 @@ export default class Traffic {
 
 // Enough boxes to wrap the player in dense traffic, reaching just past the
 // distance a car can cross in the time he can react.
+// The last-resort clamp. `CLAMP_SKIN` sits a little above the character
+// controller's own 0.02 m offset so the safety net closes before the capsule and
+// the bodywork ever share a millimetre.
+const PLAYER_R = 0.30;
+const CLAMP_SKIN = 0.06;
+
 const PROXY_MAX = 12;
 const PROXY_RANGE = 22;
 const PROXY_H = 0.75;
 const PROXY_PARK_Y = -600;
+
+const _cpt = { x: 0, y: 0, z: 0, dx: 0, dz: 0, rotY: 0 };
 
 const LEFT_FIRST = [-1, 1];
 const RIGHT_FIRST = [1, -1];
