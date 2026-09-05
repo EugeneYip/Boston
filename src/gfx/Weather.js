@@ -34,7 +34,14 @@ const PRESETS = {
   clear: {
     coverage: 0.42, cloudType: 0.40, density: 1, extinction: 0.018, detail: 0.35,
     cloudBottom: 1550, cloudTop: 3700, anvil: 0.0, ambient: 1.0, cloudShadow: 0.85,
-    turbidity: 1.25, hazeSigma: 0.00034, hazeH: 1300, hazeY0: 0, fogAlbedo: 0.0,
+    // 0.00034 put clear weather at a 11.5 km Koschmieder range (3.912/sigma), four
+    // times the extinction of Fog.js's own documented clear-day default of 8.5e-5
+    // (~46 km), and it was the dominant reason the skyline read as pale slabs:
+    // measured at hero_skyline, zeroing it recovered 1.91x the detail gradient in
+    // the 776-896 m tower band while moving the 199 m band only 1.16x. Halved to
+    // 23 km, which is still well inside the file's own idea of a clear day and
+    // still leaves a 51-luma depth cue between the near and far bands.
+    turbidity: 1.25, hazeSigma: 0.00017, hazeH: 1300, hazeY0: 0, fogAlbedo: 0.0,
     rayleigh: 1.0, shaft: 0.85, horizonHaze: 0.20, skyMul: 1.0, aerial: 4.5e-05,
     rain: 0, snow: 0, wind: 5, windDir: 235, lightning: 0, wetness: 0.0,
     fogTint: '#c9d3de',
