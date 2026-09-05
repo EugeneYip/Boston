@@ -6,6 +6,7 @@ import {
   makeOpaqueMaterial, makeGlassMaterial,
 } from './BuildingKit.js';
 import { LANDMARKS } from '../data/landmarks.js';
+import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 /**
  * Boston's landmarks, individually modelled.
@@ -1056,6 +1057,8 @@ export default class Landmarks {
   constructor() {
     this.meshes = [];
     this.built = [];
+    this.parts = [];
+    this.body = null;
     this._neon = null;
   }
 
@@ -1102,6 +1105,11 @@ export default class Landmarks {
       const p = geo(d.lat, d.lon);
       const y = groundAt(p.x, p.z);
       const l = new LM(mb, gb, p.x, y, p.z, d.rot || 0);
+      // Where this landmark's triangles start in the shared opaque buffer.
+      // `MeshBuf.build(false)` copies indices through 1:1 and leaves positions in
+      // world space, so [i0, i1) slices the finished geometry exactly -- which is
+      // what gives each landmark its own collider out of one merged mesh.
+      const i0 = mb.ni;
       try {
         fn(l, d);
       } catch (e) {
@@ -1110,6 +1118,7 @@ export default class Landmarks {
       }
       if (l.signQuad) this._makeCitgo(l.signQuad);
       if (l.cableQuads) this._makeCables(l.cableQuads);
+      this.parts.push({ id: d.id, i0, i1: mb.ni });
       this.built.push(d.id);
     }
 
@@ -1122,6 +1131,7 @@ export default class Landmarks {
       m.name = 'landmarks_opaque';
       root.add(m); this.meshes.push(m);
       tris += go.index.count / 3;
+      this._addColliders(ctx, go);
     }
     const gg = gb.build();
     if (gg) {
@@ -1135,6 +1145,66 @@ export default class Landmarks {
 
     console.info(`[landmarks] ${this.built.length} built, ${tris | 0} tris, ` +
       `${this.meshes.length} draws, ${(performance.now() - t0) | 0}ms`);
+  }
+
+  /**
+   * One static trimesh collider per landmark, cut from the merged opaque mesh.
+   *
+   * Landmarks are individually modelled rather than generated, so there is no
+   * footprint polygon to extrude the way `Buildings._addColliders` does -- and
+   * `keepout` in `data/landmarks.js` is emphatically NOT one. That value is the
+   * radius inside which the generic building generator must not place anything;
+   * it reaches 150 m at Fenway and 128 m at Faneuil, and extruding it would wall
+   * off whole blocks of open street. The rendered triangles are the only
+   * description of a landmark's actual shape, so they are what collides.
+   *
+   * Using the geometry directly also means the shape is right for free: the open
+   * side of Fenway's bowl, the span under the Zakim deck, Faneuil's colonnade and
+   * every arch stay open because there are no triangles there to collide with.
+   * No per-class special case is needed and none is used.
+   *
+   * Deliberately excluded, because they are separate meshes and never reach this
+   * buffer: the Zakim cables (thin, and catching a player on a suspension cable
+   * would be worse than passing through one) and the Citgo sign (a billboard on
+   * a roof). The glass buffer is excluded too -- curtain walls are coincident
+   * with the opaque shell they hang on, so they would only duplicate surfaces.
+   */
+  _addColliders(ctx, geom) {
+    const p = ctx.physics;
+    if (!p?.world || !this.parts.length) return;
+    const R = p.RAPIER;
+    const pos = geom.attributes.position.array;
+    const idx = geom.index.array;
+    const body = p.world.createRigidBody(R.RigidBodyDesc.fixed());
+    const remap = new Map();
+    let made = 0, tris = 0;
+    for (const part of this.parts) {
+      const n = part.i1 - part.i0;
+      if (n < 12) continue;                     // 4 triangles is not a landmark
+      // Compact this slice's vertices into their own buffer: Rapier wants a
+      // self-contained mesh, and the merged one is 44k vertices wide.
+      remap.clear();
+      const verts = [];
+      const tri = new Uint32Array(n);
+      for (let k = 0; k < n; k++) {
+        const vi = idx[part.i0 + k];
+        let m = remap.get(vi);
+        if (m === undefined) {
+          m = verts.length / 3;
+          remap.set(vi, m);
+          verts.push(pos[vi * 3], pos[vi * 3 + 1], pos[vi * 3 + 2]);
+        }
+        tri[k] = m;
+      }
+      const cd = R.ColliderDesc.trimesh(new Float32Array(verts), tri)
+        .setCollisionGroups(groups(GROUP.STATIC, 0xFFFF))
+        .setFriction(0.9);
+      p.world.createCollider(cd, body);
+      made++; tris += n / 3;
+    }
+    if (made) { this.body = body; this.colliderTris = tris; }
+    else { p.world.removeRigidBody(body); this.body = null; }
+    console.info(`[landmarks] ${made} colliders, ${tris} collision tris`);
   }
 
   /** The Citgo sign: its own emissive quad with a procedural neon texture. */
@@ -1231,6 +1301,11 @@ export default class Landmarks {
       }
     }
     this.meshes.length = 0;
+    if (this.body) {
+      this.ctx?.physics?.world?.removeRigidBody(this.body);
+      this.body = null;
+    }
+    this.parts.length = 0;
     if (this.root) this.ctx?.scene.remove(this.root);
     void D2R; void tdGarden;
   }
