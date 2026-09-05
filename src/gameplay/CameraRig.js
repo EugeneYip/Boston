@@ -47,6 +47,14 @@ const _tmp = new THREE.Vector3();
 /** Corner offsets of the sweep, in units of the near-plane half extents. */
 const FAN = [[0, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]];
 
+/**
+ * Corrective obstruction passes after the first sweep, to reconcile the shoulder
+ * the sweep probed with the one the camera actually lands on. Measured over ten
+ * known landmark failures the arm was already stable after ONE pass and a second
+ * changed nothing, so two is a cap rather than a budget.
+ */
+const SHOULDER_PASSES = 2;
+
 export default class CameraRig {
   static id = 'cameraRig';
   static label = 'Camera';
@@ -222,6 +230,32 @@ export default class CameraRig {
     if (free < this._dist) this._dist = free;
     else this._dist = Math.min(free, this._dist + (2.6 + this._dist) * dt);
     this._dist = Math.max(ctx.camera.near + 0.02, this._dist);
+
+    // That sweep probed the FULL shoulder, but `shrink` below puts the camera at
+    // `shoulder * shrink` -- a different column of space whenever the arm came
+    // back shorter than it asked for. The sweep therefore cleared a corridor the
+    // camera never occupies, which is how 10 of 216 landmark orbit angles ended
+    // up behind opaque geometry with the arm dutifully following a sweep that had
+    // found nothing. Re-probe where the camera is actually going to sit.
+    //
+    // Each pass can only shorten the arm, and a shorter arm means a smaller
+    // shoulder, so the sequence is monotonically decreasing and cannot oscillate.
+    // Measured on all ten failures: stable after ONE pass, unchanged by a second.
+    //
+    // This is NOT the reverted "sweep at shoulder * shrink" change. That one
+    // replaced the full-shoulder sweep with a single guessed offset and let the
+    // camera into a car; this keeps the original sweep and only ever takes a
+    // tighter answer on top of it.
+    //
+    // Costs nothing on an open street -- `q` is 1 there, so the column was
+    // already probed -- and nothing while driving, where `shoulder` is 0.
+    for (let i = 0; shoulder !== 0 && i < SHOULDER_PASSES; i++) {
+      const q = dist > 0.01 ? Math.min(1, this._dist / dist) : 1;
+      if (q > 0.999) break;
+      const tight = this._sweep(ctx, _want, _fwd, _right, _up, dist, shoulder * q, player);
+      if (tight >= this._dist - 1e-3) break;
+      this._dist = Math.max(ctx.camera.near + 0.02, tight);
+    }
 
     const shrink = dist > 0.01 ? Math.min(1, this._dist / dist) : 1;
     this.pos.copy(_want)
