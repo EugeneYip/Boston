@@ -567,6 +567,23 @@ function finishLayout(L) {
     return lerp != null ? lerp : L.gh(x, z);
   };
 
+  /**
+   * A point `d` metres along the segment, taken from the road graph's own
+   * polyline rather than the straight chord between its nodes, with the tangent
+   * there. Falls back to the chord when the graph cannot answer.
+   */
+  L.roadPoint = (s, d) => {
+    const net = L.city?.roads;
+    const u = s.len ? Math.min(1, Math.max(0, d / s.len)) : 0;
+    if (net?.sample && s.edgeId != null && s.at != null && s.bt != null) {
+      const p = net.sample(s.edgeId, s.at + u * (s.bt - s.at));
+      // `RoadNetwork.sample` reports heading as atan2(dx, -dz).
+      return { x: p.x, y: p.y, z: p.z, dx: Math.sin(p.heading), dz: -Math.cos(p.heading) };
+    }
+    return { x: s.ax + s.dx * d, y: L.surfaceY(s, s.ax + s.dx * d, s.az + s.dz * d),
+             z: s.az + s.dz * d, dx: s.dx, dz: s.dz };
+  };
+
   L.groundHeight = L.gh;
   L.districtAt = L.districtFor;
   L.inPark = (x, z) => L.parks.some(p => pointInPoly(x, z, p.poly));
@@ -1435,16 +1452,42 @@ function runPlacement(sys, L, counting, take) {
         // street, but a VehicleModels body is lofted with its FRONT at -Z
         // (measured: head lamp anchors at z -2.31, tail lamps at +2.34). Without
         // this every parked car in the city faces backwards, tail lights first.
-        const ry = facing(s.dx, s.dz) + (side > 0 ? Math.PI : 0);
         let t = rng.range(2, 8);
         while (t < s.len - 6) {
           if (!rng.chance(fill)) { t += rng.range(4.0, 9.0); continue; }   // driveway, hydrant, loading
           const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
           if (take('parked')) {
-            const x = s.ax + s.dx * (t + carLen / 2) + s.nx * off * side;
-            const z = s.az + s.dz * (t + carLen / 2) + s.nz * off * side;
-            b(name).add(x, road(x, z), z, ry + rng.range(-0.022, 0.022), 1,
-              rng.range(0.86, 1.06));
+            // Follow the ROAD, not the chord. `s.ax/s.dx` is the straight line
+            // between the two nodes; the carriageway is `edge.pts`. On a curve
+            // that put cars up to 12 m off the road -- measured on edge 245, a
+            // 643 m arc -- where they came down on whatever was underneath and
+            // read as parked on the pavement or in mid air. It also gave every
+            // car on the segment ONE shared heading, because `ry` used to be
+            // computed once from the chord outside this loop.
+            const P = L.roadPoint(s, t + carLen / 2);
+            const ry = facing(P.dx, P.dz) + (side > 0 ? Math.PI : 0)
+              + rng.range(-0.022, 0.022);
+            const x = P.x - P.dz * off * side;
+            const z = P.z + P.dx * off * side;
+            // Sit it on the surface under its own wheels. A single centre height
+            // leaves a level car on a graded or cambered street with one end in
+            // the air: measured across the four contact patches, the road climbs
+            // up to 0.265 m over one wheelbase. Sampling the drawn surface at
+            // each end and fitting a plane is what actually puts four tyres down.
+            // Local +Z and +X in world terms follow from `ry`, so the signs hold
+            // for both sides of the street without a special case.
+            const halfL = carLen * 0.30, halfW = 0.72;
+            const zx = Math.sin(ry), zz = Math.cos(ry);
+            const xx = Math.cos(ry), xz = -Math.sin(ry);
+            const hAt = (ax, az) => {
+              const hh = L.city?.roadMesh?.surfaceAt?.(x + ax, z + az, P.y);
+              return hh ? hh.y : road(x + ax, z + az);
+            };
+            const hPz = hAt(zx * halfL, zz * halfL), hMz = hAt(-zx * halfL, -zz * halfL);
+            const hPx = hAt(xx * halfW, xz * halfW), hMx = hAt(-xx * halfW, -xz * halfW);
+            b(name).add(x, (hPz + hMz + hPx + hMx) / 4, z, ry, 1,
+              rng.range(0.86, 1.06),
+              Math.atan2(hMz - hPz, 2 * halfL), Math.atan2(hPx - hMx, 2 * halfW));
           }
           t += carLen + rng.range(0.55, 1.9);
         }

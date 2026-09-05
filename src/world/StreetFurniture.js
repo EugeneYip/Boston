@@ -1845,6 +1845,24 @@ function buildCarFromVehicle(type, bodyHex) {
   const d0 = level(1);
   const d1 = level(2);
   if (!d0) return null;
+  // Put both LODs on the same ground datum. LOD 1 carries `trimDark`, which is
+  // where the tyres live, so its lowest vertex IS the contact patch and sits at
+  // local y = 0. The distant shell is built from `lods[2]`, which holds only
+  // `trim` and `paint` -- no tyres at all -- so its lowest vertex is the sill,
+  // measured 0.045 m higher. Placing both at the road then left every distant
+  // parked car hovering that far above it, with no wheel to anchor it visually.
+  // The correction is taken from the two meshes rather than typed in, so it
+  // stays right if either bake changes.
+  if (d1?.geometry && d0.geometry) {
+    const g0 = d0.geometry, g1 = d1.geometry;
+    if (!g0.boundingBox) g0.computeBoundingBox();
+    if (!g1.boundingBox) g1.computeBoundingBox();
+    const drop = g1.boundingBox.min.y - g0.boundingBox.min.y;
+    if (Math.abs(drop) > 1e-4) {
+      g1.translate(0, -drop, 0);
+      g1.computeBoundingBox(); g1.computeBoundingSphere();
+    }
+  }
   // LOD ranges are measured, not guessed. The mid tier is ~3.5k triangles and
   // the shell ~430, and `PropBatch` selects per 96 m chunk, so the near band is
   // coarse: at `near` 95 a North End street had 133 cars at full detail and
