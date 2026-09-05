@@ -282,8 +282,12 @@ A fresh current-pixels critic ran on 2026-09-01 at `319c092` and its ranked list
 measurement artifact**: p99 153.5 was 8×8 block-mean luma, which averages away sparse
 small highlights. Per-pixel max(R,G,B) gives p99 192 / p99.9 251 / max 253 with 0.26% of
 pixels ≥240 and no clipping, and the window term supplies ~15% of that population.
-**Do not raise night exposure or add windows.** The remaining entries (vehicles, distant
-towers) are still open and still unattributed.
+**Do not raise night exposure or add windows.** The vehicle entry was then investigated and
+also closed: those shapes are `prop:car*` instances from Props, not vehicles, and both
+`envMapIntensity` and asset fidelity were disproven as causes — see the report. **Only the
+distant-towers entry remains open**, and it is unattributed. Wave 3 of that batch was not
+started: macOS expanded swap 5120 → 7168 MiB mid-session, so the batch ended on the
+resource rule rather than on findings.
 
 ### Daylight hue at `st_southend` — CLOSED, no defect (runtime, 2026-09-01)
 Measured on current pixels at `dbcb1d1`, one page load, `holdActors: true`. The old
