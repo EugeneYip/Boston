@@ -408,48 +408,63 @@ case and driving are all unaffected.
 
 ## Vehicle paint: what owns the pale, samey look
 
-**Proven and fixed: the 5-bit snap was running in linear space.**
-`Materials.carPaint` quantises the requested colour to a 5-bit grid so jittered
-per-car colours share one material. It did that with `setRGB`, which writes the
-working (LINEAR) space, where a 1/31 step is enormous near black -- linear 0.0129
-is already sRGB 31. Over the 36 palette entries that shifted a channel by 9.6/255
-on average and 31/255 at worst, destroyed hue on saturated darks (#8d1f24 ->
-#8b0032), lifted near-blacks (#23262b -> #323232) and collapsed sedan navy
-#1b2a3d, pickup slate #1f2933 and suv green #1e3a2c onto one teal #003232 --
-sharing a single cached material, because the cache is keyed on the snapped value.
-Snapping in sRGB drops the mean shift to 2.8/255 and the worst to 4/255 with zero
-entries shifted by more than 8, and leaves only benign merges of colours 1-4/255
-apart. Cache size is unchanged (145 materials over an 8,000-car weighted draw), so
-there is no new material or draw cost. **If you touch this again, keep the snap in
-sRGB.**
+**Hidden-pane pixels ARE trustworthy — the old warning is superseded.**
+`Engine.resize()` floors a collapsed container to 1280x720, so a hidden Browser
+pane still renders at a real size (measured 1920x1080 with `document.hidden`
+true). It can still read 1x1 transiently during boot; call `engine.resize()` and
+step, which is what `capture()` already does. Proof protocol used here, and worth
+repeating before trusting any pixel claim: A/A on a car body gave dRGB
+(-0.2,-1.2,-2.1); changing only the paint colour gave (-46.0,+41.7,-9.1); a sky
+control region moved (-0.2,-0.4,-0.4); restoring returned inside the A/A floor.
+Region-local, ~22:1 signal to noise, and demonstrably not a stale buffer.
 
-**Attributed but NOT fixed -- two remaining owners.** Neither was changed, and
-neither should be changed without rendered-pixel evidence.
+**Protocol that matters:** hold ONE car, ONE camera and ONE light and mutate only
+the material. Respawning per colour lets auto-exposure re-adapt and produced a
+completely wrong reading here (tonal range 4.4 instead of 14.3).
 
-* *Fleet reads neutral.* Weighted by the real `Traffic.MIX`, 55.7% of cars draw a
-  colour with chroma below 0.05 and the median chroma is 0.031. Taxi, police and
-  bus are single near-white liveries and are 19.1% of traffic between them. Note
-  the fleet is NOT predominantly light -- median luminance is 0.125 and 27.3% are
-  dark -- so the palette explains "they all look the same" but does not by itself
-  explain "pale".
-* *Paint shows little of its own colour.* `car_paint` is `metalness 0.78`, so only
-  22% of albedo survives as diffuse and the rest of the response is environment
-  reflection tinted by the colour, on top of `clearcoat 1.0` at
-  `clearcoatRoughness 0.045` and `envMapIntensity 1.25`. Under a bright sky that
-  pushes every body toward sky grey regardless of its albedo. This is the most
-  likely owner of "washed-out" specifically, and it is a hypothesis, not a
-  measurement.
+**Owner 1, fixed earlier: the 5-bit snap ran in linear space.** See `f896627`.
+Rendered confirmation: navy and dark green used to collapse onto the same
+`#003232` and rendered at (32.6,50.3,63.4) and (32.5,50.1,63.3) -- an inter-car
+distance of **0.2**. After the sRGB snap they render (35.3,48.4,69.2) and
+(35.2,50.2,55.6), distance **13.7**. Dark red's magenta cast is gone (blue 55.1
+-> 46.4) and the white control is unchanged.
 
-**Speckled/chalky is a separate defect and is unattributed.** The candidate terms
-are the flake `normalMap` at `normalScale 0.13` and the same `ormMap` driving BOTH
-`roughness` and `metalness`, tiling every `0.35 m` (`userData.tileMeters`). Do not
-try to fix speckle and paleness with one saturation multiplier.
+**Owner 2, fixed here: `carPaint` metalness was 0.78.** Automotive basecoat is a
+dielectric with metallic flake, and the gloss is carried by `clearcoat: 1.0`, so
+metalness was never buying the shine. At 0.78 only 22% of albedo survived as
+diffuse, and the fleet's tonal range collapsed: a white car rendered just **22.0**
+luma above a black one, with black 45.2, dark red 45.4 and navy 45.9 inside 0.7 of
+each other. Sweep, everything else held:
 
-**Measurement constraint that blocked the rest of this work.** Ablations need
-rendered pixels, and a hidden Browser pane collapses the drawing buffer, so no
-pixel measurement is possible in that state. The palette, snap and material
-parameters above are all source-side and unaffected. Anything claiming a rendered
-before/after must be taken with the pane visible.
+    metalness   0.78  0.60  0.45  0.30  0.15  0.00
+    tonal range 22.0  30.7  37.4  44.1  49.8  54.9
+    mean chroma 30.7  32.7  33.9  34.7  35.3  35.8
+    white clip     0%    0%    0%    0%    0%    0%
+
+Shipped **0.30**. Verified across daylight, overcast, dusk, night and rain: range
+roughly doubles in all five, white clipping 0% everywhere, black crush unchanged.
+
+**Parked cars are a DIFFERENT material path, and the two disagree.** Parked props
+render through the shared `prop_surf` material (one material across 107 instanced
+prop meshes) with per-surface parameters from `SURF` in `StreetFurniture.js`:
+`carPaint: [0.34, 0.05, 1.0, 1.25]` = roughness, metalness, clearcoat, envScale.
+So parked cars have ALWAYS been metalness **0.05** while moving and drivable cars
+were 0.78 -- despite the comment on that very line saying the envScale is chosen
+"so a parked car and a driving one of the same colour agree". Shipping 0.30
+narrows the gap but does not close it. Do not "fix" this by editing `prop_surf`'s
+scalar metalness: it is shared with every other prop in the city.
+
+**Speckle is NOT owned by the vehicle material — do not tune the flake terms.**
+Turning off the flake normal, the clearcoat normal and both ORM maps together
+moved body high-frequency energy by **-1.9%** against an A/A floor of +/-0.03, and
+a flat road patch measures MORE high-frequency energy (25.31) than the car body
+(21.16). Whatever reads as chalky is a scene-wide postprocess term, not paint
+microstructure.
+
+**Palette is not the owner either.** Weighted by the real `Traffic.MIX` the fleet
+is 55.7% near-neutral with median chroma 0.031, but median luminance is only 0.125
+and 27.3% is genuinely dark, so it explains "samey" and not "pale". It was left
+alone deliberately.
 
 ## Parked cars are glazed differently from moving ones
 

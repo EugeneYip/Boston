@@ -130,16 +130,29 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
-**Vehicle paint, 2026-09-05.** One proven owner fixed (`f896627`): the 5-bit
-colour snap in `Materials.carPaint` ran in the linear working space, shifting a
-channel by up to 31/255, lifting near-blacks to mid grey and collapsing three
-distinct palette colours onto one teal that they then shared as a single cached
-material. Snapping in sRGB drops the worst shift to 4/255 with no entries over 8.
-Two owners remain attributed but unfixed: the fleet is 55.7% near-neutral by
-weighted draw, and `car_paint` metalness 0.78 leaves only 22% of albedo as
-diffuse. Speckle is a separate, unattributed defect. See CONTRACTS.md, "Vehicle
-paint". **No rendered-pixel verification was possible — the Browser pane is
-hidden, which collapses the drawing buffer.**
+**Vehicle paint, 2026-09-05 — two owners fixed, one ruled out, one open.**
+
+*Hidden-pane pixels are trustworthy now* — `Engine.resize()` floors a collapsed
+container to 1280x720. The old "any visual claim while hidden is fiction" warning
+is superseded; see CONTRACTS.md for the A/A + ablation proof protocol and the
+auto-exposure trap (hold one car and one camera; respawning per colour gave a
+wrong answer here).
+
+*Fixed:* the linear-space colour snap (`f896627`, rendered inter-car distance for
+navy vs dark green 0.2 -> 13.7), and `carPaint` metalness 0.78 -> 0.30
+(`8cab8f6`, white-vs-black tonal range 22.0 -> 44.1, verified across five weather
+conditions with 0% white clipping).
+
+*Ruled out:* speckle is not the vehicle material — all micro terms off together
+move body high-frequency energy by -1.9%, and flat road measures more of it than
+the car body. Palette is not the pale owner either (55.7% neutral but median
+luminance 0.125, 27.3% dark).
+
+*Open and newly found:* parked cars use a different material path entirely —
+`prop_surf` with `SURF.carPaint = [0.34, 0.05, 1.0, 1.25]`, i.e. metalness **0.05**
+— so parked and moving cars have never matched despite a comment saying they
+should. 0.30 narrows the gap; closing it needs its own verification and must not
+be done by editing the shared `prop_surf` scalar.
 
 **Parked-car bypass 3/4 classified, 2026-09-05.** Not a regression. Re-run at 14
 production trials: the 12 with valid starts reach the pavement 12/12. The two
