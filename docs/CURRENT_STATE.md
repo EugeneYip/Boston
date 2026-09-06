@@ -1195,3 +1195,63 @@ camera.
 8. LOD 1 roof clutter — water tanks, dishes, fan cowls are LOD-0 only.
 9. Vehicle bumper rounding; bus glazing bay rhythm.
 10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+
+## Parks + green-space pass — 2026-09-06 (`988b0cb` … `8748a92`)
+
+Three commits. The reported "only two parks" was real, and the cause was the
+same ownership pattern as the last three passes: the data existed, was already
+rendered by another system, and Props kept a private copy.
+
+| commit | change | effect |
+|---|---|---|
+| `988b0cb` | parks come from `city.parks`, not a 2-entry private copy | 2 → 19 parks, 376 street trees out of parks |
+| `ec9a1a1` | park content scales with park area and shape | furniture/ha spread 165x → 3.2x |
+| `8748a92` | nothing is planted in the water | trees in water 105 → 13 |
+
+    L.parks             2 -> 19        L.parkAreas       2 -> 18
+    park area known   43.4% -> 100%    street trees in park  376 -> 0
+    park trees          732 -> ~2000   vegetation     56,224 -> 76,081
+    park benches        139 -> 775     park lamps        271 -> 657
+    props           157,879 -> 158,785 prop batches       99 -> 99
+
+### Vegetation count reconciliation (previous batch)
+
+Both figures were right; they are different points in the batch.
+
+    5,200 street + 732 park                              = 5,932   baseline
+    + 1,191 pits the stride fix filled                   = 7,123   intermediate
+    +    49 sites recovered by correct in-park testing    (kerbPoint)
+    -   422 sites withdrawn from bridges                 = 6,750   final
+    (6,018 street + 732 park = 6,750)
+
+No source changed to make them agree; the arithmetic already did.
+
+### Audited and found sound / closed
+
+- **Junction-in-carriageway metric — CLOSED.** 96.4% of the 413 are legitimate
+  junction-box overlap; only 15 are genuinely wrong. Do not target zero.
+- **Park grounding.** Trees p50/p95/p99 all 0.00, none floating. Furniture p50
+  0.00, p99 0.15, max 1.06.
+- **Dead green content.** None. The 61-entry furniture library has no path,
+  railing, fence, fountain or monument asset, so there was nothing dormant to
+  activate — and nothing was invented.
+- **Understorey scaling.** Grass draws its count from bbox area then rejects to
+  the polygon, so its accepted total is already polygon-proportional.
+
+### Remaining top 10 world-coverage priorities
+
+1. **Street-graph coverage — OWNER DECISION.** Cambridge is 93% open at 0.8
+   roadKm/km2 against Back Bay's 20.9; Charlestown 87%, Fenway 76%, Seaport 71%.
+   Buildings follow parcels follow roads, so no amount of vegetation or prop work
+   reaches them. Extending it means authoring real street geometry — content
+   scope, not an autonomous call.
+2. Park paths, edges and railings: no such asset exists, so parks are lawn +
+   trees + furniture with no circulation language.
+3. 13 trees and 27 junction props still over water at polygon boundaries.
+4. 16 tree meshes for ~8,000 instances; measure adjacent-repeat visibility first.
+5. Street lamps 22/km (physical model only; light pool is fixed at 20).
+6. Curtain-wall towers detailed below 26 m only.
+7. Tower crowns: every tower ends in a flat parapet.
+8. LOD 1 roof clutter.
+9. Vehicle bumper rounding; bus glazing bays.
+10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350.

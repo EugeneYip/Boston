@@ -922,3 +922,84 @@ trap `Buildings.js` documents for `MAX_BUILDINGS`.
 
 Population after this pass: 6750 tree instances, 56224 vegetation instances,
 157879 props, 99 batches.
+
+## Parks are the city's, not Props' (2026-09-06)
+
+`boston-geo.js` authors NINETEEN named parks; `Districts` builds grass and
+hardscape meshes for all of them and `City._publish` exposes the list as
+`city.parks`. `Props.parkPolys()` was two hand-typed rings approximating the
+Common and the Public Garden, and Props used those instead — knowing 43.4% of
+the city's 733,897 m2 of park and, because the rings did not match the authored
+ones, planting 376 street trees inside real parks.
+
+**`L.parks` is the exclusion set** (everything a street tree keeps out of,
+including the `reserveOnly` Commonwealth Avenue Mall corridor, which is a
+no-build strip rather than lawn). **`L.parkAreas` is the planting set** and drops
+the reserve-only rings, exactly as `Districts` skips them when building grass.
+Each carries `area` and `fill` — the ring's share of its own bounding box —
+because both consumers need them and both used to guess.
+
+### Rejection samplers must pay for the shape they sample
+
+Park furniture ran a flat 320 attempts per park; park trees took their count from
+the BOUNDING BOX. Both make polygon shape the content budget:
+
+    furniture/ha   2.2 (Esplanade) - 361.6 (Post Office Square)   165x
+    trees/ha      14.1 - 50.2
+
+The Esplanade fills 0.06 of its bounding box, the Common 0.69. Scale the target
+by real polygon area and divide attempts by `fill`. Density targets are keyed to
+`kind`, because hardscape carries more seating and fewer trees than lawn:
+
+    furniture/ha   plaza 60, formal 55, lawn 25, mall 22
+    trees/ha       mall 42, lawn 32, formal 26, plaza 12
+
+### Nothing is planted in the water
+
+The Public Garden's ring includes its lagoon. Use `L.inWater(x, z)`, which tests
+the exact terrain rings from `city.waterPolys` with a bbox reject in front — NOT
+`districtAt`, which returned 'water' for only 95 of 105 known-wet points. That is
+a 20 m raster being honest, and not good enough to decide whether a tree is in a
+pond.
+
+### Park lamps and the light pool
+
+Park lamps DO push `_lampSites`. That is fine and does not change the real-light
+budget: `_buildLightPool` allocates a fixed pool — 20 anchors at `high`, 8 at
+`low` — and `_updateLightPool` selects the nearest sites for them. More sites buy
+better selection near the player, never more lights.
+
+## The junction-in-carriageway metric is closed (2026-09-06)
+
+Of the 413 junction props whose position falls inside some carriageway:
+
+    A  genuinely wrong placement                15   3.6%
+    B  several carriageways genuinely overlap   35
+    C  inside the junction box itself          363
+
+96.4% are standing on real road surface at a junction, which is what a junction
+is. **Do not target zero on this metric.** 15 items out of 158,785 props is not
+worth a cycle.
+
+## World coverage, measured (2026-09-06)
+
+6 x 6 km world box, 20 m grid: water 19.0%, open 65.9%, building 8.6%,
+carriageway 3.1%, park 1.9%, public realm 1.6%. Most of the "open" is beyond the
+built city.
+
+Inside NAMED neighbourhoods is the number that matters, and it is not parks:
+
+    district      km2   bldg%  street%  park%  OPEN%   roadKm/km2
+    cambridge    5.28      5       2      0     93        0.8
+    charlestown  1.58      7       5      0     87        3.3
+    fenway       1.75     17       7      0     76        3.1
+    seaport      1.89     22       7      0     71        3.1
+    southEnd     1.96     29      13      0     58        6.5
+    backBay      1.08     33      34      1     32       20.9
+    beaconHill   0.37     42      20      0     38       12.0
+
+Cambridge holds 4.3 km of street and 325 buildings across 5.28 km2 — a
+twenty-sixth of Back Bay's street density. Buildings come from parcels and
+parcels come from roads, so this is a STREET GRAPH coverage gap, not a park or
+vegetation one. Closing it means authoring tens of kilometres of real street
+geometry, which is content scope and an owner decision, not an autonomous one.
