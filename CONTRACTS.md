@@ -466,6 +466,56 @@ is 55.7% near-neutral with median chroma 0.031, but median luminance is only 0.1
 and 27.3% is genuinely dark, so it explains "samey" and not "pale". It was left
 alone deliberately.
 
+## Parked and moving paint: two paths, one appearance
+
+**The two paths are deliberately different and stay different.** Moving and
+drivable cars render through `Materials.carPaint` (a `MeshPhysicalMaterial` per
+snapped colour, with flake normal and ORM maps). Parked cars render through the
+shared `prop_surf` material with per-vertex `aSurf` parameters from
+`SURF.carPaint` in `StreetFurniture.js` -- `[roughness 0.34, metalness 0.05,
+clearcoat 1.0, envScale 1.25]` -- which is what keeps 33k props in one draw call.
+The contract is **same paint colour -> perceptually coherent appearance**, NOT
+identical parameters.
+
+**Measured, same geometry / camera / light / exposure / source colour**, by
+substituting the parameter tuples on one body at runtime (RGB distance over
+white, silver, navy, dark red and mid blue; the A/A noise floor is about 2.1 and
+a full colour change is about 46):
+
+    parked 0.05 vs moving 0.78 (before the metalness fix)   mean 9.44, max 12.15
+    parked 0.05 vs moving 0.30 (today)                      mean 3.33, max  4.46
+    parked 0.15 vs moving 0.30                              mean 2.26, max  3.13
+    parked 0.30 vs moving 0.30                              mean 0.60, max  0.96
+
+`8cab8f6` cut the parked-moving mismatch by 65% as a side effect of fixing the
+moving path. What is left, 3.33, is about 1.6x the noise floor.
+
+**`SURF.carPaint` was deliberately NOT changed.** Metalness is the dominant term
+in the residual -- moving it 0.05 -> 0.30 accounts for most of the remaining gap --
+but parked 0.05 has the BETTER tonal range of the two, so matching it to 0.30
+would trade rendered quality for parameter symmetry. If the difference is ever
+judged visible, `SURF.carPaint[1]` is the single lever and it touches only the
+carPaint slot, not the other prop classes. Do not raise it merely because the
+moving path says 0.30.
+
+**Far/shell LOD shares the moving material and keeps its colour.** Traffic owns
+the shell banks (`traffic_shell_<type>_near` / `_far`), not `VehicleFactory` --
+`vf.pools` stays empty and a manually spawned car never enters the shell path, so
+do not try to exercise shells by spawning one. The paint bank uses
+`car_paint:ffffff` from the same `Materials.carPaint` family, at metalness 0.30,
+roughness 0.26, clearcoat 1, with `instanceColor` carrying the per-car tint --
+sampled live: dark red (0.314, 0.015, 0.020), grey (0.462, 0.479, 0.503), navy
+(0.093, 0.130, 0.175). So body colour survives into the far LOD and there is no
+separate pale shell material. `near` and `far` banks differ only in `castShadow`.
+The trim bank is a plain `MeshStandardMaterial` with no instance colour, which is
+correct -- trim is uniformly dark.
+
+**Batching invariants that must survive any future change here.** `prop_surf`
+stays ONE material across 220 instanced prop meshes; the shell banks are backed by
+2 `carPaint` instances total and tint per instance. Never assign per-car
+materials: there are 15,994 parked cars. Measured with everything live: 459 draw
+calls, 2.07M triangles, 77 programs.
+
 ## Parked cars are glazed differently from moving ones
 
 `CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the

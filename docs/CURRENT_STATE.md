@@ -130,6 +130,19 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
+**Parked/moving paint consistency and far LOD — CLOSED 2026-09-05, no source
+change needed.** Measured by substituting the two parameter tuples on one body
+with geometry, camera, light, exposure and source colour all held: the
+parked-moving gap was mean RGB 9.44 before the metalness fix and is 3.33 now,
+about 1.6x the A/A noise floor of 2.1. `SURF.carPaint` metalness was deliberately
+left at 0.05 — it has the better tonal range of the two, so matching it to the
+moving 0.30 would trade quality for symmetry. Far/shell LOD is Traffic-owned
+(`vf.pools` is always empty; a spawned car never reaches it) and uses the same
+`carPaint` family at 0.30 with `instanceColor` preserving per-car tint, so colour
+identity survives LOD. Batching intact: one `prop_surf` across 220 instanced prop
+meshes, 2 carPaint instances behind all shells, 459 draws / 2.07M tris. See
+CONTRACTS.md, "Parked and moving paint".
+
 **Vehicle paint, 2026-09-05 — two owners fixed, one ruled out, one open.**
 
 *Hidden-pane pixels are trustworthy now* — `Engine.resize()` floors a collapsed
