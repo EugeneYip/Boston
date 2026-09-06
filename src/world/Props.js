@@ -370,7 +370,14 @@ function makeSegment(ax, az, bx, bz, opts) {
     nx: dz / len, nz: -dx / len,      // right-hand normal
     mx: (ax + bx) / 2, mz: (az + bz) / 2,
     len,
-    halfRoad: opts.halfRoad, type: opts.type, oneway: !!opts.oneway,
+    halfRoad: opts.halfRoad, type: opts.type,
+    // SIGNED. -1 means traffic runs against this segment's own direction, which
+    // is how the road graph encodes it and how `Navigation.js` reads it
+    // (`e.oneway === -1 ? -1 : 1`). This was `!!opts.oneway`, which threw the
+    // direction away and left every consumer able to ask "is it one-way" but
+    // never "which way". The synthetic grid passes a boolean; `Math.sign` maps
+    // that to 1, so it keeps its old behaviour of running along +d.
+    oneway: Math.sign(opts.oneway || 0),
     frontage: opts.frontage ?? null,
     district: opts.district || 'downtown',
     edgeId: opts.edgeId ?? null,
@@ -1356,12 +1363,18 @@ function runPlacement(sys, L, counting, take) {
     }
     if (s.oneway && take('sign')) {
       // The blade faces across the footway; its arrow runs along local +X, which
-      // for this yaw resolves to the travel direction only on the +side.
+      // for this yaw resolves to `+s.d` on the +side and `-s.d` on the -side.
+      // Picking the variant from `side` alone therefore aims every arrow along
+      // `+s.d` -- and the road graph carries 148 one-way edges running with
+      // their own direction and 114 running against it, so 43.5% of one-way
+      // streets had their ONE WAY arrow pointing the wrong way up the street.
+      // With the sign folded in the arrow lands on `s.oneway * s.d`, which is
+      // the travel direction by definition.
       const side = rng.sign();
       const t = rng.range(3, 8);
       const x = s.ax + s.dx * t + s.nx * (kerb + 0.5) * side;
       const z = s.az + s.dz * t + s.nz * (kerb + 0.5) * side;
-      b(side > 0 ? 'signOneWayR' : 'signOneWayL')
+      b(side * s.oneway > 0 ? 'signOneWayR' : 'signOneWayL')
         .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
     }
 
