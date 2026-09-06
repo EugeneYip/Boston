@@ -1884,7 +1884,18 @@ export function buildBuilding(spec, mb, gb, lod) {
     const m = sp.length;
     for (let i = 0; i < m; i++) {
       const a = sp[i], b = sp[(i + 1) % m];
-      const isFront = si === 0 && spec.front.has(i);
+      // Front treatment on EVERY stage, not just the one standing on the
+      // pavement. Only `stoneTower` sets back, and on those 133 buildings the
+      // first setback averages 47% of the way up -- so nearly half of every
+      // 1920s tower in Boston, 71 m of the tallest one, had no street elevation
+      // at all: all four faces above the setback went to `partyWall`. The upper
+      // mass of a tower is the part the whole city can see.
+      //
+      // Index correspondence across stages is safe: each stage's ring is an
+      // `insetPoly` of the one below, which preserves both vertex order and
+      // winding, so `orientOutward` makes the same decision for all of them and
+      // edge i means the same edge at every height.
+      const isFront = spec.front.has(i);
       // Bowfront: swap part of the flat street edge for an arc, pushed to one end
       // so the entry bay beside it is wide enough for a door and its surround.
       const chord = Math.hypot(b.x - a.x, b.z - a.z);
@@ -1914,11 +1925,16 @@ export function buildBuilding(spec, mb, gb, lod) {
         // Street facade: walk the storeys.
         let y = st.y0;
         for (let s = 0; s < spec.storeys; s++) {
-          const hgt = s === 0 ? spec.groundH : spec.storeyH;
+          // The GROUND storey, not merely the first storey of this stage. 77 of
+          // the 133 setback towers roll `shop`, and keying that off `s === 0`
+          // alone would have opened a shopfront -- and given a 5 m ground-floor
+          // storey height -- at the foot of every upper stage, 50 m up.
+          const ground = si === 0 && s === 0;
+          const hgt = ground ? spec.groundH : spec.storeyH;
           const y1 = Math.min(y + hgt, st.y1);
           if (y1 - y < 0.2) break;
           const skipBay = hasBay && y >= bayY0 - 0.01;
-          if (s === 0 && spec.shop && line.length === 2) {
+          if (ground && spec.shop && line.length === 2) {
             shopfront(mb, gb, e, 0, e.L, y, y1, spec, lod);
           } else if (St.curtain) {
             curtainStorey(mb, gb, e, 0, e.L, y, y1, spec, s, lod);
@@ -1932,7 +1948,7 @@ export function buildBuilding(spec, mb, gb, lod) {
             }
           } else {
             frontStorey(mb, gb, e, 0, e.L, y, y1, spec, s, lod);
-            if (St.stringCourse && s === 0 && lod === 0) {
+            if (St.stringCourse && ground && lod === 0) {
               const mp = P(e, e.L * 0.5, 0, 0.07);
               mb.box(mp[0], y1 - 0.06, mp[2], e.L, 0.16, 0.20,
                 Math.atan2(e.nx, e.nz), spec.trimSurf, spec.trimCol);
