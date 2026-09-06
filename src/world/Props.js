@@ -1692,6 +1692,35 @@ function runPlacement(sys, L, counting, take) {
     const road = j.y != null ? () => j.y : (x, z) => L.gh(x, z);
     const g = j.y != null ? () => j.y + KERB_H : (x, z) => L.gh(x, z) + L.kerb;
 
+    /**
+     * A corner clears TWO carriageways, not one.
+     *
+     * Everything here used to size both of its offsets from `leg.hw` — the
+     * half-width of the leg it hangs off — but the distance you must travel
+     * ALONG a leg to get clear of the junction is set by the road CROSSING it,
+     * and those are routinely different. A ped signal on a side street at a
+     * 19.6 m arterial was authored 1.5 m past its own 5.9 m kerb and 1.9 m to
+     * the side, which is 9 m inside the arterial's asphalt.
+     *
+     * Measured before this: 682 of 696 ped signals (98%) stood inside a
+     * carriageway, 611 of them deeper than 2 m; mast arms 27-37%; street blades
+     * 28-30%; stop signs 35%; corner bollards 25%.
+     *
+     * `cornerOf` returns the along-axis clearance from whichever leg actually
+     * crosses this one, and the lateral clearance from the leg itself.
+     */
+    const cornerOf = (leg) => {
+      const rx = -leg.dz, rz = leg.dx;
+      let cross = null, best = -2;
+      for (const o of legs) {
+        if (o === leg) continue;
+        const d = o.dx * rx + o.dz * rz;
+        if (d > best) { best = d; cross = o; }
+      }
+      return { rx, rz, along: Math.max(leg.hw, best > 0.25 && cross ? cross.hw : 0),
+               lat: leg.hw };
+    };
+
     if (j.major) {
       // Two mast arms on opposing approaches, the usual US arrangement.
       const picks = legs.length >= 4 ? [0, 2] : [0];
@@ -1701,18 +1730,17 @@ function runPlacement(sys, L, counting, take) {
         // Approach direction points into the junction.
         const ax = -leg.dx, az = -leg.dz;
         const rx = -az, rz = ax;                 // right of the approach
-        const k = leg.hw + 2.2;
-        const x = j.x + ax * k + rx * k;
-        const z = j.z + az * k + rz * k;
+        const c = cornerOf(leg);
+        const x = j.x + ax * (c.along + 2.2) + rx * (c.lat + 2.2);
+        const z = j.z + az * (c.along + 2.2) + rz * (c.lat + 2.2);
         b(li === 0 ? 'trafficMastR' : 'trafficMastG')
           .add(x, g(x, z), z, facing(-ax, -az), 1, rng.range(0.9, 1.0));
       }
       for (const leg of legs) {
         if (!take('signal')) continue;
-        const rx = -leg.dz, rz = leg.dx;
-        const k = leg.hw + 1.5;
-        const x = j.x + leg.dx * k + rx * 1.9;
-        const z = j.z + leg.dz * k + rz * 1.9;
+        const c = cornerOf(leg);
+        const x = j.x + leg.dx * (c.along + 1.5) + c.rx * (c.lat + 1.9);
+        const z = j.z + leg.dz * (c.along + 1.5) + c.rz * (c.lat + 1.9);
         b('pedSignal').add(x, g(x, z), z, facing(-leg.dx, -leg.dz), 1, rng.range(0.9, 1.04));
       }
     } else {
@@ -1722,9 +1750,9 @@ function runPlacement(sys, L, counting, take) {
         if (!take('sign')) continue;
         const ax = -leg.dx, az = -leg.dz;
         const rx = -az, rz = ax;
-        const k = leg.hw + 1.4;
-        const x = j.x - ax * k + rx * (leg.hw + 0.9);
-        const z = j.z - az * k + rz * (leg.hw + 0.9);
+        const c = cornerOf(leg);
+        const x = j.x - ax * (c.along + 1.4) + rx * (c.lat + 0.9);
+        const z = j.z - az * (c.along + 1.4) + rz * (c.lat + 0.9);
         b('signStop').add(x, g(x, z), z, facing(-ax, -az) + rng.range(-0.05, 0.05),
           1, rng.range(0.9, 1.05));
       }
@@ -1733,10 +1761,9 @@ function runPlacement(sys, L, counting, take) {
     // Street name blades on one corner.
     if (take('sign')) {
       const leg = legs[rng.int(legs.length)];
-      const rx = -leg.dz, rz = leg.dx;
-      const k = leg.hw + 1.6;
-      const x = j.x + leg.dx * k + rx * k;
-      const z = j.z + leg.dz * k + rz * k;
+      const c = cornerOf(leg);
+      const x = j.x + leg.dx * (c.along + 1.6) + c.rx * (c.lat + 1.6);
+      const z = j.z + leg.dz * (c.along + 1.6) + c.rz * (c.lat + 1.6);
       b(rng.chance(0.5) ? 'signBlades02' : 'signBlades13')
         .add(x, g(x, z), z, facing(leg.dx, leg.dz) + rng.range(-0.1, 0.1), 1, rng.range(0.9, 1.04));
     }
@@ -1786,10 +1813,19 @@ function runPlacement(sys, L, counting, take) {
     // of each visits every one exactly once.
     for (const leg of legs) {
       const rx = -leg.dz, rz = leg.dx;
-      // `along` runs back up the leg from the junction centre, `lat` out across
-      // the footway. Both start beyond `hw`, which is the carriageway half.
-      const at = (along, lat) => [j.x + leg.dx * (leg.hw + along) + rx * (leg.hw + lat),
-                                  j.z + leg.dz * (leg.hw + along) + rz * (leg.hw + lat)];
+      // `along` runs back up the leg from the junction centre and has to clear
+      // the road CROSSING this one; `lat` runs out across the footway and has to
+      // clear this leg. Sizing both from `leg.hw` put a quarter of these
+      // bollards inside a wider crossing carriageway.
+      let cross = null, bestDot = -2;
+      for (const o of legs) {
+        if (o === leg) continue;
+        const dp = o.dx * rx + o.dz * rz;
+        if (dp > bestDot) { bestDot = dp; cross = o; }
+      }
+      const hwA = Math.max(leg.hw, bestDot > 0.25 && cross ? cross.hw : 0);
+      const at = (along, lat) => [j.x + leg.dx * (hwA + along) + rx * (leg.hw + lat),
+                                  j.z + leg.dz * (hwA + along) + rz * (leg.hw + lat)];
 
       // Bollards on the corner radius, where a footway meets a crossing. The
       // most characteristic thing at a corner and the cheapest.
