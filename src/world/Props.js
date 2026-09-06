@@ -1350,10 +1350,10 @@ function runPlacement(sys, L, counting, take) {
       for (let t = rng.range(6, 16); t < s.len - 5; t += step) {
         if (take('lamp')) {
           const off = type === 'lampCobra' ? kerb + 0.65 : furn;
-          const x = s.ax + s.dx * t + s.nx * off * side;
-          const z = s.az + s.dz * t + s.nz * off * side;
+          const kp = L.kerbPoint(s, t, off, side);
+          const x = kp.x, z = kp.z;
           // Cobra arms reach over the road; acorns face the footway.
-          const ry = facing(-s.nx * side, -s.nz * side);
+          const ry = facing(-kp.nx * side, -kp.nz * side);
           bat.add(x, g(x, z), z, ry + rng.range(-0.03, 0.03), rng.range(0.97, 1.03),
             rng.range(0.88, 1.06));
           if (!counting) {
@@ -1372,18 +1372,18 @@ function runPlacement(sys, L, counting, take) {
         if (rng.chance(0.12)) {
           if (take('meter')) {
             const t = rng.range(8, Math.max(9, s.len - 8));
-            const x = s.ax + s.dx * t + s.nx * (kerb + 0.6) * side;
-            const z = s.az + s.dz * t + s.nz * (kerb + 0.6) * side;
-            b('payStation').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+            const kp = L.kerbPoint(s, t, (kerb + 0.6), side);
+            const x = kp.x, z = kp.z;
+            b('payStation').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.9, 1.05));
           }
           continue;
         }
         for (let t = rng.range(7, 12); t < s.len - 7; t += rng.range(6.0, 7.2)) {
           if (!take('meter')) continue;
-          const x = s.ax + s.dx * t + s.nx * (kerb + 0.55) * side;
-          const z = s.az + s.dz * t + s.nz * (kerb + 0.55) * side;
+          const kp = L.kerbPoint(s, t, (kerb + 0.55), side);
+          const x = kp.x, z = kp.z;
           b('parkingMeter').add(x, g(x, z), z,
-            facing(-s.nx * side, -s.nz * side) + rng.range(-0.12, 0.12), 1, rng.range(0.86, 1.06));
+            facing(-kp.nx * side, -kp.nz * side) + rng.range(-0.12, 0.12), 1, rng.range(0.86, 1.06));
         }
       }
     }
@@ -1395,10 +1395,10 @@ function runPlacement(sys, L, counting, take) {
         const pick = rng.f();
         const name = pick < 0.42 ? 'signNoParking' : pick < 0.62 ? 'signTowZone'
           : pick < 0.74 ? 'signHandicap' : pick < 0.86 ? 'signFireLane' : 'signSpeed';
-        const x = s.ax + s.dx * t + s.nx * (kerb + 0.5) * side;
-        const z = s.az + s.dz * t + s.nz * (kerb + 0.5) * side;
+        const kp = L.kerbPoint(s, t, (kerb + 0.5), side);
+        const x = kp.x, z = kp.z;
         b(name).add(x, g(x, z), z,
-          facing(-s.nx * side, -s.nz * side) + rng.range(-0.08, 0.08) + (rng.chance(0.5) ? Math.PI : 0),
+          facing(-kp.nx * side, -kp.nz * side) + rng.range(-0.08, 0.08) + (rng.chance(0.5) ? Math.PI : 0),
           rng.range(0.97, 1.02), rng.range(0.85, 1.05));
       }
     }
@@ -1413,10 +1413,10 @@ function runPlacement(sys, L, counting, take) {
       // the travel direction by definition.
       const side = rng.sign();
       const t = rng.range(3, 8);
-      const x = s.ax + s.dx * t + s.nx * (kerb + 0.5) * side;
-      const z = s.az + s.dz * t + s.nz * (kerb + 0.5) * side;
+      const kp = L.kerbPoint(s, t, (kerb + 0.5), side);
+      const x = kp.x, z = kp.z;
       b(side * s.oneway > 0 ? 'signOneWayR' : 'signOneWayL')
-        .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+        .add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.9, 1.05));
     }
     // DO NOT ENTER at the exit of a one-way, facing whoever is about to drive up
     // it the wrong way. `signDoNotEnter` was built, atlased and registered as a
@@ -1425,13 +1425,16 @@ function runPlacement(sys, L, counting, take) {
     // boolean, because the sign's whole meaning is which end of the street it
     // stands at.
     if (s.oneway && rng.chance(0.55) && take('sign')) {
-      const tvx = s.oneway * s.dx, tvz = s.oneway * s.dz;   // legal travel
       // Stand just inside the exit end, on the right of the illegal approach.
+      // Everything here is taken at the polyline point rather than off the
+      // chord, so the legal-travel direction is the street's real heading there
+      // and not the average heading of the whole block.
       const t = s.oneway > 0 ? s.len - 4 : 4;
-      const ux = -tvx, uz = -tvz;                           // illegal approach
-      const rx = uz, rz = -ux;                              // its right-hand side
-      const x = s.ax + s.dx * t + rx * (kerb + 0.5);
-      const z = s.az + s.dz * t + rz * (kerb + 0.5);
+      const p = L.roadPoint(s, t);
+      const tvx = s.oneway * p.dx, tvz = s.oneway * p.dz;   // legal travel
+      const rx = -tvz, rz = tvx;                            // right of the approach
+      const x = p.x + rx * (kerb + 0.5);
+      const z = p.z + rz * (kerb + 0.5);
       // Face back down the legal direction, so the wrong-way driver reads it.
       b('signDoNotEnter').add(x, g(x, z), z, facing(tvx, tvz), 1, rng.range(0.92, 1.04));
     }
@@ -1445,21 +1448,21 @@ function runPlacement(sys, L, counting, take) {
     for (let t = rng.range(20, 70); t < s.len - 10; t += rng.range(70, 130)) {
       if (!take('hydrant')) continue;
       const side = rng.sign();
-      const x = s.ax + s.dx * t + s.nx * (kerb + 0.62) * side;
-      const z = s.az + s.dz * t + s.nz * (kerb + 0.62) * side;
+      const kp = L.kerbPoint(s, t, (kerb + 0.62), side);
+      const x = kp.x, z = kp.z;
       if (!clear(x, z, 1.25)) continue;
       b(rng.chance(0.55) ? 'hydrantY' : 'hydrantR')
-        .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side) + rng.range(-0.2, 0.2),
+        .add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side) + rng.range(-0.2, 0.2),
           1, rng.range(0.86, 1.08));
     }
     for (let t = rng.range(14, 50); t < s.len - 8; t += rng.range(48, 105)) {
       if (!take('bin')) continue;
       const side = rng.sign();
-      const x = s.ax + s.dx * t + s.nx * furn * side;
-      const z = s.az + s.dz * t + s.nz * furn * side;
+      const kp = L.kerbPoint(s, t, furn, side);
+      const x = kp.x, z = kp.z;
       if (!clear(x, z, 1.5)) continue;
       b(busy && rng.chance(0.6) ? 'bigBelly' : 'wireBin')
-        .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side) + rng.range(-0.25, 0.25),
+        .add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side) + rng.range(-0.25, 0.25),
           1, rng.range(0.88, 1.05));
       if (rng.chance(0.45) && take('litter')) {
         const bx = x + s.dx * rng.range(-1.4, 1.4), bz = z + s.dz * rng.range(-1.4, 1.4);
@@ -1470,10 +1473,10 @@ function runPlacement(sys, L, counting, take) {
     }
     if (rng.chance(0.30) && take('bench')) {
       const side = rng.sign(); const t = rng.range(10, Math.max(11, s.len - 10));
-      const x = s.ax + s.dx * t + s.nx * (back - 0.5) * side;
-      const z = s.az + s.dz * t + s.nz * (back - 0.5) * side;
+      const kp = L.kerbPoint(s, t, (back - 0.5), side);
+      const x = kp.x, z = kp.z;
       if (clear(x, z, 1.9)) {
-        b('bench').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
+        b('bench').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.9, 1.05));
       }
     }
     if (rng.chance(0.26) && take('bikeRack')) {
@@ -1481,16 +1484,16 @@ function runPlacement(sys, L, counting, take) {
       const n = 1 + rng.int(3);
       for (let k = 0; k < n; k++) {
         const tt = t + k * 0.85;
-        const x = s.ax + s.dx * tt + s.nx * furn * side;
-        const z = s.az + s.dz * tt + s.nz * furn * side;
-        b('bikeRack').add(x, g(x, z), z, facing(s.dx, s.dz), 1, rng.range(0.95, 1.02));
+        const kp = L.kerbPoint(s, tt, furn, side);
+        const x = kp.x, z = kp.z;
+        b('bikeRack').add(x, g(x, z), z, facing(kp.dx, kp.dz), 1, rng.range(0.95, 1.02));
       }
     }
     if (rng.chance(0.12) && take('mailbox')) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
-      const x = s.ax + s.dx * t + s.nx * furn * side;
-      const z = s.az + s.dz * t + s.nz * furn * side;
-      b('mailbox').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.94, 1.03));
+      const kp = L.kerbPoint(s, t, furn, side);
+      const x = kp.x, z = kp.z;
+      b('mailbox').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.94, 1.03));
     }
     if (busy && rng.chance(0.30)) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
@@ -1498,19 +1501,19 @@ function runPlacement(sys, L, counting, take) {
       for (let k = 0; k < n; k++) {
         if (!take('newsBox')) continue;
         const tt = t + k * 0.5;
-        const x = s.ax + s.dx * tt + s.nx * (furn + 0.1) * side;
-        const z = s.az + s.dz * tt + s.nz * (furn + 0.1) * side;
+        const kp = L.kerbPoint(s, tt, (furn + 0.1), side);
+        const x = kp.x, z = kp.z;
         b(k % 2 ? 'newsBoxA' : 'newsBoxB').add(x, g(x, z), z,
-          facing(-s.nx * side, -s.nz * side) + rng.range(-0.15, 0.15), 1, rng.range(0.88, 1.04));
+          facing(-kp.nx * side, -kp.nz * side) + rng.range(-0.15, 0.15), 1, rng.range(0.88, 1.04));
       }
     }
     if (rng.chance(0.22) && take('utilityBox')) {
       const side = rng.sign(); const t = rng.range(10, Math.max(11, s.len - 10));
-      const x = s.ax + s.dx * t + s.nx * back * side;
-      const z = s.az + s.dz * t + s.nz * back * side;
+      const kp = L.kerbPoint(s, t, back, side);
+      const x = kp.x, z = kp.z;
       if (clear(x, z, 1.6)) {
         b(rng.chance(0.5) ? 'utilityBoxA' : 'utilityBoxB')
-          .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.06));
+          .add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.9, 1.06));
       }
     }
     if (heritage && rng.chance(0.34)) {
@@ -1520,15 +1523,15 @@ function runPlacement(sys, L, counting, take) {
         if (!take('bollard')) continue;
         const tt = t + k * 1.65;
         if (tt > s.len - 4) break;
-        const x = s.ax + s.dx * tt + s.nx * (kerb + 0.45) * side;
-        const z = s.az + s.dz * tt + s.nz * (kerb + 0.45) * side;
+        const kp = L.kerbPoint(s, tt, (kerb + 0.45), side);
+        const x = kp.x, z = kp.z;
         b('bollard').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.9, 1.05));
       }
     }
     if (heritage && rng.chance(0.18) && take('planter')) {
       const side = rng.sign(); const t = rng.range(8, Math.max(9, s.len - 8));
-      const x = s.ax + s.dx * t + s.nx * furn * side;
-      const z = s.az + s.dz * t + s.nz * furn * side;
+      const kp = L.kerbPoint(s, t, furn, side);
+      const x = kp.x, z = kp.z;
       if (clear(x, z, 1.5)) {
         b('planter').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.9, 1.1), rng.range(0.86, 1.06));
       }
@@ -1538,18 +1541,18 @@ function runPlacement(sys, L, counting, take) {
     for (let t = rng.range(8, 30); t < s.len - 6; t += rng.range(28, 55)) {
       if (!take('manhole')) continue;
       const off = rng.range(-kerb * 0.6, kerb * 0.6);
-      const x = s.ax + s.dx * t + s.nx * off;
-      const z = s.az + s.dz * t + s.nz * off;
+      const kp = L.kerbPoint(s, t, off, 1);
+      const x = kp.x, z = kp.z;
       b('manhole').add(x, road(x, z) + 0.004, z, rng.range(0, 6.28), rng.range(0.96, 1.04),
         rng.range(0.8, 1.05));
     }
     for (const side of [-1, 1]) {
       for (let t = rng.range(15, 45); t < s.len - 8; t += rng.range(38, 70)) {
         if (!take('drain')) continue;
-        const x = s.ax + s.dx * t + s.nx * (kerb - 0.30) * side;
-        const z = s.az + s.dz * t + s.nz * (kerb - 0.30) * side;
+        const kp = L.kerbPoint(s, t, (kerb - 0.30), side);
+        const x = kp.x, z = kp.z;
         b('stormDrain').add(x, road(x, z) + 0.004, z,
-          facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.04));
+          facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.9, 1.04));
       }
     }
 
@@ -1560,11 +1563,11 @@ function runPlacement(sys, L, counting, take) {
       const run = [];
       for (let t = rng.range(4, 12); t < s.len - 4; t += rng.range(34, 46)) {
         if (!take('pole')) continue;
-        const x = s.ax + s.dx * t + s.nx * (kerb + 0.5) * side;
-        const z = s.az + s.dz * t + s.nz * (kerb + 0.5) * side;
+        const kp = L.kerbPoint(s, t, (kerb + 0.5), side);
+        const x = kp.x, z = kp.z;
         const tx = rng.chance(0.3);
         b(tx ? 'utilityPoleTx' : 'utilityPole').add(x, g(x, z), z,
-          facing(s.dx, s.dz) + rng.range(-0.05, 0.05), rng.range(0.94, 1.08), rng.range(0.82, 1.02));
+          facing(kp.dx, kp.dz) + rng.range(-0.05, 0.05), rng.range(0.94, 1.08), rng.range(0.82, 1.02));
         run.push({ x, y: g(x, z) + 9.45, z, dx: s.dx, dz: s.dz });
       }
       if (!counting && run.length > 1) (sys._wireRuns || (sys._wireRuns = [])).push(run);
@@ -1582,22 +1585,22 @@ function runPlacement(sys, L, counting, take) {
       const side = rng.sign();
       for (let t = rng.range(18, 60); t < s.len - 18; t += rng.range(300, 480)) {
         if (!take('shelter')) continue;
-        const x = s.ax + s.dx * t + s.nx * (kerb + 1.5) * side;
-        const z = s.az + s.dz * t + s.nz * (kerb + 1.5) * side;
+        const kp = L.kerbPoint(s, t, (kerb + 1.5), side);
+        const x = kp.x, z = kp.z;
         if (!clear(x, z, 3.2)) continue;
-        b('busShelter').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, 1);
+        b('busShelter').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, 1);
       }
     }
     if (rng.chance(0.05) && take('dock')) {
       const side = rng.sign();
       const t = rng.range(10, Math.max(11, s.len - 16));
-      const x = s.ax + s.dx * t + s.nx * (kerb + 1.0) * side;
-      const z = s.az + s.dz * t + s.nz * (kerb + 1.0) * side;
-      b('bluebikes').add(x, g(x, z), z, facing(s.dx, s.dz), 1, 1);
+      const kp = L.kerbPoint(s, t, (kerb + 1.0), side);
+      const x = kp.x, z = kp.z;
+      b('bluebikes').add(x, g(x, z), z, facing(kp.dx, kp.dz), 1, 1);
     }
 
     // --- Construction. Boston is permanently dug up; lean into it. ---
-    if (rng.chance(0.11) && take('construction')) placeConstruction(sys, s, rng, b, g, road);
+    if (rng.chance(0.11) && take('construction')) placeConstruction(sys, L, s, rng, b, g, road);
 
     // --- Parked cars ------------------------------------------------------
     //
@@ -1928,9 +1931,9 @@ function runPlacement(sys, L, counting, take) {
       if (rng.chance(0.55)) continue;
       for (const side of [-1, 1]) {
         for (let t = rng.range(5, 20); t < s.len - 5; t += rng.range(22, 42)) {
-          const x = s.ax + s.dx * t + s.nx * (s.halfRoad + 0.34) * side;
-          const z = s.az + s.dz * t + s.nz * (s.halfRoad + 0.34) * side;
-          b('snowBank').add(x, road(x, z), z, facing(s.dx, s.dz), rng.range(0.8, 1.3), rng.range(0.94, 1.02));
+          const kp = L.kerbPoint(s, t, (s.halfRoad + 0.34), side);
+          const x = kp.x, z = kp.z;
+          b('snowBank').add(x, road(x, z), z, facing(kp.dx, kp.dz), rng.range(0.8, 1.3), rng.range(0.94, 1.02));
         }
       }
       if (k > 420) break;
@@ -1945,10 +1948,10 @@ function runPlacement(sys, L, counting, take) {
  * half-built works zones — a cone taper leading to nothing — once the budget
  * became probabilistic.
  */
-function placeConstruction(sys, s, rng, b, g, road) {
+function placeConstruction(sys, L, s, rng, b, g, road) {
   const side = rng.sign();
   const t0 = rng.range(6, Math.max(7, s.len - 26));
-  const L = Math.min(s.len - t0 - 4, rng.range(12, 26));
+  const zoneLen = Math.min(s.len - t0 - 4, rng.range(12, 26));
   const kerb = s.halfRoad;
   const lane = kerb - 1.9;
 
@@ -1956,45 +1959,45 @@ function placeConstruction(sys, s, rng, b, g, road) {
   for (let i = 0; i < 7; i++) {
     const t = t0 - 8 + i * 1.5;
     const off = (kerb - 3.4) + (i / 6) * 1.5;
-    const x = s.ax + s.dx * t + s.nx * off * side;
-    const z = s.az + s.dz * t + s.nz * off * side;
+    const kp = L.kerbPoint(s, t, off, side);
+    const x = kp.x, z = kp.z;
     b('cone').add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.94, 1.06), rng.range(0.75, 1.02));
   }
-  for (let t = t0; t < t0 + L; t += rng.range(3.0, 4.6)) {
-    const x = s.ax + s.dx * t + s.nx * lane * side;
-    const z = s.az + s.dz * t + s.nz * lane * side;
+  for (let t = t0; t < t0 + zoneLen; t += rng.range(3.0, 4.6)) {
+    const kp = L.kerbPoint(s, t, lane, side);
+    const x = kp.x, z = kp.z;
     if (rng.chance(0.45)) {
       b('barrel').add(x, road(x, z), z, rng.range(0, 6.28), rng.range(0.95, 1.05), rng.range(0.8, 1.02));
     } else {
-      b('jersey').add(x, road(x, z), z, facing(s.dx, s.dz) + rng.range(-0.03, 0.03), 1, rng.range(0.84, 1.02));
+      b('jersey').add(x, road(x, z), z, facing(kp.dx, kp.dz) + rng.range(-0.03, 0.03), 1, rng.range(0.84, 1.02));
     }
   }
   {
     const t = t0 - 11;
-    const x = s.ax + s.dx * t + s.nx * (kerb - 2.6) * side;
-    const z = s.az + s.dz * t + s.nz * (kerb - 2.6) * side;
+    const kp = L.kerbPoint(s, t, (kerb - 2.6), side);
+    const x = kp.x, z = kp.z;
     b(rng.chance(0.65) ? 'tempSignWork' : 'tempSignDetour')
-      .add(x, road(x, z), z, facing(-s.dx, -s.dz), 1, rng.range(0.9, 1.05));
+      .add(x, road(x, z), z, facing(-kp.dx, -kp.dz), 1, rng.range(0.9, 1.05));
   }
   if (rng.chance(0.45)) {
-    const t = t0 + rng.range(2, Math.max(3, L - 4));
-    const x = s.ax + s.dx * t + s.nx * (kerb - 1.4) * side;
-    const z = s.az + s.dz * t + s.nz * (kerb - 1.4) * side;
-    b('skip').add(x, road(x, z), z, facing(s.dx, s.dz) + rng.range(-0.05, 0.05), 1, rng.range(0.9, 1.04));
+    const t = t0 + rng.range(2, Math.max(3, zoneLen - 4));
+    const kp = L.kerbPoint(s, t, (kerb - 1.4), side);
+    const x = kp.x, z = kp.z;
+    b('skip').add(x, road(x, z), z, facing(kp.dx, kp.dz) + rng.range(-0.05, 0.05), 1, rng.range(0.9, 1.04));
   }
   // Hoarding + scaffolding on the frontage behind the works.
   if (s.frontage != null && rng.chance(0.55)) {
     const fo = s.frontage - 0.9;
-    for (let t = t0; t < t0 + L; t += 2.44) {
-      const x = s.ax + s.dx * t + s.nx * fo * side;
-      const z = s.az + s.dz * t + s.nz * fo * side;
-      b('hoarding').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.92, 1.02));
+    for (let t = t0; t < t0 + zoneLen; t += 2.44) {
+      const kp = L.kerbPoint(s, t, fo, side);
+      const x = kp.x, z = kp.z;
+      b('hoarding').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.92, 1.02));
     }
     if (rng.chance(0.5)) {
-      for (let t = t0; t < t0 + Math.min(L, 12); t += 2.1) {
-        const x = s.ax + s.dx * t + s.nx * (s.frontage - 0.75) * side;
-        const z = s.az + s.dz * t + s.nz * (s.frontage - 0.75) * side;
-        b('scaffold').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.95, 1.02));
+      for (let t = t0; t < t0 + Math.min(zoneLen, 12); t += 2.1) {
+        const kp = L.kerbPoint(s, t, (s.frontage - 0.75), side);
+        const x = kp.x, z = kp.z;
+        b('scaffold').add(x, g(x, z), z, facing(-kp.nx * side, -kp.nz * side), 1, rng.range(0.95, 1.02));
       }
     }
   }
