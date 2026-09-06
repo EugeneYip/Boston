@@ -370,7 +370,7 @@ function makeSegment(ax, az, bx, bz, opts) {
     nx: dz / len, nz: -dx / len,      // right-hand normal
     mx: (ax + bx) / 2, mz: (az + bz) / 2,
     len,
-    halfRoad: opts.halfRoad, type: opts.type,
+    halfRoad: opts.halfRoad, type: opts.type, bridged: !!opts.bridged,
     // SIGNED. -1 means traffic runs against this segment's own direction, which
     // is how the road graph encodes it and how `Navigation.js` reads it
     // (`e.oneway === -1 ? -1 : 1`). This was `!!opts.oneway`, which threw the
@@ -483,7 +483,7 @@ function fromCityGraph(ctx, city) {
     segments.push(makeSegment(
       a.x + dx * t, a.z + dz * t, b.x - dx * t, b.z - dz * t,
       {
-        halfRoad: w / 2, type: e.type, oneway: e.oneway,
+        halfRoad: w / 2, type: e.type, oneway: e.oneway, bridged: !!e.bridged,
         // Distance from the centreline to the building line: carriageway half,
         // then the footway, then a little slack.
         //
@@ -655,6 +655,13 @@ function finishLayout(L) {
   for (const s of L.segments) {
     const rng = new RNG(1000 + (sIdx++) * 7717);
     if (s.type === 'alley') continue;
+    // A bridge has a parapet, not a footway with planting pits in it. Worse, it
+    // has no ground: `surfaceY` falls back to the deck height, so a tree beside
+    // a bridge was planted at deck level while standing over whatever is below.
+    // Measured: 104 trees floating more than a metre, EVERY one of them within
+    // 40 m of a bridged edge and every one with `roadMesh.surfaceAt` returning
+    // null, the worst 13.8 m up in the air.
+    if (s.bridged) continue;
     const d = s.district;
     // Back Bay and the Common are heavily planted; the Financial District is not.
     const dense = d === 'backBay' || d === 'southEnd' || d === 'beaconHill' || d === 'park';
