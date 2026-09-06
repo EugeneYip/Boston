@@ -260,10 +260,15 @@ function frontNormal(spec) {
  * whichever way the model happens to be authored.
  */
 const V_VIEWS = {
-  v_hero:       { az: 0.62, el: 0.17, dist: 7.5,  aim: 0.62 },
-  v_side:       { az: 1.57, el: 0.10, dist: 8.0,  aim: 0.55 },
-  v_front:      { az: 0.00, el: 0.11, dist: 7.0,  aim: 0.55 },
-  v_rear:       { az: 3.14, el: 0.11, dist: 7.0,  aim: 0.55 },
+  // `fit` is a multiplier, not a distance: a 12.28 m bus framed at the 7.5 m
+  // that suits a 4.86 m sedan is a wall of white filling the frame. Views that
+  // judge the MODEL scale with it, and scale on the axis they actually look
+  // along -- length for the side and hero, face size for front and rear, or a
+  // bus ends up further away for its front than a sedan is for its flank.
+  v_hero:       { az: 0.62, el: 0.17, fit: 1.55, on: 'length', aim: 0.42 },
+  v_side:       { az: 1.57, el: 0.10, fit: 1.65, on: 'length', aim: 0.38 },
+  v_front:      { az: 0.00, el: 0.11, fit: 3.80, on: 'face',   aim: 0.38 },
+  v_rear:       { az: 3.14, el: 0.11, fit: 3.80, on: 'face',   aim: 0.38 },
   // Eye height, at each LOD boundary, framed the same so the transition is
   // judged on what actually changes rather than on framing.
   v_at30:       { az: 0.62, el: 0.02, dist: 30,   aim: 0.85, eye: 1.62 },
@@ -282,13 +287,19 @@ function frameVehicle() {
   ground.scale.set(600, 600, 1);
 
   // az 0 looks the car in the face: stand off along its forward axis.
+  const dist = v.dist !== undefined
+    ? v.dist
+    : v.fit * (v.on === 'face' ? Math.max(d.W, d.H) : Math.max(d.L, d.H));
+  // `aim` is a fraction of vehicle height for the scaling views and an absolute
+  // height for the fixed-distance LOD ones, so a bus is not aimed at its wheels.
+  const aimY = v.dist !== undefined ? v.aim : v.aim * d.H;
   const a = v.az;
   const ce = Math.cos(v.el);
-  const px = Math.sin(a) * v.dist * ce;
-  const pz = fs * Math.cos(a) * v.dist * ce;
-  const py = v.eye !== undefined ? v.eye : Math.sin(v.el) * v.dist + d.H * 0.55;
+  const px = Math.sin(a) * dist * ce;
+  const pz = fs * Math.cos(a) * dist * ce;
+  const py = v.eye !== undefined ? v.eye : Math.sin(v.el) * dist + d.H * 0.55;
   camera.position.set(px, py, pz);
-  camera.lookAt(0, v.aim, 0);
+  camera.lookAt(0, aimY, 0);
   camera.updateProjectionMatrix();
 
   // Key from the front-RIGHT, i.e. the same quarter `v_hero`, `v_front` and
