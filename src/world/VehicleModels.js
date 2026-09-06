@@ -363,6 +363,29 @@ function loftBody(mb, stations, opts = {}) {
   }
 
   // Caps. Fan to the section centroid; the fascia detail meshes cover these.
+  //
+  // ...except at the bottom, which is where the assumption in that sentence
+  // breaks. Bands 0-2 are the floor pan, the wheel-well inner wall and its
+  // ceiling, and `under` is right for all three ALONG THE SIDES, where they are
+  // only ever seen from beneath the car or up inside an arch. The cap fan
+  // covers the whole cross-section, so the same bands also face straight
+  // FORWARD at the nose and straight back at the tail -- and `under` is
+  // 0x0b0c0e at roughness 0.95, a matte void with no highlight in it.
+  //
+  // Measured on the front cap: 11.0% of a sedan's frontal area, 11.3% of a
+  // pickup's and 5.5% of a bus's, sitting below the bumper line where nothing
+  // in `frontFascia` reaches -- the grille and lamps start above it. It reads
+  // as a hole punched in the front of the car, and it is the most obvious thing
+  // about a vehicle at conversational distance.
+  //
+  // The whole cap is body colour now. `trimDark` was tried first, on the
+  // grounds that it is what a valance is made of and what `REMAP_LOD1` already
+  // shows -- but at 0x1b1d21 it is still nearly black against a light body, and
+  // the shape stayed. The shape is the other half of the problem: a centroid
+  // fan turns those three bands into a CHEVRON, and no real bumper has a
+  // chevron cut out of its bottom edge. Body colour makes the nose read as one
+  // continuous bumper mass and the chevron simply stops existing. Four
+  // triangles an end, no triangle-count change at all.
   for (const [ringIdx, front] of [[0, true], [n - 1, false]]) {
     const R = rings[ringIdx], z = stations[ringIdx].z;
     let cy = 0;
@@ -370,7 +393,7 @@ function loftBody(mb, stations, opts = {}) {
     cy /= N;
     for (let k = 0; k < N; k++) {
       const k2 = (k + 1) % N;
-      const mat = BAND_MAT[bandOf[k]] === 'under' ? 'under' : (opts.capMat || 'paint');
+      const mat = opts.capMat || 'paint';
       if (front) mb.tri(mat, 90, [0, cy, z], [R[k2][0], R[k2][1], z], [R[k][0], R[k][1], z]);
       else mb.tri(mat, 91, [0, cy, z], [R[k][0], R[k][1], z], [R[k2][0], R[k2][1], z]);
     }
