@@ -1072,3 +1072,65 @@ not an art-direction review.
    shell agree on facade texture.
 10. Ground-floor/pavement interface: stoops and areaways project up to 2.8 m
     onto the footway by design; confirm that still reads correctly.
+
+## Vehicle + street-world pass — 2026-09-06 (`c0d91e4` … `a78a3cd`)
+
+Six source commits behind two infrastructure ones. Both families audited before
+being touched; in both, the MODELS turned out to be sound and every real defect
+was a rule about ownership, data or placement — the same shape as the building
+pass before it.
+
+| commit | change | effect |
+|---|---|---|
+| `c0d91e4` | Model Lab grows a vehicle bench | 9 vehicle scenes join the standing grid |
+| `1d64e7d` | nose/tail caps are body colour, not underbody black | 11% of a sedan's frontal area, 0 triangles |
+| `fff5afb` | vehicle close views scale with the vehicle | a bus is now framed, not a white wall |
+| `ca18850` | street corners get corner furniture | junction 48 → 63 objects, 23 → 27 types |
+| `5a8f813` | bus shelters are a spacing, not one per segment | 27 → 126, one per 360 m of arterial |
+| `ee20d7d` | construction hoarding and scaffold were never placed | 0 → 204 and 0 → 67 |
+| `45fe5b7` | ONE WAY arrows follow the street's direction | 46% of them pointed the wrong way |
+| `a78a3cd` | DO NOT ENTER at one-way exits | 0 → 117, all facing the wrong-way driver |
+
+### What was audited and found sound
+
+- **Vehicle proportions**, all nine classes, against real dimensions.
+- **The vehicle LOD ladder.** 32 m and 115 m switches; a 91% triangle drop costs
+  6% of gradient energy.
+- **Parked-car LOD.** `splitNear` already does per-instance selection for the
+  near tier, so a car 3 m away is never drawn from a chunk-level decision.
+- **Traffic signals, lamps, hydrants, meters, bins** as models.
+- **Bus wheel arches.** `by = max(floorY, hub + sqrt(r² - dz²))` cuts a real
+  0.695 m arch; the "no arches" reading was wrong.
+- **Decal `crosswalk`/`stopBar`/`arrow`/`paintFaded` at zero.** Correct: road
+  markings are coplanar geometry in `Roads.js`, and the decal path is a
+  `paintOK` fallback for a city that has none.
+
+### Production gate
+
+Passed at the end of the pass with the corrected criteria (see CONTRACTS.md,
+"The production boot gate"): 26 active systems, 22 optional loaded, `Missions.js`
+missing as always, `failed []`, `errors []`, `glFaults []`, `validate().ok true`,
+Rapier live with 15,996 colliders and 56 bodies, 150 traffic cars, 99 prop
+batches. Boot took under 20 s and the tab survived 90 s.
+
+Gameplay smoke only, not a re-proof: parked-car colliders present at ~16k,
+traffic populated, physics live. Nothing in this pass touches collision,
+traversal or the camera.
+
+### Next modelling priorities
+
+1. `density` applied twice in `populate` — inert at `high`, costs a cap-bound
+   type 30% at `medium`. One line, but it changes every non-`high` preset.
+2. Street lamps at 22/km, one per 45 m. Sparse against a real 25-35 m, but
+   adding them adds `_lampSites` and light slots — owner-frozen territory.
+3. Curtain-wall towers detailed below 26 m only (154 buildings) — the same class
+   of bug the setback fix closed last pass.
+4. Tower crowns and tops: every tower still ends in a flat parapet.
+5. Vehicle nose/tail cap is a flat vertical disc; a real bumper is rounded in
+   plan and section. Would mean adding a station ahead of the front key on each
+   of the nine body types.
+6. Bus side glazing is 3-4 large panes; a real transit bus has 8-10 bays.
+7. Roof clutter at LOD 1 — water tanks, dishes, fan cowls are LOD-0 only.
+8. Mid-block furniture spacing: hydrants every 70-130 m on one random side.
+9. Vegetation — not yet audited at all.
+10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.

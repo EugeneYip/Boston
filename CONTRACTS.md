@@ -715,3 +715,108 @@ full detail below 24 m, which is what a pedestrian walks past.
 Measured across 3,350 buildings, the worst shell-minus-LOD0 outward margin is
 -0.489 m. Re-run that check after touching `insetPoly`, `buildShell` or any
 roof: it is the guarantee that stops the whole city shimmering.
+
+## The production boot gate: 26 systems, not 22 (2026-09-06)
+
+`bootReport.loaded` counts the OPTIONAL list only. `main.js` registers four core
+systems unconditionally before it runs -- `render`, `assets`, `physics`,
+`capture` -- so a healthy boot is:
+
+    engine.order.length      === 26     <- the real gate
+    bootReport.loaded.length === 22     <- of 23 optional
+    bootReport.missing       === ['Missions.js']   (not yet built)
+    bootReport.failed        === []
+    __boston.errors          === []
+    __boston.glFaults        === []
+    __boston.validate().ok   === true
+    physics.world live, ~16k colliders, ~56 bodies
+
+Reporting "22 systems loaded" as if it were the total understates the gate by
+the four that can never fail late. Read `engine.order`, which is also what the
+`[boston] active:` console line prints.
+
+**The production build boots in under 20 s.** The ~4 minutes this project
+assumed came from a cold dev server doing on-demand transforms. `npm run
+build:pages` then `boston-pages` is the fast path, and the tab now survives
+90 s+, which is long enough to query and photograph.
+
+## Street furniture: the models were never the problem (2026-09-06)
+
+Same shape of finding as the building pass. Every prop inspected is well made --
+`buildTrafficMast` alone has a tapered mast arm, three heads with visored lenses,
+a hung street blade and a controller cabinet -- and every defect found was a
+RULE about where things go or what data reaches them.
+
+Measured in the running game, within 30 m of a six-way downtown junction:
+
+    before   48 objects / 23 types, of which the footway held
+             6 ped signals, 2 mast arms, 9 signs, 1 bench, 1 rack, 1 grate
+             and zero hydrants, bins, meters, bollards or lamps
+    after    63 objects / 27 types
+
+Every kerbside rule in the segment loop places along the segment INTERIOR --
+hydrants start 20-70 m in and stop 10 m short, bins 14-50 and 8, meters 7 and 7,
+signs 6 and 6. Junctions are segment ENDS. The one place a pedestrian stands was
+excluded from all of them by construction, and the junction pass itself only
+placed signals, one blade and the drains.
+
+### Traps in this system, paid for
+
+1. **`populate`'s `take` shares ONE rng across every type.** Adding any `take`
+   call shifts the acceptance stream for everything whose `prob` is below 1, so
+   unrelated counts move a few percent. Measured, not guessed: over 19 sampled
+   types after the corner kit, 16 identical and lampTwin +5, benchPark +1,
+   planter -5. Budget the noise; do not chase it.
+2. **A per-type cap that binds silently converts new candidates into thinning.**
+   `bin` was at 1300 with 886 placed; the corner kit's ~500 new sites would have
+   been paid for out of mid-block. Check `cand` against `cap` before adding
+   sites. Instance count is not a draw-time cost here -- chunked and
+   distance-culled -- so raising a cap is cheap.
+3. **`density` is applied twice** in `want = min(keep, cap*density/cand) *
+   density`. Inert at `high` (density 1.0); at `medium` (0.7) a cap-bound type
+   gets `cap * 0.49` instead of `cap * 0.7`. Not fixed here -- flagged.
+4. **Match props to `props.layout.segments`, never to the nearest road edge.**
+   Verifying the ONE WAY arrows against nearest-edge scored ~50% for every
+   candidate arrow axis, which reads like "no signal" and nearly buried a real
+   finding. The nearest one-way edge to a sign standing 0.5 m behind the kerb is
+   often not its own. Against the layout segments the placement actually walked:
+   221/221, zero unmatched.
+5. **A boolean can hide a whole axis.** `makeSegment` stored `oneway:
+   !!opts.oneway`, so 113 segments that run against their own direction were
+   indistinguishable from the 145 that do not, and no consumer could have been
+   correct. Fixing the sign selection alone was a no-op, and the numbers caught
+   it: every placed sign came back on an `oneway > 0` segment against a graph
+   holding 114 negative edges.
+
+## Vehicle models: proportions verified, LOD ladder verified (2026-09-06)
+
+Audited all nine classes in the Model Lab against real dimensions. Nothing was
+wrong with the proportions and the LOD ladder is well tuned; both were checked
+rather than assumed, and both cost a cycle to disprove.
+
+    class     L x W x H          wheelbase   LOD0 / LOD1 / LOD2 tris
+    sedan     4.86 1.84 1.47       2.85       12040 / 4796 / 432
+    suv       4.92 1.96 1.79       2.85       12384 / 4928 / 408
+    van       5.56 2.00 2.19       3.32       11756 / 4632 / 408
+    pickup    5.97 2.06 1.92       3.63       11824 / 4692 / 408
+    truck     7.68 2.46 2.66       4.50       12028 / 5884 / 552
+    bus      12.28 2.60 3.25       7.55       12680 / 5584 / 552
+
+Track/width sits at 0.81-0.86 on every class and a tyre's outer face is 0.01-0.10
+m inboard of the body side -- correct. LOD switches at 32 m and 115 m; measured
+at constant distance, a 91% triangle drop (LOD1 -> LOD2 on a sedan) costs 6% of
+gradient energy and moves 4 of 320 tiles. **Do not spend cycles on the vehicle
+LOD ladder.**
+
+### Two lab artefacts that look exactly like modelling defects
+
+- **Wheels at full droop.** `VehicleVisual` builds each wheel at `p[1] - rest`
+  because production poses them every frame from the suspension solve via
+  `setWheel`. A lab that only constructs the visual renders a car on stilts.
+  Static ride height is `rest * (1 - sqRatio)`.
+- **A sun behind the car.** `anchors.head` puts a nose at -z; the building
+  path's fixed world bearing put the key light at +z, so every front fascia
+  rendered unlit and read as a black wedge punched through the bumper.
+
+Both were chased as real defects first. When a vehicle looks broken in the lab,
+check the pose and the light before touching geometry.
