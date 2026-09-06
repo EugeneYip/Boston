@@ -1329,21 +1329,40 @@ Passed at every source commit and at the boundary: 26 active systems (4 core +
 `glFaults []`, `validate().ok true`, 99 prop batches, 535 draws and 2.21M
 triangles on the downtown shot. `npm run build:pages` clean.
 
+### Three stale entries retired from the standing top 10
+
+Each was carried forward across several passes and each is measurably false
+now. Verified before writing them off, not assumed:
+
+- **"LOD 1 roof clutter — LOD-0 only."** `flatRoof` calls `roofClutter` at
+  `lod < 2`, and `buildShell` carries a matching version keyed identically. All
+  three tiers have it.
+- **"Curtain-wall towers detailed below 26 m only (154 buildings)."**
+  `partyWall` runs `curtainStorey` on all four elevations at LOD 0 and
+  `stripWall` above. Closed by the facade pass.
+- **"Street lamps 22/km against a real 25-35 m."** Measured: **30.1 lamps/km**
+  over 81.6 km of public street, and from any point on a street the nearest
+  lamp is p50 14.3 m, p90 25.1 m. That is the real-world target, already met.
+
 ### Remaining top 10
 
 1. **Street-graph coverage — OWNER DEFERRED.** Recorded in CONTRACTS.md; do
    not re-audit it each loop.
 2. Tower crowns: 154 glass towers and 241 tall midrises end in a flat parapet
    plus a mechanical penthouse. `stoneTower` alone has setbacks and a stepped
-   crown (79 of 136). Plain rather than wrong — a refinement, not a defect.
-3. LOD 1 roof clutter — water tanks, dishes and fan cowls are LOD-0 only.
-4. Park walks are one flat ribbon: no kerb upstand, no granite edging, no
+   crown (79 of 136). Plain rather than wrong — this is an ART decision about
+   what a crown should be, not a defect to repair.
+3. Park walks are one flat ribbon: no kerb upstand, no granite edging, no
    junction paving. Would need a third path material family.
-5. Street lamps 22/km against a real 25-35 m spacing. Physical model only —
-   the real-light pool is fixed at 20 anchors and is not to be reopened.
-6. 58 street-tree sites inside a carriageway, junction-box class — the same
-   96.4%-legitimate metric closed last pass.
+4. Vehicle bumper rounding; bus glazing bay rhythm.
+5. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+6. 58 street-tree sites inside a carriageway — junction-box class, the same
+   96.4%-legitimate metric closed two passes ago.
 7. 13 trees and 27 junction props over water at polygon boundaries.
-8. Vehicle bumper rounding; bus glazing bay rhythm.
-9. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
-10. Park hedges run at random angles rather than along the walks they now have.
+8. Park hedge density is still floor-bound in the smallest parks: 15/ha in the
+   Common against 151/ha in a 0.4 ha Comm Ave Mall block.
+9. The Public Garden's axial walks dead-end at the lagoon on both sides. That
+   is correct — no bridge is authored — but a real park would route around.
+10. Park furniture cannot see park TREES: Props builds its layout before
+    Vegetation plants. 21 of 2,159 items sit within 1 m of a trunk, which is a
+    bench under a tree rather than in one, so this is cosmetic today.
