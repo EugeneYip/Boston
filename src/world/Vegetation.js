@@ -1112,15 +1112,33 @@ function placeVegetation(o) {
   // ---- The Common and the Public Garden -----------------------------------
   const parkTypes = Object.keys(parkBatches);
   let pi = 0;
+  // Trees per hectare of PARK, not per hectare of bounding box.
+  //
+  // This read the bbox area and oversampled by a flat 3x, so a park's tree count
+  // was set by the shape of its bounding rectangle rather than by the park. Tree
+  // density came out between 14 and 50 per hectare across the eighteen: the
+  // Charles River Esplanade, a 0.06 sliver of its bbox, got 14 while a
+  // Commonwealth Avenue Mall block got 50. `p.area` and `p.fill` are computed
+  // once in `Props.finishLayout` and shared.
+  //
+  // A tree-lined mall is the densest thing here and a hardscape plaza the
+  // sparsest, which is the point of keying it to `kind`.
+  const PARK_TREES_PER_HA = { mall: 42, lawn: 32, formal: 26, plaza: 12 };
   for (const p of L.parkAreas) {
     const rng = new RNG(770011 + (pi++) * 617);
     const { x0, x1, z0, z1 } = p.bounds;
+    // Bounding-box area, kept for the understorey loops below: they draw a count
+    // from it and then reject to the polygon, so their accepted total already
+    // works out proportional to the real park area. Only the trees needed fixing.
     const area = (x1 - x0) * (z1 - z0);
-    const nTrees = Math.min(520, Math.round(area / 620 * density));
-    // Oversample candidate positions because many fall outside the park polygon;
-    // `remaining` is the real placement budget, kept separate from the loop bound.
+    const perHa = PARK_TREES_PER_HA[p.kind] || 32;
+    const nTrees = Math.max(4, Math.round((p.area / 10000) * perHa * density));
+    // Oversample to pay for rejection: a thin park wastes most of its samples on
+    // its own bounding box. `remaining` is the real placement budget, kept
+    // separate from the loop bound.
     let remaining = nTrees;
-    for (let i = 0; i < nTrees * 3 && i < 3000; i++) {
+    const tries = Math.min(9000, Math.ceil(nTrees / p.fill * 1.7));
+    for (let i = 0; i < tries; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
       const type = rng.chance(0.30) ? 'americanElm'

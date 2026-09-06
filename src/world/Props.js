@@ -352,6 +352,16 @@ function pointInPoly(x, z, poly) {
   return inside;
 }
 
+/** Absolute area of a closed ring, in square metres. */
+function polyArea(poly) {
+  let a = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length];
+    a += p.x * q.z - q.x * p.z;
+  }
+  return Math.abs(a * 0.5);
+}
+
 function polyBounds(poly) {
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   for (const p of poly) {
@@ -749,8 +759,20 @@ function finishLayout(L) {
   // a no-build strip rather than lawn. `L.parkAreas` is the PLANTING set, so it
   // drops the reserve-only rings the same way `Districts` skips them when it
   // builds grass.
+  //
+  // `area` and `fill` are computed once here because both consumers need them
+  // and both were previously guessing. `fill` is the ring's share of its own
+  // bounding box, which is what a rejection sampler wastes its attempts on: the
+  // Charles River Esplanade is a 0.06 sliver of its bbox, the Common a 0.69
+  // blob, and a sampler that does not compensate gives the Esplanade a
+  // twentieth of the content per hectare.
   L.parkAreas = L.parks.filter(p => !p.reserveOnly)
-    .map(p => ({ ...p, bounds: polyBounds(p.poly) }));
+    .map((p) => {
+      const bounds = polyBounds(p.poly);
+      const area = polyArea(p.poly);
+      const bbox = Math.max(1, (bounds.x1 - bounds.x0) * (bounds.z1 - bounds.z0));
+      return { ...p, bounds, area, fill: Math.max(0.04, area / bbox) };
+    });
 
   // --- Frontage lines (building faces) for wall-mounted props ---
   //
@@ -1982,11 +2004,23 @@ function runPlacement(sys, L, counting, take) {
   }
 
   // ---- Park furniture ------------------------------------------------------
+  //
+  // Attempts scale with the park, and with how much of its bounding box the park
+  // actually fills. A flat 320 attempts per park meant the constant was the
+  // content: Post Office Square, 4,121 m2, ended up with 361 items per hectare
+  // while the Charles River Esplanade, twenty times larger but a 0.06 sliver of
+  // its bbox, got 2.2 — a 165x spread driven by nothing but polygon shape.
+  //
+  // Hardscape carries more seating per hectare than lawn does, which is why a
+  // plaza and a formal square are rated above a lawn or a mall.
+  const PARK_FURN_PER_HA = { plaza: 60, formal: 55, lawn: 25, mall: 22 };
   let pi = 0;
   for (const p of L.parkAreas) {
     const rng = new RNG(31337 + (pi++) * 911);
     const { x0, x1, z0, z1 } = p.bounds;
-    for (let i = 0; i < 320; i++) {
+    const want = Math.max(8, Math.round((p.area / 10000) * (PARK_FURN_PER_HA[p.kind] || 25)));
+    const attempts = Math.min(4200, Math.round(want / p.fill));
+    for (let i = 0; i < attempts; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
       const r = rng.f();
