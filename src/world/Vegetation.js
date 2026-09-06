@@ -1076,9 +1076,30 @@ function placeVegetation(o) {
   placeStreetPlanting(o, g);
 
   // ---- Street trees: exactly the sites the tree pits were cut for ----------
-  const maxTrees = Math.round(5200 * density);
+  //
+  // The budget is spent on a STRIDE, not on a prefix.
+  //
+  // `Props.finishLayout` sorts its segments by distance from the Common, so
+  // `treeSites` comes out ordered centre-first. Truncating that list at a count
+  // therefore turns a count cap into a RADIUS cap -- the same trap
+  // `Buildings.js` documents for `MAX_BUILDINGS`. Measured at the old cap of
+  // 5200 against 6391 sites: every one of the 1191 unplanted pits lay between
+  // 1928 m and 3378 m out, median 2539 m, while the planted ones stopped at
+  // 2325 m. The whole outer city had grates and ground cover cut into the
+  // pavement with no tree in them.
+  //
+  // The site generator already models vacancy properly and at the right scale --
+  // a 13% per-site gap for driveways and dead trees, a 16% chance of a bare
+  // side, 35% of Financial District segments skipped entirely. A pit that
+  // survived all of that is a pit that is meant to have a tree in it, so the
+  // budget now covers every site at full quality and thins uniformly across the
+  // whole map below it rather than felling the edges.
   const sites = L.treeSites;
-  for (let i = 0; i < sites.length && i < maxTrees; i++) {
+  const budget = Math.round(6600 * density);
+  const stride = sites.length > budget ? sites.length / budget : 1;
+  const n = Math.min(sites.length, budget);
+  for (let k = 0; k < n; k++) {
+    const i = Math.floor(k * stride);
     const s = sites[i];
     const pair = treeBatches[s.species] || treeBatches.planeLondon;
     const b = pair[i & 1];
