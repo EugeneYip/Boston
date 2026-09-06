@@ -1377,6 +1377,23 @@ function runPlacement(sys, L, counting, take) {
       b(side * s.oneway > 0 ? 'signOneWayR' : 'signOneWayL')
         .add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, rng.range(0.9, 1.05));
     }
+    // DO NOT ENTER at the exit of a one-way, facing whoever is about to drive up
+    // it the wrong way. `signDoNotEnter` was built, atlased and registered as a
+    // batch and then placed exactly zero times -- there was no rule for it at
+    // all, and there could not have been a correct one while `s.oneway` was a
+    // boolean, because the sign's whole meaning is which end of the street it
+    // stands at.
+    if (s.oneway && rng.chance(0.55) && take('sign')) {
+      const tvx = s.oneway * s.dx, tvz = s.oneway * s.dz;   // legal travel
+      // Stand just inside the exit end, on the right of the illegal approach.
+      const t = s.oneway > 0 ? s.len - 4 : 4;
+      const ux = -tvx, uz = -tvz;                           // illegal approach
+      const rx = uz, rz = -ux;                              // its right-hand side
+      const x = s.ax + s.dx * t + rx * (kerb + 0.5);
+      const z = s.az + s.dz * t + rz * (kerb + 0.5);
+      // Face back down the legal direction, so the wrong-way driver reads it.
+      b('signDoNotEnter').add(x, g(x, z), z, facing(tvx, tvz), 1, rng.range(0.92, 1.04));
+    }
 
     // --- Hydrants, bins, benches, racks, boxes ---
     // Nothing bulky goes inside a tree pit: `clear` is the automatic-fail guard
