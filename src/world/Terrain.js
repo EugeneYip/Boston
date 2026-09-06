@@ -110,6 +110,16 @@ export default class Terrain {
     }
   }
 
+  /** Inside any prepared water body — used to keep the road stamp out of a river. */
+  _inWaterCell(x, z) {
+    for (let n = 0; n < this.bodies.length; n++) {
+      const b = this.bodies[n];
+      if (x < b.minx || x > b.maxx || z < b.minz || z > b.maxz) continue;
+      if (Terrain._sdf(b, x, z) > 0) return true;
+    }
+    return false;
+  }
+
   /** Signed distance to a prepared polygon. Positive inside. */
   static _sdf(b, x, z) {
     const p = b.pts;
@@ -199,13 +209,31 @@ export default class Terrain {
     // to reach that far or the coarse triangles interpolate back up through the
     // carriageway (Main Street Charlestown, 19 cm).
     const FAR = 40;
+    // An embankment's batter: metres of slope per metre of fill. 1:2 is what a
+    // built-up road actually stands on, and it is what stops a filled shoulder
+    // reading as a wall.
+    const BATTER = 2.0;
+    const FILL_REACH = 30;      // furthest the fill may run before it is left alone
     for (const e of net.edges) {
       if (e.bridged) continue;
       const rad = Math.max(Math.abs(e.pts[0].x), Math.abs(e.pts[0].z));
       const REACH = rad > 1400 ? FAR : NEAR;
       const zA = e.halfRoad + 0.25 + REACH;               // never above the gutter
       const zB = zA + REACH + (e.walk > 0.3 ? e.walk : 0); // never above the kerb top
-      const outer = zB + BLEND;
+      // Does this edge stand ABOVE the ground beside it? Only then is the wide
+      // box worth scanning, which keeps the flat 95% of Boston at its old cost.
+      let fill = 0;
+      {
+        const m = e.pts[(e.pts.length / 2) | 0];
+        const p0 = e.pts[0], p1 = e.pts[e.pts.length - 1];
+        const L = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
+        const nx = -(p1.z - p0.z) / L, nz = (p1.x - p0.x) / L;
+        for (const side of [-1, 1]) {
+          const d = zB + 6;
+          fill = Math.max(fill, m.y - this.groundHeight(m.x + nx * d * side, m.z + nz * d * side));
+        }
+      }
+      const outer = zB + (fill > 1 ? Math.min(FILL_REACH, fill * BATTER + BLEND) : BLEND);
       for (let i = 0; i < e.pts.length - 1; i++) {
         const a = e.pts[i], b = e.pts[i + 1];
         const i0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - outer - MINX) / CELL));
@@ -233,6 +261,23 @@ export default class Terrain {
             else if (d <= zB) cap = y + 0.02;
             else cap = y + 0.02 + (d - zB) * (1 / BLEND) * Math.max(0, H[k] - y);
             if (cap < H[k]) H[k] = cap;
+
+            // ...and the other half of the same idea. "Lowest wins" is right for
+            // a road CUT into a hill: the ground must never poke up through the
+            // asphalt. It does nothing at all for a road on an EMBANKMENT, where
+            // the graph's own smoothed grade runs above the natural surface --
+            // and Charlestown's drumlin is exactly that. Measured 6 m outside
+            // the corridor of every non-bridge edge, 213 of 7,970 samples had
+            // the carriageway more than 3 m above the ground beside it and 130
+            // more than 6 m, up to 13.5 m, so Rutherford Avenue and Bunker Hill
+            // Street stood on shelves with a cliff down to the terrain.
+            //
+            // Water is left alone: raising a cell inside a river to meet a road
+            // beside it would fill the river.
+            if (fill > 1 && !this._inWaterCell(x, z)) {
+              const floor = d <= zB ? y - 0.55 : y - 0.55 - (d - zB) / BATTER;
+              if (H[k] < floor) H[k] = floor;
+            }
           }
         }
       }

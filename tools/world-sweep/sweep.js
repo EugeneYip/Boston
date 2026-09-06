@@ -162,8 +162,18 @@ export function outliers(rows, keys = ['detail', 'flat', 'dark', 'blown', 'mean'
       if (vals.length < 4) continue;
       const med = vals[vals.length >> 1];
       // Median absolute deviation: robust where a mean would be dragged by the
-      // very outlier being looked for.
-      const mad = vals.map(v => Math.abs(v - med)).sort((a, b) => a - b)[vals.length >> 1] || 1e-6;
+      // very outlier being looked for. But MAD is ZERO whenever most of a
+      // category shares one value -- `blown` is 0 in nine street views out of
+      // ten -- and dividing by an epsilon then reports z = 10252 for a frame
+      // that is 1.5% clipped. Fall back to the standard deviation there, and
+      // say nothing at all when the key is genuinely constant.
+      let mad = vals.map(v => Math.abs(v - med)).sort((a, b) => a - b)[vals.length >> 1];
+      if (!(mad > 1e-9)) {
+        const mean = vals.reduce((a, v) => a + v, 0) / vals.length;
+        const sd = Math.sqrt(vals.reduce((a, v) => a + (v - mean) * (v - mean), 0) / vals.length);
+        if (!(sd > 1e-9)) continue;
+        mad = sd / 1.4826;
+      }
       for (const r of list) {
         if (typeof r[k] !== 'number') continue;
         const z = (r[k] - med) / (1.4826 * mad);
