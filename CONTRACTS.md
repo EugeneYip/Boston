@@ -643,3 +643,75 @@ Street lights, window emissives and headlights must switch on between roughly
 | `player:enterVehicle` / `player:exitVehicle` | Vehicle | gameplay |
 | `player:wanted` | level 0..5 | gameplay |
 | `vehicle:collision` | `{ vehicle, impulse, point }` | vehicles |
+
+## Building modelling: the Model Lab, and what it found (2026-09-06)
+
+`tools/model-lab/` exists because the full runtime could not supply pixels: a
+Boston cold boot is ~5 minutes and the Browser pane recycles the tab every
+30-60 s. Six consecutive attempts across two sessions never reached a first
+frame; the lab boots in 1.9 s warm.
+
+**The specs never needed the engine.** Terrain raster -> street graph ->
+neighbourhood raster -> parcels -> `Buildings._buildSpecs` is pure arithmetic
+over typed arrays. Only the mesh steps hanging off it touch a scene, and none
+of those feed the specs. `world.js` runs the real chain and stops, so all 10,048
+REAL buildings arrive in ~0.7 s with no WebGL, in Node or in the browser. The
+lab therefore shows production buildings, not fixtures: building 4,211 in the
+lab is building 4,211 in Boston.
+
+    node tools/model-lab/audit.mjs exposure   street exposure vs `spec.front`
+    node tools/model-lab/audit.mjs lod        LOD cost and wall articulation
+    node tools/model-lab/audit.mjs edges <i>  one building, edge by edge
+    http://127.0.0.1:5290/tools/model-lab/    the visual lab (`npm run verify`)
+
+`__lab.bench()` runs nine fixed scenes and `__lab.diff(before, after)` compares
+them. Dev-only: Vite builds the root `index.html` alone, so nothing here ships.
+
+### Measurement traps this pass paid for
+
+1. **Mean tile luminance cannot see a modelling change.** Replacing blank walls
+   with windowed ones moved a Back Bay block from 138.28 to 138.09 out of 140 --
+   noise -- while gradient energy over the same pixels moved 19.7 -> 22.1.
+   Detail is high-frequency by definition. Use `__lab.detail(y0, y1)`, and give
+   it the band that holds the subject; sky and bare ground only dilute it.
+2. **Gradient energy rewards broken geometry.** A hole showing sky is the
+   highest-contrast thing a frame can contain, so `detail()` fell 20% when the
+   crown's missing ledges were closed. It answers "did detail survive this LOD",
+   never "is this shape correct". Pixels decide the second question.
+3. **Triangle count cannot see relief.** A flat wall subdivided a hundred times
+   scores the same as a modelled one. `analysis.js` reports RELIEF, the spread
+   of triangle offsets perpendicular to each footprint edge: a flat wall is
+   0.000 and a real Boston facade is a few centimetres.
+4. **A hidden Browser pane does NOT invalidate the lab.** It renders to its own
+   fixed 1000x640 buffer and reads it back directly, so `digest()` and
+   `detail()` stay valid; only `computer{screenshot}` needs compositing. This
+   was checked, not assumed: with the pane hidden, benchmark scenes a change
+   could not touch came back bit-identical to values captured while it was
+   visible. (This does not license measuring the GAME with a hidden pane.)
+5. **Half-plane "is it outside the footprint" tests assume convexity.** One
+   parcel in 3,350 is non-convex, and it read as 10 m of geometry escaping its
+   plot in all three LODs at once -- which is the tell that the test, not the
+   geometry, was wrong.
+
+### Population facts, measured over all 10,048
+
+    footprint edges                        40,195
+    street-exposed (open street within 3 m) 26.1%
+    buildings with a mansard                2,686   27%
+    buildings taller than 24 m              1,564   15.6%
+    buildings with setbacks                   133   all `stoneTower`
+    curtain-wall buildings                    154
+    corner buildings (>=2 street edges)       460
+    non-convex or sliver footprints        ~0.03%
+
+Front-elevation density collapses with height at LOD 0 -- 9.95 tri/m2 at
+12-18 m, 0.56 at 120-200 m. That is mostly CORRECT and was deliberately left
+alone: a sill at 150 m is sub-pixel from the street, and `frontStorey` keeps
+full detail below 24 m, which is what a pedestrian walks past.
+
+### Invariant: the shell must stay inside the detailed mesh
+
+`buildShell` insets 0.25 m and drops 0.30 m so LOD 2 can never z-fight LOD 0/1.
+Measured across 3,350 buildings, the worst shell-minus-LOD0 outward margin is
+-0.489 m. Re-run that check after touching `insetPoly`, `buildShell` or any
+roof: it is the guarantee that stops the whole city shimmering.

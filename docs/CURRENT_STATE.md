@@ -982,3 +982,79 @@ back-to-back `measureFps(2)` calls on an unchanged scene returned 19.9 / 9.8 / 1
 5.4, and prefix timing returned *negative* per-pass costs. Skipping the cloud march
 entirely (`clouds.skip = true`) measured **slower** than running it. Do not quote an fps
 number without first confirming no other Boston tab is live.
+
+## Building modelling pass — 2026-09-06 (`4802b01` … `a1b17e1`)
+
+Five modelling commits behind one piece of infrastructure. Every one verified in
+`tools/model-lab/` (see CONTRACTS.md, "Building modelling"); NONE verified in the
+integrated runtime, because the Browser pane kept recycling the Boston tab. That
+gate is **deferred, not passed** — see below.
+
+| # | change | population | LOD 0 tris/bldg | LOD 1 tris/bldg |
+|---|--------|-----------|-----------------|-----------------|
+| `4802b01` | Model Lab | — | 2648 | 625 |
+| `4061b58` | secondary elevations carry the shell's facade strip | all 10,048 | 2648 | 625 |
+| `24ffe84` | `insetPoly` is a true edge offset | all | 2638 | 623 |
+| `b9150eb` | mansard dormers survive to LOD 1 | 2,686 | 2638 | 631 |
+| `e6b6003` | corner buildings address both streets | 464 | 2724 | 659 |
+| `a1b17e1` | setback towers have a street elevation all the way up | 133 | 2748 | 686 |
+
+Net cost: **+3.8% triangles at LOD 0, +9.8% at LOD 1, shell unchanged.** The
+first change cost literally nothing — it swaps which atlas layer a quad samples.
+
+What each fixed, in one line:
+
+- **Blank secondary elevations.** `partyWall` painted raw wall surface on every
+  cheap path, so a 181 m glass tower at LOD 1 — from 175 m away, most of
+  downtown most of the time — was a plain white slab. `buildShell` already drew
+  correctly-scaled window rows in two triangles a face; the cheap tiers now
+  sample the same strip. Glass tower detail +183%, stone tower +38%.
+- **`insetPoly` was a radial scale, not an offset**, so on Boston's long thin
+  parcels the long sides got 31-43% of the inset asked for. Setbacks barely
+  stepped in, the 1920s crown came out as four near-identical stacked slabs, and
+  the shell's 0.25 m z-fight guard was really 0.078 m.
+- **Mansard dormers** are the whole roofline of 27% of the city and were dropped
+  at 175 m.
+- **Corner buildings**: 460 buildings had two or more street-exposed edges and
+  every single one received exactly one front. Now 3.
+- **Setback towers** put ~47% of their height, all four faces, into `partyWall`.
+
+### Deferred: integrated-runtime verification
+
+Attempted once at `24ffe84` against `npm run build:pages` on :5291.
+`performance.now()` reset 25 s -> 10 s: the tab recycled mid-boot, the same
+failure as the previous session's four attempts. Not retried, per the batch
+brief.
+
+One new datum on the cause. The Model Lab tab survived this entire session
+across dozens of reloads while the Boston tab died inside 30 s, and the lab's
+distinguishing property is that it never blocks the main thread for more than a
+few hundred ms. That points at an unresponsiveness watchdog rather than a timer,
+which would mean the fix is to make Boston's boot yield — not to wait longer.
+Untested.
+
+**Before deploying this batch, look at it.** The changes are geometric and
+population-wide; the lab proves each one in isolation but cannot prove they
+compose in a streaming, shadow-cast, post-processed frame.
+
+### Next modelling priorities (ranked, after this pass)
+
+1. Curtain-wall towers below 26 m only — `curtainStorey` at `lod === 0 &&
+   y0 - spec.base < 26` is the same class of bug the setback fix just closed,
+   on the 154 curtain-wall buildings.
+2. Tower crowns and tops generally: every tower still ends in a flat parapet,
+   and real Boston tops are distinctive.
+3. Roof clutter at LOD 1 — water tanks, dishes and fan cowls are LOD-0 only;
+   check whether any of them survive screen space at 175-410 m.
+4. Vehicle silhouettes at LOD 1/2 — pillars, rails and wipers are dropped and
+   LOD 2 collapses every material to `trim`. Not yet examined in the lab.
+5. Street furniture repetition — signals, poles, hydrants, bins, benches.
+6. `_clipParcel` emits one non-convex/sliver footprint per ~3,350 (e.g. #7074,
+   a 5-gon with a 0.67 m edge). Cosmetically harmless so far; a correctness
+   nuisance for any half-plane test.
+7. Vegetation.
+8. Landmark detail.
+9. LOD shape continuity — silhouette pops between tiers, now that LOD 1 and the
+   shell agree on facade texture.
+10. Ground-floor/pavement interface: stoops and areaways project up to 2.8 m
+    onto the footway by design; confirm that still reads correctly.
