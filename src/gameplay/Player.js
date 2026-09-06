@@ -278,13 +278,24 @@ export default class Player {
     let base = t;
     // Kerbside bypass: if that solve was stopped by a parked car while he was
     // crossing to the pavement, steer around its nearer end instead of stopping.
-    if (this._kerbBypass(t, _delta, solved.x, solved.z, fdt)) {
+    const bypassed = this._kerbBypass(t, _delta, solved.x, solved.z, fdt);
+    if (bypassed) {
       this.ctrl.computeColliderMovement(this.collider, _bypass);
       solved = this.ctrl.computedMovement();
     }
     // Still pinned? If what is in the way is a kerb, lift over it in one move
     // rather than grinding up its face.
-    const req = this._byCar !== -1 ? _bypass : _delta;
+    //
+    // `req` must be what was actually asked of the controller THIS frame. It used
+    // to test `_byCar !== -1`, which is not the same question: when `BYPASS_MAX`
+    // runs out `_kerbBypass` returns false to let him stop, but it leaves `_byCar`
+    // holding the car's collider handle. `req` then kept pointing at a `_bypass`
+    // vector nobody had recomputed since the abort. The step-over below compares
+    // the solve against `req`, so a frozen player was measured against a stale
+    // full-length vector, concluded he was blocked, and re-fired every frame while
+    // the bleed stayed exempt -- velocity pinned at 3.40 m/s with the position not
+    // moving at all for 320+ frames, boxed in by parked cars.
+    const req = bypassed ? _bypass : _delta;
     if (Math.hypot(solved.x, solved.z) < Math.hypot(req.x, req.z) * 0.5
         && this.ctrl.computedGrounded() && this._stepOver(t, req)) {
       this.ctrl.computeColliderMovement(this.collider, _stepReq);
