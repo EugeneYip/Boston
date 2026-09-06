@@ -372,6 +372,55 @@ function nearestOnPaths(paths, x, z) {
   return best ? { ...best, d: bd } : null;
 }
 
+/**
+ * A walk parallel to the water, offset onto the bank.
+ *
+ * Traced from the WATER ring rather than the park boundary, which is what makes
+ * it work for both shapes that occur: the Charles bounds the Esplanade from
+ * outside, and the Public Garden's lagoon sits in the middle of its park. Both
+ * are authored geometry, so this is the one piece of park circulation that
+ * follows a real Boston line instead of a procedural one.
+ */
+function shoreWalks(poly, bounds, bodies, off, half, ok) {
+  const out = [];
+  for (const b of bodies) {
+    if (b.maxx < bounds.x0 - 40 || b.minx > bounds.x1 + 40 ||
+        b.maxz < bounds.z0 - 40 || b.minz > bounds.z1 + 40) continue;
+    const ring = resamplePath([...b.pts, { x: b.pts[0].x, z: b.pts[0].z }], 5);
+    const line = [];
+    for (const p of ring) {
+      if (p.x < bounds.x0 - 40 || p.x > bounds.x1 + 40 ||
+          p.z < bounds.z0 - 40 || p.z > bounds.z1 + 40) { line.push(null); continue; }
+      // Away from the water is the descending direction of its own field.
+      const e = 0.75;
+      let gx = polySdf(b.pts, p.x + e, p.z) - polySdf(b.pts, p.x - e, p.z);
+      let gz = polySdf(b.pts, p.x, p.z + e) - polySdf(b.pts, p.x, p.z - e);
+      const gl = Math.hypot(gx, gz);
+      if (gl < 1e-6) { line.push(null); continue; }
+      gx /= gl; gz /= gl;
+      // Walk inland until the bank is legal, rather than sitting at a fixed
+      // distance from the water. The Esplanade's polygon stops 5-8 m short of
+      // the Charles, so a fixed 5.6 m offset lands a metre OUTSIDE the park and
+      // the whole promenade is rejected; the lagoon, enclosed by its park, is
+      // legal at the first step. One rule, both shapes.
+      let q = null;
+      for (let d = off; d <= off + 15; d += 1) {
+        const qx = p.x - gx * d, qz = p.z - gz * d;
+        if (ok(qx, qz, half)) { q = { x: qx, z: qz }; break; }
+      }
+      line.push(q);
+    }
+    // Cut at the gaps, and hand the pieces on for the normal legality clip.
+    let cur = null;
+    for (const q of line) {
+      if (q) (cur || (cur = [])).push(q);
+      else if (cur) { out.push(cur); cur = null; }
+    }
+    if (cur) out.push(cur);
+  }
+  return out.filter(r => r.length > 2);
+}
+
 /* -------------------------------------------------------------------------- */
 /* the generator                                                              */
 /* -------------------------------------------------------------------------- */
@@ -454,6 +503,19 @@ export function buildParkPaths({ parks = [], net = null, water = [] } = {}) {
         add('loop', K.main, loop, true);
       } else {
         report.push({ name: park.name, note: 'inset loop rejected' });
+      }
+    }
+
+    // A bank walk wherever authored water runs through or beside the park.
+    {
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      for (const q of poly) {
+        if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
+        if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z;
+      }
+      const off = K.main / 2 + WATER_KEEP + 2.4;
+      for (const line of shoreWalks(poly, { x0, x1, z0, z1 }, bodies, off, K.main / 2, ok)) {
+        add('shore', K.main, line, false);
       }
     }
 
