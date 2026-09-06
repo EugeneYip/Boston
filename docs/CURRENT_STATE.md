@@ -130,6 +130,26 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
+**Gameplay smoke controls re-run in the Pages build, 2026-09-05.** These were
+reported NOT RUN when the camera solver shipped; they now pass.
+
+* Kerb traversal, clear-path crossings: **0 s below 80% of approach speed, minimum
+  speed 3.40 m/s** — the full jog, i.e. no measurable dip — pavement reached 2/2.
+* Parked-car bypass, parked car in the path: pavement reached **3 of 4**, minimum
+  speed 3.03–3.38 m/s, no dip.
+* Stationary-player Traffic clamp: 7 proxies nearby, player held still 300 frames,
+  **0 proxy-overlap frames**, closest proxy 3.42 m, player displaced 0.00 m.
+* Vehicle cabin occluders: ray cast across the body at nine heights. Sedan and bus
+  both give **4–8 surface crossings through the window band** against 2 through the
+  solid lower body, so the interior shell is there.
+
+Two measurement notes worth keeping. Sampling the kerb dip over a fixed 110-frame
+window measures the END of the walk, not the step — he mounts the kerb and then
+walks into whatever is beyond and stops, which reads as `minSpeed 0`. Window the
+dip on the frame where he actually gains height. And ray-crossing counts cannot
+tell an opaque panel from a glass pane: the van reads 2 crossings above its window
+line, which is consistent with a solid panel body but is not evidence either way.
+
 **Camera vs landmarks: CLOSED 2026-09-05 (`bce6c00`).** The residual 10 of 216
 orbit angles are gone. The cause was not the vertical fan -- it was that `_sweep`
 was passed the full `shoulder` while `_apply` placed the camera at
