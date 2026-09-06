@@ -921,8 +921,9 @@ export default class Buildings {
    *
    * Deliberately NOT "every edge is a front". A rowhouse flank buried against
    * next door and a rear service wall must stay secondary, and they do: this
-   * promotes 460 buildings out of 10,048, and 12 edges city-wide are in
-   * `spec.front` without being exposed.
+   * promotes 464 buildings out of 10,048 -- 455 true perpendicular corners and
+   * 9 through-lots, none near-parallel -- and leaves 48 edges city-wide in
+   * `spec.front` without being exposed, which is the safe direction to err.
    */
   _streetDirs(poly) {
     const idx = this._roadIndex;

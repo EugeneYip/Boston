@@ -1019,23 +1019,37 @@ What each fixed, in one line:
   every single one received exactly one front. Now 3.
 - **Setback towers** put ~47% of their height, all four faces, into `partyWall`.
 
-### Deferred: integrated-runtime verification
+### Integrated-runtime verification — PASSED at the end of the pass
 
-Attempted once at `24ffe84` against `npm run build:pages` on :5291.
-`performance.now()` reset 25 s -> 10 s: the tab recycled mid-boot, the same
-failure as the previous session's four attempts. Not retried, per the batch
-brief.
+The first attempt, at `24ffe84`, died the usual way: `performance.now()` reset
+25 s -> 10 s, the tab recycled mid-boot. The attempt at the batch boundary
+succeeded.
 
-One new datum on the cause. The Model Lab tab survived this entire session
-across dozens of reloads while the Boston tab died inside 30 s, and the lab's
+    22 systems loaded, 0 failed, 0 errors, 0 GL faults
+    only `Missions.js` missing (pre-existing, unrelated)
+    street level, Tremont Street: 60 fps, 302 draws, 1.66M triangles, quality high
+
+The city rendered correctly with all five changes in it and no visual
+corruption. Note the boot took under 20 s from `npm run build:pages`, not the
+~4 minutes this project has been assuming -- that figure appears to come from a
+cold dev server doing on-demand transforms, not from a production build. If you
+need the runtime, build first and preview; do not fight the dev server.
+
+The tab still recycles roughly every 30-90 s once running, so a long
+interactive session is not yet possible; but a booted instance now lasts long
+enough to query and photograph, which is all a verification gate needs. Write
+each probe self-contained and tolerant of a reset `performance.now()`.
+
+One datum on the cause. The Model Lab tab survived an entire session across
+dozens of reloads while the Boston tab died repeatedly, and the lab's
 distinguishing property is that it never blocks the main thread for more than a
 few hundred ms. That points at an unresponsiveness watchdog rather than a timer,
 which would mean the fix is to make Boston's boot yield — not to wait longer.
 Untested.
 
-**Before deploying this batch, look at it.** The changes are geometric and
-population-wide; the lab proves each one in isolation but cannot prove they
-compose in a streaming, shadow-cast, post-processed frame.
+**Still worth a proper look before deploying.** The changes are geometric and
+population-wide, and one street-level frame plus a clean boot is a smoke test,
+not an art-direction review.
 
 ### Next modelling priorities (ranked, after this pass)
 
