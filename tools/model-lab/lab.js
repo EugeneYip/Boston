@@ -31,6 +31,9 @@ import {
   makeOpaqueMaterial, makeGlassMaterial,
 } from '../../src/world/BuildingKit.js';
 import { buildBuilding } from '../../src/world/Facades.js';
+import {
+  VEHICLE_TYPES, VehicleVisual, createMaterialKit, getVehicleGeometry,
+} from '../../src/world/VehicleModels.js';
 
 const W = 1000, H = 640;
 const qs = new URLSearchParams(location.search);
@@ -110,10 +113,12 @@ const content = new THREE.Group();
 scene.add(content);
 
 let state = {
+  mode: qs.get('veh') ? 'vehicle' : 'building',
   spec: clampIdx(+(qs.get('spec') ?? 0)),
   lod: clampLod(+(qs.get('lod') ?? 0)),
   view: qs.get('view') || 'threequarter',
   radius: +(qs.get('radius') ?? 0),           // 0 = the target building alone
+  veh: { type: qs.get('veh') || 'sedan', color: 0x9aa3ad },
   buildMs: 0, tris: 0, glassTris: 0,
 };
 
@@ -123,7 +128,9 @@ function clampLod(l) { return l === 1 || l === 2 ? l : 0; }
 function clearContent() {
   for (const o of [...content.children]) {
     content.remove(o);
-    o.geometry?.dispose();
+    // Vehicle roots are cached `VehicleVisual`s sharing geometry through
+    // `_geoCache`; disposing them would destroy the next scene's meshes too.
+    if (!o.userData.shared) o.geometry?.dispose();
   }
 }
 
@@ -144,8 +151,48 @@ function selection(i, radius) {
   return out;
 }
 
+/** Count triangles actually submitted by a subtree, per material name. */
+function countTris(root) {
+  let tris = 0, meshes = 0;
+  root.traverse((o) => {
+    if (!o.isMesh || !o.visible) return;
+    let p = o.parent, vis = true;
+    while (p && vis) { if (!p.visible) vis = false; p = p.parent; }
+    if (!vis) return;
+    const g = o.geometry;
+    if (!g) return;
+    tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    meshes++;
+  });
+  return { tris, meshes };
+}
+
+/** Put one vehicle, at one LOD, at the origin. */
+function rebuildVehicle() {
+  clearContent();
+  const t = performance.now();
+  const vis = vehicleVisual(state.veh.type, state.veh.color);
+  // `setWheel` early-returns unless the visual is at LOD 0, so pose while it is.
+  vis.setLod(0);
+  poseStatic(vis);
+  vis.setLod(state.lod);
+  vis.root.position.set(0, 0, 0);
+  vis.root.rotation.set(0, 0, 0);
+  vis.root.userData.shared = true;
+  content.add(vis.root);
+  state.buildMs = performance.now() - t;
+  const c = countTris(vis.root);
+  state.tris = c.tris;
+  state.glassTris = 0;
+  state.meshes = c.meshes;
+  state.count = 1;
+  state.mb = null;
+  frame();
+}
+
 /** Build the current selection at the current LOD and put it in the scene. */
 function rebuild() {
+  if (state.mode === 'vehicle') return rebuildVehicle();
   clearContent();
   const list = selection(state.spec, state.radius);
   const mb = new MeshBuf(Math.max(4096, list.length * 1200));
@@ -206,7 +253,67 @@ function frontNormal(spec) {
   return { x: dz / L, z: -dx / L };
 }
 
+/**
+ * Vehicle viewpoints, in metres from the car, at the distances the game
+ * actually switches LOD: LOD 0 below 32 m, LOD 1 to 115 m, shell beyond.
+ * `az` is measured from the direction the car faces, so "front" is its front
+ * whichever way the model happens to be authored.
+ */
+const V_VIEWS = {
+  v_hero:       { az: 0.62, el: 0.17, dist: 7.5,  aim: 0.62 },
+  v_side:       { az: 1.57, el: 0.10, dist: 8.0,  aim: 0.55 },
+  v_front:      { az: 0.00, el: 0.11, dist: 7.0,  aim: 0.55 },
+  v_rear:       { az: 3.14, el: 0.11, dist: 7.0,  aim: 0.55 },
+  // Eye height, at each LOD boundary, framed the same so the transition is
+  // judged on what actually changes rather than on framing.
+  v_at30:       { az: 0.62, el: 0.02, dist: 30,   aim: 0.85, eye: 1.62 },
+  v_at34:       { az: 0.62, el: 0.02, dist: 34,   aim: 0.85, eye: 1.62 },
+  v_at110:      { az: 0.62, el: 0.02, dist: 110,  aim: 0.85, eye: 1.62 },
+  v_at120:      { az: 0.62, el: 0.02, dist: 120,  aim: 0.85, eye: 1.62 },
+};
+
+function frameVehicle() {
+  const v = V_VIEWS[state.view] || V_VIEWS.v_hero;
+  const fs = vehicleFrontSign(state.veh.type);
+  const g = getVehicleGeometry(state.veh.type);
+  const d = g.spec.def;
+
+  ground.position.set(0, 0, 0);
+  ground.scale.set(600, 600, 1);
+
+  // az 0 looks the car in the face: stand off along its forward axis.
+  const a = v.az;
+  const ce = Math.cos(v.el);
+  const px = Math.sin(a) * v.dist * ce;
+  const pz = fs * Math.cos(a) * v.dist * ce;
+  const py = v.eye !== undefined ? v.eye : Math.sin(v.el) * v.dist + d.H * 0.55;
+  camera.position.set(px, py, pz);
+  camera.lookAt(0, v.aim, 0);
+  camera.updateProjectionMatrix();
+
+  // Key from the front-RIGHT, i.e. the same quarter `v_hero`, `v_front` and
+  // `v_side` all look from.
+  //
+  // The building path lights from a fixed world bearing, which is fine for a
+  // building because it has no front. A car does: `anchors.head` puts the nose
+  // at -z. Inheriting the building sun put it at +z, squarely behind every car,
+  // so the whole front fascia rendered unlit and read as a black wedge punched
+  // through the bumper. That is not a modelling defect and chasing it as one
+  // wasted a cycle -- the third lighting/pose artefact this lab has produced
+  // that looks exactly like broken geometry. `v_rear` is deliberately backlit;
+  // judge tail geometry on silhouette, not on shading.
+  const r = Math.max(d.L, d.W, d.H) * 1.3 + 3;
+  sun.target.position.set(0, d.H * 0.4, 0);
+  sun.position.set(r * 0.8, d.H * 0.5 + r * 1.1, -r * 0.62);
+  const sc = sun.shadow.camera;
+  sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r;
+  sc.near = 0.5; sc.far = r * 4 + 40;
+  sc.updateProjectionMatrix();
+  render();
+}
+
 function frame() {
+  if (state.mode === 'vehicle') return frameVehicle();
   const spec = specs[state.spec];
   const bb = bounds(state.mb);
   const t = specBounds(spec);
@@ -285,8 +392,18 @@ function specBounds(spec) {
 
 function render() {
   renderer.render(scene, camera);
-  const s = specs[state.spec];
   const info = renderer.info;
+  if (state.mode === 'vehicle') {
+    const d = getVehicleGeometry(state.veh.type).spec.def;
+    hud.textContent =
+      `${state.veh.type}  lod ${state.lod}  view ${state.view}\n` +
+      `L ${d.L.toFixed(2)}  W ${d.W.toFixed(2)}  H ${d.H.toFixed(2)} m` +
+      `  wheelbase ${(d.axles[d.axles.length - 1] - d.axles[0]).toFixed(2)} m\n` +
+      `tris ${state.tris}  meshes ${state.meshes}  draws ${info.render.calls}\n` +
+      `world ${world.timing.total} ms   boot ${(bootMs | 0)} ms`;
+    return;
+  }
+  const s = specs[state.spec];
   hud.textContent =
     `#${state.spec}  ${s.style}  ${s.district}  lod ${state.lod}` +
     (state.count > 1 ? `  (+${state.count - 1} nbrs)` : '') + '\n' +
@@ -295,6 +412,73 @@ function render() {
     `tris ${state.tris}  glass ${state.glassTris}  draws ${info.render.calls}` +
     `  build ${state.buildMs.toFixed(1)} ms\n` +
     `world ${world.timing.total} ms   boot ${(bootMs | 0)} ms`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Vehicles                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The real `VehicleVisual`, not a re-assembly of it.
+ *
+ * `getVehicleGeometry` hands back three LODs of loose `BufferGeometry`, and it
+ * would be easy — and wrong — to hang them on meshes here. `VehicleVisual` is
+ * what production puts on the road: it also places the number plates, the eight
+ * lamp emitters, and the wheels, which exist ONLY at LOD 0 because LOD 1 and 2
+ * bake them into the body. Re-assembling would quietly drop exactly the parts
+ * whose disappearance across a LOD transition this lab exists to measure.
+ *
+ * Materials come from `createMaterialKit(null)`, the kit's own locally-authored
+ * fallback, deliberately rather than from the `Materials` system: `Materials.init`
+ * assigns `ctx.scene.environment`, which would relight every building scene and
+ * invalidate the standing benchmark. This mission is geometry, vehicle paint is
+ * closed, and the fallback keeps the env-probe and auto-exposure confounds that
+ * have burned this project before well out of the way.
+ */
+let _kit = null;
+const _vehCache = new Map();
+
+function vehicleVisual(type, color) {
+  const key = type + ':' + color;
+  let v = _vehCache.get(key);
+  if (v) return v;
+  if (!_kit) _kit = createMaterialKit(null);
+  v = new VehicleVisual(type, { kit: _kit, color, castShadow: true });
+  poseStatic(v);
+  _vehCache.set(key, v);
+  return v;
+}
+
+/**
+ * Put the car on its suspension.
+ *
+ * `VehicleVisual` builds each wheel at `p[1] - rest`, i.e. FULL DROOP, because
+ * production drives the pose every frame through `setWheel(i, susLen, ...)` from
+ * the real suspension solve. A lab that only constructs the visual and never
+ * poses it renders a car standing on stilts, with a finger of daylight between
+ * every tyre and its arch — which reads exactly like a modelling defect and is
+ * not one. This was the first thing this lab appeared to "find" about vehicles.
+ *
+ * Static ride height is the compression `buildSpec` sized the spring for:
+ * `susLen = rest * (1 - sqRatio)`, which puts the wheel centre at `tyreR` and
+ * the tyre exactly on the ground.
+ */
+function poseStatic(v) {
+  const sq = v.spec.def.sqRatio;
+  for (let i = 0; i < v.wheels.length; i++) {
+    v.setWheel(i, v.wheels[i].cfg.rest * (1 - sq), 0, 0);
+  }
+}
+
+/**
+ * Which way the car faces, read from its own headlight anchors rather than
+ * assumed. Returns the +z sign that points forward.
+ */
+function vehicleFrontSign(type) {
+  const g = getVehicleGeometry(type);
+  const head = g.anchors && g.anchors.head;
+  if (head && head.length) return Math.sign(head[0].z) || -1;
+  return -1;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -339,6 +523,21 @@ const SCENES = [
   // should not be disturbed by anything aimed at distance.
   { name: 'rowhouse_lod0_ctrl', spec: 345, lod: 0, radius: 70,
     view: { dist: 17, eye: 6, aim: 6 }, band: [40, 420] },
+
+  // --- vehicles ----------------------------------------------------------
+  // The classes differ by body, not just by scale: sedan and suv share a
+  // silhouette family, pickup and bus do not. Distances are the ones the game
+  // actually switches at -- LOD 0 below 32 m, LOD 1 to 115 m, shell beyond.
+  { name: 'veh_sedan_hero',  veh: 'sedan',  lod: 0, view: 'v_hero',  band: [120, 400] },
+  { name: 'veh_sedan_front', veh: 'sedan',  lod: 0, view: 'v_front', band: [120, 400] },
+  { name: 'veh_sedan_side',  veh: 'sedan',  lod: 0, view: 'v_side',  band: [120, 400] },
+  { name: 'veh_suv_hero',    veh: 'suv',    lod: 0, view: 'v_hero',  band: [120, 400] },
+  { name: 'veh_pickup_hero', veh: 'pickup', lod: 0, view: 'v_hero',  band: [120, 400] },
+  { name: 'veh_bus_hero',    veh: 'bus',    lod: 0, view: 'v_hero',  band: [100, 400] },
+  { name: 'veh_van_front',   veh: 'van',    lod: 0, view: 'v_front', band: [120, 400] },
+  // LOD tiers, framed identically so a transition is judged on what changes.
+  { name: 'veh_sedan_lod1',  veh: 'sedan',  lod: 1, view: 'v_at34',  band: [280, 380] },
+  { name: 'veh_sedan_lod2',  veh: 'sedan',  lod: 2, view: 'v_at120', band: [300, 360] },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -351,8 +550,52 @@ const api = {
   ready: false,
   world, specs, scene, camera, renderer, state,
 
+  /** Show one vehicle at one LOD. `type` is any of `VEHICLE_TYPES`. */
+  showVehicle(type, opt = {}) {
+    state.mode = 'vehicle';
+    if (type) state.veh.type = type;
+    if (opt.color !== undefined) state.veh.color = opt.color;
+    if (opt.lod !== undefined) state.lod = clampLod(opt.lod);
+    if (opt.view !== undefined) state.view = opt.view;
+    rebuild();
+    return api.vehicleMetrics();
+  },
+
+  vehicleTypes: () => VEHICLE_TYPES.slice(),
+
+  /** Geometry facts for one vehicle at every LOD, without rendering it. */
+  vehicleMetrics(type = state.veh.type) {
+    const g = getVehicleGeometry(type);
+    const d = g.spec.def;
+    const lods = g.lods.map((l, i) => {
+      let tris = 0;
+      const mats = [];
+      for (const [name, bg] of l.geos) {
+        tris += (bg.index ? bg.index.count : bg.attributes.position.count) / 3;
+        mats.push(name);
+      }
+      // Wheels exist only at LOD 0; 1 and 2 bake them into the body.
+      let wheelTris = 0;
+      if (i === 0 && g.wheel) {
+        for (const [, bg] of g.wheel.geos) {
+          wheelTris += (bg.index ? bg.index.count : bg.attributes.position.count) / 3;
+        }
+        wheelTris *= g.spec.wheels.length;
+      }
+      return { lod: i, bodyTris: tris, wheelTris, tris: tris + wheelTris,
+               materials: mats.length, names: mats };
+    });
+    return {
+      type, body: d.body, L: +d.L.toFixed(2), W: +d.W.toFixed(2), H: +d.H.toFixed(2),
+      wheelbase: +(d.axles[d.axles.length - 1] - d.axles[0]).toFixed(2),
+      tyreR: d.tyreR, track: d.track, lods,
+      drawn: state.mode === 'vehicle' ? { tris: state.tris, meshes: state.meshes } : null,
+    };
+  },
+
   /** Show building `i` (an index into the real city's spec array). */
   show(i, opt = {}) {
+    state.mode = 'building';
     state.spec = clampIdx(i);
     if (opt.lod !== undefined) state.lod = clampLod(opt.lod);
     if (opt.view !== undefined) state.view = opt.view;
@@ -418,7 +661,8 @@ const api = {
   bench(extra = []) {
     const out = {};
     for (const sc of [...SCENES, ...extra]) {
-      api.show(sc.spec, { lod: sc.lod, radius: sc.radius ?? 0, view: sc.view });
+      if (sc.veh) api.showVehicle(sc.veh, { lod: sc.lod, view: sc.view });
+      else api.show(sc.spec, { lod: sc.lod, radius: sc.radius ?? 0, view: sc.view });
       out[sc.name] = {
         tris: state.tris + state.glassTris,
         detail: api.detail(sc.band[0], sc.band[1]),
