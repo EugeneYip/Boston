@@ -1293,7 +1293,7 @@ Two measurements changed the design and are worth keeping:
 
 ### Numbers
 
-    park walks             0 -> 83 runs, 13,101 m, 8.7% of park area
+    park walks             0 -> 83 runs, 13,101 m, 6.5% of park area
     park entrances         0 -> 34, derived from the street graph
     Esplanade promenade    1,466 m, 9.5-15.0 m from the Charles
     Public Garden lagoon     603 m, 5.6-5.9 m from the water
@@ -1305,6 +1305,18 @@ Two measurements changed the design and are worth keeping:
 Validated headlessly over 13,180 path samples: 0 boundary escapes, 0 in water,
 0 on a carriageway, 0 inside a parcel footprint, min edge clearance 1.21 m.
 0 park trees stand on a walk.
+
+**Correction.** `15ca360`'s message quotes park-walk coverage as 7.1% -> 8.7%
+of park area. That came from averaging the per-park percentages, and the
+sampler drew a fixed 4,000 attempts per park regardless of size, so eight 0.4 ha
+Comm Ave Mall blocks at 12% each outvoted a 25.8 ha Common at 4.9%. The
+AREA-WEIGHTED figure is 4.7% -> 6.5%, and that is the one to quote. The
+per-park numbers in that commit are unaffected and correct.
+
+Per park, walk as a share of area: Comm Ave Mall blocks 11.6-12.4%, Esplanade
+13.6% (a central spine AND a riverside promenade, which is what it has),
+Post Office Square 10.5%, Columbus 7.5%, Public Garden 6.8%, Greenway 5.3%,
+Boston Common 4.9%, Bunker Hill 4.7%, Back Bay Fens 3.4%, plazas 0%.
 
 ### Audited and found sound — do not re-derive
 
