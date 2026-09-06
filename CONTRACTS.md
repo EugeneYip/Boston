@@ -466,6 +466,53 @@ is 55.7% near-neutral with median chroma 0.031, but median luminance is only 0.1
 and 27.3% is genuinely dark, so it explains "samey" and not "pale". It was left
 alone deliberately.
 
+## Scene-wide speckle is film grain (2026-09-05)
+
+**Owner: `RenderPipeline.options.grain`, now 0.0075 (was 0.015).** Not the vehicle
+material -- all vehicle micro terms off together move body high-frequency energy by
+1.9%. Not sharpening: `sharpen` is `taaOn ? 0.34 : 0.0` and TAA is off, so
+LensFinal's CAS filter is inert. There is no dither pass and no FXAA. The live
+chain is FrameState, Render, N8AO, atmosphere, AutoExposure, Velocity (disabled),
+SSR (disabled), Lens, [LensComposite+Exposure+ToneMapping+Grade], [SMAA],
+[LensFinal+FilmGrain].
+
+**The metric.** High-pass RMS after subtracting a 3x3 box blur, on flat interior
+patches well away from silhouettes, scene and camera frozen. Validated before use:
+an injected 8x grain perturbation moved it +6.98 on road against an A/A floor of
+0.035, and restoring returned within 0.004. Sky (0.37) ranks far below road (1.19)
+which ranks far below detailed regions (11-15), so it separates high frequency from
+lighting gradients.
+
+**Spatial share, against the grain-off texture floor:**
+
+    condition   road hp: floor -> with grain    grain's share
+    daylight            0.615 -> 1.189             48%
+    overcast            0.699 -> 1.893             63%
+    dusk                0.512 -> 1.801             72%
+    night               0.479 -> 2.451             80%
+
+Night is worst because `isoBoost` in `FilmGrainEffect` raises the live amplitude to
+0.0203, 2.4x the daylight 0.0085.
+
+**Temporally it is almost the entire defect.** Scene AND camera frozen, per-pixel
+temporal RMS: road 0.006 with grain off against 0.99 with it on; wall 0.004
+against 0.92. So 99% of the crawl on flat surfaces is grain. Sky keeps 0.30 of
+residual crawl with grain off -- that is the atmosphere pass, not grain, and it was
+not investigated.
+
+**Detail is not touched, and that is the acceptance test.** On high-detail regions
+gradient energy is 46.413 / 46.321 / 46.308 at grain 0.015 / 0.0075 / 0 -- grain is
+0.2% of what is there. Any future "fix" that lowers detail-region gradient energy
+is blurring the image and is wrong.
+
+**Measured in the Pages build after the change**, same site and regions: road
+1.189 -> 0.798, wall 1.123 -> 0.758, sky 0.376 -> 0.254, removing 68% of the
+removable excess on road and wall. Passes 11 and programs 71, unchanged.
+
+**Do not remove grain entirely** and do not reach for resolution or blur. If it is
+still too strong, the next lever is `isoCap` (1.85) in `FilmGrainEffect`, which
+targets night specifically, not the base amplitude again.
+
 ## Corner stickiness: not reproducible as a movement defect (2026-09-05)
 
 Measured in the Pages build, not inferred. A re-entrant corner was produced

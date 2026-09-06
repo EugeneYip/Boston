@@ -130,6 +130,16 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
+**Scene-wide speckle — OWNED AND HALVED, 2026-09-05 (`2af3b1c`-era).** The
+speckle on vehicles, road and flat surfaces is film grain, not vehicle material and
+not sharpening (sharpen is 0 because TAA is off). With scene and camera frozen,
+grain is 99% of all temporal crawl on flat surfaces (road per-pixel temporal RMS
+0.006 off vs 0.99 on) and 48-80% of spatial high-frequency depending on light, worst
+at night where `isoBoost` raises the amplitude 2.4x. `options.grain` 0.015 -> 0.0075.
+Pages-verified: road hp 1.189 -> 0.798, wall 1.123 -> 0.758, sky 0.376 -> 0.254,
+with high-detail regions unchanged (46.413 -> 46.321) and passes/programs identical.
+See CONTRACTS.md, "Scene-wide speckle is film grain".
+
 **Corner stickiness — NOT REPRODUCIBLE on this build, 2026-09-05.** Wedged in a
 real re-entrant corner (150 press frames, three probe bearings returning two
 overlapping building colliders, velocity 0.02), rotating input to a free direction
