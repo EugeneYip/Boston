@@ -344,7 +344,24 @@ export default class RenderPipeline {
       // sky's structure while leaving `hero_skyline` (already 0.00% clipped, its sky
       // at mean 203 / sd 34.7) as close to untouched as a rolloff allows.
       highlightKnee: 0.86,
-      grain: 0.015,
+      // Halved from 0.015 after measuring what it actually contributes. Film grain
+      // is the dominant scene-wide high-frequency term, and on a FROZEN scene and
+      // camera it is essentially the only temporal one: per-pixel temporal RMS on a
+      // static road patch is 0.006 with grain off and 0.99 with it on, so 99% of the
+      // crawl a viewer sees on flat surfaces is this. Spatially, against the
+      // grain-off texture floor, it was adding
+      //     daylight  road 0.615 -> 1.189   (+93%, 48% of the total)
+      //     overcast  road 0.699 -> 1.893   (63%)
+      //     dusk      road 0.512 -> 1.801   (72%)
+      //     night     road 0.479 -> 2.451   (80%)
+      // Night is worst because `isoBoost` in FilmGrainEffect raises the live
+      // amplitude to 0.0203, 2.4x the daylight 0.0085, exactly where a street
+      // capture already looks noisiest. Halving the base takes night down to 0.0101
+      // -- below what daylight and overcast were running at -- and roughly halves
+      // the high-frequency and temporal contribution in every condition while
+      // leaving grain present everywhere. It is not removed: the point is that the
+      // frame should not read as salt-and-pepper, not that it should read as video.
+      grain: 0.0075,
       // Per-channel radial offset AT THE CORNER, in pixels. See LensFinalEffect for
       // what 1.15 was actually producing (1.73 px per channel over the whole outer
       // fifth of the frame in daylight, 2.19 px at night) and why that is 3-5x a lens.
