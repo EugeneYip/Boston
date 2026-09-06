@@ -1003,3 +1003,105 @@ twenty-sixth of Back Bay's street density. Buildings come from parcels and
 parcels come from roads, so this is a STREET GRAPH coverage gap, not a park or
 vegetation one. Closing it means authoring tens of kilometres of real street
 geometry, which is content scope and an owner decision, not an autonomous one.
+
+## Street-graph coverage — OWNER DEFERRED (recorded 2026-09-06)
+
+The sparse road coverage measured above (Cambridge 93% open at 0.8 roadKm/km2,
+Charlestown 87%, Fenway 76%, Seaport 71%) is real, is understood, and is **not
+an autonomous repair**. Buildings follow parcels and parcels follow roads, so
+closing it means authoring tens of kilometres of real Boston street geometry —
+content scope, and an owner decision.
+
+**Do not re-audit this every loop.** It has now been measured twice and the
+answer will not change until someone authors the streets. Nothing in `src/`
+should be changed on account of it, and no approximate street layout should be
+invented to fill it.
+
+## Park circulation (2026-09-06)
+
+`src/world/ParkPaths.js` derives the walks inside every authored park. It is
+procedural and **Boston-INSPIRED, not surveyed** — no path geometry is authored
+anywhere in the project, and none was invented from memory. Everything comes
+from geometry the city already owns:
+
+| decides | comes from |
+|---|---|
+| topology (spine vs perimeter loop) | the polygon's SHAPE |
+| character (surface, width, regularity) | the park's `kind` |
+| entrances | the street graph |
+| clipping | the water rings and the carriageways |
+
+**Shape decides topology, not `kind`, because `kind` cannot see it.** The
+Greenway measures 1508 x 377 and the Esplanade 1610 x 130 only because their
+own bends widen the box. Both fill under half of it. `shapeOf` calls a polygon
+linear at `elongation >= 3` **or** `fill <= 0.45`; a ribbon that fills 17% of
+its bounding box is still a ribbon.
+
+Roles: `spine` (ribbon centreline, traced by cross-section sweep), `loop`
+(perimeter, from the same `insetPoly` the building setbacks use), `diagonal`
+(lawn desire lines between gates), `axis` (formal squares), `shore` (bank walk),
+`cross`, `spur`. `plaza` parks get NOTHING — City Hall Plaza and Copley are
+already unbroken hardscape, so a path there is concrete on concrete.
+
+Surfaces are `sidewalk` (paved: lawn kinds) and `dirt` (stone dust: formal and
+mall). Both are already built for the road atlas, so all nineteen parks'
+circulation costs **two draw calls, 8,736 triangles and zero new textures**.
+
+Published as `city.parkPaths` / `city.parkEntrances`. Props exposes
+`L.onPath(x, z, pad)` and `L.pathsByPark`; nothing may be planted or placed on
+a walk, and park furniture is placed ALONG one.
+
+### The lawn is not the ground
+
+A park path must take its height from the **lawn triangulation**, never from
+`terrain.groundHeight`. The lawn is a chord across up to 26 m of terrain, so
+over a rise it floats: measured at path samples it sits up to **0.66 m** above
+the true ground, and 45% of samples are under a lawn more than 5 cm high. A
+path laid on `groundHeight + lift` is buried in grass for nearly half its
+length. `Districts._lawnY` samples the triangles `build` just emitted.
+
+### An authored park ring is NOT the park's edge
+
+Several rings are traced around the OUTSIDE of the streets that bound them.
+**152 of Boston Common's 254 boundary samples lie within 0.5 m of a road
+CENTRELINE**, and all 157 of the Public Garden's are inside a carriageway.
+`Districts` compensates by dropping every lawn triangle whose centroid lands on
+a road; every other consumer of `parkPolys` must compensate too.
+
+Two consequences, both now handled:
+
+- **Gates** step off the road along its own NORMAL and let the polygon choose
+  the side. Reading direction from the ring fails on 60% of the Common.
+- **Street trees** test `L.inParkSurface`, not `L.inPark`. Of 939 kerbside
+  positions the ring rejected, **938 were standing on real pavement** — the
+  tree-lined perimeter of every major park in the city.
+
+Where the grass actually stops was measured and is fine: along every park
+perimeter the gap between the back of the footway and the first lawn triangle
+is p50 0.0 m and p75 0.0 m, with only 47 of 499 samples over 3 m. The
+park/pavement transition is a MATERIAL seam, not a gap.
+
+### Park furniture
+
+`PARK_FURN_PER_HA` is a placement budget and is now **enforced by counting
+placements**. It used to bound only the attempt count, so realized density was
+whatever the rejection rate happened to leave; biasing candidates onto the
+walks raised acceptance and silently added 230 benches and 674 lamps.
+
+72% of candidates come from beside a walk, the rest from anywhere in the park.
+Anything drawn from a walk faces it (96.9% of benches, median dot 0.998).
+Furniture claims a 2.4 m radius against other furniture as it is placed —
+`clear()` cannot do this, it tests street TREE sites and nothing else.
+
+## Tree repetition — CLOSED (2026-09-06)
+
+14 live tree meshes over 7,928 instances is **not** a visible defect. Among the
+five nearest neighbours within 22 m, the share that are visible clones — same
+mesh, yaw within 15 degrees, scale within 8% — is:
+
+    Back Bay streets 0.14%   Comm Ave Mall 0.17%
+    Esplanade        0.22%   Boston Common 0.36%
+
+Same-mesh-regardless-of-pose runs 7.9-15.2%, which is what a small species
+palette looks like and is correct. Per-instance rotation and scale already do
+the work. Do not multiply stored assets on this evidence.

@@ -1255,3 +1255,95 @@ No source changed to make them agree; the arithmetic already did.
 8. LOD 1 roof clutter.
 9. Vehicle bumper rounding; bus glazing bays.
 10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350.
+
+## Park circulation + public realm — 2026-09-06 (`20e9bf3` … `4b7b966`)
+
+Five commits. Parks had polygons, grass, trees and furniture and no
+circulation at all; they now have walks, gates, a riverside promenade and
+furniture that belongs to them. The fifth commit is the one that matters most
+outside the parks.
+
+| commit | change | effect |
+|---|---|---|
+| `20e9bf3` | parks get the walks that make them parks | 0 → 79 runs, 10,964 m |
+| `b12b47f` | furniture belongs to the circulation | p50 1.84 m from a walk, 96.9% of benches face it |
+| `15ca360` | the waterfront gets its walk | Esplanade 1,466 m promenade, lagoon 603 m |
+| `5be68a2` | furniture keeps out of its own way | pairs under 1 m: 234 → 13 |
+| `4b7b966` | street trees excluded by surface, not ring | 5,633 → 6,069 (+436) |
+
+### Headline
+
+`boston-geo.js` has claimed since it was written that `kind: 'formal'` "adds
+paths and beds". No such code existed, and a search of the whole world pipeline
+for path/walkway/promenade/footway/circulation semantics found nothing dormant
+to switch on — the first time in five passes that the answer was genuinely "the
+content is not here". So the circulation is procedural and Boston-inspired, but
+every line of it is derived from authored geometry: the polygon decides the
+topology, the `kind` decides the character, the street graph decides the gates,
+and the water rings and carriageways clip it. See CONTRACTS.md.
+
+Two measurements changed the design and are worth keeping:
+
+- **The lawn is not the ground.** It floats up to 0.66 m over a rise, and a
+  path on `groundHeight` would be buried in grass for 45% of its length.
+- **An authored ring is not the park's edge.** 152 of the Common's 254
+  boundary samples are within 0.5 m of a road centreline. That broke gate
+  direction on 60% of the Common, and it had been stripping street trees off
+  the pavement of every park-perimeter street in Boston.
+
+### Numbers
+
+    park walks             0 -> 83 runs, 13,101 m, 8.7% of park area
+    park entrances         0 -> 34, derived from the street graph
+    Esplanade promenade    1,466 m, 9.5-15.0 m from the Charles
+    Public Garden lagoon     603 m, 5.6-5.9 m from the water
+    street trees       5,633 -> 6,069        park trees        2,223
+    vegetation        73,946 -> 74,310       props     158,785 -> 159,443
+    park path meshes        +2 draws, 8,736 tris, 0 new materials/textures
+    city build              +174 ms generation, +38 ms lawn sampling
+
+Validated headlessly over 13,180 path samples: 0 boundary escapes, 0 in water,
+0 on a carriageway, 0 inside a parcel footprint, min edge clearance 1.21 m.
+0 park trees stand on a walk.
+
+### Audited and found sound — do not re-derive
+
+- **Tree repetition. CLOSED.** Visible clones are 0.14-0.36% of adjacent
+  pairs. See CONTRACTS.md.
+- **The park/pavement seam.** A material seam, not a gap: p50 and p75 of the
+  distance from the back of the footway to the first lawn triangle are both
+  0.0 m. No bare band around any park.
+- **Park edge language.** The 61-entry furniture library has no fence, railing,
+  gate or monument. Gates get a bollard pair; nothing else was invented.
+- **Furniture inside park trees.** p50 8.12 m to the nearest tree, 21 of 2,159
+  within 1 m — a bench under a tree, not inside one.
+- **Curtain-wall coverage and mechanical penthouses.** `partyWall` already
+  runs `curtainStorey` on all four elevations at LOD 0 and `stripWall` above;
+  `glassTower`, `seaport` and `midrise` all carry `mech: true` and get a
+  penthouse over 40 m. The old "detailed below 26 m only" item is closed.
+
+### Production gate
+
+Passed at every source commit and at the boundary: 26 active systems (4 core +
+22 optional), `Missions.js` missing as always, `failed []`, `errors []`,
+`glFaults []`, `validate().ok true`, 99 prop batches, 535 draws and 2.21M
+triangles on the downtown shot. `npm run build:pages` clean.
+
+### Remaining top 10
+
+1. **Street-graph coverage — OWNER DEFERRED.** Recorded in CONTRACTS.md; do
+   not re-audit it each loop.
+2. Tower crowns: 154 glass towers and 241 tall midrises end in a flat parapet
+   plus a mechanical penthouse. `stoneTower` alone has setbacks and a stepped
+   crown (79 of 136). Plain rather than wrong — a refinement, not a defect.
+3. LOD 1 roof clutter — water tanks, dishes and fan cowls are LOD-0 only.
+4. Park walks are one flat ribbon: no kerb upstand, no granite edging, no
+   junction paving. Would need a third path material family.
+5. Street lamps 22/km against a real 25-35 m spacing. Physical model only —
+   the real-light pool is fixed at 20 anchors and is not to be reopened.
+6. 58 street-tree sites inside a carriageway, junction-box class — the same
+   96.4%-legitimate metric closed last pass.
+7. 13 trees and 27 junction props over water at polygon boundaries.
+8. Vehicle bumper rounding; bus glazing bay rhythm.
+9. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+10. Park hedges run at random angles rather than along the walks they now have.
