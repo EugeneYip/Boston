@@ -820,3 +820,105 @@ LOD ladder.**
 
 Both were chased as real defects first. When a vehicle looks broken in the lab,
 check the pose and the light before touching geometry.
+
+## Kerbside placement: segments are chords, roads are not (2026-09-06)
+
+The single largest world-quality defect found so far, and it had been documented
+and deferred in `Props.surfaceY` the whole time: *"edge 245 is a 643 m curve
+whose chord leaves a kerbside prop 12 m from the real road. The lateral drift is
+a separate defect and is not fixed here."*
+
+`L.segments` are the straight CHORD between two graph nodes. Chord-to-polyline
+deviation over the 509 city segments:
+
+    p50   0.00 m     most streets really are straight
+    p75   0.80 m
+    p90   4.56 m
+    p99  52.47 m
+    max 155.06 m     edge 56, Boylston Street, an 875 m curve
+
+On 46 segments -- 17.7 km, a quarter of the network by length -- it exceeds the
+carriageway's own half-width, so props authored "1.05 m behind the kerb" were
+in the road or inside the buildings behind it.
+
+**Always place kerbside things with `L.kerbPoint(s, d, off, side)`**, which
+takes the point and tangent off the road graph's real polyline and offsets along
+that tangent's normal. It degrades to the chord automatically when the graph
+cannot answer, so the synthetic grid layout is unaffected. `L.roadPoint(s, d)`
+is the same thing without the lateral offset.
+
+    tree sites in a carriageway   803 -> 53
+    tree sites inside a building  784 -> 0
+    kerb clearance p1 / p50      -6.95 / 1.05  ->  0.62 / 1.05
+
+### Junctions need the same care, plus one more thing
+
+`j.legs` also carried chord directions; they now come from the first span of the
+edge's own polyline. And a junction CORNER clears two carriageways, not one --
+the distance you travel along a leg to get clear is set by the road CROSSING it.
+Sizing both offsets from `leg.hw` put 682 of 696 ped signals (98%) in the road,
+9 m deep on a side street meeting an arterial. `cornerOf(leg)` returns the
+along-axis clearance from the crossing leg and the lateral from the leg itself.
+
+    junction props in a carriageway   1203 -> 403   (of 2607)
+
+The 403 that remain are mostly real: several carriageways genuinely overlap
+inside a junction box, so at a five- or six-way node a corner clear of its own
+leg and the crossing one can still sit inside a third.
+
+### Bridges have no ground
+
+`roadMesh.surfaceAt` returns null beside a deck, `surfaceY` falls back to the
+road's own height, and a tree gets planted at deck level over open air. Of 104
+trees floating more than a metre, ALL 104 were within 40 m of a bridged edge and
+ALL 104 had `surfaceAt` return null. Segments carry `bridged` now and the tree
+generator skips them. Anything else ground-planted should too.
+
+## Quality density: applied once, and `high` is the default (2026-09-06)
+
+`Engine` hardcodes `new Settings('high')` and nothing auto-downgrades, so the
+shipping default is `high` and `DENSITY.high === 1.0`. Presets are low 0.42,
+medium 0.7, high 1.0, ultra 1.15, and changing quality at runtime does NOT
+repopulate -- `quality:changed` only invalidates the batcher, so prop counts are
+fixed at boot.
+
+`Props.populate` and `Decals.placeDecals` both computed
+
+    prob = min(keep, cap * density / cand) * density
+    left = ceil(cap * density)
+
+which applies quality twice to the cap-limited branch: `left` hands a type
+`cap * density` and `prob` aims it at `cap * density^2 / cand`. Correct form is
+`min(1, density * min(keep, cap / cand))` -- the second multiplication cannot
+simply be deleted, because `cand` does not depend on quality and without it a
+keep-limited type would place the same count at every preset.
+
+    density        old      new
+    1.00 (high)  66270    66270      bit-identical, proven per type
+    1.15 (ultra) 67523    67523      bit-identical
+    0.70 (med)   39760    46388      66270 x 0.70 = 46389
+    0.42 (low)   16244    27833      66270 x 0.42 = 27833
+
+Vegetation was already correct: it applies density linearly and once.
+
+## Vegetation baseline (2026-09-06)
+
+8 species x 2 fixed variants = 16 tree meshes, per-instance variation by
+rotation, scale (0.78-1.32), a y-stretch and a lean. 378 / 104 / 6 triangles at
+LOD 0 / 1 / 2, switching at 95 / 300 / 900 m. Species are a real Boston palette
+(London plane, red maple, littleleaf linden, honey locust, pin oak, plus
+American elm, copper beech and weeping willow in parks).
+
+Street-tree SITES are owned by `Props.finishLayout`, not by Vegetation, and are
+district-aware: 9-12.5 m spacing in Back Bay, South End, Beacon Hill and parks,
+13-20 m elsewhere, 35% of Financial District segments skipped, a 16% chance of a
+bare side and a 13% per-site gap. Vacancy is modelled there; do not add more
+downstream.
+
+**A count cap on a distance-sorted list is a radius cap.** `treeSites` comes out
+ordered centre-first, so `maxTrees = 5200` against 6391 sites did not thin the
+city -- it deforested everything past 2325 m. Take a stride, not a prefix. Same
+trap `Buildings.js` documents for `MAX_BUILDINGS`.
+
+Population after this pass: 6750 tree instances, 56224 vegetation instances,
+157879 props, 99 batches.

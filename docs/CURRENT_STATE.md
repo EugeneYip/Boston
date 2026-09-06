@@ -1134,3 +1134,64 @@ traversal or the camera.
 8. Mid-block furniture spacing: hydrants every 70-130 m on one random side.
 9. Vegetation — not yet audited at all.
 10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+
+## World-density + vegetation pass — 2026-09-06 (`7439236` … `6556971`)
+
+Seven commits, all rules and data rather than geometry — the fourth consecutive
+pass where that is true. Nothing here adds an asset; the assets were fine.
+
+| commit | change | effect |
+|---|---|---|
+| `7439236` | quality density applied once, not twice | medium +16.7%, low +71.3%, `high` bit-identical |
+| `3f74be4` | street-tree budget is a stride, not a prefix | trees reach 3378 m instead of stopping at 2325 |
+| `01a96a1` | tree sites follow the road, not the chord | 803 → 53 in carriageway, 784 → 0 in buildings |
+| `857e5ff` | all 27 kerbside placements follow the road | segment-placed families now ~0% in the road |
+| `dbfb926` | junction corners clear both carriageways | ped signals 682/696 → 132/696 |
+| `0a3a73c` | junction legs use the leaving tangent | 444 → 403 (small; hypothesis was mostly wrong) |
+| `6556971` | no street trees on a bridge | floaters 104 → 5, p99 9.93 m → 0.13 m |
+
+### Headline
+
+Every kerbside prop in Boston was positioned by chord arithmetic on segments
+that are chords of curved roads. On a quarter of the network by length the drift
+exceeded the road's own half-width. This is why pavements looked wrong: not too
+few objects, but objects in the road, inside façades, and beside the wrong
+kerb. See CONTRACTS.md, "Kerbside placement".
+
+### Audited and found sound — do not re-derive
+
+- **Mid-block furniture density.** Mean props within 12 m of a mid-block kerb
+  point: Beacon Hill 5.6, North End 4.2, Back Bay 4.1, Financial 2.3. Only
+  0-10% of sampled mid-block points have nothing within 12 m. Sidewalks are not
+  empty between intersections.
+- **Street-tree spacing rules.** District-aware and already realistic.
+- **Vegetation density scaling.** Linear and single, unlike props/decals.
+- **Tree species palette and per-instance variation.**
+- **The default preset.** `high`, hardcoded, no auto-downgrade, density 1.0.
+
+### Production gate
+
+Passed twice during the pass and at the boundary: 26 active systems (4 core + 22
+optional), `Missions.js` missing as always, `failed []`, `errors []`,
+`glFaults []`, `validate().ok true`, Rapier live with 16,042 colliders and 56
+bodies, 150 traffic cars, 157,879 props in 99 batches, 56,224 vegetation
+instances. Gameplay smoke only; nothing here touches collision, traversal or the
+camera.
+
+### Remaining top 10
+
+1. Junction-box overlap: 403 junction props still inside some carriageway at
+   five- and six-way nodes, where several road surfaces genuinely overlap.
+2. Five trees still floating (worst 6.68 m) and one buried.
+3. Only 2 park areas exist (`L.parks`) — the Common and the Public Garden. The
+   Esplanade, the Fens and Franklin Park are absent, so park planting is
+   confined to two polygons.
+4. 16 tree meshes for 6,750 instances; variants are two fixed heights per
+   species. Cheap wins available in crown aspect and branch orientation.
+5. Street lamps at 22/km, one per 45 m against a real 25-35 m. Physical model
+   only — do not reopen light-slot allocation.
+6. Curtain-wall towers detailed below 26 m only (154 buildings).
+7. Tower crowns: every tower still ends in a flat parapet.
+8. LOD 1 roof clutter — water tanks, dishes, fan cowls are LOD-0 only.
+9. Vehicle bumper rounding; bus glazing bay rhythm.
+10. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
