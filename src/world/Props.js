@@ -834,6 +834,14 @@ function finishLayout(L) {
         }
       }
     }
+    // The same walks, grouped by park, so furniture can be placed ALONG them
+    // rather than merely kept off them.
+    L.pathsByPark = new Map();
+    for (const path of (L.city?.parkPaths || [])) {
+      let list = L.pathsByPark.get(path.park);
+      if (!list) L.pathsByPark.set(path.park, list = []);
+      list.push(path);
+    }
     L.onPath = cells.size
       ? (x, z, pad = 0) => {
         const list = cells.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`);
@@ -929,6 +937,45 @@ const DENSITY = { low: 0.42, medium: 0.7, high: 1.0, ultra: 1.15 };
 
 /** Yaw so the prop's local +Z points along (fx, fz). */
 const facing = (fx, fz) => Math.atan2(fx, fz);
+
+/**
+ * A spot beside a park walk, and the direction that faces the walk.
+ *
+ * Park furniture lines the circulation in every real park: a bench looks at the
+ * path, a lamp stands at its edge, a bin waits where people already are. Placed
+ * uniformly over the park instead, the same objects read as litter dropped on a
+ * lawn. `cross` links are skipped as anchors -- they are 20 m connectors, and
+ * hanging seating off them clusters everything at the crossings.
+ */
+function besideWalk(walks, rng) {
+  let total = 0;
+  for (const w of walks) if (w.role !== 'cross') total += w.length;
+  if (total <= 0) return null;
+  let pick = rng.range(0, total);
+  let path = null;
+  for (const w of walks) {
+    if (w.role === 'cross') continue;
+    if (pick < w.length) { path = w; break; }
+    pick -= w.length;
+  }
+  if (!path) return null;
+  const pts = path.pts;
+  let acc = 0, a = pts[0], b = pts[1];
+  for (let i = 1; i < pts.length; i++) {
+    const L = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+    if (acc + L >= pick) { a = pts[i - 1]; b = pts[i]; pick -= acc; break; }
+    acc += L;
+  }
+  const dx = b.x - a.x, dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const t = Math.min(1, pick / len);
+  const px = a.x + dx * t, pz = a.z + dz * t;
+  const nx = -dz / len, nz = dx / len;
+  const side = rng.sign();
+  const off = path.width / 2 + rng.range(0.85, 2.3);
+  return { x: px + nx * off * side, z: pz + nz * off * side,
+           fx: -nx * side, fz: -nz * side };
+}
 
 export default class Props {
   static id = 'props';
@@ -2099,24 +2146,77 @@ function runPlacement(sys, L, counting, take) {
     const { x0, x1, z0, z1 } = p.bounds;
     const want = Math.max(8, Math.round((p.area / 10000) * (PARK_FURN_PER_HA[p.kind] || 25)));
     const attempts = Math.min(4200, Math.round(want / p.fill));
-    for (let i = 0; i < attempts; i++) {
-      const x = rng.range(x0, x1), z = rng.range(z0, z1);
+    // Most of it lines the walks; the rest stays on the lawn, because a park
+    // whose every bench is on a path has no one sitting under a tree. Only the
+    // CANDIDATE changes -- `take()` still holds the budget, so the type mix and
+    // the totals are the ones the rate table already decided.
+    const walks = L.pathsByPark?.get(p.name) || [];
+    // `want` was only ever an attempt budget: nothing counted what actually
+    // landed, so the realized density was whatever the rejection rate happened
+    // to leave. Biasing candidates onto the walks raised acceptance sharply and
+    // took park benches from 775 to 1,005 without anyone asking for more
+    // benches. Count placements, so PARK_FURN_PER_HA means what it says.
+    let placed = 0;
+    for (let i = 0; i < attempts && placed < want; i++) {
+      let x, z, fx = 0, fz = 0;
+      if (walks.length && rng.chance(0.72)) {
+        const w = besideWalk(walks, rng);
+        if (!w) continue;
+        x = w.x; z = w.z; fx = w.fx; fz = w.fz;
+      } else {
+        x = rng.range(x0, x1); z = rng.range(z0, z1);
+      }
       if (!pointInPoly(x, z, p.poly) || L.inWater(x, z)) continue;
       if (L.onPath(x, z, 0.45)) continue;         // the walk is for walking on
+      // Face the walk if this came off one, and let a lawn piece sit anyhow.
+      const rot = (fx || fz) ? facing(fx, fz) + rng.range(-0.11, 0.11)
+                             : rng.range(0, 6.28);
       const r = rng.f();
       if (r < 0.34 && take('bench')) {
-        b('benchPark').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.88, 1.06));
+        b('benchPark').add(x, g(x, z), z, rot, 1, rng.range(0.88, 1.06)); placed++;
       } else if (r < 0.52 && take('lamp')) {
-        b('lampTwin').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.97, 1.04), rng.range(0.9, 1.05));
-        sys._lampSites.push({ x, y: g(x, z) + 4.3, z });
+        b('lampTwin').add(x, g(x, z), z, rot, rng.range(0.97, 1.04), rng.range(0.9, 1.05));
+        sys._lampSites.push({ x, y: g(x, z) + 4.3, z }); placed++;
       } else if (r < 0.66 && take('bin')) {
-        b('wireBin').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.9, 1.05));
+        b('wireBin').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05)); placed++;
       } else if (r < 0.76 && take('bollard')) {
-        b('bollard').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.9, 1.05));
+        b('bollard').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05)); placed++;
       } else if (r < 0.84 && take('planter')) {
-        b('planter').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.9, 1.15), rng.range(0.88, 1.05));
+        b('planter').add(x, g(x, z), z, rot, rng.range(0.9, 1.15), rng.range(0.88, 1.05)); placed++;
       } else if (r < 0.90 && take('litter')) {
-        b('binBags').add(x, g(x, z), z, rng.range(0, 6.28), rng.range(0.7, 1.0), rng.range(0.85, 1.05));
+        b('binBags').add(x, g(x, z), z, rot, rng.range(0.7, 1.0), rng.range(0.85, 1.05)); placed++;
+      }
+    }
+  }
+
+  // ---- Park gates ----------------------------------------------------------
+  //
+  // A pair of bollards where a walk meets the street. Boston's parks are not
+  // gated and nothing here invents a gate, a pier or a monument -- this is the
+  // one piece of edge language the 61-entry furniture library actually
+  // supports, and it is enough to say "the park starts here".
+  {
+    let ei = 0;
+    for (const e of (L.city?.parkEntrances || [])) {
+      const rng = new RNG(90210 + (ei++) * 379);
+      const walks = L.pathsByPark?.get(e.park) || [];
+      if (!walks.length) continue;
+      // The spur runs inward from the gate; stand the pair across its mouth.
+      let bx = 0, bz = 0, bd = Infinity;
+      for (const w of walks) {
+        for (const q of w.pts) {
+          const d = (q.x - e.x) * (q.x - e.x) + (q.z - e.z) * (q.z - e.z);
+          if (d < bd) { bd = d; bx = q.x; bz = q.z; }
+        }
+      }
+      if (!(bd > 1) || bd > 30 * 30) continue;
+      const L0 = Math.sqrt(bd);
+      const nx = -(bz - e.z) / L0, nz = (bx - e.x) / L0;
+      for (const side of [-1, 1]) {
+        const x = e.x + nx * 1.6 * side, z = e.z + nz * 1.6 * side;
+        if (L.onPath(x, z, 0.1)) continue;
+        if (!take('bollard')) continue;
+        b('bollard').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.95, 1.05));
       }
     }
   }
