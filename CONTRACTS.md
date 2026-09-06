@@ -406,6 +406,51 @@ state with a 40-frame hold, 21 of 36 -> 27 of 36, and buildings gain nothing fro
 this since they were already at zero penetrations. Open ground, kerbs, the sedan
 case and driving are all unaffected.
 
+## Vehicle paint: what owns the pale, samey look
+
+**Proven and fixed: the 5-bit snap was running in linear space.**
+`Materials.carPaint` quantises the requested colour to a 5-bit grid so jittered
+per-car colours share one material. It did that with `setRGB`, which writes the
+working (LINEAR) space, where a 1/31 step is enormous near black -- linear 0.0129
+is already sRGB 31. Over the 36 palette entries that shifted a channel by 9.6/255
+on average and 31/255 at worst, destroyed hue on saturated darks (#8d1f24 ->
+#8b0032), lifted near-blacks (#23262b -> #323232) and collapsed sedan navy
+#1b2a3d, pickup slate #1f2933 and suv green #1e3a2c onto one teal #003232 --
+sharing a single cached material, because the cache is keyed on the snapped value.
+Snapping in sRGB drops the mean shift to 2.8/255 and the worst to 4/255 with zero
+entries shifted by more than 8, and leaves only benign merges of colours 1-4/255
+apart. Cache size is unchanged (145 materials over an 8,000-car weighted draw), so
+there is no new material or draw cost. **If you touch this again, keep the snap in
+sRGB.**
+
+**Attributed but NOT fixed -- two remaining owners.** Neither was changed, and
+neither should be changed without rendered-pixel evidence.
+
+* *Fleet reads neutral.* Weighted by the real `Traffic.MIX`, 55.7% of cars draw a
+  colour with chroma below 0.05 and the median chroma is 0.031. Taxi, police and
+  bus are single near-white liveries and are 19.1% of traffic between them. Note
+  the fleet is NOT predominantly light -- median luminance is 0.125 and 27.3% are
+  dark -- so the palette explains "they all look the same" but does not by itself
+  explain "pale".
+* *Paint shows little of its own colour.* `car_paint` is `metalness 0.78`, so only
+  22% of albedo survives as diffuse and the rest of the response is environment
+  reflection tinted by the colour, on top of `clearcoat 1.0` at
+  `clearcoatRoughness 0.045` and `envMapIntensity 1.25`. Under a bright sky that
+  pushes every body toward sky grey regardless of its albedo. This is the most
+  likely owner of "washed-out" specifically, and it is a hypothesis, not a
+  measurement.
+
+**Speckled/chalky is a separate defect and is unattributed.** The candidate terms
+are the flake `normalMap` at `normalScale 0.13` and the same `ormMap` driving BOTH
+`roughness` and `metalness`, tiling every `0.35 m` (`userData.tileMeters`). Do not
+try to fix speckle and paleness with one saturation multiplier.
+
+**Measurement constraint that blocked the rest of this work.** Ablations need
+rendered pixels, and a hidden Browser pane collapses the drawing buffer, so no
+pixel measurement is possible in that state. The palette, snap and material
+parameters above are all source-side and unaffected. Anything claiming a rendered
+before/after must be taken with the pane visible.
+
 ## Parked cars are glazed differently from moving ones
 
 `CAR_SLOT` routes parked-car glazing onto the body's opaque class, not onto the

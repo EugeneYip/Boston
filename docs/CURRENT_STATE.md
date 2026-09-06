@@ -130,6 +130,26 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
+**Vehicle paint, 2026-09-05.** One proven owner fixed (`f896627`): the 5-bit
+colour snap in `Materials.carPaint` ran in the linear working space, shifting a
+channel by up to 31/255, lifting near-blacks to mid grey and collapsing three
+distinct palette colours onto one teal that they then shared as a single cached
+material. Snapping in sRGB drops the worst shift to 4/255 with no entries over 8.
+Two owners remain attributed but unfixed: the fleet is 55.7% near-neutral by
+weighted draw, and `car_paint` metalness 0.78 leaves only 22% of albedo as
+diffuse. Speckle is a separate, unattributed defect. See CONTRACTS.md, "Vehicle
+paint". **No rendered-pixel verification was possible — the Browser pane is
+hidden, which collapses the drawing buffer.**
+
+**Parked-car bypass 3/4 classified, 2026-09-05.** Not a regression. Re-run at 14
+production trials: the 12 with valid starts reach the pavement 12/12. The two
+misses both start with the player teleported INSIDE a parked car's collider (12 of
+12 probe bearings return `parkedCar`), and a kinematic controller cannot resolve an
+initial penetration. Harness artifact, same cause as the original 3/4. A genuine
+latent bug was found while classifying it and fixed separately (`a70e884`): `_move`
+selected its request vector on `_byCar !== -1`, so after a bypass timeout it kept
+reading a stale `_bypass` nobody had recomputed.
+
 **Gameplay smoke controls re-run in the Pages build, 2026-09-05.** These were
 reported NOT RUN when the camera solver shipped; they now pass.
 
