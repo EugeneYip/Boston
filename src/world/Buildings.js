@@ -454,6 +454,15 @@ function pushPlot(out, id, poly, d, core, frontDirs, r) {
 
 const _v = new THREE.Vector3();
 
+/**
+ * Metres of clearance, after the road's own corridor, below which a footprint
+ * edge counts as facing the street. A parcel starts life laid on the back of
+ * the pavement, so a real frontage measures ~0; 3 m allows for the setback
+ * jitter and a skew junction without reaching across a garden.
+ */
+const EXPOSED = 3.0;
+const _noDirs = [];
+
 /* -------------------------------------------------------------------------- */
 /* Shadow LOD                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -700,7 +709,14 @@ export default class Buildings {
         if (len < 1e-3) continue;
         const id = segs.length;
         segs.push({ ax: a.x, az: a.z, dx: dx / len, dz: dz / len, len, w,
-                    street: (e.walk || 0) >= 0.3 });
+                    street: (e.walk || 0) >= 0.3,
+                    // Public realm a building should address, which is NOT the
+                    // same as `street` above: every Back Bay service alley
+                    // carries a 1.0-1.4 m footway and so passes that test.
+                    // `buildPlots` already refuses to hand frontage to an alley
+                    // or a highway, and `_streetDirs` has to agree with it --
+                    // counting alleys turned 460 corner buildings into 568.
+                    pub: e.type !== 'alley' && e.type !== 'highway' && !e.bridged });
         const x0 = Math.floor((Math.min(a.x, b.x) - w) / CELL);
         const x1 = Math.floor((Math.max(a.x, b.x) + w) / CELL);
         const z0 = Math.floor((Math.min(a.z, b.z) - w) / CELL);
@@ -875,8 +891,83 @@ export default class Buildings {
     };
     push(frontageDir(plot, poly));
     if (cutDirs) for (const d of cutDirs) push(d);
+    for (const d of this._streetDirs(poly)) push(d);
     if (!dirs.length) return poly === plot.polygon ? plot : { ...plot, polygon: poly };
     return { ...plot, polygon: poly, frontDirs: plot.frontDirs || dirs };
+  }
+
+  /**
+   * Outward directions of every footprint edge that faces open street.
+   *
+   * A parcel gets its frontage direction from the road it was subdivided off,
+   * plus one per road corridor that clipped it. That misses the corner case
+   * it most needs to catch: a lot on a junction whose flank faces the cross
+   * street across a gap it never actually touched, so nothing clipped it and
+   * nothing told `makeSpec` there is a second street out there. Measured over
+   * the whole city, 460 buildings have two or more street-exposed edges and
+   * every single one of them receives exactly one front.
+   *
+   * A NEAREST-CORRIDOR test, not a ray: a ray fired down the edge normal slips
+   * through the gap at a junction and reports no street for a wall standing on
+   * one. Three conditions, all necessary:
+   *
+   *   - the street lies OUTWARD of the edge, so a wall is never credited with
+   *     a street behind it;
+   *   - it runs roughly PARALLEL to the edge, so a wall is not called
+   *     street-facing because a cross street passes its far end;
+   *   - after deducting the road's own corridor -- carriageway, kerb and
+   *     footway -- what is left is under `EXPOSED`, i.e. the wall is basically
+   *     standing on the pavement.
+   *
+   * Deliberately NOT "every edge is a front". A rowhouse flank buried against
+   * next door and a rear service wall must stay secondary, and they do: this
+   * promotes 460 buildings out of 10,048, and 12 edges city-wide are in
+   * `spec.front` without being exposed.
+   */
+  _streetDirs(poly) {
+    const idx = this._roadIndex;
+    if (!idx) return _noDirs;
+    const C = idx.cell;
+    // `buildPlots` walks both sides of every road, so half the parcels in the
+    // city arrive wound one way and half the other. Taking `(dz, -dx)` as
+    // "outward" is therefore right exactly half the time -- which is what it
+    // looked like: the first cut of this fixed 221 of 460 corner buildings and
+    // missed the rest. Resolve outward against the centroid instead, and the
+    // winding stops mattering.
+    const c = polyCentroid(poly);
+    let out = null;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      let ex = b.x - a.x, ez = b.z - a.z;
+      const L = Math.hypot(ex, ez);
+      if (L < 1e-6) continue;
+      ex /= L; ez /= L;
+      let nx = ez, nz = -ex;
+      if ((c.x - a.x) * nx + (c.z - a.z) * nz > 0) { nx = -nx; nz = -nz; }
+      const mx = (a.x + b.x) * 0.5, mz = (a.z + b.z) * 0.5;
+      let best = EXPOSED;
+      const cx0 = Math.floor((mx - C) / C), cx1 = Math.floor((mx + C) / C);
+      const cz0 = Math.floor((mz - C) / C), cz1 = Math.floor((mz + C) / C);
+      for (let cz = cz0; cz <= cz1 && best >= 0; cz++) {
+        for (let cx = cx0; cx <= cx1; cx++) {
+          const list = idx.cells.get(cx * 100003 + cz);
+          if (!list) continue;
+          for (const si of list) {
+            const s = idx.segs[si];
+            if (!s.pub) continue;
+            if (Math.abs(s.dx * ex + s.dz * ez) < 0.70) continue;
+            let t = (mx - s.ax) * s.dx + (mz - s.az) * s.dz;
+            t = t < 0 ? 0 : t > s.len ? s.len : t;
+            const vx = s.ax + s.dx * t - mx, vz = s.az + s.dz * t - mz;
+            if (vx * nx + vz * nz <= 0) continue;
+            const d = Math.hypot(vx, vz) - s.w;
+            if (d < best) best = d;
+          }
+        }
+      }
+      if (best < EXPOSED) (out || (out = [])).push({ x: nx, z: nz });
+    }
+    return out || _noDirs;
   }
 
   /**
