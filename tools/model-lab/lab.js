@@ -210,6 +210,31 @@ function frame() {
   const spec = specs[state.spec];
   const bb = bounds(state.mb);
   const t = specBounds(spec);
+  // An explicit viewpoint stands a stated distance out along the target's own
+  // front normal. That is how a LOD band gets judged at the distance it
+  // actually applies at -- LOD 1 runs 175-410 m, and a preset that frames the
+  // building nicely is not standing anywhere near there.
+  if (state.view && typeof state.view === 'object') {
+    const n = frontNormal(spec);
+    const i0 = spec.front.size ? [...spec.front][0] : 0;
+    const a = spec.poly[i0], b = spec.poly[(i0 + 1) % spec.poly.length];
+    const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+    const d = state.view.dist ?? 200;
+    ground.position.set(t.cx, spec.base - 0.02, t.cz);
+    ground.scale.set(2400, 2400, 1);
+    camera.position.set(mx + n.x * d, spec.base + (state.view.eye ?? 34), mz + n.z * d);
+    camera.lookAt(mx, spec.base + (state.view.aim ?? 8), mz);
+    camera.updateProjectionMatrix();
+    const r0 = Math.max(bb.w, bb.d, bb.h) * 0.75 + 12;
+    sun.target.position.set(t.cx, spec.base + t.h * 0.4, t.cz);
+    sun.position.set(t.cx - r0 * 0.8, spec.base + t.h * 0.5 + r0 * 1.1, t.cz + r0 * 0.62);
+    const sc = sun.shadow.camera;
+    sc.left = -r0; sc.right = r0; sc.top = r0; sc.bottom = -r0;
+    sc.near = 0.5; sc.far = r0 * 4 + 60;
+    sc.updateProjectionMatrix();
+    render();
+    return;
+  }
   const v = VIEWS[state.view] || VIEWS.threequarter;
 
   ground.position.set(t.cx, spec.base - 0.02, t.cz);
@@ -273,6 +298,50 @@ function render() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Standing benchmark scenes                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Fixed subjects, fixed cameras, fixed bands. `band` is the horizontal slice of
+ * the frame that holds the subject -- sky and bare ground carry no gradient and
+ * only dilute `detail()`.
+ *
+ * Indices are into the real city and are stable as long as the parcel chain is:
+ * `Buildings._buildSpecs` seeds each spec from its plot id, and the plot list
+ * is sorted by distance from the centre.
+ */
+const SCENES = [
+  // 185 m stone tower, close. Stands for the 111 stone towers.
+  { name: 'stoneTower_lod0', spec: 2509, lod: 0, view: 'threequarter', band: [80, 340] },
+  { name: 'stoneTower_lod1', spec: 2509, lod: 1, view: 'threequarter', band: [80, 340] },
+  // 181 m glass tower. Stands for the 154 curtain-wall buildings.
+  { name: 'glassTower_lod1', spec: 4551, lod: 1, view: 'threequarter', band: [80, 340] },
+  // A Back Bay block seen from 230 m: inside the LOD 1 band, elevated enough
+  // that rooflines are the silhouette. Stands for the low brownstone fabric,
+  // which is most of the city.
+  { name: 'backBay_lod1', spec: 345, lod: 1, radius: 190,
+    view: { dist: 230, eye: 34, aim: 8 }, band: [230, 340] },
+  { name: 'backBay_lod0', spec: 345, lod: 0, radius: 190,
+    view: { dist: 230, eye: 34, aim: 8 }, band: [230, 340] },
+  // A 1920s setback tower with a stepped granite crown, seen from just below
+  // the parapet. Stands for the 133 buildings with setbacks and the 111 towers
+  // over 60 m, and is the scene where inset geometry is most legible.
+  { name: 'crownTower_lod1', spec: 261, lod: 1, radius: 0,
+    view: { dist: 88, eye: 92, aim: 99 }, band: [60, 300] },
+  // A mansard row from 180 m, looking down onto the roofline. Stands for the
+  // 2,686 buildings -- 27% of Boston -- that carry a mansard, whose dormers are
+  // the single most recognisable thing about a Back Bay or South End skyline.
+  { name: 'mansardRow_lod1', spec: 345, lod: 1, radius: 70,
+    view: { dist: 180, eye: 44, aim: 13 }, band: [180, 330] },
+  { name: 'mansardRow_lod0', spec: 345, lod: 0, radius: 70,
+    view: { dist: 180, eye: 44, aim: 13 }, band: [180, 330] },
+  // Control: one rowhouse at conversational distance. LOD 0 close-up work
+  // should not be disturbed by anything aimed at distance.
+  { name: 'rowhouse_lod0_ctrl', spec: 345, lod: 0, radius: 70,
+    view: { dist: 17, eye: 6, aim: 6 }, band: [40, 420] },
+];
+
+/* -------------------------------------------------------------------------- */
 /* Public API                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -333,6 +402,45 @@ const api = {
       if (f.minStoreys !== undefined && s.storeys < f.minStoreys) continue;
       out.push(i);
       if (out.length >= (f.limit ?? 40)) break;
+    }
+    return out;
+  },
+
+  /**
+   * The standing benchmark. One call gives every number a modeling cycle needs
+   * for a BEFORE or an AFTER, and -- more importantly -- gives the SAME numbers
+   * across cycles, so a later change cannot quietly undo an earlier one.
+   *
+   * Every scene names the population it stands for. Controls are scenes the
+   * change under test is expected NOT to move; a control that moves is the
+   * finding, not a rounding error.
+   */
+  bench(extra = []) {
+    const out = {};
+    for (const sc of [...SCENES, ...extra]) {
+      api.show(sc.spec, { lod: sc.lod, radius: sc.radius ?? 0, view: sc.view });
+      out[sc.name] = {
+        tris: state.tris + state.glassTris,
+        detail: api.detail(sc.band[0], sc.band[1]),
+        d: api.digest(10, 8),
+      };
+    }
+    return out;
+  },
+
+  /** Compare two `bench()` results. */
+  diff(before, after) {
+    const out = {};
+    for (const k of Object.keys(after)) {
+      if (!before[k]) continue;
+      const b = before[k], a = after[k];
+      out[k] = {
+        tris: b.tris === a.tris ? b.tris + ' (=)' : b.tris + ' -> ' + a.tris +
+              '  ' + (a.tris >= b.tris ? '+' : '') + (100 * (a.tris / b.tris - 1)).toFixed(1) + '%',
+        detail: b.detail.toFixed(3) + ' -> ' + a.detail.toFixed(3) +
+                '  ' + (a.detail >= b.detail ? '+' : '') + (100 * (a.detail / b.detail - 1)).toFixed(1) + '%',
+        tilesMoved: a.d.filter((t, i) => t.h !== b.d[i].h).length + '/' + a.d.length,
+      };
     }
     return out;
   },

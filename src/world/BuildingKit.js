@@ -1612,15 +1612,83 @@ export function orientOutward(poly) {
   return (nx * mx + nz * mz) < 0 ? poly.slice().reverse() : poly;
 }
 
-/** Naive inset — correct for the convex, near-rectangular parcels we generate. */
+/**
+ * Inset a convex ring by `d` metres, measured PERPENDICULAR to each edge.
+ *
+ * This used to walk every vertex `d` metres toward the centroid, which is a
+ * radial scale, not an offset -- and a radial scale only equals an offset on a
+ * circle. Boston parcels are long thin rectangles, and on those the two long
+ * sides sit far closer to the centroid than the corners do, so they barely
+ * moved. Measured against what each caller asked for:
+ *
+ *   flat roof deck    7.4 x 22.4    asked 0.24    long sides got 0.075   31%
+ *   shell inset       7.4 x 22.4    asked 0.25    long sides got 0.078   31%
+ *   mansard slope     8   x 20      asked 1.15    long sides got 0.427   37%
+ *   tower setback     29  x 61      asked 3.66    long sides got 1.571   43%
+ *   1920s crown step  26  x 55      asked 1.40    long sides got 0.598   43%
+ *   mech penthouse    30  x 40      asked 4.50    long sides got 2.700   60%
+ *
+ * So setbacks hardly stepped in on a tower's broad faces, a stepped granite
+ * crown came out as four near-identical slabs stacked 2.2 m apart, and the
+ * shell's 0.25 m z-fighting guard -- which is a correctness guarantee, not a
+ * look -- was really 0.078 m on the very faces a rowhouse presents to the
+ * street.
+ *
+ * Offsetting each edge line inward and re-intersecting neighbours is exact for
+ * convex rings, which is what every caller passes: parcels are convex quads
+ * (10,045 of 10,048) or convex pentagons, and every derived ring here is
+ * another inset of one of those.
+ *
+ * Collapse behaviour is deliberately preserved. Callers such as `roofField`
+ * already test the result's bounds and bail when an inset ate a small roof, so
+ * an over-inset must degenerate toward a point rather than turn inside out.
+ */
 export function insetPoly(poly, d) {
+  const n = poly.length;
+  if (n < 3) return poly;
   const c = polyCentroid(poly);
+  if (!(d > 0)) return poly.map((p) => ({ x: p.x, z: p.z }));
+
+  // One inward-offset line per edge, as a point plus a direction.
+  const px = new Float64Array(n), pz = new Float64Array(n);
+  const ex = new Float64Array(n), ez = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const a = poly[i], b = poly[(i + 1) % n];
+    let dx = b.x - a.x, dz = b.z - a.z;
+    const L = Math.hypot(dx, dz);
+    if (L < 1e-9) { px[i] = a.x; pz[i] = a.z; ex[i] = 1; ez[i] = 0; continue; }
+    dx /= L; dz /= L;
+    // Take the normal that points at the centroid, so this works whichever way
+    // the ring is wound -- callers pass both orientations.
+    let nx = dz, nz = -dx;
+    if ((c.x - a.x) * nx + (c.z - a.z) * nz < 0) { nx = -nx; nz = -nz; }
+    px[i] = a.x + nx * d; pz[i] = a.z + nz * d;
+    ex[i] = dx; ez[i] = dz;
+  }
+
+  // Vertex i is where edge i-1 meets edge i.
   const out = [];
-  for (const p of poly) {
-    const dx = p.x - c.x, dz = p.z - c.z;
-    const l = Math.hypot(dx, dz) || 1;
-    const k = Math.max(0, l - d) / l;
-    out.push({ x: c.x + dx * k, z: c.z + dz * k });
+  for (let i = 0; i < n; i++) {
+    const j = (i + n - 1) % n;
+    const den = ex[j] * ez[i] - ez[j] * ex[i];
+    if (Math.abs(den) < 1e-9) {           // parallel: nothing to intersect
+      out.push({ x: px[i], z: pz[i] });
+      continue;
+    }
+    const t = ((px[i] - px[j]) * ez[i] - (pz[i] - pz[j]) * ex[i]) / den;
+    out.push({ x: px[j] + ex[j] * t, z: pz[j] + ez[j] * t });
+  }
+
+  // Over-inset: the offset lines crossed and the ring turned itself inside out.
+  //
+  // Testing the sign of the signed area is NOT enough, and assuming it was cost
+  // a test: inset a 3 x 3 square by 5 and every edge passes through the middle
+  // and out the far side, which is a 180-degree flip, not a mirror -- the
+  // winding survives and the area comes back POSITIVE and larger (49 from 9).
+  // An inset can only ever remove area, so growth is the reliable tell.
+  const a0 = Math.abs(polyArea(poly)), a1 = Math.abs(polyArea(out));
+  if (polyArea(poly) * polyArea(out) <= 0 || a1 > a0 || a1 < a0 * 1e-4) {
+    return poly.map(() => ({ x: c.x, z: c.z }));
   }
   return out;
 }

@@ -2010,6 +2010,14 @@ export function buildBuilding(spec, mb, gb, lod) {
         mb.wall(a.x, a.z, b.x, b.z, cy, cy + 2.2, spec.wallSurf, spec.wallCol, 0, 0);
       }
       mb.cap(cp, cy + 2.2, spec.roofSurf, spec.roofCol, true);
+      // ...and its underside. A ledge here is a bare one-sided cap, and the only
+      // place anybody ever stands is the street, 100 m BELOW it: back-face
+      // culling removed every ledge and the crown read as a stack of floating
+      // bright slats with sky between them. Every other stepped ledge in this
+      // file is already saved from this by a coping box standing on it -- the
+      // setback ledge twenty lines up has one -- and the crown is the one that
+      // does not. Two triangles a step, on ~70 buildings.
+      mb.cap(cp, cy + 2.2 - 0.03, spec.wallSurf, spec.wallCol, false);
       cy += 2.2;
       cp = insetPoly(cp, 1.5);
       if (Math.hypot(cp[0].x - cp[2].x, cp[0].z - cp[2].z) < 3) break;
