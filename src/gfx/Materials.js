@@ -603,7 +603,20 @@ export default class Materials {
     typeof color === 'string' ? c.setStyle(color[0] === '#' ? color : '#' + color) : c.set(color);
     // Snap to a 5-bit-per-channel grid: callers passing jittered colours still
     // land on a shared material instead of spawning a new draw batch each.
-    c.setRGB(Math.round(c.r * 31) / 31, Math.round(c.g * 31) / 31, Math.round(c.b * 31) / 31);
+    //
+    // The snap MUST happen in sRGB, where the palette is authored. `setRGB` writes
+    // the working (linear) space, and a 1/31 step there is enormous near black --
+    // linear 0.0129 is sRGB 31, so a whole dark channel rounds to zero. Measured
+    // over the 36 palette entries it shifted a channel by 9.6/255 on average and
+    // 31/255 at worst, destroyed hue on saturated darks (#8d1f24 -> #8b0032),
+    // LIFTED near-blacks (#23262b -> #323232), and collapsed three distinct
+    // colours -- sedan navy #1b2a3d, pickup slate #1f2933 and suv green #1e3a2c --
+    // onto the identical teal #003232. Because the cache is keyed on the snapped
+    // value, those cars then shared one material and rendered identically. That is
+    // most of why the fleet reads as washed-out and samey.
+    const q = (v) => (Math.round((v / 255) * 31) * 255 / 31) | 0;
+    const srgb = c.getHex();
+    c.setHex((q((srgb >> 16) & 255) << 16) | (q((srgb >> 8) & 255) << 8) | q(srgb & 255));
     const key = 'car_paint:' + c.getHexString();
     let m = this._carPaints.get(key);
     if (m) return m;
