@@ -2140,6 +2140,35 @@ function runPlacement(sys, L, counting, take) {
   // Hardscape carries more seating per hectare than lawn does, which is why a
   // plaza and a formal square are rated above a lawn or a mall.
   const PARK_FURN_PER_HA = { plaza: 60, formal: 55, lawn: 25, mall: 22 };
+  // Park furniture has to keep out of its own way. Scattered over a whole park
+  // it mostly did by luck; concentrated into a 3 m band beside the walks it no
+  // longer does -- measured on the first pass, 234 of 2,178 items had a
+  // neighbour inside 1 m and the closest pair was 0.24 m apart, which is a
+  // bench standing inside a lamp. `clear()` cannot see this: it tests street
+  // TREE sites and nothing else.
+  const PARK_FURN_SEP = 2.4;
+  const OCC = 3;
+  const taken = new Map();
+  const room = (x, z, r) => {
+    const cx = Math.floor(x / OCC), cz = Math.floor(z / OCC);
+    for (let a = -1; a <= 1; a++) {
+      for (let c = -1; c <= 1; c++) {
+        const l = taken.get(`${cx + a},${cz + c}`);
+        if (!l) continue;
+        for (let i = 0; i < l.length; i += 2) {
+          const dx = l[i] - x, dz = l[i + 1] - z;
+          if (dx * dx + dz * dz < r * r) return false;
+        }
+      }
+    }
+    return true;
+  };
+  const claim = (x, z) => {
+    const k = `${Math.floor(x / OCC)},${Math.floor(z / OCC)}`;
+    let l = taken.get(k);
+    if (!l) taken.set(k, l = []);
+    l.push(x, z);
+  };
   let pi = 0;
   for (const p of L.parkAreas) {
     const rng = new RNG(31337 + (pi++) * 911);
@@ -2168,24 +2197,27 @@ function runPlacement(sys, L, counting, take) {
       }
       if (!pointInPoly(x, z, p.poly) || L.inWater(x, z)) continue;
       if (L.onPath(x, z, 0.45)) continue;         // the walk is for walking on
+      if (!room(x, z, PARK_FURN_SEP)) continue;
       // Face the walk if this came off one, and let a lawn piece sit anyhow.
       const rot = (fx || fz) ? facing(fx, fz) + rng.range(-0.11, 0.11)
                              : rng.range(0, 6.28);
       const r = rng.f();
+      let put = true;
       if (r < 0.34 && take('bench')) {
-        b('benchPark').add(x, g(x, z), z, rot, 1, rng.range(0.88, 1.06)); placed++;
+        b('benchPark').add(x, g(x, z), z, rot, 1, rng.range(0.88, 1.06));
       } else if (r < 0.52 && take('lamp')) {
         b('lampTwin').add(x, g(x, z), z, rot, rng.range(0.97, 1.04), rng.range(0.9, 1.05));
-        sys._lampSites.push({ x, y: g(x, z) + 4.3, z }); placed++;
+        sys._lampSites.push({ x, y: g(x, z) + 4.3, z });
       } else if (r < 0.66 && take('bin')) {
-        b('wireBin').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05)); placed++;
+        b('wireBin').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05));
       } else if (r < 0.76 && take('bollard')) {
-        b('bollard').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05)); placed++;
+        b('bollard').add(x, g(x, z), z, rot, 1, rng.range(0.9, 1.05));
       } else if (r < 0.84 && take('planter')) {
-        b('planter').add(x, g(x, z), z, rot, rng.range(0.9, 1.15), rng.range(0.88, 1.05)); placed++;
+        b('planter').add(x, g(x, z), z, rot, rng.range(0.9, 1.15), rng.range(0.88, 1.05));
       } else if (r < 0.90 && take('litter')) {
-        b('binBags').add(x, g(x, z), z, rot, rng.range(0.7, 1.0), rng.range(0.85, 1.05)); placed++;
-      }
+        b('binBags').add(x, g(x, z), z, rot, rng.range(0.7, 1.0), rng.range(0.85, 1.05));
+      } else put = false;
+      if (put) { placed++; claim(x, z); }
     }
   }
 
@@ -2215,8 +2247,10 @@ function runPlacement(sys, L, counting, take) {
       for (const side of [-1, 1]) {
         const x = e.x + nx * 1.6 * side, z = e.z + nz * 1.6 * side;
         if (L.onPath(x, z, 0.1)) continue;
+        if (!room(x, z, 1.6)) continue;
         if (!take('bollard')) continue;
         b('bollard').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.95, 1.05));
+        claim(x, z);
       }
     }
   }
