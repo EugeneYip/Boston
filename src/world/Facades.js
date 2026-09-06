@@ -1656,7 +1656,20 @@ function mansardRoof(mb, gb, poly, y, spec, lod) {
   if (lod < 2) roofClutter(mb, insetPoly(top, 0.5), y + mh, spec, lod);
 
   // Dormers on the street-facing slopes.
-  if (lod === 0) {
+  //
+  // Kept at LOD 1, where they used to be dropped. A mansard carries no other
+  // relief at all -- it is one unbroken slate plane -- so the dormer row IS the
+  // roofline, and 2,686 buildings here have a mansard: 27% of Boston, and most
+  // of what a Back Bay or South End skyline is made of. LOD 1 starts at 175 m,
+  // which is a couple of blocks, so dropping them flattened a quarter of the
+  // city's rooflines well inside the distance you can still read them at.
+  //
+  // What LOD 1 drops is the two things that stop being resolvable: the glazed
+  // pane (an interior-mapped window at 200 m is a dark smudge, and it costs a
+  // GlassBuf entry and a second draw) and the slate hood over the cheek. The
+  // white box against dark slate is the whole silhouette, and it is 10
+  // triangles.
+  if (lod < 2) {
     for (const i of spec.front) {
       const a = poly[i], b = poly[(i + 1) % n];
       const e = edgeFrame(a, b);
@@ -1669,6 +1682,7 @@ function mansardRoof(mb, gb, poly, y, spec, lod) {
         const rot = Math.atan2(e.nx, e.nz);
         const c = P(e, u, 0, off - dd * 0.5);
         mb.box(c[0], fy + dh * 0.5, c[2], dw, dh, dd, rot, 'wood_white', [0.96, 0.96, 0.94]);
+        if (lod > 0) continue;
         mb.box(c[0], fy + dh + 0.12, c[2], dw + 0.3, 0.16, dd + 0.24, rot,
           'slate', [0.95, 0.96, 0.98]);
         const fp = P(e, u, 0, off);
