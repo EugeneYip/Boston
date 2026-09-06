@@ -513,7 +513,20 @@ function fromCityGraph(ctx, city) {
       if (!e) continue;
       const o = byId.get(e.a === n.id ? e.b : e.a);
       if (!o) continue;
-      const dx = o.x - n.x, dz = o.z - n.z, l = Math.hypot(dx, dz) || 1;
+      // The direction the road actually LEAVES this junction in, taken from the
+      // first span of its polyline, not the straight chord to the far node. On
+      // a curved arterial those differ by tens of degrees, and every corner in
+      // the junction pass is measured along this vector — which is why fixing
+      // the corner clearances still left 15-26% of junction props in the road.
+      const atA = e.a === n.id;
+      const pts = e.pts;
+      let dx, dz;
+      if (pts && pts.length >= 2) {
+        const p0 = atA ? pts[0] : pts[pts.length - 1];
+        const p1 = atA ? pts[1] : pts[pts.length - 2];
+        dx = p1.x - p0.x; dz = p1.z - p0.z;
+      } else { dx = o.x - n.x; dz = o.z - n.z; }
+      const l = Math.hypot(dx, dz) || 1;
       legs.push({ dx: dx / l, dz: dz / l, hw: (e.width || (e.lanes || 2) * 3.5) / 2 });
     }
     if (!legs.length) continue;
