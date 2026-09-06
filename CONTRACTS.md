@@ -1105,3 +1105,76 @@ mesh, yaw within 15 degrees, scale within 8% — is:
 Same-mesh-regardless-of-pose runs 7.9-15.2%, which is what a small species
 palette looks like and is correct. Per-instance rotation and scale already do
 the work. Do not multiply stored assets on this evidence.
+
+## Park walk edging (2026-09-06)
+
+Park walks carry a **granite kerb** along their primary circulation. No new
+material family was created and none is needed: `granite` is already a
+registered surface (tile 2.4 m, `#8b8a86`, roughness 0.78, relief 0.012, ashlar
+joints) used by Landmarks and by `stoneTower` trim, and it is the New England
+kerbstone the real parks are edged with. Total surface inventory suitable for
+park ground — `asphalt`, `asphalt_worn`, `sidewalk`, `sidewalk_brick`,
+`cobblestone`, `dirt`, `grass`, `granite`, `limestone`, `concrete`,
+`concrete_stained`, `brick_red/brown` — was checked before writing any geometry.
+
+Form: two quads per side per span, a chamfered top from the walk surface out to
+the kerb line, then the face down to the lawn. `KERB_W` 0.30 m, `KERB_H` 0.10 m.
+Heights come from the same lawn triangulation the walks use.
+
+**Hierarchy is by ROLE.** `loop`, `spine`, `diagonal` and `shore` are primary
+circulation and are kerbed; `spur`, `cross` and `axis` stay flush, because a
+20 m link to a gate is a way through the grass, not a built street.
+
+**Spans are decimated** — a vertex is kept on a turn over 0.045 rad or a 12 m
+run. That is what makes it affordable: 22,688 m of kerb costs 7,240 triangles,
+**0.32 tris per metre**, where a flat 3 m span rate would have cost 1.33.
+
+**A kerb may not run across another walk.** Every kerb vertex is tested against
+every other path's ribbon on a 24 m hash and the span is dropped. Boston Common's
+diagonals cross its loop and each other at 33 points.
+
+## Park walk connectivity (2026-09-06)
+
+More than one connected component per park is usually CORRECT, and a metric
+that targets one is wrong. The Rose Kennedy Greenway genuinely is fifteen
+pieces with a cross street between each; the Back Bay Fens is nine. Boston
+Common and the Public Garden are one each, which is also correct.
+
+What is not correct is a CONNECTOR that connects nothing. Only `cross` and
+`spur` runs are eligible to be dropped, and only when they touch no other run.
+Spine and loop fragments are left alone.
+
+## Audited and sound — park surfaces (2026-09-06)
+
+- **Path junctions need no hardscape.** The ribbons overlap coplanar, share one
+  merged mesh and one material, and carry world-planar UV, so an X reads
+  continuous with no z-fighting, no pinched triangles and no grass wedge. Do
+  not build a junction paving system for parks.
+- **The park/pavement gap** is p50 0.0 m and p75 0.0 m (measured last pass).
+- **Kerb geometry**: 0 degenerate triangles, longest edge 17.2 m, triangle
+  areas p50 0.75 m2 / max 2.67 m2 — no spikes at any turn in the network.
+
+## Whole-world audit, 2026-09-06 — measured clean
+
+Recorded so the next pass does not re-derive them:
+
+- **Prop grounding on bridges.** 47 props sit more than 1.5 m below a bridge
+  deck (Longfellow, North Washington, Mass Ave). **All 47 are explained**: each
+  matches the elevation of a surface road passing under the bridge, and zero are
+  orphaned. 1,824 props on those decks are correctly on them.
+- **The `nearestEdge` elevation trap.** Measuring a prop against
+  `nearestEdge -> sample().y` reports every ground family at p99 ~10-13 m and
+  max ~13.9 m. That is the buried Central Artery: I-93 North is `bridged` with
+  roadY -11.7 m under terrain at +9.3 m, so Greenway surface furniture above
+  the tunnel reads as "floating 21 m". Always confirm against the road the prop
+  actually belongs to.
+- **Road decal density.** 89,486 instances, 1,097 per km over 81.6 km of public
+  street, and the per-district spread is 1,010-1,255/km. No starved district.
+  `decal_crosswalk/stopBar/arrow/paintFaded` remain at 0 by design.
+- **Tree scale.** Heights p50 16.4 m, p95 28.3 m, max 38.7 m. Every one of the
+  334 trees over 30 m is IN A PARK; zero are on streets, because `SPECIES` for
+  street trees excludes American elm and copper beech. The oversized canopy
+  visible from a Back Bay street is a Comm Ave Mall elm and is correct.
+- **`payStation` at 18 instances** is not dead content. It is a 12% alternative
+  to a run of meters per street face and shares the `meter` budget key, so it
+  inherits that key's ~25% acceptance.

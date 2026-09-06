@@ -1378,3 +1378,88 @@ now. Verified before writing them off, not assumed:
 10. Park furniture cannot see park TREES: Props builds its layout before
     Vegetation plants. 21 of 2,159 items sit within 1 m of a trunk, which is a
     bench under a tree rather than in one, so this is cosmetic today.
+
+## Park surface + edge detail — 2026-09-06 (`8d3cacb` … `1a8cb7c`)
+
+Three commits, then a fresh whole-world audit that came back clean.
+
+| commit | change | effect |
+|---|---|---|
+| `8d3cacb` | park walks get a granite kerb | 22,688 m of kerb for 7,240 tris |
+| `fa96e92` | a gate that leads nowhere is not an entrance | spurs 11 → 25 |
+| `1a8cb7c` | a connector that connects nothing is not a path | 7 orphan stubs removed |
+
+### Headline
+
+The question was whether the new walks read as physical public realm or as
+flat coloured strips laid on grass. At eye level they were strips: a hard seam,
+a value step, no thickness. They now sit in the lawn behind a granite kerb.
+
+The previous pass stopped here believing a third path material family was
+needed. It was not. `granite` was already registered and already used by
+Landmarks and `stoneTower` trim — the inventory was the whole of the work, and
+the cost is one texture set and one draw call.
+
+Two other things were bugs of the same shape as the pass before:
+
+- **`MIN_RUN = 18 m` was applied to spurs.** Right for a clipped fragment of a
+  long walk, exactly wrong for a connector whose job is to be short. Every spur
+  under 18 m was generated and thrown away, leaving 8 of 35 gates as a bollard
+  pair on grass with nothing behind them — one of them 67.6 m from any path.
+- **Connectors outliving what they connect.** Where a cross street clipped a
+  ribbon's spine, the `cross` link at that point survived alone as a 12-54 m
+  stub from grass to grass.
+
+### Numbers
+
+    kerb run           22,688 m over 11,344 m of centreline (86.6% of walks)
+    kerb triangles      7,240   = 0.32 per metre of kerb (decimated;
+                                  a flat 3 m span rate would be 1.33)
+    park path meshes    8,736 -> 16,012 tris, +1 draw, +3 textures (granite)
+    spur runs              11 -> 25       cross links     25 -> 22
+    gates over 8 m from a walk   8 -> 2   over 15 m        3 -> 1
+    gate to nearest walk   p50 1.3 m, p75 1.9 m, p90 2.2 m
+    runs                   83 -> 92       walks   13,101 -> 13,041 m
+    isolated connectors     7 -> 0
+
+Validated on the emitted kerb geometry, all 5,772 vertices: 0 outside a park
+(min 0.91 m in), **0 in water** (min 2.87 m — the lagoon control holds), 0 on a
+carriageway (min 0.21 m), 0 degenerate triangles, no spikes. Checked in
+daylight, dusk, night and rain.
+
+### Fresh whole-world audit — nothing high-impact and safe remains
+
+Ten views plus five measured audits. Every thread resolved to "already correct"
+or "measurement artefact"; details and the traps are in CONTRACTS.md. In short:
+bridge prop grounding is fully explained (47 of 47), road decal density is
+1,097/km with a 1,010-1,255 district spread, tree scale is correct with all 334
+trees over 30 m inside parks, path junctions need no hardscape, and `payStation`
+at 18 is a shared-budget artefact rather than dead content.
+
+### Remaining top 10 SAFE priorities
+
+1. Park walk width hierarchy: the Esplanade promenade uses the same 3.4 m as an
+   inland diagonal. Tuning, with no measured defect behind it.
+2. Park hedge density is floor-bound in the smallest parks — 15/ha in the
+   Common against 151/ha in a 0.4 ha Comm Ave Mall block. The mall blocks look
+   right, so the metric may be the thing that is wrong.
+3. The Public Garden's axial walks stop at the lagoon on both sides. Correct —
+   no bridge is authored — but a real park would route around.
+4. Park furniture cannot see park TREES: Props builds its layout before
+   Vegetation plants. 21 of 2,159 items sit within 1 m of a trunk. Cosmetic.
+5. Vehicle bumper rounding; bus glazing bay rhythm.
+6. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+7. 58 street-tree sites inside a carriageway — junction-box class, closed metric.
+8. 13 trees and 27 junction props over water at polygon boundaries.
+9. `payStation` shares the `meter` budget key, so ~9% of metered street faces
+   draw a pay station, lose the roll, and end up with no kerbside equipment.
+10. Mid-distance LOD 2 shells read flatter than the LOD 1 tier around them.
+
+### Owner-deferred, unchanged
+
+- **Street-graph expansion** (Cambridge / Charlestown / Fenway / Seaport).
+- **Tower crown art direction.** Re-checked this pass for objective breakage —
+  floating geometry, missing caps, holes, LOD dropout — and found none. Glass
+  towers and tall midrises carry `mech: true` and get a mechanical penthouse
+  over 40 m; `stoneTower` has setbacks and a stepped crown on 79 of 136. "Flat
+  parapet is plain" is a style decision, not a defect.
