@@ -604,6 +604,27 @@ function finishLayout(L) {
              z: s.az + s.dz * d, dx: s.dx, dz: s.dz };
   };
 
+  /**
+   * A kerbside point: `d` metres along the segment, then `off` metres to `side`,
+   * measured off the road's REAL polyline and its tangent there.
+   *
+   * Segments are the straight chord between two nodes, so on a curved edge
+   * chord arithmetic puts a prop somewhere the road is not. Measured over the
+   * 509 city segments, the chord-to-polyline deviation is 0.00 m at the median
+   * -- most streets really are straight -- but 4.56 m at p90, 52.47 m at p99
+   * and 155.06 m at worst, and on 46 segments (17.7 km, a quarter of the
+   * network by length) it exceeds the carriageway's own half-width. `surfaceY`
+   * already documents this ("the lateral drift is a separate defect and is not
+   * fixed here"); this is the fix, and `roadPoint` was already here waiting for
+   * it -- parked cars have used it all along.
+   */
+  L.kerbPoint = (s, d, off, side) => {
+    const p = L.roadPoint(s, d);
+    const nx = p.dz, nz = -p.dx;            // right-hand normal, as `makeSegment`
+    return { x: p.x + nx * off * side, z: p.z + nz * off * side,
+             nx, nz, dx: p.dx, dz: p.dz, ry: p.y };
+  };
+
   L.groundHeight = L.gh;
   L.districtAt = L.districtFor;
   L.inPark = (x, z) => L.parks.some(p => pointInPoly(x, z, p.poly));
@@ -631,8 +652,8 @@ function finishLayout(L) {
       const off = s.halfRoad + 1.05;
       for (let t = rng.range(5, 11); t < s.len - 5; t += spacing * rng.range(0.85, 1.15)) {
         if (rng.chance(0.13)) continue;       // gaps: driveways, dead trees, hydrants
-        const x = s.ax + s.dx * t + s.nx * off * side;
-        const z = s.az + s.dz * t + s.nz * off * side;
+        const kp = L.kerbPoint(s, t, off, side);
+        const x = kp.x, z = kp.z;
         if (L.inPark(x, z)) continue;
         sites.push({
           x, z, y: L.surfaceY(s, x, z) + KERB_H,
