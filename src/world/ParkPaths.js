@@ -579,12 +579,36 @@ export function buildParkPaths({ parks = [], net = null, water = [] } = {}) {
       }
     }
 
-    for (const p of local) paths.push(p);
+    // A connector that connects nothing is an error, not a path.
+    //
+    // `cross` links are emitted at intervals along a ribbon's spine, and `spur`s
+    // run from a gate to whatever circulation exists. Where the spine at that
+    // point was clipped away -- which happens all along the Greenway and the
+    // Fens, because a cross street cuts the park there -- the connector
+    // survives on its own as a stub from grass to grass. Spine and loop
+    // fragments are left alone: the Greenway genuinely IS fifteen pieces
+    // separated by streets, and a lone walk through one of them is correct.
+    const CONNECTOR = new Set(['cross', 'spur']);
+    const touches = (a, c) => {
+      const r = (a.width + c.width) / 2 + 1.5, r2 = r * r;
+      for (const q of a.pts) {
+        for (const t of c.pts) {
+          const dx = q.x - t.x, dz = q.z - t.z;
+          if (dx * dx + dz * dz < r2) return true;
+        }
+      }
+      return false;
+    };
+    const kept = local.filter((p, i) => {
+      if (!CONNECTOR.has(p.role)) return true;
+      return local.some((o, j) => j !== i && touches(p, o));
+    });
+    for (const p of kept) paths.push(p);
     report.push({
       name: park.name, kind: park.kind, shape: sh.linear ? 'linear' : 'area',
       area: Math.round(sh.area), elong: +sh.elong.toFixed(2), fill: +sh.fill.toFixed(2),
-      entrances: ent.length, runs: local.length,
-      length: Math.round(local.reduce((a, p) => a + p.length, 0)),
+      entrances: ent.length, runs: kept.length, dropped: local.length - kept.length,
+      length: Math.round(kept.reduce((a, p) => a + p.length, 0)),
     });
   }
 
