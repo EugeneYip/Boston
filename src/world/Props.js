@@ -806,6 +806,53 @@ function finishLayout(L) {
       return { ...p, bounds, area, fill: Math.max(0.04, area / bbox) };
     });
 
+  // --- Park walks ---
+  //
+  // `city.parkPaths` is drawn hard surface: a tree cannot grow out of one and a
+  // bench cannot stand in one. Indexed on a 20 m hash so a per-site test costs
+  // one bucket, because this is asked once per placement attempt across every
+  // park in the city.
+  {
+    const CELL = 20;
+    const cells = new Map();
+    for (const path of (L.city?.parkPaths || [])) {
+      const half = (path.width || 3) / 2;
+      const pts = path.pts || [];
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i], pad = half + 2;
+        const cx0 = Math.floor((Math.min(a.x, b.x) - pad) / CELL);
+        const cx1 = Math.floor((Math.max(a.x, b.x) + pad) / CELL);
+        const cz0 = Math.floor((Math.min(a.z, b.z) - pad) / CELL);
+        const cz1 = Math.floor((Math.max(a.z, b.z) + pad) / CELL);
+        for (let cx = cx0; cx <= cx1; cx++) {
+          for (let cz = cz0; cz <= cz1; cz++) {
+            const k = `${cx},${cz}`;
+            let list = cells.get(k);
+            if (!list) cells.set(k, list = []);
+            list.push(a.x, a.z, b.x, b.z, half);
+          }
+        }
+      }
+    }
+    L.onPath = cells.size
+      ? (x, z, pad = 0) => {
+        const list = cells.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`);
+        if (!list) return false;
+        for (let i = 0; i < list.length; i += 5) {
+          const ax = list[i], az = list[i + 1], bx = list[i + 2], bz = list[i + 3];
+          const r = list[i + 4] + pad;
+          const dx = bx - ax, dz = bz - az;
+          const len = dx * dx + dz * dz;
+          let t = len > 1e-12 ? ((x - ax) * dx + (z - az) * dz) / len : 0;
+          t = t < 0 ? 0 : t > 1 ? 1 : t;
+          const qx = ax + dx * t - x, qz = az + dz * t - z;
+          if (qx * qx + qz * qz < r * r) return true;
+        }
+        return false;
+      }
+      : () => false;
+  }
+
   // --- Frontage lines (building faces) for wall-mounted props ---
   //
   // ONLY the street-facing edge of each parcel. This used to walk all four
@@ -2055,6 +2102,7 @@ function runPlacement(sys, L, counting, take) {
     for (let i = 0; i < attempts; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly) || L.inWater(x, z)) continue;
+      if (L.onPath(x, z, 0.45)) continue;         // the walk is for walking on
       const r = rng.f();
       if (r < 0.34 && take('bench')) {
         b('benchPark').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.88, 1.06));

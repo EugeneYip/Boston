@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { WORLD } from '../core/Geo.js';
 import Terrain from './Terrain.js';
 import Districts from './Districts.js';
+import { buildParkPaths } from './ParkPaths.js';
 import RoadNetwork from './RoadNetwork.js';
 import Roads from './Roads.js';
 import Water from './Water.js';
@@ -66,7 +67,14 @@ export default class City {
       return URBAN.has(d) ? 0.10 : 0.85;
     });
     mark('ground');
-    this.districts.build(scene, materials, this.net);
+    // Park circulation. Derived from the park polygons, the street graph and
+    // the water rings — the walks a park needs to read as a park rather than as
+    // a green rectangle with trees on it. See `ParkPaths.js`.
+    const pp = buildParkPaths({ parks: this.districts.parkPolys, net: this.net,
+                                water: this.terrain.bodies });
+    this.parkPaths = pp.paths;
+    this.parkEntrances = pp.entrances;
+    this.districts.build(scene, materials, this.net, pp.paths);
     mark('parks');
 
     this.net.buildSidewalks();
@@ -164,6 +172,10 @@ export default class City {
     this.water = this.waterPolys;            // minimap reads `city.water` as polygons
     this.parks = this.districts.parkPolys;
     this.parkPolys = this.districts.parkPolys;
+    // Published for the same reason the parks are: Props and Vegetation must
+    // not plant on a walk, and furniture wants to know where the walks are.
+    this.parkPaths = this.parkPaths || [];
+    this.parkEntrances = this.parkEntrances || [];
     this.districtPolys = this.districts.polys;
 
     /**

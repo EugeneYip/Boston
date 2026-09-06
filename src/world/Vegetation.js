@@ -1143,6 +1143,8 @@ function placeVegetation(o) {
       if (!pointInPoly(x, z, p.poly)) continue;
       // The Public Garden's ring includes its lagoon.
       if (L.inWater && L.inWater(x, z)) continue;
+      // Nothing grows out of a walk. 7% of park area is now hard surface.
+      if (L.onPath && L.onPath(x, z, 0.7)) continue;
       const type = rng.chance(0.30) ? 'americanElm'
         : rng.chance(0.30) ? 'copperBeech'
           : rng.chance(0.5) ? 'planeLondon' : 'redMaple';
@@ -1158,18 +1160,21 @@ function placeVegetation(o) {
     for (let i = 0; i < nGrass; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
+      if (L.onPath && L.onPath(x, z, 0.15)) continue;
       grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.7, 1.5),
         rng.range(0.74, 1.14));
     }
     for (let i = 0; i < Math.round(340 * density); i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
+      if (L.onPath && L.onPath(x, z, 0.4)) continue;
       (rng.chance(0.6) ? shrubB : shrubB2)
         .add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.7, 1.6), rng.range(0.8, 1.1));
     }
     for (let i = 0; i < Math.round(260 * density); i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
+      if (L.onPath && L.onPath(x, z, 0.4)) continue;
       flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.8, 1.5), rng.range(0.85, 1.15));
     }
     // Hedge runs along a few internal lines.
@@ -1181,6 +1186,7 @@ function placeVegetation(o) {
       for (let t = 0; t < len; t += 1.2) {
         const x = ax + dx * t, z = az + dz * t;
         if (!pointInPoly(x, z, p.poly)) continue;
+        if (L.onPath && L.onPath(x, z, 0.5)) continue;   // a hedge across a walk is a wall
         hedgeB.add(x, g(x, z), z, a, rng.range(0.95, 1.05), rng.range(0.9, 1.06));
       }
     }
@@ -1195,6 +1201,7 @@ function placeVegetation(o) {
       const a = (i / 16) * Math.PI * 2 + rng.range(-0.12, 0.12);
       const rx = 52 + rng.range(-6, 8), rz = 27 + rng.range(-4, 6);
       const x = c.x + Math.cos(a) * rx, z = c.z + Math.sin(a) * rz;
+      if (L.onPath && L.onPath(x, z, 0.7)) continue;
       willow.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.85, 1.25),
         rng.range(0.86, 1.06), rng.range(-0.06, 0.06), rng.range(-0.06, 0.06));
     }
@@ -1203,6 +1210,7 @@ function placeVegetation(o) {
       const a = rng.range(0, 6.2832);
       const x = c.x + Math.cos(a) * rng.range(30, 68);
       const z = c.z + Math.sin(a) * rng.range(16, 38);
+      if (L.onPath && L.onPath(x, z, 0.4)) continue;
       flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.9, 1.5), rng.range(0.85, 1.1));
     }
   }

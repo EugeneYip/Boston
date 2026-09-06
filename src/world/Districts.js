@@ -239,8 +239,9 @@ export default class Districts {
     return { verts, tris };
   }
 
-  build(scene, materials, net) {
+  build(scene, materials, net, parkPaths = null) {
     const T = this.terrain;
+    const lawnIdx = new Map();          // park name -> the lawn surface, for paths
     const grassTile = materials?.get?.('grass')?.userData?.tileMeters || 4;
     const hardTile = materials?.get?.('concrete')?.userData?.tileMeters || 4;
     const groups = { lawn: [], plaza: [] };
@@ -285,6 +286,12 @@ export default class Districts {
         idx.push(t[0], t[2], t[1]);
       }
       if (!idx.length) continue;
+      // Keep the surface the paths have to sit on. Sampling `groundHeight` for
+      // them instead is wrong by up to 0.66 m: the lawn is a chord across up to
+      // 26 m of ground, so over a rise it floats, and 45% of a path's length
+      // would have been buried under the grass it is drawn on.
+      lawnIdx.set(park.name, { verts: m.verts, tris: m.tris,
+                               ys: m.verts.map(([x, z]) => T.groundHeight(x, z) + 0.05) });
       g.push({ pos, nrm, uv, col, idx, offset: base });
     }
 
@@ -331,7 +338,147 @@ export default class Districts {
       this._owned = this._owned || [];
       if (!src) this._owned.push(mat); else this._owned.push(mat);
     }
+
+    if (parkPaths?.length) this._buildPaths(scene, materials, parkPaths, lawnIdx);
     return this;
+  }
+
+  /**
+   * Height of the lawn a park path is drawn on, or null off the lawn.
+   * Barycentric on the same triangles `build` just emitted, so a path is on the
+   * grass by construction rather than by a lift chosen to cover the worst case.
+   */
+  static _lawnY(idx, x, z) {
+    if (!idx) return null;
+    const { verts: V, tris, ys } = idx;
+    for (let k = 0; k < tris.length; k++) {
+      const t = tris[k], a = V[t[0]], b = V[t[1]], c = V[t[2]];
+      const den = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+      if (Math.abs(den) < 1e-12) continue;
+      const u = ((b[1] - c[1]) * (x - c[0]) + (c[0] - b[0]) * (z - c[1])) / den;
+      if (u < -1e-6 || u > 1 + 1e-6) continue;
+      const v = ((c[1] - a[1]) * (x - c[0]) + (a[0] - c[0]) * (z - c[1])) / den;
+      if (v < -1e-6) continue;
+      const w = 1 - u - v;
+      if (w < -1e-6) continue;
+      return u * ys[t[0]] + v * ys[t[1]] + w * ys[t[2]];
+    }
+    return null;
+  }
+
+  /**
+   * Mesh the park walks. Two merged meshes for the whole city — the paved walks
+   * of the Common and the Esplanade, and the stone dust of the Public Garden
+   * and the Comm Ave Mall — on materials the city already builds, so nineteen
+   * parks' worth of circulation costs two draw calls and no new texture.
+   */
+  _buildPaths(scene, materials, paths, lawnIdx) {
+    const T = this.terrain;
+    const groups = { paved: [], stone: [] };
+    const c = new THREE.Color();
+
+    for (const path of paths) {
+      const pts = path.pts;
+      if (!pts || pts.length < 2) continue;
+      const g = groups[path.surface === 'stone' ? 'stone' : 'paved'];
+      if (!g) continue;
+      const idxSrc = lawnIdx.get(path.park);
+      const half = path.width / 2;
+      const pos = [], nrm = [], uv = [], col = [], idx = [];
+      const tile = path.surface === 'stone' ? 3.0 : 2.4;
+
+      // Offset frame per vertex, mitred so a bend keeps its width instead of
+      // pinching. The centrelines are resampled and smoothed upstream, so the
+      // mitre never has to survive a hairpin; the clamp is a guard, not a mode.
+      const n = pts.length;
+      for (let i = 0; i < n; i++) {
+        const p = pts[i];
+        const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+        let dx = b.x - a.x, dz = b.z - a.z;
+        const L = Math.hypot(dx, dz) || 1;
+        dx /= L; dz /= L;
+        let mx = -dz, mz = dx;
+        if (i > 0 && i < n - 1) {
+          const p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+          const l0 = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
+          const l1 = Math.hypot(p2.x - p1.x, p2.z - p1.z) || 1;
+          const n0x = -(p1.z - p0.z) / l0, n0z = (p1.x - p0.x) / l0;
+          const n1x = -(p2.z - p1.z) / l1, n1z = (p2.x - p1.x) / l1;
+          let sx = n0x + n1x, sz = n0z + n1z;
+          const sl = Math.hypot(sx, sz);
+          if (sl > 1e-4) {
+            sx /= sl; sz /= sl;
+            const k = Math.min(2.5, 1 / Math.max(0.4, sx * n1x + sz * n1z));
+            mx = sx * k; mz = sz * k;
+          }
+        }
+        const y = (Districts._lawnY(idxSrc, p.x, p.z) ?? (T.groundHeight(p.x, p.z) + 0.05)) + 0.02;
+        const nv = T.normalAt(p.x, p.z);
+        // Wear: the middle of a walk is swept clean, the margins collect grit.
+        const w = hash2(Math.floor(p.x / 5) + 41, Math.floor(p.z / 5) - 17);
+        for (const side of [-1, 1]) {
+          const x = p.x + mx * half * side, z = p.z + mz * half * side;
+          pos.push(x, y, z);
+          nrm.push(nv.x, nv.y, nv.z);
+          uv.push(x / tile, z / tile);
+          if (path.surface === 'stone') c.setRGB(0.355 + w * 0.05, 0.330 + w * 0.045, 0.288 + w * 0.04);
+          else c.setRGB(0.300 + w * 0.045, 0.297 + w * 0.045, 0.292 + w * 0.045);
+          c.multiplyScalar(0.86);
+          col.push(c.r, c.g, c.b);
+        }
+      }
+      // Both ends of a run get the same treatment; the centre line is a strip.
+      for (let i = 1; i < n; i++) {
+        const a = (i - 1) * 2, b = i * 2;
+        idx.push(a, a + 1, b, a + 1, b + 1, b);
+      }
+      g.push({ pos, nrm, uv, col, idx });
+    }
+
+    for (const [surface, list] of Object.entries(groups)) {
+      if (!list.length) continue;
+      const pos = [], nrm = [], uv = [], col = [], idx = [];
+      let base = 0;
+      for (const p of list) {
+        pos.push(...p.pos); nrm.push(...p.nrm); uv.push(...p.uv); col.push(...p.col);
+        for (const i of p.idx) idx.push(i + base);
+        base += p.pos.length / 3;
+      }
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geom.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geom.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geom.setIndex(idx);
+      geom.computeBoundingSphere();
+
+      const src = materials?.get?.(surface === 'stone' ? 'dirt' : 'sidewalk');
+      let mat;
+      if (src) {
+        mat = src.clone();
+        mat.vertexColors = true;
+        mat.color.setRGB(1, 1, 1);
+      } else {
+        mat = new THREE.MeshStandardMaterial({
+          vertexColors: true, roughness: 0.95, metalness: 0,
+        });
+      }
+      // Two centimetres over the lawn is a real kerb, not a z-fighting margin,
+      // but the lawn is already offset against the terrain and the path has to
+      // beat both.
+      mat.polygonOffset = true;
+      mat.polygonOffsetFactor = -6;
+      mat.polygonOffsetUnits = -12;
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.receiveShadow = true;
+      mesh.matrixAutoUpdate = false;
+      mesh.name = 'park_path_' + surface;
+      recenter(geom, mesh);
+      scene.add(mesh);
+      this.meshes.push(mesh);
+      this._owned = this._owned || [];
+      this._owned.push(mat);
+    }
   }
 
   dispose() {
