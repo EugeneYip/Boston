@@ -466,6 +466,32 @@ is 55.7% near-neutral with median chroma 0.031, but median luminance is only 0.1
 and 27.3% is genuinely dark, so it explains "samey" and not "pale". It was left
 alone deliberately.
 
+## Corner stickiness: not reproducible as a movement defect (2026-09-05)
+
+Measured in the Pages build, not inferred. A re-entrant corner was produced
+deliberately -- press into a building corner vertex for 150 frames, which wedges
+the player with three of twelve probe bearings returning TWO overlapping building
+colliders -- and compared against a flat-facade control.
+
+    state                     velocity while pressing   frames to exceed 2.0 m/s
+    flat facade                          0.05                     3
+    re-entrant corner                    0.02                     3
+
+From the wedged corner, rotating input to a free direction recovers to the full
+3.40 m/s jog in **3 frames, about 50 ms**, travelling 2.32-2.34 m in 45 frames --
+slightly FURTHER than the flat-wall control managed (1.64-2.19 m). The anti-wall
+bleed does drive velocity to ~0.02 while the player pushes into geometry, which is
+exactly its job; it does not prevent recovery.
+
+Two cautions before anyone reopens this. Ninety press frames is NOT enough to wedge
+him -- a shorter press slides him past the corner at full speed and reads as a
+false pass -- so use 150. And this is a change from what earlier batches saw (2 of
+8 directions free at a landmark corner); the most likely explanation is `a70e884`,
+which stopped `_move` feeding the step-over a stale `_bypass` vector, but that
+causation is unproven because it was not re-tested against a revert.
+
+Treat this as "not reproducible on this build", not as "fixed".
+
 ## Parked and moving paint: two paths, one appearance
 
 **The two paths are deliberately different and stay different.** Moving and

@@ -130,6 +130,13 @@ interrupted by repeated navigations — the network log showed three overlapping
 `/Boston/` document loads each cancelling the previous one's module fetches. Load
 once and wait.
 
+**Corner stickiness — NOT REPRODUCIBLE on this build, 2026-09-05.** Wedged in a
+real re-entrant corner (150 press frames, three probe bearings returning two
+overlapping building colliders, velocity 0.02), rotating input to a free direction
+recovers to the full 3.40 m/s jog in **3 frames**, identical to a flat-facade
+control and travelling slightly further. Not marked fixed — the change from what
+earlier batches saw is probably `a70e884` but that is unproven. See CONTRACTS.md.
+
 **Parked/moving paint consistency and far LOD — CLOSED 2026-09-05, no source
 change needed.** Measured by substituting the two parameter tuples on one body
 with geometry, camera, light, exposure and source colour all held: the
