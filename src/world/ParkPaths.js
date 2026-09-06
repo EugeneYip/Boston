@@ -243,7 +243,7 @@ function crossMidline(poly, sh, step) {
  * this width may legally occupy. Rejecting a run is always local: one bad
  * stretch costs that stretch, never the whole park.
  */
-function clipRun(pts, half, ok, closed) {
+function clipRun(pts, half, ok, closed, minRun = MIN_RUN) {
   const line = closed ? [...pts, { x: pts[0].x, z: pts[0].z }] : pts;
   const s = resamplePath(line, SAMPLE);
   const runs = [];
@@ -258,7 +258,7 @@ function clipRun(pts, half, ok, closed) {
   if (cur) runs.push(cur);
   // A closed loop that survived whole is still one run in this list; stitching
   // the seam back is not worth it, the two ends already meet.
-  return runs.filter(r => r.length > 1 && pathLength(r) >= MIN_RUN);
+  return runs.filter(r => r.length > 1 && pathLength(r) >= minRun);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -464,8 +464,13 @@ export function buildParkPaths({ parks = [], net = null, water = [] } = {}) {
     };
 
     const local = [];
+    // A spur's whole job is to be short, and a cross link spans a ribbon, so
+    // neither can be held to the minimum that keeps a clipped fragment of a
+    // long walk from becoming litter. At a flat 18 m, 8 of 35 gates were left
+    // as a bollard pair standing on grass with no path behind them.
+    const MIN_FOR = { spur: 4, cross: 8 };
     const add = (role, width, pts, closed) => {
-      for (const run of clipRun(pts, width / 2, ok, closed)) {
+      for (const run of clipRun(pts, width / 2, ok, closed, MIN_FOR[role] ?? MIN_RUN)) {
         local.push({ park: park.name, kind: park.kind, surface: K.surface,
                      role, width, pts: run, length: pathLength(run) });
       }
@@ -527,12 +532,14 @@ export function buildParkPaths({ parks = [], net = null, water = [] } = {}) {
     for (const e of ent) {
       entrances.push({ park: park.name, kind: park.kind, x: e.x, z: e.z });
       const t = nearestOnPaths(local, e.x, e.z);
-      if (!t || t.d < 3 || t.d > 70) continue;
+      if (!t || t.d < 3.5 || t.d > 90) continue;
       // Step the mouth of the spur just inside the boundary; a run that starts
       // exactly on the ring can never pass its own clearance test.
-      const dx = (t.x - e.x) / t.d, dz = (t.z - e.z) / t.d;
-      add('spur', K.minor,
-          [{ x: e.x + dx * 1.5, z: e.z + dz * 1.5 }, { x: t.x, z: t.z }], false);
+      // Run the spur from the GATE itself and let the clipper trim only what is
+      // actually illegal. A fixed step inward is a guess, and it leaves grass
+      // between the pavement and the mouth of the walk wherever the guess was
+      // larger than the rule required.
+      add('spur', K.minor, [{ x: e.x, z: e.z }, { x: t.x, z: t.z }], false);
     }
 
     // Desire lines. A big lawn is crossed, not walked around: the Common has
