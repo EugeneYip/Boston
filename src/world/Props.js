@@ -477,7 +477,19 @@ function fromCityGraph(ctx, city) {
       a.x + dx * t, a.z + dz * t, b.x - dx * t, b.z - dz * t,
       {
         halfRoad: w / 2, type: e.type, oneway: e.oneway,
-        frontage: null, district: districtFor((a.x + b.x) / 2, (a.z + b.z) / 2),
+        // Distance from the centreline to the building line: carriageway half,
+        // then the footway, then a little slack.
+        //
+        // This was `null`, and had been since the city path was written -- the
+        // grid fallback set 19.0 and nothing else ever set anything. `L.frontage`
+        // does not care, because on the city path it is built from PARCELS
+        // rather than from segments, so nothing looked broken. But
+        // `placeConstruction` reads `s.frontage`, and its hoarding-and-scaffold
+        // branch is guarded on `s.frontage != null`, so in the real game it
+        // could not run: `hoarding` and `scaffold` were built, atlased and
+        // registered as batches, and placed exactly zero times.
+        frontage: w / 2 + (e.walk || 0) + 0.9,
+        district: districtFor((a.x + b.x) / 2, (a.z + b.z) / 2),
         edgeId: e.id, parking: e.parking || null,
         ay: R.sample(e.id, t)?.y ?? null, by: R.sample(e.id, 1 - t)?.y ?? null,
         at: t, bt: 1 - t,
