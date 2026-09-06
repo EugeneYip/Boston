@@ -1178,3 +1178,81 @@ Recorded so the next pass does not re-derive them:
 - **`payStation` at 18 instances** is not dead content. It is a 12% alternative
   to a run of meters per street face and shares the `meter` budget key, so it
   inherits that key's ~25% acceptance.
+
+## The world sweep (2026-09-06)
+
+`tools/world-sweep/` is the standing detector. `viewpoints.mjs` generates 49
+deterministic viewpoints from production geometry and writes `viewpoints.json`;
+`sweep.js` steps ONE renderer through them and reduces each frame to a compact
+record. Dev-only; nothing in `src/` imports it.
+
+    node tools/world-sweep/viewpoints.mjs > tools/world-sweep/viewpoints.json
+    // in the page:
+    const { runSweep, outliers } = await import('/tools/world-sweep/sweep.js');
+
+Stratification is by gameplay context, not by area: street 14, junction 10,
+park 8, traffic 6, skyline 6, water 5. No district exceeds 22% of the sample.
+**Check that distribution before trusting a verdict** — a sampler that drifts
+into one neighbourhood is a critic that only knows one neighbourhood.
+
+Rules that matter:
+
+- **Settling is `CaptureHarness.capture`'s job, not the sweep's.** It teleports,
+  un-sticks, waits on `settled()` up to 600 frames and advances 60 more, and
+  reports `streamed`. Do not reimplement it and do not capture on a fixed frame
+  count.
+- **Read pixels in the same task as the render.** The context has no
+  `preserveDrawingBuffer`; `B.step(1)` then `drawImage` works, anything later is
+  black. `B.render` is the pipeline OBJECT, not a function.
+- **Rank each view against its OWN category** by median absolute deviation. And
+  guard the degenerate case: MAD is zero whenever most of a category shares one
+  value, which reported z = 10252 for a frame that was 1.5% clipped.
+- **Aim a waterfront camera ALONG the bank.** Pointed out to sea it puts half
+  the frame in sky and half in flat water and scores as "empty waterfront"
+  whatever is behind it. That cost one false lead.
+
+### `tris` is shadow-inclusive — measured, not assumed
+
+`renderer.info.render.triangles` counts the cascade passes. At `street_12`,
+5,074,040 total against **2,194,298 with `shadowMap.enabled = false`**: shadows
+are **56.8%** of it, and draws 672 vs 368. So a sweep row reading 5M triangles
+is not a budget violation; camera-only is comfortably inside 3.5M. Compare
+sweep rows against each other, never against a historical camera-only figure.
+
+## Road stamping is cut AND fill (2026-09-06)
+
+`Terrain.stampRoads` used to be "lowest wins" only. That is correct for a road
+CUT into a hill — the ground must never poke up through the asphalt — and does
+nothing for a road on an EMBANKMENT, where the street graph's own smoothed grade
+runs above the natural surface. Charlestown's drumlin is entirely the second
+case, and its roads stood on shelves with a cliff down to the terrain beside
+them, up to 13.5 m.
+
+The stamp now also RAISES ground to meet a road above it, on a 1:2 batter capped
+at 30 m of run. Two constraints are load-bearing:
+
+- **Never raise a cell inside a water body**, or a road beside a river fills it.
+- **Only widen the scan box on edges that are actually above the ground beside
+  them**, or the flat 95% of Boston pays for Charlestown. Whole spec chain
+  1,091 ms, terrain 256 ms.
+
+Building bases are read from `groundHeight` after the stamp, so they follow it:
+all 10,048 sit exactly on the terrain, 0 off by more than a metre.
+
+Measuring this needs care. Sample 6 m outside a corridor and DISCARD samples
+that fall inside another road's corridor — on that hill two streets 30 m apart
+differ by 17 m, which is Charlestown, not a defect. Without that filter the
+metric reports its own confusion.
+
+## Shoreline planting (2026-09-06)
+
+58% of Boston's shoreline had nothing on it: measured over 2,130 stations 12 m
+inland, Boston Harbor 75.6% bare, the Charles 56.4%, the Mystic 40.5%, Fort
+Point Channel 36.2%. Every vegetation pass keyed off a street segment or a park
+polygon, and a riverbank is neither.
+
+`placeShorePlanting` traces the authored water rings and scatters existing shrub
+and grass batches in a 2.5-24 m band. It is bounded by what already OWNS the
+ground — park, built district, road corridor, parcel — and deliberately NOT by
+distance to a street: that bound left the upper Charles exactly as bare as
+before, because no road reaches it. Ground cover is not geography.

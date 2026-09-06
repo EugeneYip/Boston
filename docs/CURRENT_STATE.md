@@ -1463,3 +1463,91 @@ at 18 is a shared-budget artefact rather than dead content.
   towers and tall midrises carry `mech: true` and get a mechanical penthouse
   over 40 m; `stoneTower` has setbacks and a stepped crown on 79 of 136. "Flat
   parapet is plain" is a style decision, not a defect.
+
+## World sweep + outlier repair — 2026-09-06 (`0e8d347` … `94fba71`)
+
+Three commits. The first replaces the instrument; the other two are what it
+found in its first run.
+
+| commit | change | effect |
+|---|---|---|
+| `0e8d347` | a deterministic 49-view world sweep | the detector stops being the limit |
+| `736e2a8` | the shoreline is planted | 58% of it was bare |
+| `94fba71` | road stamping is cut AND fill | Charlestown's roads get ground under them |
+
+### Why the instrument changed
+
+The hand-picked shot list reached thirteen cameras and all thirteen passed. Five
+consecutive passes had ended in "suspicious visual -> investigation -> already
+correct", and the last one had to retire three standing priority-list entries
+that measurement contradicted. That is a saturated detector, not a finished
+world. The sweep samples 49 viewpoints derived from production geometry —
+street 14, junction 10, park 8, traffic 6, skyline 6, water 5, no district over
+22% — so a defect can no longer hide in the 99.9% of Boston nobody aims a
+camera at. Protocol and traps are in CONTRACTS.md.
+
+It paid for itself on the first run.
+
+### What it found
+
+**The shoreline.** The four least-detailed views out of forty-nine were all
+waterfront, mean gradient 0.029-0.037 against a street median of 0.071. Measured
+over 2,130 stations 12 m inland, 58% of Boston's shoreline had no park, no
+district, no road and no parcel on it. Now planted from the authored water
+rings, into existing batches: vegetation 74,412 -> 86,180, batches 19 -> 19, no
+new draw call, material or texture.
+
+**Charlestown's roads.** A junction camera came out standing under a grey slab
+10 m below the street. `unstick` reported zero movement for all 49 viewpoints,
+so it was not a camera inside a building — the nearest road was 5.9 m away, not
+bridged, and 10 m overhead. `stampRoads` only ever LOWERED terrain, which is
+right for a cut and useless for an embankment.
+
+    |road - ground| > 3 m    153 -> 102 of 5,903 samples
+    |road - ground| > 6 m     88 -> 37
+    Bunker Hill Street worst 13.5 -> 8.2 m
+
+### Ruled out, with the measurement
+
+- **Triangle "budget violations".** Sweep rows of 5.0M looked like a 43%
+  overshoot. At `street_12`, shadows are **56.8%** of that; camera-only is
+  2,194,298. Not a violation. See CONTRACTS.md.
+- **Park lawn coverage.** 0.6% of park area is bare, Boston Common 96.0% lawn.
+  The khaki plane in one park frame is road at a grazing angle.
+- **935 unnamed meshes carrying 40% of a frame's triangles.** Traffic-vehicle
+  part meshes and building chunks. Scene organisation, not a defect.
+- **Night and rain.** Rain clips nothing at all — dark 0.000 and blown ~0 across
+  five views. Night means 0.18-0.34, no grey collapse.
+
+### Left alone deliberately
+
+Pavement and facades wash out under street lamps at night; one view clips 2.1%
+of its frame. That is tone mapping and exposure, which are closed, and the light
+pool is frozen. Recorded, not touched.
+
+### Production gate
+
+Passed at every source commit: 26 systems, 22 optional, `Missions.js` missing,
+`failed []`, `errors []`, `glFaults []`, `validate().ok`, `npm run build:pages`
+clean. Regression sweep over Charlestown plus a ten-view spread after both
+fixes: draws 90-843 (budget 1200), nothing anomalous, and the junction that
+found the terrain bug now reads as an ordinary street.
+
+### Remaining top 10 SAFE priorities
+
+1. Night exposure under street lamps — CLOSED territory (tone mapping), listed
+   only so the next sweep does not re-find it as new.
+2. Open ground beyond the 24 m shore band is still bare. That is the deferred
+   outer-world gap, and it needs street geography, not planting.
+3. The remaining 102 road/ground steps are mostly the CUT direction, where the
+   hill genuinely towers over a road below it. Real Charlestown.
+4. Park walk width hierarchy: the Esplanade promenade uses the same 3.4 m as an
+   inland diagonal. Tuning, no measured defect.
+5. Park hedge density is floor-bound in the smallest parks.
+6. Vehicle bumper rounding; bus glazing bay rhythm.
+7. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+8. `payStation` shares the `meter` budget key, so ~9% of metered street faces
+   draw a pay station, lose the roll, and end up with no kerbside equipment.
+9. Mid-distance LOD 2 shells read flatter than the LOD 1 tier around them.
+10. The sweep itself: 49 views is enough to find systemic defects and too few to
+    catch rare ones. Widening it is cheaper than any single fix on this list.
