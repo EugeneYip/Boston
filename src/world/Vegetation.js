@@ -1141,6 +1141,8 @@ function placeVegetation(o) {
     for (let i = 0; i < tries; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
+      // The Public Garden's ring includes its lagoon.
+      if (L.inWater && L.inWater(x, z)) continue;
       const type = rng.chance(0.30) ? 'americanElm'
         : rng.chance(0.30) ? 'copperBeech'
           : rng.chance(0.5) ? 'planeLondon' : 'redMaple';

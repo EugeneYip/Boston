@@ -669,6 +669,38 @@ function finishLayout(L) {
              nx, nz, dx: p.dx, dz: p.dz, ry: p.y };
   };
 
+  /**
+   * Is this point inside a water body?
+   *
+   * The exact rings the terrain builds its water from, not the 20 m district
+   * raster — `districtAt` agreed with them on only 95 of 105 sampled points,
+   * which is a raster's honest resolution and not good enough to decide whether
+   * a tree is standing in a pond.
+   *
+   * The Public Garden's polygon includes its lagoon, so park planting was
+   * putting 60 trees in the water; another 45 stood in the Charles.
+   */
+  {
+    const bodies = (L.city?.waterPolys || []).map((w) => {
+      const poly = w.polygon || w.points || [];
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      for (const q of poly) {
+        if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x;
+        if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z;
+      }
+      return { poly, x0, x1, z0, z1 };
+    }).filter(b => b.poly.length > 2);
+    L.inWater = bodies.length
+      ? (x, z) => {
+        for (const b of bodies) {
+          if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1) continue;
+          if (pointInPoly(x, z, b.poly)) return true;
+        }
+        return false;
+      }
+      : () => false;
+  }
+
   L.groundHeight = L.gh;
   L.districtAt = L.districtFor;
   L.inPark = (x, z) => L.parks.some(p => pointInPoly(x, z, p.poly));
@@ -705,7 +737,7 @@ function finishLayout(L) {
         if (rng.chance(0.13)) continue;       // gaps: driveways, dead trees, hydrants
         const kp = L.kerbPoint(s, t, off, side);
         const x = kp.x, z = kp.z;
-        if (L.inPark(x, z)) continue;
+        if (L.inPark(x, z) || L.inWater(x, z)) continue;
         sites.push({
           x, z, y: L.surfaceY(s, x, z) + KERB_H,
           species: SPECIES[(rng.int(100) * 7 + sIdx) % SPECIES.length],
@@ -2022,7 +2054,7 @@ function runPlacement(sys, L, counting, take) {
     const attempts = Math.min(4200, Math.round(want / p.fill));
     for (let i = 0; i < attempts; i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
-      if (!pointInPoly(x, z, p.poly)) continue;
+      if (!pointInPoly(x, z, p.poly) || L.inWater(x, z)) continue;
       const r = rng.f();
       if (r < 0.34 && take('bench')) {
         b('benchPark').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.88, 1.06));
