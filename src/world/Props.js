@@ -457,7 +457,28 @@ function synthGrid(ctx, city) {
 
 /** Real street graph from the city agent. */
 function fromCityGraph(ctx, city) {
-  const parks = parkPolys();
+  // Parks come from the city's own geography, not from a private copy.
+  //
+  // `parkPolys()` below is two hand-typed rings approximating the Common and the
+  // Public Garden. Meanwhile `boston-geo.js` authors NINETEEN named parks and
+  // `Districts` already builds grass and hardscape meshes for all of them, then
+  // `City._publish` hands the list straight over as `city.parks`. Props simply
+  // never asked.
+  //
+  // The cost of not asking, measured: Props knew 318,642 m2 of the city's real
+  // 733,897 m2 of park, 43.4%. The Rose Kennedy Greenway, the Charles River
+  // Esplanade, the Back Bay Fens, City Hall Plaza, Copley Square, Post Office
+  // Square, Christopher Columbus Park, Bunker Hill and all eight Commonwealth
+  // Avenue Mall blocks had grass drawn under them and no park planting or
+  // furniture placed on them at all. And because the two hand-typed rings do
+  // not match the authored ones, 376 street trees were being planted INSIDE
+  // parks -- 56 of them in the Common itself and 138 in the Fens.
+  //
+  // `parkPolys()` stays for the synthetic grid fallback, which has no city.
+  const parks = (Array.isArray(city?.parks) && city.parks.length)
+    ? city.parks.map((p) => ({ name: p.name, kind: p.kind,
+                               reserveOnly: !!p.reserveOnly, poly: p.polygon }))
+    : parkPolys();
   const gh = (x, z) => city.groundHeight(x, z) || 0;
   const districtFor = (x, z) => city.districtAt?.(x, z) || 'downtown';
   const R = city.roads;
@@ -722,7 +743,14 @@ function finishLayout(L) {
   }
 
   // --- Park planting areas ---
-  L.parkAreas = L.parks.map(p => ({ ...p, bounds: polyBounds(p.poly) }));
+  //
+  // `L.parks` is the exclusion set -- everything a street tree must keep out
+  // of, including the `reserveOnly` Commonwealth Avenue Mall corridor, which is
+  // a no-build strip rather than lawn. `L.parkAreas` is the PLANTING set, so it
+  // drops the reserve-only rings the same way `Districts` skips them when it
+  // builds grass.
+  L.parkAreas = L.parks.filter(p => !p.reserveOnly)
+    .map(p => ({ ...p, bounds: polyBounds(p.poly) }));
 
   // --- Frontage lines (building faces) for wall-mounted props ---
   //
@@ -1258,6 +1286,14 @@ function mergeTubes(geos) {
  * many exist. Spreading the same budget over the whole city actually *lowers*
  * peak triangles near the Common.
  */
+// `bench` 700 -> 1100 and `lamp` 2800 -> 3400 when Props started seeing all 19 of
+// the city's parks instead of 2. Park benches and park lamps draw on the same
+// two budgets as street ones, and at the old caps the arrival of 16 more parks
+// pushed `bench` to 685 of 700 and `lamp` to 2761 of 2800 -- so park furniture
+// was being paid for out of the street's, and street benches fell 140 -> 107.
+// Both are geometry-only; park lamps push no `_lampSites`, so the real-light
+// pool is untouched.
+//
 // `bin` was raised 1300 -> 1800 when the junction corner kit landed. Corners add
 // ~500 candidate sites, and at 1300 the cap bound: the budget would have been
 // spread thinner mid-block to pay for them rather than the corners being
@@ -1265,8 +1301,8 @@ function mergeTubes(geos) {
 // (bollard 258 of 1600, bikeRack 245 of 700, newsBox 163 of 500, mailbox 53 of
 // 160), so only this one moved.
 const RATE = {
-  grate: [1.00, 7000], lamp: [1.00, 2800], meter: [0.80, 7500], hydrant: [1.00, 1000],
-  bin: [1.00, 1800], bench: [1.00, 700], bikeRack: [1.00, 700], bollard: [0.85, 1600],
+  grate: [1.00, 7000], lamp: [1.00, 3400], meter: [0.80, 7500], hydrant: [1.00, 1000],
+  bin: [1.00, 1800], bench: [1.00, 1100], bikeRack: [1.00, 700], bollard: [0.85, 1600],
   mailbox: [1.00, 160], newsBox: [1.00, 500], utilityBox: [1.00, 260],
   manhole: [1.00, 2200], drain: [1.00, 4200], sign: [0.85, 6000],
   pole: [1.00, 900], shelter: [1.00, 170], dock: [1.00, 40], planter: [1.00, 700],
