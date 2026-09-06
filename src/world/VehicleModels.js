@@ -1760,7 +1760,7 @@ export function createMaterialKit(ctx) {
         // than the same colour on the same street, and the whole point of the
         // fallback is that nobody can tell which path they got.
         m = new THREE.MeshPhysicalMaterial({
-          color: hex, metalness: 0.78, roughness: 0.26,
+          color: hex, metalness: 0.30, roughness: 0.26,
           clearcoat: 1.0, clearcoatRoughness: 0.045,
           envMapIntensity: 1.25,
           envMap: ctx?.scene?.environment ?? null,

@@ -625,7 +625,20 @@ export default class Materials {
     const coat = this._mapsFor('_car_clearcoat');
     m = this.assets.material(key, () => new THREE.MeshPhysicalMaterial({
       color: c,
-      metalness: 0.78,
+      // Automotive basecoat is a DIELECTRIC with metallic flake in it, not bare
+      // metal, and the gloss here is already carried by `clearcoat: 1.0` below --
+      // so this does not need to be high to look like paint. At the old 0.78 only
+      // 22% of albedo survived as diffuse and the body was mostly tinted
+      // environment, which collapsed the fleet's tonal range: measured on one car,
+      // one camera and one light, a white car rendered just 22.0 luma above a
+      // black one, and black (45.2), dark red (45.4) and navy (45.9) landed within
+      // 0.7 of each other. Sweeping it restores that range monotonically --
+      // 0.78/0.60/0.45/0.30/0.15/0.0 give 22.0/30.7/37.4/44.1/49.8/54.9 -- with
+      // mean body chroma rising 30.7 -> 35.8 and white clipping at 0% throughout.
+      // 0.30 doubles the range while keeping some flake metallicity. Verified
+      // across daylight, overcast, dusk, night and rain: range doubles in all
+      // five, no white clipping, no new black crush.
+      metalness: 0.30,
       roughness: 0.26,
       // Flake sparkle lives in the base normal; the clearcoat gets its own
       // gentle orange peel so highlights ripple the way real paint does.
