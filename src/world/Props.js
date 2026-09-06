@@ -1247,8 +1247,28 @@ function populate(sys, L, density) {
   const left = {}, prob = {};
   for (const k of Object.keys(RATE)) {
     const [keep, cap] = RATE[k];
-    const want = Math.min(keep, cand[k] > 0 ? (cap * density) / cand[k] : 0) * density;
-    prob[k] = Math.min(1, want);
+    // `density` once, not twice.
+    //
+    // This read `min(keep, cap*density/cand) * density`, which applies quality
+    // to the cap-limited branch a second time: the budget on the line below is
+    // `cap * density`, but the probability aimed at `cap * density^2 / cand`, so
+    // a cap-bound type could never reach the budget it had been given. The two
+    // lines disagreed about what the budget was, and the same expression is
+    // duplicated verbatim in `Decals.placeDecals`, which is what a copied idiom
+    // looks like rather than two deliberate designs.
+    //
+    // The second multiplication still has to be there in spirit: `cand` does not
+    // depend on quality, so without it a keep-limited type would place the same
+    // count at every preset. Scaling the whole `min` once does both jobs --
+    // keep-limited types thin by `density`, cap-limited types land on `cap *
+    // density`.
+    //
+    // At `density === 1` the two forms are algebraically identical, and `high`
+    // is the hardcoded default in `Engine`, so the shipping experience cannot
+    // move. Measured at `high`, no prop type is cap-bound anyway (the closest is
+    // `shelter` at 174 sites against a 170 cap), so this is entirely a
+    // medium/low/ultra correction.
+    prob[k] = Math.min(1, density * Math.min(keep, cand[k] > 0 ? cap / cand[k] : 0));
     left[k] = Math.ceil(cap * density);
   }
   runPlacement(sys, L, false, (k, n = 1) => {

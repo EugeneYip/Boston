@@ -821,7 +821,14 @@ function placeDecals(bat, L, density) {
   const left = {}, prob = {};
   for (const k of Object.keys(RATE)) {
     const [keep, cap] = RATE[k];
-    prob[k] = Math.min(1, Math.min(keep, cand[k] > 0 ? (cap * density) / cand[k] : 0) * density);
+    // `density` once. See the matching note in `Props.populate`: this expression
+    // was `min(keep, cap*density/cand) * density`, which aims a cap-bound type
+    // at `cap * density^2` while the line below hands it `cap * density`. Decals
+    // feel it harder than props do -- at `high` the big families really are
+    // cap-bound (grimeWall 15,830 of 16,000; wearStrip 11,962 of 12,000; tarSeam
+    // 8,965 of 9,000; flyers and graffiti exactly at cap) -- so at `medium` they
+    // were landing near 49% of cap instead of 70%.
+    prob[k] = Math.min(1, density * Math.min(keep, cand[k] > 0 ? cap / cand[k] : 0));
     left[k] = Math.ceil(cap * density);
   }
   runDecals(bat, L, (k) => {
