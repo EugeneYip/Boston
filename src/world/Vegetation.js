@@ -1177,10 +1177,24 @@ function placeVegetation(o) {
       if (L.onPath && L.onPath(x, z, 0.4)) continue;
       flowerB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.8, 1.5), rng.range(0.85, 1.15));
     }
-    // Hedge runs along a few internal lines.
-    for (let k = 0; k < 14; k++) {
-      const ax = rng.range(x0, x1), az = rng.range(z0, z1);
-      const a = rng.range(0, 6.2832);
+    // Hedge runs. A hedge at a random bearing across a lawn is a wall dropped
+    // in a field; a real one lines something. Now that the park has walks, most
+    // runs take one's tangent and stand back from it, and only a minority are
+    // free-standing beds out on the grass.
+    // Runs scale with the park, like its trees and its furniture. A flat 14 gave
+    // Post Office Square (0.41 ha) the same amount of hedge as Boston Common
+    // (25.8 ha) -- the third instance of the constant-per-polygon bug this
+    // codebase has had, after park furniture and park trees.
+    const nHedge = Math.max(4, Math.min(34, Math.round(3 + (p.area / 10000) * 1.1)));
+    for (let k = 0; k < nHedge; k++) {
+      let ax = rng.range(x0, x1), az = rng.range(z0, z1);
+      let a = rng.range(0, 6.2832);
+      const w = L.besideWalk && rng.chance(0.75) ? L.besideWalk(p.name, rng) : null;
+      if (w) {
+        // Step clear of the furniture band, which sits within ~2.3 m of a walk.
+        ax = w.x + w.fx * -1.4; az = w.z + w.fz * -1.4;
+        a = Math.atan2(w.tz, w.tx) + rng.range(-0.05, 0.05);
+      }
       const dx = Math.cos(a), dz = Math.sin(a);
       const len = rng.range(6, 26);
       for (let t = 0; t < len; t += 1.2) {

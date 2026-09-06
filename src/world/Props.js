@@ -867,6 +867,12 @@ function finishLayout(L) {
       if (!list) L.pathsByPark.set(path.park, list = []);
       list.push(path);
     }
+    /**
+     * A spot beside one of a park's walks, with the direction that faces the
+     * walk and the walk's own tangent. Shared with Vegetation, which uses it to
+     * run hedges ALONG the circulation instead of across it.
+     */
+    L.besideWalk = (parkName, rng) => besideWalk(L.pathsByPark.get(parkName) || [], rng);
     L.onPath = cells.size
       ? (x, z, pad = 0) => {
         const list = cells.get(`${Math.floor(x / CELL)},${Math.floor(z / CELL)}`);
@@ -999,7 +1005,8 @@ function besideWalk(walks, rng) {
   const side = rng.sign();
   const off = path.width / 2 + rng.range(0.85, 2.3);
   return { x: px + nx * off * side, z: pz + nz * off * side,
-           fx: -nx * side, fz: -nz * side };
+           fx: -nx * side, fz: -nz * side,
+           tx: dx / len, tz: dz / len, side, width: path.width };
 }
 
 export default class Props {
