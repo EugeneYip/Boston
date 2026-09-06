@@ -2017,12 +2017,38 @@ export function buildBuilding(spec, mb, gb, lod) {
   }
 }
 
+/**
+ * A secondary elevation as ONE quad, carrying the same baked facade strip the
+ * LOD 2 shell uses.
+ *
+ * `mb.wall` paints blank wall surface, so every cheap path through `partyWall`
+ * produced a literally featureless plane. That is invisible on a rowhouse flank
+ * buried against next door, and catastrophic anywhere it is actually seen: a
+ * 181 m glass tower at LOD 1 -- i.e. from 175 m away, which is most of downtown
+ * most of the time -- was a plain white slab of 608 triangles.
+ *
+ * The strip costs nothing to use. It is two triangles either way; the only
+ * difference is which layer of the atlas the fragment shader samples, and the
+ * strip's one vertical repeat is exactly one storey. Mapping it on absolute
+ * world height, exactly as `buildShell` does, also makes the cheap tiers agree
+ * with the shell instead of popping against it.
+ */
+function stripWall(mb, e, u0, u1, y0, y1, spec, col) {
+  const strip = spec.S.facStrip;
+  const S = SURF[strip];
+  const ax = e.ax + e.dx * u0, az = e.az + e.dz * u0;
+  const bx = e.ax + e.dx * u1, bz = e.az + e.dz * u1;
+  mb.wallV(ax, az, bx, bz, y0, y1, strip, col,
+    (spec.uOff + u0) / S.size, (spec.uOff + u1) / S.size,
+    y0 / S.vsize, y1 / S.vsize);
+}
+
 /** Rear and party walls: cheap, but never blank. */
 function partyWall(mb, gb, e, y0, y1, spec, lod, stage) {
   const ws = spec.wallSurf;
   const col = [spec.wallCol[0] * 0.93, spec.wallCol[1] * 0.93, spec.wallCol[2] * 0.93];
   if (lod > 0 || e.L < 2.5 || spec.S.curtain) {
-    mb.wall(e.ax, e.az, e.ax + e.dx * e.L, e.az + e.dz * e.L, y0, y1, ws, col, spec.uOff, 0);
+    stripWall(mb, e, 0, e.L, y0, y1, spec, col);
     if (spec.S.curtain && lod === 0) {
       // Towers are glazed on all four sides — never leave a blank back.
       let y = y0 + spec.groundH;
@@ -2035,14 +2061,21 @@ function partyWall(mb, gb, e, y0, y1, spec, lod, stage) {
     }
     return;
   }
-  // Sparse rear windows, still with a reveal — but only up to eight storeys.
-  // Above that a party wall reads as brick and nothing else.
+  // Sparse rear windows with a real reveal, but only up to eight storeys: the
+  // reveal is what costs triangles and it stops being resolvable above that.
+  //
+  // Everything higher used to be one blank quad, on the reasoning that "a party
+  // wall reads as brick and nothing else". True of a brownstone flank; a
+  // catastrophe when the same line runs up a 185 m tower, where it blanked 161
+  // of 185 m on three of four elevations. A tower has no party walls -- it
+  // stands clear of everything around it and is read from the whole city. The
+  // strip carries the window rhythm up the rest of the wall for the same two
+  // triangles the blank quad cost.
   const bays = Math.max(1, Math.round(e.L / 3.4));
   const bw = e.L / bays;
   const detailTop = y0 + 24;
   if (y1 > detailTop) {
-    mb.wall(e.ax + e.dx * 0, e.az, e.ax + e.dx * e.L, e.az + e.dz * e.L,
-      detailTop, y1, ws, col, spec.uOff, 0);
+    stripWall(mb, e, 0, e.L, detailTop, y1, spec, col);
   }
   let y = y0;
   for (let s = 0; s < spec.storeys; s++) {

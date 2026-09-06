@@ -353,6 +353,39 @@ const api = {
    * render: the WebGL context has no `preserveDrawingBuffer`, so a later read
    * would return an empty buffer rather than an obviously wrong one.
    */
+  /**
+   * Mean luminance gradient over a horizontal band of the frame.
+   *
+   * The acceptance metric for MODELING, as opposed to tone. Mean tile
+   * luminance -- the obvious thing to reach for -- cannot see this class of
+   * change at all: replacing a blank wall with a windowed one moved the Back
+   * Bay block's mean from 138.28 to 138.09 out of 140, which reads as noise,
+   * while gradient energy over the same pixels moved 19.7 -> 22.1. Detail is
+   * high-frequency by definition, so measure the high frequencies.
+   *
+   * Pass the band that actually contains the subject. Sky and empty ground are
+   * gradient-free and only dilute the number.
+   */
+  detail(y0 = 0, y1 = H) {
+    render();
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(renderer.domElement, 0, 0);
+    const px = g.getImageData(0, 0, W, H).data;
+    const lum = (k) => px[k] * 0.299 + px[k + 1] * 0.587 + px[k + 2] * 0.114;
+    let sum = 0, n = 0;
+    for (let y = Math.max(1, y0); y < Math.min(H - 1, y1); y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const k = (y * W + x) * 4;
+        sum += Math.abs(lum(k + 4) - lum(k - 4)) +
+               Math.abs(lum(k + W * 4) - lum(k - W * 4));
+        n++;
+      }
+    }
+    return n ? +(sum / n).toFixed(4) : 0;
+  },
+
   digest(cols = 8, rows = 5) {
     render();
     const c = document.createElement('canvas');
