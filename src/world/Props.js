@@ -4,6 +4,7 @@ import {
   RNG, getPropMaterials, buildFurnitureLibrary, clearGeoCache, PARKED_CARS,
 } from './StreetFurniture.js';
 import Decals from './Decals.js';
+import { corridorHalf } from './RoadNetwork.js';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 /**
@@ -704,6 +705,30 @@ function finishLayout(L) {
   L.groundHeight = L.gh;
   L.districtAt = L.districtFor;
   L.inPark = (x, z) => L.parks.some(p => pointInPoly(x, z, p.poly));
+
+  /**
+   * On a park's SURFACE, as opposed to merely inside its authored ring.
+   *
+   * Several rings are traced around the OUTSIDE of the streets that bound them
+   * -- 152 of Boston Common's 254 boundary samples fall within half a metre of
+   * a road CENTRELINE -- so a ring covers the carriageway and the footway of
+   * Charles, Boylston, Beacon and Tremont. `Districts` already knows this and
+   * drops every lawn triangle that lands on a road; nothing else did.
+   *
+   * The consequence was a street-tree exclusion that suppressed trees on the
+   * pavement rather than on the grass. Measured over 15,756 kerbside sites,
+   * 939 were rejected as "in a park" and 938 of them were standing on real
+   * pavement -- the tree-lined perimeter of every major park in the city.
+   */
+  L.inParkSurface = (x, z) => {
+    if (!L.inPark(x, z)) return false;
+    const net = L.city?.roads;
+    if (!net?.nearestEdge) return true;
+    const ne = net.nearestEdge(x, z);
+    const e = ne && net.edges[ne.edgeId];
+    if (!e) return true;
+    return ne.distance >= corridorHalf(e) + 0.2;
+  };
   L.kerb = 0;   // sidewalk lip above groundHeight; see report — city may raise this
 
   // Sort segments by distance from the Common so budgets are spent on the core
@@ -737,7 +762,7 @@ function finishLayout(L) {
         if (rng.chance(0.13)) continue;       // gaps: driveways, dead trees, hydrants
         const kp = L.kerbPoint(s, t, off, side);
         const x = kp.x, z = kp.z;
-        if (L.inPark(x, z) || L.inWater(x, z)) continue;
+        if (L.inParkSurface(x, z) || L.inWater(x, z)) continue;
         sites.push({
           x, z, y: L.surfaceY(s, x, z) + KERB_H,
           species: SPECIES[(rng.int(100) * 7 + sIdx) % SPECIES.length],
