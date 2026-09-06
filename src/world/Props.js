@@ -1209,7 +1209,7 @@ const RATE = {
   bin: [1.00, 1800], bench: [1.00, 700], bikeRack: [1.00, 700], bollard: [0.85, 1600],
   mailbox: [1.00, 160], newsBox: [1.00, 500], utilityBox: [1.00, 260],
   manhole: [1.00, 2200], drain: [1.00, 4200], sign: [0.85, 6000],
-  pole: [1.00, 900], shelter: [1.00, 90], dock: [1.00, 40], planter: [1.00, 700],
+  pole: [1.00, 900], shelter: [1.00, 170], dock: [1.00, 40], planter: [1.00, 700],
   litter: [0.80, 900], construction: [1.00, 70],
   attach: [1.00, 24000], signal: [1.00, 1600], parked: [1.00, 30000],
 };
@@ -1488,12 +1488,20 @@ function runPlacement(sys, L, counting, take) {
     }
 
     // --- Bus shelters on arterials ---
-    if (s.type === 'arterial' && rng.chance(0.22) && take('shelter')) {
+    //
+    // This was one shelter per arterial SEGMENT, at a 22% chance, which over 206
+    // arterial edges came to 27 shelters in the whole city -- one per 840 m of
+    // arterial, in the city the MBTA runs. A stop is not a per-segment event; it
+    // is a spacing, and the real one on a bus route is 250-450 m. Walking it as
+    // a spacing also puts shelters on the long arterials where the buses
+    // actually are, instead of one apiece on the short ones.
+    if (s.type === 'arterial') {
       const side = rng.sign();
-      const t = rng.range(14, Math.max(15, s.len - 14));
-      const x = s.ax + s.dx * t + s.nx * (kerb + 1.5) * side;
-      const z = s.az + s.dz * t + s.nz * (kerb + 1.5) * side;
-      if (clear(x, z, 3.2)) {
+      for (let t = rng.range(18, 60); t < s.len - 18; t += rng.range(300, 480)) {
+        if (!take('shelter')) continue;
+        const x = s.ax + s.dx * t + s.nx * (kerb + 1.5) * side;
+        const z = s.az + s.dz * t + s.nz * (kerb + 1.5) * side;
+        if (!clear(x, z, 3.2)) continue;
         b('busShelter').add(x, g(x, z), z, facing(-s.nx * side, -s.nz * side), 1, 1);
       }
     }
