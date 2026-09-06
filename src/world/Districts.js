@@ -13,6 +13,11 @@ import { DISTRICTS, PARKS } from '../data/boston-geo.js';
  * draw call.
  */
 
+const KERB_W = 0.30;                              // granite edging width, metres
+const KERB_H = 0.10;                              // and how far it stands over the lawn
+/** Runs that carry a kerb: the primary circulation, not the connectors. */
+const EDGED = new Set(['loop', 'spine', 'diagonal', 'shore']);
+
 const RES = 20;                                   // district raster cell, metres
 const PAD = 300;
 const MINX = WORLD.minX - PAD, MINZ = WORLD.minZ - PAD;
@@ -367,6 +372,73 @@ export default class Districts {
   }
 
   /**
+   * A granite kerb along a run of PRIMARY circulation, and nothing along a
+   * secondary connector. That is the hierarchy: the loop, the spine, the
+   * diagonals and the promenade are built streets inside the park; a spur to a
+   * gate or a 20 m cross link is a way through the grass.
+   *
+   * Two quads per side per span -- a chamfered top from the walk surface out to
+   * the kerb line, and the face down to the lawn. Spans are decimated where the
+   * walk is locally straight, so the eight Comm Ave Mall blocks cost almost
+   * nothing and the Public Garden's lagoon curve keeps its resolution.
+   */
+  _kerb(path, pathIndex, frame, out, onOtherWalk) {
+    const n = frame.length;
+    if (n < 2) return;
+    const half = path.width / 2;
+
+    // Keep a vertex when the walk has turned since the last kept one, or when
+    // the run since then is long enough that a straight chord would start to
+    // cut the corner.
+    const keep = [0];
+    let turn = 0, run = 0;
+    for (let i = 1; i < n - 1; i++) {
+      const a = frame[i - 1], b = frame[i], c2 = frame[i + 1];
+      const d0 = Math.atan2(b.z - a.z, b.x - a.x);
+      const d1 = Math.atan2(c2.z - b.z, c2.x - b.x);
+      let dt = d1 - d0;
+      while (dt > Math.PI) dt -= 2 * Math.PI;
+      while (dt < -Math.PI) dt += 2 * Math.PI;
+      turn += Math.abs(dt);
+      run += Math.hypot(b.x - a.x, b.z - a.z);
+      if (turn > 0.045 || run > 12) { keep.push(i); turn = 0; run = 0; }
+    }
+    keep.push(n - 1);
+
+    const pos = [], nrm = [], uv = [], col = [], idx = [];
+    const c = new THREE.Color();
+    const up = { x: 0, y: 1, z: 0 };
+    for (const side of [-1, 1]) {
+      let prev = null;
+      for (const i of keep) {
+        const f = frame[i];
+        const ix = f.x + f.mx * half * side, iz = f.z + f.mz * half * side;
+        const ox = f.x + f.mx * (half + KERB_W) * side;
+        const oz = f.z + f.mz * (half + KERB_W) * side;
+        // A kerb may not run across another walk, and may not leave the lawn.
+        if (onOtherWalk(ox, oz, pathIndex) || onOtherWalk(ix, iz, pathIndex)) { prev = null; continue; }
+        const top = f.lawnY + KERB_H;
+        const base = pos.length / 3;
+        const w = hash2(Math.floor(f.x / 3) + 907, Math.floor(f.z / 3) - 331);
+        c.setRGB(0.315 + w * 0.055, 0.310 + w * 0.05, 0.300 + w * 0.05);
+        // inner (at the walk), top of kerb, foot on the lawn
+        pos.push(ix, f.y, iz, ox, top, oz, ox, f.lawnY, oz);
+        nrm.push(up.x, up.y, up.z, up.x, up.y, up.z,
+                 f.mx * side, 0.35, f.mz * side);
+        uv.push(ix / 2.4, iz / 2.4, ox / 2.4, oz / 2.4, ox / 2.4, oz / 2.4 + 0.1);
+        for (let k = 0; k < 3; k++) col.push(c.r, c.g, c.b);
+        if (prev !== null) {
+          // chamfered top, then the face
+          idx.push(prev, prev + 1, base, prev + 1, base + 1, base);
+          idx.push(prev + 1, prev + 2, base + 1, prev + 2, base + 2, base + 1);
+        }
+        prev = base;
+      }
+    }
+    if (idx.length) out.push({ pos, nrm, uv, col, idx });
+  }
+
+  /**
    * Mesh the park walks. Two merged meshes for the whole city — the paved walks
    * of the Common and the Esplanade, and the stone dust of the Public Garden
    * and the Comm Ave Mall — on materials the city already builds, so nineteen
@@ -374,17 +446,57 @@ export default class Districts {
    */
   _buildPaths(scene, materials, paths, lawnIdx) {
     const T = this.terrain;
-    const groups = { paved: [], stone: [] };
+    const groups = { paved: [], stone: [], edge: [] };
     const c = new THREE.Color();
 
-    for (const path of paths) {
+    // Every walk as segments on a coarse hash, so a kerb can be suppressed
+    // where it would run across ANOTHER walk. Boston Common's diagonals cross
+    // its loop and each other; a kerb through those is a wall across the path.
+    const XC = 24, xhash = new Map();
+    paths.forEach((path, pi) => {
+      const q = path.pts || [];
+      for (let i = 1; i < q.length; i++) {
+        const a = q[i - 1], b = q[i], pad = path.width / 2 + 1;
+        const x0 = Math.floor((Math.min(a.x, b.x) - pad) / XC);
+        const x1 = Math.floor((Math.max(a.x, b.x) + pad) / XC);
+        const z0 = Math.floor((Math.min(a.z, b.z) - pad) / XC);
+        const z1 = Math.floor((Math.max(a.z, b.z) + pad) / XC);
+        for (let cx = x0; cx <= x1; cx++) {
+          for (let cz = z0; cz <= z1; cz++) {
+            const k = `${cx},${cz}`;
+            let l = xhash.get(k);
+            if (!l) xhash.set(k, l = []);
+            l.push(pi, a.x, a.z, b.x, b.z, path.width / 2);
+          }
+        }
+      }
+    });
+    const onOtherWalk = (x, z, self) => {
+      const l = xhash.get(`${Math.floor(x / XC)},${Math.floor(z / XC)}`);
+      if (!l) return false;
+      for (let i = 0; i < l.length; i += 6) {
+        if (l[i] === self) continue;
+        const ax = l[i + 1], az = l[i + 2], bx = l[i + 3], bz = l[i + 4];
+        const r = l[i + 5] + 0.25;
+        const dx = bx - ax, dz = bz - az;
+        const len = dx * dx + dz * dz;
+        let t = len > 1e-12 ? ((x - ax) * dx + (z - az) * dz) / len : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const qx = ax + dx * t - x, qz = az + dz * t - z;
+        if (qx * qx + qz * qz < r * r) return true;
+      }
+      return false;
+    };
+
+    paths.forEach((path, pathIndex) => {
       const pts = path.pts;
-      if (!pts || pts.length < 2) continue;
+      if (!pts || pts.length < 2) return;
       const g = groups[path.surface === 'stone' ? 'stone' : 'paved'];
-      if (!g) continue;
+      if (!g) return;
       const idxSrc = lawnIdx.get(path.park);
       const half = path.width / 2;
       const pos = [], nrm = [], uv = [], col = [], idx = [];
+      const frame = [];
       const tile = path.surface === 'stone' ? 3.0 : 2.4;
 
       // Offset frame per vertex, mitred so a bend keeps its width instead of
@@ -412,8 +524,10 @@ export default class Districts {
             mx = sx * k; mz = sz * k;
           }
         }
-        const y = (Districts._lawnY(idxSrc, p.x, p.z) ?? (T.groundHeight(p.x, p.z) + 0.05)) + 0.02;
+        const lawnY = Districts._lawnY(idxSrc, p.x, p.z) ?? (T.groundHeight(p.x, p.z) + 0.05);
+        const y = lawnY + 0.02;
         const nv = T.normalAt(p.x, p.z);
+        frame.push({ x: p.x, z: p.z, mx, mz, y, lawnY });
         // Wear: the middle of a walk is swept clean, the margins collect grit.
         const w = hash2(Math.floor(p.x / 5) + 41, Math.floor(p.z / 5) - 17);
         for (const side of [-1, 1]) {
@@ -433,7 +547,9 @@ export default class Districts {
         idx.push(a, a + 1, b, a + 1, b + 1, b);
       }
       g.push({ pos, nrm, uv, col, idx });
-    }
+
+      if (EDGED.has(path.role)) this._kerb(path, pathIndex, frame, groups.edge, onOtherWalk);
+    });
 
     for (const [surface, list] of Object.entries(groups)) {
       if (!list.length) continue;
@@ -452,7 +568,8 @@ export default class Districts {
       geom.setIndex(idx);
       geom.computeBoundingSphere();
 
-      const src = materials?.get?.(surface === 'stone' ? 'dirt' : 'sidewalk');
+      const src = materials?.get?.(
+        surface === 'stone' ? 'dirt' : surface === 'edge' ? 'granite' : 'sidewalk');
       let mat;
       if (src) {
         mat = src.clone();
