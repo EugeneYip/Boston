@@ -1198,9 +1198,15 @@ function mergeTubes(geos) {
  * many exist. Spreading the same budget over the whole city actually *lowers*
  * peak triangles near the Common.
  */
+// `bin` was raised 1300 -> 1800 when the junction corner kit landed. Corners add
+// ~500 candidate sites, and at 1300 the cap bound: the budget would have been
+// spread thinner mid-block to pay for them rather than the corners being
+// additive. Every other type the corner kit draws on already had the headroom
+// (bollard 258 of 1600, bikeRack 245 of 700, newsBox 163 of 500, mailbox 53 of
+// 160), so only this one moved.
 const RATE = {
   grate: [1.00, 7000], lamp: [1.00, 2800], meter: [0.80, 7500], hydrant: [1.00, 1000],
-  bin: [1.00, 1300], bench: [1.00, 700], bikeRack: [1.00, 700], bollard: [0.85, 1600],
+  bin: [1.00, 1800], bench: [1.00, 700], bikeRack: [1.00, 700], bollard: [0.85, 1600],
   mailbox: [1.00, 160], newsBox: [1.00, 500], utilityBox: [1.00, 260],
   manhole: [1.00, 2200], drain: [1.00, 4200], sign: [0.85, 6000],
   pole: [1.00, 900], shelter: [1.00, 90], dock: [1.00, 40], planter: [1.00, 700],
@@ -1649,6 +1655,89 @@ function runPlacement(sys, L, counting, take) {
       const x = j.x + leg.dx * k + rx * (leg.hw - 0.4);
       const z = j.z + leg.dz * k + rz * (leg.hw - 0.4);
       b('stormDrain').add(x, road(x, z) + 0.004, z, facing(-rx, -rz), 1, 1);
+    }
+  }
+
+  // ---- Corner kit ---------------------------------------------------------
+  //
+  // Every kerbside rule in the segment loop places along the segment INTERIOR:
+  // hydrants start 20-70 m in and stop 10 m short, bins 14-50 in and 8 short,
+  // meters 7 and 7, signs 6 and 6. Junctions are segment ENDS, so the one place
+  // a pedestrian actually stands was excluded from all of them by construction.
+  //
+  // Measured in the running game, within 30 m of a six-way downtown junction:
+  // 6 ped signals, 2 mast arms, 7 signs, 2 stop signs, 10 drains, 1 bench,
+  // 1 bike rack, 1 tree grate -- and zero hydrants, zero bins, zero meters,
+  // zero bollards, zero lamps. Real corners are the densest furniture in a
+  // city, not the emptiest.
+  //
+  // Its own RNG per junction, and a pass of its own after the loop above, so
+  // the streams the signals, blades and drains draw from are untouched.
+  //
+  // That is not quite the same as "nothing else moves", and it is worth being
+  // exact. `populate`'s `take` shares ONE rng across every type -- `if (prob[k]
+  // < 1 && rng.f() > prob[k])` -- so any added `take` call shifts the
+  // acceptance stream for every type whose `prob` is below 1. Measured over 19
+  // sampled types: 16 identical, and lampTwin 266 -> 271, benchPark 138 -> 139,
+  // planter 85 -> 80. Small re-rolls of an acceptance test, not relocations,
+  // and they are the price of the budget spreader being global.
+  let ci = 0;
+  for (const j of L.junctions) {
+    const rng = new RNG(140003 + (ci++) * 7919);
+    const legs = j.legs;
+    if (!legs.length) continue;
+    const g = j.y != null ? () => j.y + KERB_H : (x, z) => L.gh(x, z) + L.kerb;
+    const clear = (x, z, r) => !L.nearTree(x, z, r);
+    // One corner per leg: with n legs there are n corners, and taking the right
+    // of each visits every one exactly once.
+    for (const leg of legs) {
+      const rx = -leg.dz, rz = leg.dx;
+      // `along` runs back up the leg from the junction centre, `lat` out across
+      // the footway. Both start beyond `hw`, which is the carriageway half.
+      const at = (along, lat) => [j.x + leg.dx * (leg.hw + along) + rx * (leg.hw + lat),
+                                  j.z + leg.dz * (leg.hw + along) + rz * (leg.hw + lat)];
+
+      // Bollards on the corner radius, where a footway meets a crossing. The
+      // most characteristic thing at a corner and the cheapest.
+      if (rng.chance(j.major ? 0.7 : 0.35)) {
+        for (const [a, t] of [[1.1, 1.3], [2.3, 0.9]]) {
+          if (!take('bollard')) continue;
+          const [x, z] = at(a, t);
+          if (!clear(x, z, 0.9)) continue;
+          b('bollard').add(x, g(x, z), z, rng.range(0, 6.28), 1, rng.range(0.9, 1.05));
+        }
+      }
+      // A bin, set back from the crossing so it does not block it.
+      if (rng.chance(j.major ? 0.5 : 0.25) && take('bin')) {
+        const [x, z] = at(3.6, 1.2);
+        if (clear(x, z, 1.5)) {
+          b(j.major && rng.chance(0.6) ? 'bigBelly' : 'wireBin')
+            .add(x, g(x, z), z, facing(-rx, -rz) + rng.range(-0.25, 0.25),
+              1, rng.range(0.88, 1.05));
+        }
+      }
+      // Newspaper boxes cluster at corners in Boston; a mailbox is rarer.
+      if (j.major && rng.chance(0.22) && take('newsBox')) {
+        const [x, z] = at(4.8, 1.35);
+        if (clear(x, z, 1.2)) {
+          b(rng.chance(0.5) ? 'newsBoxA' : 'newsBoxB')
+            .add(x, g(x, z), z, facing(-rx, -rz) + rng.range(-0.2, 0.2), 1, rng.range(0.9, 1.04));
+        }
+      }
+      if (j.major && rng.chance(0.10) && take('mailbox')) {
+        const [x, z] = at(6.0, 1.30);
+        if (clear(x, z, 1.3)) {
+          b('mailbox').add(x, g(x, z), z, facing(-rx, -rz) + rng.range(-0.2, 0.2), 1, 1);
+        }
+      }
+      // A rack goes against the building line, out of the crossing's way.
+      if (rng.chance(0.18) && take('bikeRack')) {
+        const [x, z] = at(5.4, 2.6);
+        if (clear(x, z, 1.6)) {
+          b('bikeRack').add(x, g(x, z), z, facing(leg.dx, leg.dz) + rng.range(-0.1, 0.1),
+            1, rng.range(0.92, 1.04));
+        }
+      }
     }
   }
 
