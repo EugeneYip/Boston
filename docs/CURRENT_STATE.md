@@ -1594,6 +1594,17 @@ Nothing of the size of the last two. The strongest signals resolved as:
 - **High `nVeg` outliers** (up to 778 against a street median of 90) are the
   shoreline planting from the previous pass, landing where it was meant to.
 
+### Dusk and rain
+
+Dusk, 14 views: mean 0.283, clipped-white median 0.0015 and worst 0.0064,
+crushed-black median 0.0089 and worst 0.029. No low-sun blowout.
+
+Rain, 12 views: mean 0.294, **crushed-black median AND maximum both 0.000**,
+clipped-white median 0.000 and worst 0.0052. No wet glitter.
+
+Condition matrix for the pass: 126 daylight + 25 night + 14 dusk + 12 rain =
+177 captures.
+
 ### Night washout — attributed, and closed
 
 A 25-view night subset stratified by lamp family shows no family and no context
