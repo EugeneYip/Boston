@@ -327,6 +327,36 @@ export default class Vehicle {
     this._shiftCooldown = 0.5;
   }
 
+  /**
+   * Park: neutral, no input, no automatic upshift.
+   *
+   * A car with nobody in it is not a car with its foot off the throttle. The
+   * clutch deliberately slips near idle so the car creeps away from rest
+   * instead of stalling, which is right when someone is driving and wrong the
+   * moment they get out: measured on abandoned cars, every one held ~2.3 m/s
+   * indefinitely — raising the body's linear damping to 1.4 did not touch it,
+   * because the drivetrain was replacing the energy every step. Neutral is what
+   * actually removes the creep, and it does it without lighting the brake lamps
+   * the way a handbrake input would.
+   */
+  park() {
+    this.autoGearbox = false;
+    this._engageGear(0);
+    this.input.throttle = 0;
+    this.input.brake = 0;
+    this.input.steer = 0;
+    this.input.handbrake = 0;
+    this.parked = true;
+  }
+
+  /** Undo `park()` — back in gear, gearbox automatic again. */
+  unpark() {
+    if (!this.parked) return;
+    this.parked = false;
+    this.autoGearbox = true;
+    this._engageGear(1);
+  }
+
   /** Teleport (respawn, mission setup). Clears all momentum. */
   setTransform(pos, heading) {
     this.heading = heading;
