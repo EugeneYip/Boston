@@ -38,6 +38,18 @@ const GRAVITY = 20.0;                // heavier than real: games always are
 const SNAP_GROUND = 0.35;
 const AUTOSTEP = 0.45;               // tallest rise the controller will step up
 const ENTER_RANGE = 4.6;
+/**
+ * How much looking away from a car costs it, as a multiplier on distance.
+ *
+ * 0.9 means a car dead ahead is judged at its true distance and one directly
+ * behind at 2.8x it, so between two cars 3 m away the one you face wins, while
+ * a car 1 m beside you still beats one 3 m ahead. Facing is a bias, not a veto.
+ */
+const FACING_BIAS = 0.9;
+/** Multiplier on a candidate with world geometry in the way. */
+const OCCLUDED_COST = 1.8;
+const _nearVeh = [];
+const _nearCars = [];
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -621,25 +633,87 @@ export default class Player {
    * Split out of `_tryEnterVehicle` so the HUD prompt and the key press cannot
    * disagree about what is in reach: a prompt that appears when F does nothing,
    * or fails to appear when it would work, is worse than no prompt. Cheap
-   * enough to run every frame — two nearest-point scans over a few hundred
+   * enough to run every frame — a couple of radius scans over a few hundred
    * entries — but the HUD asks at 4 Hz anyway.
+   *
+   * Ranked, not nearest-first, for two reasons that were both observed rather
+   * than imagined:
+   *
+   * The old version returned ANY physical vehicle within reach before it looked
+   * at traffic at all, so standing 2.4 m from a taxi with the car you parked
+   * 4.5 m behind you got you the parked car. Both kinds are now scored on one
+   * scale; the per-kind ranges remain the eligibility test because a kinematic
+   * AI car is worth reaching slightly further for.
+   *
+   * And it ignored where the player was looking, so between two cars you got
+   * the closer one whichever way you faced. Facing is a BIAS, not a veto:
+   * effective distance is scaled by `1 + FACING_BIAS * (1 - cos)`, so a car
+   * dead ahead is judged at its true distance and one directly behind at 2.8x
+   * it. A car very close beside the player still beats a further one he is
+   * looking at, which is the behaviour you want when you are stood against a
+   * door handle.
    *
    * @returns {{kind:'vehicle'|'traffic', obj:object}|null}
    */
   enterCandidate(ctx) {
     if (this.mode !== 'onFoot') return null;
+    const yaw = this._lookYaw();
+    const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+    const px = this.position.x, pz = this.position.z;
+
+    let best = null, bestKind = null, bestCost = Infinity;
+    const consider = (obj, kind, x, z) => {
+      const dx = x - px, dz = z - pz;
+      const d = Math.hypot(dx, dz) || 1e-3;
+      const cos = (fx * dx + fz * dz) / d;
+      let cost = d * (1 + FACING_BIAS * (1 - cos));
+      if (this._occluded(ctx, x, z)) cost *= OCCLUDED_COST;
+      if (cost < bestCost) { bestCost = cost; best = obj; bestKind = kind; }
+    };
+
     const factory = ctx.get('vehicles');
-    if (!factory?.nearest) return null;
-    _v2.set(this.position.x, this.position.y + 0.9, this.position.z);
-    const v = factory.nearest(_v2, ENTER_RANGE);
-    if (v && v !== this.vehicle) return { kind: 'vehicle', obj: v };
-    // Nothing physical in reach, so try the AI traffic: `Traffic.takeOver`
-    // swaps the kinematic car for a real one in the same place. Without this
-    // there is nothing in the city to get into — every car on the road is
-    // kinematic and has no rigid body.
+    if (factory?.within) {
+      _v2.set(px, this.position.y + 0.9, pz);
+      for (const v of factory.within(_v2, ENTER_RANGE, _nearVeh)) {
+        if (v !== this.vehicle) consider(v, 'vehicle', v.position.x, v.position.z);
+      }
+    }
+    // `Traffic.takeOver` swaps the kinematic car for a real one in the same
+    // place. Without this there is nothing in the city to get into — every car
+    // on the road is kinematic and has no rigid body.
     const traffic = ctx.get('traffic');
-    const car = traffic?.nearestCar?.(this.position.x, this.position.z, ENTER_RANGE + 1.6);
-    return car ? { kind: 'traffic', obj: car } : null;
+    if (traffic?.carsWithin) {
+      for (const c of traffic.carsWithin(px, pz, ENTER_RANGE + 1.6, _nearCars)) {
+        consider(c, 'traffic', c.x, c.z);
+      }
+    }
+    return best ? { kind: bestKind, obj: best } : null;
+  }
+
+  /**
+   * Is there world geometry between the player's chest and a candidate?
+   *
+   * A penalty rather than a veto, deliberately: a false positive from a kerb or
+   * the car's own body would make the vehicle unenterable, which is a far worse
+   * failure than occasionally preferring a car through a railing. Static only,
+   * so traffic and props do not block the test.
+   */
+  _occluded(ctx, x, z) {
+    const P = this.P;
+    if (!P?.world || !P.RAPIER) return false;
+    const y = this.position.y + 0.9;
+    const dx = x - this.position.x, dz = z - this.position.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 1e-3) return false;
+    // Built once, from the binding, and reused.
+    const ray = this._losRay || (this._losRay = new P.RAPIER.Ray(
+      { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: -1 }));
+    ray.origin.x = this.position.x; ray.origin.y = y; ray.origin.z = this.position.z;
+    ray.dir.x = dx / d; ray.dir.y = 0; ray.dir.z = dz / d;
+    // Stop short of the car itself so its own hull is not the occluder.
+    const hit = P.world.castRay(ray, Math.max(0.1, d - 1.3), true,
+      undefined, groups(GROUP.CHARACTER, GROUP.STATIC), undefined, this.body);
+    return !!hit;
   }
 
   _tryEnterVehicle(ctx) {

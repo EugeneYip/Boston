@@ -404,6 +404,18 @@ export default class VehicleFactory {
     if (v) { v.isPlayer = true; v.ai = false; }
   }
 
+  /** Every live vehicle within `maxDist` of a point, appended to `out`. */
+  within(point, maxDist, out = []) {
+    out.length = 0;
+    const r2 = maxDist * maxDist;
+    for (const v of this.list) {
+      if (!v?.alive) continue;
+      const dx = v.position.x - point.x, dz = v.position.z - point.z;
+      if (dx * dx + dz * dz < r2) out.push(v);
+    }
+    return out;
+  }
+
   /** @returns {Vehicle|null} nearest vehicle to a point, within `maxDist`. */
   nearest(point, maxDist = 12) {
     let best = null, bd = maxDist * maxDist;

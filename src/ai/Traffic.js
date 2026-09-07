@@ -376,6 +376,26 @@ export default class Traffic {
   setDensity(d) { this.density = clamp01(d); }
 
   /** The nearest AI car to a point on the ground, or null. */
+  /**
+   * Every live AI car within `maxDist`, appended to `out`.
+   *
+   * `nearestCar` answers "which one is closest", which is the wrong question
+   * when the player is standing between two cars and looking at one of them.
+   * The ranking that decides what F takes lives in `Player.enterCandidate`, so
+   * it needs the candidates rather than a verdict.
+   */
+  carsWithin(x, z, maxDist, out = []) {
+    out.length = 0;
+    const r2 = maxDist * maxDist;
+    const list = this.vehicles;
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      const dx = c.x - x, dz = c.z - z;
+      if (dx * dx + dz * dz < r2) out.push(c);
+    }
+    return out;
+  }
+
   nearestCar(x, z, maxDist = 6) {
     let best = null, bd = maxDist * maxDist;
     const list = this.vehicles;
