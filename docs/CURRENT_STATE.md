@@ -2131,3 +2131,134 @@ is adequate.
    invariants are deliberately absolute; this is the price.
 5. `Player.ctx` is not the engine ctx and has no `input` on it, which is
    confusing enough that it cost a debugging cycle here.
+
+## High-centring / drivability — 2026-09-07 (`e44719d`)
+
+Baseline `5849852`. The authorised defect is a road/terrain collision seam, and
+it is not where the symptom pointed.
+
+### Reproduction, and what it disproved
+
+Three deterministic runs with a road-following controller on a spawned sedan:
+
+| context | result |
+|---|---|
+| Beacon Street, arterial | **642 m, not stuck**, 4 wheels down, roadDist 0.33 |
+| Berkeley Street, local | **642 m, not stuck**, 4 wheels down, roadDist 0.56 |
+| Rutherford Avenue, grade | **stuck at 133 m** |
+
+So ordinary on-carriageway driving does not high-centre. And the stuck case had
+the OPPOSITE wheel state to the reported one: all four wheels in contact, front
+suspension nearly fully compressed at 0.038-0.043 against a 0.34 rest, omega ~0,
+and eleven contact manifolds on static geometry — four of them on the terrain
+heightfield itself. Not a car balanced on its belly; a car jammed against
+invisible ground.
+
+### Attribution
+
+Read from the actual contacts and a downward ray per collider class, not from
+nearest-collider distance. The world's statics are one HeightField (terrain),
+64 TriMesh colliders (roads, pavements, buildings) and 15,960 parked-car cuboids.
+
+At the five worst points the **topmost collider at the road centreline was the
+terrain heightfield**, standing above the road:
+
+| point | road y | terrain collider | above road |
+|---|---|---|---|
+| Beacon Street East | 11.843 | 12.399 | **+0.60** |
+| Myrtle Street | 12.690 | 13.602 | **+0.93** |
+| Chestnut Street | 13.954 | 14.711 | **+0.78** |
+| Mount Vernon Street | 13.932 | 14.464 | **+0.55** |
+| Prince Street | 8.499 | 9.035 | **+0.55** |
+| flat arterial (control) | 4.276 | 3.876 | −0.37, topmost = road trimesh |
+
+Swept over the whole network: **116 of 3,535 road samples, 3.28%, up to
+1.016 m**, all on Beacon Hill and North End streets.
+
+### Root cause
+
+Two independent contributions, both about resolution rather than logic.
+
+`stampRoads` is correct and idempotent — re-running it changes nothing, and on
+flat ground it is exact, with Beacon Street sitting at precisely `roadY - 0.40`,
+its own cap value. But the cap is applied per RASTER CELL and the raster is
+10 m; where a Beacon Hill street changes grade inside one cell, the bilinear
+surface between two correctly capped cells still rises above the road between
+them.
+
+And the collider was built at 300x300 over 6.8 km — **22.7 m per cell, 2.27x
+coarser than the 681x681 raster it samples**. A 10 m road corridor can pass
+between two vertices of a 22.7 m grid without either of them knowing.
+
+### Fix
+
+`Terrain.addCollider` builds at the raster's own resolution and cuts the
+carriageway out of the **collision** ground. Collision only: the drawn hillside
+is untouched, so there is no visual change anywhere. Corridor is
+`halfRoad + cell` so both bracketing vertices are cut; depth 0.5 m; bridged
+edges skipped.
+
+Deepening `stampRoads` would also have worked and was the wrong place — that cap
+reaches 11 m past the kerb and feeds the raster the ground MESH is built from,
+so it would have trenched every street in the city. The driving surface under a
+road is the road's own trimesh, measured covering 98%+ of carriageway samples.
+
+**Result: 0 of 3,535 samples with collision ground above the road, at any
+threshold down to 5 cm.** At the worst five points the topmost collider is now
+the road trimesh, with the heightfield 0.50-1.13 m below the asphalt.
+
+### Chassis and drivetrain: audited, left alone
+
+The chassis collider is honest — its bottom sits at local 0.2339 against a
+visible underbody at 0.215, slightly ABOVE the skin:
+
+| class | drive | clearance at rest | at bump stop |
+|---|---|---|---|
+| sedan | **fwd** | 0.254 | **0.033** |
+| suv | awd | 0.353 | 0.112 |
+| pickup | awd | 0.391 | 0.144 |
+
+The sedan is both the only FWD class and the one with a third the hull clearance
+at full compression, which is why the symptom found it first. No drivetrain
+change: a FWD car with both front tyres genuinely airborne SHOULD lose drive.
+
+### Acceptance
+
+21 trials, **6,354 m**, across Beacon Hill, North End, Charlestown, Back Bay and
+the Financial District, in sedan, SUV, pickup and van. `errors []`,
+`glFaults []`, `validate().ok`.
+
+**Zero unrecoverable events.** Four trials stopped against obstacles; every one
+had all four wheels in contact with normal suspension travel — none high-centred
+— and every one was freed by ordinary reverse and steer, recovering 16.9 m,
+25.3 m and 19.6 m. One of the four was not even reproducible on a second run.
+The harness never reverses; a player does.
+
+Before: three of three drives unrecoverable within 200-260 m, reverse moving
+0.04 m, full throttle at 6279 rpm and 0.00 m/s.
+
+Deliberate kerb mounts at 15, 35, 60 and 90 degrees on the sedan: all four ended
+four wheels down with both driven wheels in contact, and all four drove out.
+
+Transient single-wheel lift remains on the steepest streets and is speed-driven,
+not geometric: on an 8.1% grade the driven axle lost contact 4 times at 13 m/s
+with the car briefly fully airborne, and **0 times at 7 m/s with all four wheels
+down throughout**. Prince Street keeps 6 events at both speeds with 2-3 wheels
+still down — body roll on camber. None of it strands the car.
+
+### Costs and the one trade-off
+
+Collider build 32 ms -> 136 ms once at boot; height buffer 0.36 MB -> 1.86 MB.
+
+Measured by A/B against a collider built without the cut: pavement samples more
+than 25 cm below their drawn surface go **15 -> 17 of 3,024**, two samples,
+0.07%. The worst case, 2.60 m on Beacon Street, is pre-existing and identical
+with and without the cut. Two marginal pavement dips against 116 places that
+stranded the player's car.
+
+### Acquisition and lifecycle regression
+
+on foot -> prompt -> commandeer -> drive -> stop -> exit -> park -> repeat,
+twice: prompt shown, type and colour matched, drove at 13.4 and 12.8 m/s, exited
+to `onFoot`, `parked` true with gear 0 and rest speed 0.000 and the body asleep,
+fleet bounded at 1 then 2. `errors []`, `glFaults []`, `validate().ok`.

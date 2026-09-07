@@ -1649,3 +1649,51 @@ Three independent drives reached it within 200-260 m.
 Any fix touches the tyre model or world collision, both closed by standing
 policy. Do not attempt one without an explicit decision. The consequence is
 bounded: `F` still exits, and the stranded car parks, sleeps and is reclaimed.
+
+## The collision ground must never stand above a road (2026-09-07)
+
+`Terrain.addCollider(physics, net)` builds the heightfield at the terrain
+raster's own resolution (`NX - 1`, not a coarser grid) and cuts the carriageway
+out of it via `_cutCarriageway`. Both parts are load-bearing:
+
+- **Resolution.** The collider samples `groundHeight`, which is a bilinear read
+  of a 681x681 raster. Building it at 300x300 made it 2.27x coarser than its own
+  source, and at 22.7 m per cell a 10 m road corridor can pass between two
+  vertices untouched.
+- **The cut.** `stampRoads` caps each raster CELL to the road height at that
+  cell's station, which is exact on the flat — measured at precisely
+  `roadY - 0.40`, its cap value — and insufficient on a hill, where a street
+  changes grade inside one 10 m cell and the bilinear surface between two
+  correctly capped cells still rises above the road. Measured before the cut:
+  116 of 3,535 road samples, 3.28%, with the terrain heightfield the TOPMOST
+  collider at the road centreline, by up to 1.016 m. After: **0 at any threshold
+  down to 5 cm.**
+
+**Do not fix this by deepening `stampRoads`.** That cap runs on the raster the
+ground MESH is built from and reaches 11 m past the kerb, so a deeper cut opens
+a visible trench along every street. The cut here is collision-only and changes
+nothing visually. Bridged edges are skipped — a bridge deck must not cut the
+ground beneath it.
+
+The corridor is `halfRoad + cell` so both vertices bracketing the carriageway
+are cut; anything narrower lets the interpolation rise back through the asphalt.
+The measured price is two pavement samples out of 3,024 sitting >25 cm below
+their drawn surface (15 -> 17); the worst pavement case in the city, 2.60 m on
+Beacon Street, is pre-existing and unaffected.
+
+Re-check with: a downward ray at road-centreline samples, asserting the topmost
+collider is the road trimesh (shape 6) and not the heightfield (shape 7).
+
+## Vehicle chassis and drivetrain are NOT the high-centring owner (2026-09-07)
+
+Audited and deliberately left alone. The chassis collider bottom sits at local
+0.2339 against a visible underbody at 0.215 — slightly above the skin, not below
+it. Ground clearance at rest / at the bump stop: sedan 0.254 / 0.033, SUV
+0.353 / 0.112, pickup 0.391 / 0.144. The sedan is the only FWD class and has a
+third the clearance at full compression, which is why it surfaced the symptom
+first.
+
+Do not send torque to a non-driven axle to "fix" a high-centre: a FWD car with
+both front tyres genuinely airborne SHOULD lose drive. Transient single-wheel
+lift on Boston's steepest streets is speed-driven and recovers — measured 4
+events at 13 m/s and 0 at 7 m/s on an 8.1% grade — and is not a defect.
