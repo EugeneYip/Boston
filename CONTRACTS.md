@@ -1697,3 +1697,45 @@ Do not send torque to a non-driven axle to "fix" a high-centre: a FWD car with
 both front tyres genuinely airborne SHOULD lose drive. Transient single-wheel
 lift on Boston's steepest streets is speed-driven and recovers — measured 4
 events at 13 m/s and 0 at 7 m/s on an 8.1% grade — and is not a defect.
+
+## Visual terrain and collision terrain differ under carriageways — by design (2026-09-07)
+
+**Closed.** The root-cause contract, recorded so it is not re-litigated:
+
+- The **road trimesh owns carriageway support.** It covers 98%+ of carriageway
+  samples; the remainder are rays that struck a tower roof first.
+- The **physics heightfield must never protrude above the drawn road.** It is
+  built at the terrain raster's own resolution and cut under the carriageway by
+  `Terrain._cutCarriageway`. Verified 0 of 3,535 road samples above the road at
+  any threshold down to 5 cm.
+- **The drawn terrain is untouched.** The cut is collision-only, and that is
+  measured, not assumed: capturing canonical views with the cut on and off gives
+  a worst tile delta of 2 against a tolerance of 8, `dBlown` 0.0000 and `dMean`
+  <= 0.0042. A pixel difference attributed to this cut is a measurement error.
+- The cut **helps pedestrians too.** Same 14 steepest junctions, crossing
+  success 9/14 with the cut against 8/14 without, and max vertical step 0.394 m
+  with against **6.803 m** without.
+
+Acceptance that closed it: 27 vehicle trials over 10.63 km in four body types
+across nine districts with **zero unrecoverable high-centring events**, 40
+junction pedestrian crossings with Beacon Hill 8/8 and Back Bay 7/7, and zero
+capsule penetration in an A/B with the cut on and off.
+
+**Do not re-audit this without fresh gameplay evidence**, and do not chase the
+pavement-sample metric (15 -> 17 of 3,024 more than 25 cm below the drawn
+surface) toward zero — no penetration accompanies it and the worst case in the
+city is pre-existing.
+
+### Testing notes that cost time to learn
+
+- `surfaceAt(x, z)` returns the hillside **beside** a road cutting as the
+  surface at a point in the cutting, so "player is N metres below the surface"
+  is not a fall-through test. Use capsule penetration
+  (`intersectionWithShape`, excluding the player's own collider and body).
+- A downward ray from the player's own position hits **his own capsule** first.
+  Exclude it, or the result is self-intersection.
+- Mid-block pedestrian crossings walk into the kerbside parked-car line, which
+  is solid to characters (PROP -> CHARACTER) by design. Cross at junctions.
+- A single fixed recovery pattern is not a recoverability test. Charlestown Main
+  Street would not free under brake-and-steer but reversed 10.09 m straight back.
+  Try straight reverse before calling a stop unrecoverable.

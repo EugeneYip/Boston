@@ -2262,3 +2262,147 @@ on foot -> prompt -> commandeer -> drive -> stop -> exit -> park -> repeat,
 twice: prompt shown, type and colour matched, drove at 13.4 and 12.8 m/s, exited
 to `onFoot`, `parked` true with gear 0 and rest speed 0.000 and the body asleep,
 fleet bounded at 1 then 2. `errors []`, `glFaults []`, `validate().ok`.
+
+## High-centring closeout + cross-map acceptance — 2026-09-07 (`9a8a8cd` … )
+
+Baseline `9a8a8cd`. Validation only — no source change was needed or made.
+
+### Resources
+
+Started at 27% free memory, swap 6.27/7.17 GB, load 25.96/24.85/54.44, so the
+cheap physics regressions ran first. By the time the visual work began the
+machine had recovered to **47% free, swap 4.95/6.14 GB, load 4.42/5.00/8.91**,
+and the viewport check passed (1920x1080, aspect 1.778, settle sigma 0.0207
+against a 0.05 threshold), so the sweep was run rather than deferred.
+
+### Phase 1 — static pixel regression: clean
+
+126 views, **125 converged**, settled median 24, viewport valid. **Zero count or
+geometry violations** — camDraws, camTris, nProps, nVeg, nBuildings all inside
+tolerance on every view. Mean luminance bias **+0.0004**, max |dMean| 0.0221
+against a 0.06 tolerance. No systematic movement, which is the expected result
+for a collision-only change.
+
+15 pixel deltas remained, 14 single-tile and one `blown`. Classified by repeat
+capture rather than asserted:
+
+- `street:e212 tile9` — repeats 40/47/55/53, spread 15: **benign dynamic**.
+- `special:bridge:e403 tile7` — repeats 25/25/25/25 against a baseline of 25:
+  the sweep row was the transient.
+- `park:commonwealth-avenue-mall-2 blown` — stable at ~0.009 against a baseline
+  0.0284, i.e. **less** clipping than the baseline.
+- `street:e8 tile3` (+13), `traffic:e56 tile2` (+10), `local:e246 tile6` (+14) —
+  **stable and reproducible**, spread 0-1 across four repeats.
+
+Those last three are not from this mission, and that is measured rather than
+argued: capturing the same views with the carriageway cut ON and OFF gives a
+**worst tile delta of 2** against a tolerance of 8, `dBlown` 0.0000 everywhere
+and `dMean` <= 0.0042. **The collision cut is pixel-invisible, as designed.**
+`traffic:e56 tile2` was already recorded as a stable offset in the previous
+mission, so it predates this one; the most likely origin is the previous
+batch's material adoption, where the ground and park variants became adopted and
+so began receiving `_applyEnv`'s day/night envMapIntensity curve instead of a
+value frozen at clone time. Small, stable, pre-existing, and not chased.
+
+### Phase 2 — pedestrian collision: the cut HELPS
+
+The important missing acceptance check, and it came out better than neutral.
+
+Capsule penetration, A/B with the cut on and off over the three suspect
+Charlestown crossings: **0 penetrating frames in both configurations**, max
+single-frame fall 0.267 m with the cut and 0.129 m without. No fall-throughs.
+
+An earlier metric reported three "fall-throughs"; it was wrong. `surfaceAt`
+returns the hillside *beside* a road cutting as the surface at the player's
+position, so a player standing correctly on a road 7 m below the adjacent
+terrain reads as 7 m under the surface. The penetration test is the honest one.
+
+Crossing success, same 14 steepest junctions, A/B:
+
+| | with cut | without cut |
+|---|---|---|
+| crossed | **9 / 14** | 8 / 14 |
+| max vertical step | **0.394 m** | **6.803 m** |
+
+Edge 496 (Rutherford Avenue) crosses **only** with the cut, 0.86 m from target
+against 11.4 m without. Edge 499 (Main Street Charlestown) had a **6.8 m
+pedestrian vertical snap without the cut**, 0.166 m with it. The same protruding
+terrain that jammed cars was stepping pedestrians.
+
+40 junction crossings overall: 29 crossed, **Beacon Hill 8/8 and Back Bay 7/7**
+— the seam district and the control both perfect. Failures are identical with
+and without the cut and are medians, unauthored Seaport frontage, and the
+kerbside parked-car line, which is solid to characters by design.
+
+The 38 mid-block crossings are reported as invalid rather than failing: their
+`closest` values cluster at `width - 1.4 m`, i.e. the player walked 1.4 m and
+stopped at the kerbside parked cars. Correct behaviour, wrong test.
+
+### Pavement edge samples
+
+The two extra samples from the previous A/B (15 -> 17 of 3,024 more than 25 cm
+below their drawn surface) fall into class **A/B, not C**: no penetration
+anywhere in the A/B, the player remains supported, and the worst pavement case
+in the city (2.60 m, Beacon Street) is pre-existing and identical with and
+without the cut. Not fixed, not optimised toward zero.
+
+### Phase 3 — cross-map vehicle exploration
+
+**27 trials, 10.63 km**, sedan / SUV / pickup / van, across backBay,
+beaconHill, cambridge, charlestown, fenway, financial, northEnd, park and
+southEnd. `errors []`, `glFaults []`, `validate().ok`, and `streamDone` true on
+every trial.
+
+Stuck classification, six events, every one with **all four wheels in contact at
+the stop** — none high-centred:
+
+| class | count |
+|---|---|
+| A/C recoverable obstacle or cutting wall | 6 |
+| **D unrecoverable terrain/collision** | **0** |
+
+Five freed on the first recovery pattern. The sixth, Charlestown Main Street,
+did not — and that was the recovery pattern, not the world: a thorough attempt
+reversed it **10.09 m straight back** and then 8.02 m forward-right, 8.62 m
+total, freed. Its stop state also explains the earlier pedestrian anomaly on the
+same edge: `roadY` 18.18, `surfaceAt` returning a road deck at 12.23 and terrain
+at 26.37 — stacked decks in a cutting beside the I-93 interchange, not a hole.
+
+### Wheel lift, recorded and not chased
+
+51 driven-axle contact losses across 10.63 km, concentrated on Beacon Hill
+(Chestnut 7, Mount Vernon 7, Hanover 22) and always transient. Established as
+speed-driven in the previous mission — 4 events at 13 m/s and 0 at 7 m/s on an
+8.1% grade — and no trial that recorded lift became unrecoverable. Per policy,
+recorded and left alone.
+
+### Phase 4 — acquisition and lifecycle regression
+
+Three full rounds, all clean: prompt shown, type and colour matched
+(taxi/taxi, truck/truck, sedan/sedan), chase camera, drove, exited to `onFoot`,
+then **parked true, gear 0, throttle 0, rest speed 0.000, body asleep**, fleet
+bounded 1 -> 2 -> 3. `errors []`, `glFaults []`, `validate().ok`. Momentum
+handoff carried on two of three rounds (6.96 -> 6.27, 2.29 -> 2.98); the third
+read 0 from a car doing 26.71 m/s, measured seven frames after the swap, and the
+previous mission measured the handoff exactly at 12.00 for a 12.09 m/s car.
+
+### Phase 5 — dusk, owed and now run
+
+5 routes at tod 19.4. `errors []`, `glFaults []`, `validate().ok`. Clipped-white
+p90 **0 on four routes and 0.01 on the fifth**; crushed-black p90 <= 0.03;
+unsettled 0-2.5%; the real-light pool saturated at 15 on every route, so lamps
+are up and the fixed pool is full at dusk; both `acorn-led` and `cobra-led`
+families seen. No `winJump` — building window emissive is continuous.
+
+32 events, all in the classes already established as benign: headJump 14 and
+ovlJump 8 are traffic and lamps crossing a 120 m radius. The seven luminance
+steps are all on pedestrian routes within 3-7 m of a lamp, the same scene-content
+pattern the night mission proved with `probeLuminance` (scene 4.19 stops, meter
+1.25). One crushJump reaches 8.6% locally against a route p90 of 0.02.
+**B2 remains closed.**
+
+### PLAYER VEHICLE HIGH-CENTRING / INVISIBLE ROAD TERRAIN — DURABLY CLOSED
+
+Static clean, pedestrian crossings clean and improved, 10.63 km with D = 0,
+acquisition clean, no new world collision hole. Do not re-audit without fresh
+gameplay evidence.
