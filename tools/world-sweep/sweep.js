@@ -77,36 +77,107 @@ function frameStats(f) {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
 
+  // A coarse 4x3 spatial summary. Twelve numbers is enough to say WHERE a frame
+  // changed -- sky, near ground, left facade -- without storing an image, and
+  // it survives traffic moving through one tile.
+  const TX = 4, TY = 3, tiles = new Array(TX * TY).fill(0), tn = new Array(TX * TY).fill(0);
+  for (let y = 0; y < H; y++) {
+    const ty = Math.min(TY - 1, ((y / H) * TY) | 0);
+    for (let x = 0; x < W; x++) {
+      const t = ty * TX + Math.min(TX - 1, ((x / W) * TX) | 0);
+      tiles[t] += lum[y * W + x]; tn[t]++;
+    }
+  }
+  for (let i = 0; i < tiles.length; i++) tiles[i] = +(tiles[i] / (tn[i] || 1)).toFixed(3);
+
   return {
     mean: +mean.toFixed(4), p01: q(0.01), p50: q(0.5), p99: q(0.99),
     dark: +(dark / lum.length).toFixed(4), blown: +(blown / lum.length).toFixed(4),
     detail: +(g / gn).toFixed(5), flat: +(top / lum.length).toFixed(4),
-    digest: h.toString(16),
+    tiles, digest: h.toString(16),
   };
 }
 
-/** What the camera is actually looking at, and how far away it is. */
+/**
+ * What the camera is actually looking at, and how far away. One
+ * `intersectObjects` call over a list gathered per view — the previous
+ * per-object loop over ~950 meshes was the slowest thing in the sweep.
+ */
 function probeAhead(B, THREE) {
   const e = B.engine;
+  // Static geometry only. An InstancedMesh raycast tests every instance, and a
+  // 15,000-instance batch made this the slowest call in the sweep; nearest
+  // PROP distance comes from the spatial index instead.
   const targets = [];
   e.scene.traverse((o) => {
-    if ((o.isMesh || o.isInstancedMesh) && o.visible) targets.push(o);
+    if (o.isMesh && !o.isInstancedMesh && o.visible) targets.push(o);
   });
   const ray = new THREE.Raycaster();
   ray.far = 400;
   const dir = new THREE.Vector3();
   e.camera.getWorldDirection(dir);
   ray.set(e.camera.getWorldPosition(new THREE.Vector3()), dir);
-  let best = null;
-  for (const t of targets) {
-    let hits;
-    try { hits = ray.intersectObject(t, false); } catch { continue; }
-    if (hits.length && (!best || hits[0].distance < best.distance)) {
-      best = { distance: hits[0].distance, name: t.name || t.type };
+  let hits = [];
+  try { hits = ray.intersectObjects(targets, false); } catch { /* one bad mesh */ }
+  if (!hits.length) return { aheadM: null, aheadName: 'sky' };
+  return { aheadM: +hits[0].distance.toFixed(1),
+           aheadName: hits[0].object.name || hits[0].object.type };
+}
+
+/**
+ * Spatial index of every prop, parked car, vegetation instance and building,
+ * built ONCE per sweep. Counting them per view instead was 250,000 distance
+ * tests a frame and most of the sweep's runtime.
+ */
+export function buildIndex(B) {
+  const e = B.engine;
+  const C = 32;
+  const cells = new Map();
+  const add = (kind, x, z) => {
+    const k = `${Math.floor(x / C)},${Math.floor(z / C)}`;
+    let l = cells.get(k);
+    if (!l) cells.set(k, l = []);
+    l.push(kind, x, z);
+  };
+  const isCar = (k) => /^car[A-Z]/.test(k);
+  const eat = (sys, kindOf) => {
+    const bs = sys && sys.batcher && sys.batcher.batches;
+    if (!bs) return;
+    for (const [key, b] of bs) {
+      const m = b.mats;
+      if (!m) continue;
+      const kind = kindOf(key);
+      if (kind < 0) continue;
+      for (let i = 0; i < m.length / 16; i++) add(kind, m[i * 16 + 12], m[i * 16 + 14]);
+    }
+  };
+  eat(e.systems.get('props'), (k) => (k.startsWith('decal_') ? -1 : isCar(k) ? 1 : 0));
+  eat(e.systems.get('vegetation'), () => 2);
+  const specs = e.systems.get('buildings') && e.systems.get('buildings').specs;
+  if (Array.isArray(specs)) for (const b of specs) if (b.cx !== undefined) add(3, b.cx, b.cz);
+  return { C, cells };
+}
+
+/** What is actually AROUND the camera, from the systems' own instance data
+ *  rather than from the picture. A frame whose prop count halves has lost
+ *  props, whatever its luminance says. */
+function nearbyCounts(idx, x, z, R = 70) {
+  const out = [0, 0, 0, 0];
+  if (!idx) return { nProps: 0, nParked: 0, nVeg: 0, nBuildings: 0 };
+  const { C, cells } = idx;
+  const R2 = R * R, r = Math.ceil(R / C);
+  const cx = Math.floor(x / C), cz = Math.floor(z / C);
+  for (let a = -r; a <= r; a++) {
+    for (let b = -r; b <= r; b++) {
+      const l = cells.get(`${cx + a},${cz + b}`);
+      if (!l) continue;
+      for (let i = 0; i < l.length; i += 3) {
+        const dx = l[i + 1] - x, dz = l[i + 2] - z;
+        if (dx * dx + dz * dz < R2) out[l[i]]++;
+      }
     }
   }
-  return best ? { aheadM: +best.distance.toFixed(1), aheadName: best.name }
-              : { aheadM: null, aheadName: 'sky' };
+  return { nProps: out[0], nParked: out[1], nVeg: out[2], nBuildings: out[3] };
 }
 
 /**
@@ -114,33 +185,89 @@ function probeAhead(B, THREE) {
  * @param {Array}  views  from `viewpoints.json`
  * @param {object} opts   { tod, weather, fov, only, holdActors }
  */
+/** Resolve a stored terrain-independent pose against the CURRENT world. */
+export function resolvePose(B, v, fov) {
+  const city = B.engine.systems.get('city');
+  const g = (x, z) => city.groundHeight(x, z);
+  const gy = g(v.at[0], v.at[1]);
+  return {
+    pos: [v.at[0], gy + v.eye, v.at[1]],
+    look: [v.aim[0], g(v.aim[0], v.aim[1]) + v.aimEye, v.aim[1]],
+    fov: fov ?? 55,
+    groundY: +gy.toFixed(2),
+  };
+}
+
+/**
+ * @param {object}   B      window.__boston
+ * @param {Array}    views  from `viewpoints.json`
+ * @param {object}   opts   { tod, weather, fov, only, holdActors, splitShadow }
+ */
 export async function runSweep(B, views, opts = {}) {
   const THREE = await import('three');
   const rows = [];
-  const info = B.engine.renderer.info;
+  const e = B.engine;
+  const info = e.renderer.info;
+  const city = e.systems.get('city');
+  const net = city && city.roads;
+  const idx = opts.index || buildIndex(B);
   for (const v of views) {
     if (opts.only && !opts.only.includes(v.id)) continue;
+    const pose = resolvePose(B, v, opts.fov);
     let cap = null, err = null;
     try {
       cap = await B.capture({
-        pos: v.pos, look: v.look, fov: opts.fov ?? 55,
+        pos: pose.pos, look: pose.look, fov: pose.fov,
         tod: opts.tod ?? 11, weather: opts.weather ?? 'clear',
         holdActors: !!opts.holdActors,
       });
-    } catch (e) { err = String(e && e.message || e); }
+    } catch (er) { err = String(er && er.message || er); }
     const stats = frameStats(readLuma(B));
     const probe = err ? {} : probeAhead(B, THREE);
+
     let instances = 0, visMeshes = 0;
-    B.engine.scene.traverse((o) => {
+    e.scene.traverse((o) => {
       if (!o.visible) return;
       if (o.isInstancedMesh) { instances += o.count; visMeshes++; }
       else if (o.isMesh) visMeshes++;
     });
+
+    // Shadow share, measured rather than guessed. `renderer.info.render` counts
+    // the cascade passes, so a raw total is not comparable to any camera-only
+    // budget: at street_12 it was 56.8% shadow.
+    const draws = info.render.calls, tris = info.render.triangles;
+    let camTris = null, camDraws = null;
+    if (opts.splitShadow !== false && !err) {
+      const was = e.renderer.shadowMap.enabled;
+      e.renderer.shadowMap.enabled = false;
+      B.step(1);
+      camTris = info.render.triangles; camDraws = info.render.calls;
+      e.renderer.shadowMap.enabled = was;
+      B.step(1);
+    }
+
+    // Geometric controls: where the ground, the road and the camera are
+    // relative to each other. A road shelf shows up here before it shows up in
+    // any picture.
+    const ne = net && net.nearestEdge(v.at[0], v.at[1]);
+    const ed = ne && net.edges[ne.edgeId];
+    let roadDy = null, roadDist = null, roadName = null;
+    if (ed) {
+      const sp = net.sample(ne.edgeId, ne.t);
+      roadDist = +ne.distance.toFixed(1);
+      roadName = ed.name || ed.type;
+      if (sp && Number.isFinite(sp.y)) roadDy = +(sp.y - pose.groundY).toFixed(2);
+    }
+
     rows.push({
       id: v.id, cat: v.cat, district: v.district, note: v.note,
-      pos: v.pos, err,
-      draws: info.render.calls, tris: info.render.triangles,
+      at: v.at, eye: v.eye, err,
+      groundY: pose.groundY, camY: +pose.pos[1].toFixed(2),
+      roadDy, roadDist, roadName,
+      draws, tris, camDraws, camTris,
+      shadowPct: camTris != null && tris > 0 ? +(100 * (tris - camTris) / tris).toFixed(1) : null,
       instances, visMeshes,
+      ...nearbyCounts(idx, v.at[0], v.at[1]),
       streamed: cap && cap.streamed, settled: cap && cap.settledFrames,
       ...(stats || {}), ...probe,
     });
