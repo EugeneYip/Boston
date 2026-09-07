@@ -2406,3 +2406,101 @@ pattern the night mission proved with `probeLuminance` (scene 4.19 stops, meter
 Static clean, pedestrian crossings clean and improved, 10.63 km with D = 0,
 acquisition clean, no new world collision hole. Do not re-audit without fresh
 gameplay evidence.
+
+## Starting vehicle, entry ranking, map audit — 2026-09-07 (`ec19ed8` … )
+
+Baseline `f884844`.
+
+### The car the player starts next to
+
+The player spawns on the Tremont Street pavement at the edge of the Common —
+district `park`, on `pavement`, with Tremont the only road within 60 m at
+11.8 m and a parking bay at offset 8.55. There is now one orange SUV parked in
+that bay, 3.21 m in front of him.
+
+Placement is searched rather than authored. Kerbside bays are ~94% full of
+parked props, so `spawnStarter` steps candidate kerb points along the bay on the
+player's own side and rejects any where the SUV's footprint would touch a PROP
+collider, preferring a slot with room on both sides. The clearance test goes
+through the physics world, not PropBatch instance data, which keeps it clear of
+the ownership model this project has deliberately deferred.
+
+Measured at the chosen slot: **5.18 m** to the nearest parked car against the
+4.86 m its own length needs, 17.3 m to the nearest traffic car, 2.62 m to the
+nearest street furniture and that on the pavement 0.38 m above it, `road`
+surface, and **3.21 m from the player** — inside the 4.6 m enter range, so the
+prompt reads "Enter vehicle" the instant the world loads. `enterCandidate`
+reports kind `vehicle`, so F takes it directly and never calls
+`Traffic.takeOver`. It settles to sleep at speed 0.000 with 0.004 m of drift.
+
+**Colour, measured not chosen.** Four warm oranges rendered on the actual SUV in
+the actual slot, sampled from the frame in four conditions:
+
+| candidate | hue range | min sat | min val |
+|---|---|---|---|
+| `#e2621b` | 10.4-19.0 | 0.539 | 93 |
+| **`#f07318`** | **13.0-24.4** | **0.557** | **97** |
+| `#d9541a` | 6.5-14.6 | 0.526 | 91 |
+| `#e87a22` | 14.9-29.0 | 0.523 | 94 |
+
+`#f07318` chosen: highest minimum saturation and value, and a hue band clear of
+both hazards — Boston's traffic reds sit at hue 356-357 and its one golden car
+at 46.6. `#d9541a` reaches hue 6.5 at night, which is red.
+
+**No local colour rule was added, because none is needed.** Within 60 m of spawn
+there are 35 vehicles, 26 parked and 9 traffic, and zero are orange-like. That is
+structural: across all 36 distinct fleet palette colours none has hue 10-45 with
+saturation >= 0.45 and value >= 120, and Traffic's jitter scales all channels
+equally so it can only move value. The invariant is recorded in CONTRACTS
+against a future palette edit.
+
+Lifecycle verified end to end: prompt at spawn, F enters, unparks to gear 1,
+drives at 10.3 m/s, exit returns it to parked / neutral / throttle 0 / asleep, it
+stays ordinary afterwards, and the fleet never duplicates it.
+
+### Entry candidates: ranked
+
+Two flaws, both found by testing rather than reading. `enterCandidate` returned
+any physical vehicle in range **before looking at traffic at all** — caught in
+the starter lifecycle test, where standing 2.4 m from a taxi with a car parked
+4.5 m behind gave the parked car. And it ignored facing entirely.
+
+Both kinds now compete on one scale, with facing as a bias:
+`d * (1 + 0.9 * (1 - cos))`. Four deterministic cases pass — two cars 3.2 m
+either side pick whichever is faced; a car 1.2 m behind still beats one 4.3 m
+ahead; 2.6 m ahead beats 3.4 m behind — and a fifth confirms the ordering fix,
+with a traffic car in range now winning over a physical vehicle at 4.4 m.
+
+HUD and F share one function, re-verified rather than assumed: prompt,
+`enterCandidate` and the car F actually entered agree in both facings.
+
+### Map and minimap: audited, no defect, no change
+
+Measured, not redesigned.
+
+**Minimap** follows the player with a tracking error of **0 m** while driving
+(player position tracks the vehicle exactly), heading follows `player.heading`
+with shortest-arc smoothing, location is preserved across onFoot ↔ driving, and
+a north-lock toggle exists.
+
+**`M` opens a real full map**, not a placeholder: a canvas centred on the player
+when opened, drag pan, wheel zoom, a scale readout, click-to-set waypoint with
+live distance, a legend separating Highway / Arterial / Street / Water / Park,
+district naming under the cursor, and a white heading-rotated player arrow drawn
+over route, blips and waypoint pins. GPS routing already exists.
+
+One reading looked wrong and is not: the `x 0  z 0` readout is the **cursor**
+position (`_cursorWorld`), not the player, and reads zero only until the mouse
+moves over the map.
+
+No objective defect found, so nothing was changed.
+
+### Owner product direction recorded
+
+`AI_HANDOFF.md` §0b now carries two standing programmes — the **Northeastern
+University hero district** with its six-point quality gate and the spawn
+migration that follows it, and the **player hero character** ladder from
+silhouette to face-last. Neither is started here. The same file's claim that
+"heightfield resolution is not a problem and needs no work" is struck and
+corrected against `e44719d`, which proved resolution was half the high-centring
+root cause.

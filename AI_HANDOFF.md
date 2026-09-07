@@ -64,6 +64,65 @@ Recent completed sequence, newest last:
 
 ---
 
+## 0b. Owner product direction — standing, not backlog
+
+Two programmes the owner has named explicitly. **Neither is cosmetic backlog and
+neither should be deprioritised by an autonomous loop that is looking for
+something to do.** Both are large; neither is to be started speculatively.
+
+### Northeastern University, Boston — a HERO DISTRICT
+
+Northeastern's campus and the Boston fabric around it are to receive
+substantially higher geographic and architectural fidelity than ordinary
+procedural city. (Northeastern University in Boston. Not Tohoku University.)
+
+Intended scope, where factual data supports it: the principal campus entrance,
+the Huntington Avenue frontage, the Forsyth / Ruggles / Columbus context, major
+campus buildings with real footprints, heights and massing, pedestrian
+circulation, plazas, lawns and courtyards, campus streetscape, the MBTA and
+transit context, and the surrounding urban fabric.
+
+**The quality gate, which must pass before anything moves:**
+
+1. factual geography established — not invented from memory;
+2. major roads correct;
+3. key building massing credible;
+4. campus pedestrian realm credible;
+5. eye-level QA passes;
+6. vehicle and pedestrian access passes.
+
+**Only after that gate** does the canonical player spawn move to the principal
+Northeastern entrance, and the orange starting SUV move with it to a canonical
+position beside it. Until then the spawn stays where it is, on the Tremont
+Street pavement at the edge of the Common.
+
+The rule this project already lives by applies with full force here: **do not
+fabricate geography.** A hero district built from half-remembered campus layout
+is worse than no hero district, because it looks deliberate.
+
+### The player character — a HERO ASSET
+
+The player currently reuses the crowd character architecture — one instance of
+`CrowdMesh`, sharing the shader program and animation texture with the
+pedestrians. That is the right engineering for a crowd and the wrong fidelity
+for the character the camera is behind at all times.
+
+The quality ladder, in this order, because each rung is visible from further
+away than the next:
+
+1. silhouette and body proportion;
+2. hands, feet, head;
+3. clothing volumes;
+4. locomotion — walk, jog, sprint, crouch, jump;
+5. seated driving pose;
+6. vehicle enter and exit animation;
+7. interaction poses;
+8. face detail — **last**, and only after everything above reads.
+
+Do not start with a facial rig. Do not rewrite the character system
+speculatively. The first rung that is worth doing on its own is silhouette and
+proportion, because it is what the player sees in every third-person frame.
+
 ## 1. Orient yourself (10 minutes)
 Read in this order:
 1. `AGENTS.md` — rules, stack, exact validation commands.
@@ -582,7 +641,16 @@ is not a defect, but if dusk-in-rain is ever tuned, that is the interaction to w
   heightfield was transposed about x=z, the road collider had a hole at every junction,
   and Player stood on the terrain raster instead of the drawn surface. See
   `docs/CURRENT_STATE.md` §Physics ground truth for the measurements and the two
-  measurement traps. Heightfield *resolution* is not a problem and needs no work.
+  measurement traps. ~~Heightfield *resolution* is not a problem and needs no work.~~
+  **CORRECTED 2026-09-07 (`e44719d`).** Resolution WAS half the problem. The collider
+  was built at 300x300 over 6.8 km — 22.7 m per cell, 2.27x coarser than the 681x681
+  raster it samples — so a 10 m road corridor could pass between two vertices
+  untouched. Together with a per-cell stamp that cannot represent a road changing grade
+  inside one 10 m cell, this left the collision ground standing above the drivable road
+  on 3.28% of road samples, up to 1.016 m, and it stranded the player's car. Now built
+  at the raster's own resolution with a collision-only carriageway cut; 0 of 3,535
+  samples above the road. **High-centring / invisible road terrain is DURABLY CLOSED**
+  — see CONTRACTS.md before reopening any of it.
 
 ## 10. Your first commit
 Make a local commit as soon as you have a verified-bootable state, before changing

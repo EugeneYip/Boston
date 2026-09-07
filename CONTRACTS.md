@@ -1739,3 +1739,62 @@ city is pre-existing.
 - A single fixed recovery pattern is not a recoverability test. Charlestown Main
   Street would not free under brake-and-steer but reversed 10.09 m straight back.
   Try straight reverse before calling a stop unrecoverable.
+
+## The starting vehicle and the orange invariant (2026-09-07)
+
+`VehicleFactory.spawnStarter(ctx, near)` parks one SUV at the kerb beside the
+player's spawn, and `Player` calls it once with the spawn point. It is an
+ordinary vehicle: real physics, ordinary handling, ordinary `park()`, and it
+enters the abandoned-vehicle lifecycle the moment the player leaves it. **There
+is no starter subsystem and no immortality flag, and none should be added** —
+anything it needs, the factory can already say.
+
+- The slot is **searched, not hardcoded**: candidate kerb points along the
+  nearest parking bay on the player's own side, rejected unless the SUV's
+  footprint clears every PROP collider, preferring clearance on both sides.
+  Deterministic, because it reads only world geography.
+- Clearance is tested through the **physics world**, not PropBatch instance
+  data. Do not reach into `batcher.batches` for this: parked-car promotion is
+  deferred precisely because that ownership model is not ready.
+- Colour is **`#f07318`**, frozen after measurement. It was chosen by rendering
+  four candidate oranges on the actual SUV in the actual slot and sampling the
+  frame in daylight, dusk, night and rain; it holds the highest minimum
+  saturation (0.557) and value (97) of the four with a hue band of 13.0-24.4
+  degrees. `#d9541a` falls to hue 6.5 at night, which is traffic red.
+
+**The orange invariant.** Near spawn — in fact anywhere in Boston — the starter
+is the only saturated orange vehicle, and that is structural rather than lucky:
+across all 36 distinct colours in the fleet palettes, **none** has hue 10-45 with
+saturation >= 0.45 and value >= 120. Traffic's colour jitter multiplies every
+channel equally, so it moves value alone and can never rotate a car into orange.
+The nearest approaches are the browns `#6d3c2a` (hue 16.1, value 109) and
+`#6b3a2c` (13.3, 107), and the golden `#d8b12a` (hue 46.6).
+
+**Before adding a colour to any `VEHICLE_SPECS[*].def.colors`, check it against
+that box.** No runtime filtering exists and none is wanted — measured within 60 m
+of spawn, 35 vehicles, zero orange-like — so the invariant is maintained by the
+palette, not by a rule.
+
+## Vehicle entry candidates are ranked, not nearest-first (2026-09-07)
+
+`Player.enterCandidate(ctx)` is the single source of truth for what `F` takes and
+for what the HUD prompt offers. **Never let those diverge**; a prompt that names
+one car and a key that takes another is worse than no prompt.
+
+- Physical vehicles and AI traffic compete **on one scale**. The per-kind ranges
+  remain the eligibility test — 4.6 m for a physical vehicle, 6.2 m for traffic,
+  which is worth reaching slightly further for — but eligibility is not priority.
+  The old code returned any physical vehicle in range before it looked at
+  traffic at all, which handed you a car parked 4.5 m behind you over a taxi
+  2.4 m in front.
+- Facing is a **bias, not a veto**: effective distance is
+  `d * (1 + FACING_BIAS * (1 - cos))` with `FACING_BIAS` 0.9, so a car dead
+  ahead is judged at its true distance and one directly behind at 2.8x it. A car
+  1.2 m behind still beats one 4.3 m ahead, and that is correct — at arm's
+  length, distance should win.
+- Line of sight is a **penalty, not a rejection** (`OCCLUDED_COST` 1.8), static
+  geometry only, and the ray stops 1.3 m short of the target so its own hull is
+  never the occluder. A false positive that made a car unenterable would be a
+  far worse failure than occasionally preferring one through a railing.
+- `Traffic.carsWithin` and `VehicleFactory.within` exist to feed this ranking.
+  `nearestCar` and `nearest` are unchanged and still answer their own question.
