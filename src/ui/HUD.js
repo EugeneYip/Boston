@@ -197,6 +197,16 @@ export default class HUD {
     this.wepN = el('div', 'n', wep, '');
     this.wepEl = wep; this.ammoEl = am;
 
+    // --- centre-bottom: contextual interaction prompt ---
+    // One line, one key, shown only while something is actually in reach. The
+    // mechanic that makes a city this size traversable was previously
+    // undiscoverable: nothing anywhere told the player that F takes the car in
+    // front of him.
+    const pr = el('div', 'prompt', hud);
+    this.promptKey = el('b', 'k', pr, 'F');
+    this.promptTx = el('span', 't', pr, '');
+    this.promptEl = pr;
+
     // --- centre: reticle + hit marker ---
     const ret = el('div', 'ret', hud);
     el('div', 'dot', ret);
@@ -467,7 +477,31 @@ export default class HUD {
 
     // Street + district readout: 4 Hz is plenty and nearestEdge is not free.
     this._streetT -= dt;
-    if (this._streetT <= 0) { this._streetT = 0.25; this._updatePlace(ctx); }
+    if (this._streetT <= 0) {
+      this._streetT = 0.25;
+      this._updatePlace(ctx);
+      this._updatePrompt(ctx, p);
+    }
+  }
+
+  /**
+   * Contextual prompt, driven by the player's own reach test.
+   *
+   * `Player.enterCandidate` is the same call `F` makes, so the prompt cannot
+   * promise something the key will not deliver. Nothing is shown while driving:
+   * the dash already says the player is in a car, and a permanent "press F to
+   * get out" is noise.
+   */
+  _updatePrompt(ctx, p) {
+    let text = '';
+    if (p && p.mode === 'onFoot' && typeof p.enterCandidate === 'function') {
+      const c = p.enterCandidate(ctx);
+      if (c) text = c.kind === 'traffic' ? 'Commandeer vehicle' : 'Enter vehicle';
+    }
+    if (text === this._promptText) return;
+    this._promptText = text;
+    if (text) this.promptTx.textContent = text;
+    setClass(this.promptEl, 'on', !!text);
   }
 
   _updateMoney(dt) {

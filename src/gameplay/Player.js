@@ -607,21 +607,40 @@ export default class Player {
 
   // -- vehicles --------------------------------------------------------------
 
+  /**
+   * What pressing F would get right now, or null.
+   *
+   * Split out of `_tryEnterVehicle` so the HUD prompt and the key press cannot
+   * disagree about what is in reach: a prompt that appears when F does nothing,
+   * or fails to appear when it would work, is worse than no prompt. Cheap
+   * enough to run every frame — two nearest-point scans over a few hundred
+   * entries — but the HUD asks at 4 Hz anyway.
+   *
+   * @returns {{kind:'vehicle'|'traffic', obj:object}|null}
+   */
+  enterCandidate(ctx) {
+    if (this.mode !== 'onFoot') return null;
+    const factory = ctx.get('vehicles');
+    if (!factory?.nearest) return null;
+    _v2.set(this.position.x, this.position.y + 0.9, this.position.z);
+    const v = factory.nearest(_v2, ENTER_RANGE);
+    if (v && v !== this.vehicle) return { kind: 'vehicle', obj: v };
+    // Nothing physical in reach, so try the AI traffic: `Traffic.takeOver`
+    // swaps the kinematic car for a real one in the same place. Without this
+    // there is nothing in the city to get into — every car on the road is
+    // kinematic and has no rigid body.
+    const traffic = ctx.get('traffic');
+    const car = traffic?.nearestCar?.(this.position.x, this.position.z, ENTER_RANGE + 1.6);
+    return car ? { kind: 'traffic', obj: car } : null;
+  }
+
   _tryEnterVehicle(ctx) {
     const factory = ctx.get('vehicles');
-    if (!factory?.nearest) return;
-    _v2.set(this.position.x, this.position.y + 0.9, this.position.z);
-    let v = factory.nearest(_v2, ENTER_RANGE);
-    if (v === this.vehicle) v = null;
-    if (!v) {
-      // Nothing physical in reach, so try the AI traffic: `Traffic.takeOver`
-      // swaps the kinematic car for a real one in the same place. Without this
-      // there is nothing in the city to get into — every car on the road is
-      // kinematic and has no rigid body.
-      const traffic = ctx.get('traffic');
-      const car = traffic?.nearestCar?.(this.position.x, this.position.z, ENTER_RANGE + 1.6);
-      if (car) v = traffic.takeOver(car, ctx);
-    }
+    const cand = this.enterCandidate(ctx);
+    if (!cand) return;
+    const v = cand.kind === 'vehicle'
+      ? cand.obj
+      : ctx.get('traffic')?.takeOver(cand.obj, ctx);
     if (!v) return;
     this.vehicle = v;
     this.mode = 'driving';

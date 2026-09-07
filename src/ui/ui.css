@@ -243,6 +243,36 @@
   animation: objIn .45s var(--ease) both;
 }
 #boston-ui .obj.on { display: flex; }
+
+/* Contextual interaction prompt: centred low, above the dash, hidden until
+   something is genuinely in reach. Deliberately quiet — one key cap and three
+   words, matching the objective card's type rather than shouting over it. */
+#boston-ui .prompt {
+  position: absolute; left: 50%; bottom: calc(96 * var(--u));
+  transform: translateX(-50%);
+  display: none; align-items: center; gap: calc(7 * var(--u));
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  border-radius: calc(5 * var(--u));
+  background: rgba(10,12,16,.52);
+  border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(calc(3 * var(--u)));
+  animation: promptIn .18s var(--ease) both;
+  pointer-events: none;
+}
+#boston-ui .prompt.on { display: flex; }
+@keyframes promptIn { from { opacity: 0; transform: translateX(-50%) translateY(calc(4 * var(--u))); }
+                      to { opacity: 1; transform: translateX(-50%) none; } }
+#boston-ui .prompt .k {
+  font-size: calc(11 * var(--u)); font-weight: 700; line-height: 1;
+  min-width: calc(17 * var(--u)); text-align: center;
+  padding: calc(4 * var(--u)) calc(5 * var(--u));
+  border-radius: calc(3 * var(--u));
+  color: #0b0d11; background: var(--gold);
+}
+#boston-ui .prompt .t {
+  font-size: calc(12.5 * var(--u)); font-weight: 600; letter-spacing: .04em;
+  color: #fff; text-shadow: var(--sh-soft);
+}
 @keyframes objIn { from { opacity: 0; transform: translateX(calc(-10 * var(--u))); }
                    to { opacity: 1; transform: none; } }
 #boston-ui .obj .bar { flex: 0 0 auto; width: calc(2.5 * var(--u)); align-self: stretch;
