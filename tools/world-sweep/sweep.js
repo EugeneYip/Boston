@@ -203,10 +203,54 @@ export function resolvePose(B, v, fov) {
  * @param {Array}    views  from `viewpoints.json`
  * @param {object}   opts   { tod, weather, fov, only, holdActors, splitShadow }
  */
+/**
+ * Viewport sanity, checked once per sweep.
+ *
+ * Two separate things break when the canvas collapses, and both produce
+ * plausible-looking numbers rather than an error:
+ *
+ *  1. The picture is not the same picture. `fov` is VERTICAL, so the horizontal
+ *     field is a function of aspect — at 8.4:1 a street view frames a totally
+ *     different scene than at 16:9, and every luminance figure moves with it.
+ *  2. `CaptureHarness` cannot converge. It settles by watching six band means
+ *     stop moving, with a threshold of 0.05 on a 0..255 scale, and it relies on
+ *     the band average cancelling film grain (~2.3 luma/pixel). The band sample
+ *     count scales with the buffer: at 1920x1080 it is ~24,750 samples, giving a
+ *     frame-to-frame sigma of 0.021 and a 2.4x margin. At 453x54 it is 325
+ *     samples, sigma 0.180 — 3.6x the threshold, so grain ALONE guarantees the
+ *     settle loop runs to its 180-frame cap on every single shot.
+ *
+ * Measured, in a pane that had collapsed to 302x36 CSS pixels: every view
+ * reported `converged: false` while `streamDone: true`, and one street view read
+ * mean 0.233 against a baseline of 0.368. A whole 126-view sweep of 217
+ * "tolerance violations" was this and nothing else.
+ */
+export function viewportCheck(B) {
+  const gl = B.engine.renderer.getContext();
+  const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+  const aspect = +(B.engine.camera.aspect ?? (w / h)).toFixed(3);
+  const BANDS = 6, rows = Math.floor(h / BANDS);
+  let n = 0;
+  for (let y = 0; y < h; y += 2) {
+    if (Math.min(BANDS - 1, Math.floor(y / rows)) === 0) for (let x = 0; x < w; x += 7) n++;
+  }
+  const sigma = n ? (2.3 / Math.sqrt(n)) * Math.SQRT2 : Infinity;
+  const ok = w >= 960 && h >= 540 && aspect > 1.3 && aspect < 2.4 && sigma * 2 < 0.05;
+  const out = { buffer: [w, h], aspect, samplesPerBand: n,
+                settleSigma: +sigma.toFixed(4), ok };
+  if (!ok) {
+    console.warn('[sweep] viewport is not measurable: '
+      + `${w}x${h}, aspect ${aspect}, settle sigma ${sigma.toFixed(4)} vs threshold 0.05. `
+      + 'Resize to at least 960x540 at ~16:9 before comparing anything against a baseline.');
+  }
+  return out;
+}
+
 export async function runSweep(B, views, opts = {}) {
   const THREE = await import('three');
   const rows = [];
   const e = B.engine;
+  const vp = opts.viewport ?? viewportCheck(B);
   const info = e.renderer.info;
   const city = e.systems.get('city');
   const net = city && city.roads;
@@ -291,6 +335,10 @@ export async function runSweep(B, views, opts = {}) {
        */
       converged: cap ? cap.settledFrames < 180 : null,
       streamDone: B.settled(),
+      // Stamped on every row: a baseline is only comparable at the viewport it
+      // was captured at, and nothing recorded that until a collapsed pane
+      // produced 217 phantom violations.
+      buffer: vp.buffer, aspect: vp.aspect, viewportOk: vp.ok,
       ...(stats || {}), ...probe,
     });
   }

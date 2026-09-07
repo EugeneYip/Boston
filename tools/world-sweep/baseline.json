@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "captured": "2026-09-07",
   "commit": "86182f2",
   "views": 126,
@@ -9,7 +9,12 @@
     "weather": "clear",
     "fov": 55,
     "preset": "high",
-    "holdActors": false
+    "holdActors": false,
+    "buffer": [
+      1920,
+      1080
+    ],
+    "aspect": 1.778
   },
   "note": "Schema 2 adds PER-VIEW rows. Identity is the semantic view id, which is derived from the source object (street:e8@0.51:R, park:boston-common:loop#0), so a row survives a viewpoint-quota change and a removed or added view is visible as a missing or extra id rather than as a shifted table. Compare per-view for attribution and per-category for systemic change: a whole category moving is a regression, one view moving is an outlier to attribute.",
   "fields": {
@@ -36,6 +41,14 @@
     ],
     "note": "Fractional for counts and triangles, absolute for luminance, metres and tile percent. NO exact frame digest: production scenes carry film grain, traffic and pedestrians, and measured cross-capture variance is 1.95 by 8x8 block mean against a same-capture floor of 0.46. A pixel hash is legitimate only on a proven-deterministic capture - a Model Lab fixture, or capture({holdActors:true}) on static surfaces.",
     "requiresConverged": [
+      "mean",
+      "detail",
+      "flat",
+      "dark",
+      "blown",
+      "tiles"
+    ],
+    "requiresSameAspect": [
       "mean",
       "detail",
       "flat",
@@ -4053,5 +4066,14 @@
     "notConverged": 2,
     "rule": "A row is pixel-comparable only if it CONVERGED. `settled` is the frames CaptureHarness spent waiting for the luminance bands to stop moving; it gives up at 180, and 180 means the frame was still changing and the world was mid-stream, so the buildings in it are LOD-2 shell - pale and flat. Rows carry `converged: false` when that happened. Compare geometry and counts freely; do NOT compare mean/detail/flat/dark/blown/tiles against a row that did not converge, and do not compare a FRESH row that did not converge against anything.",
     "why": "Buildings._drain spends a wall-clock millisecond budget per frame, so how much of the world streams per frame depends on machine load. Same 126 views, same commit: a healthy machine settled with a median of 15 frames and 2 views capped; under memory pressure the median was 153 with 55 capped, and those captures ran 7.9% lighter in triangles, brighter and flatter. A back-to-back A/A repeat under load moved `mean` by up to 0.0797 against a 0.06 tolerance. Check this before believing any luminance delta."
+  },
+  "viewport": {
+    "buffer": [
+      1920,
+      1080
+    ],
+    "aspect": 1.778,
+    "rule": "Pixel fields are comparable ONLY at this aspect, and convergence is only achievable at roughly this buffer size. `fov` is vertical, so the horizontal field is a function of aspect: at 8.4:1 a street view frames a different scene than at 16:9 and every luminance figure moves with it. Separately, CaptureHarness settles by watching six band means with a 0.05 threshold on a 0..255 scale, relying on the band average to cancel film grain (~2.3 luma/pixel) - 24,750 samples per band at 1920x1080 gives sigma 0.021 and a 2.4x margin, while 325 samples at 453x54 gives 0.180 and makes convergence arithmetically impossible.",
+    "incident": "A 126-view sweep on 2026-09-07 reported 217 tolerance violations, uniformly brighter and flatter across all eight categories including water and skyline. The cause was the browser pane collapsing to 302x36 CSS pixels (buffer 453x54, aspect 8.389). It was misattributed at the time to the wall-clock streaming budget in Buildings._drain under memory pressure; `streamDone: true` on every unconverged row is what disproved that. Re-run at 1920x1080: 123/126 converged, ZERO count or geometry violations, mean bias -0.0007, and 12 pixel deltas all classified benign-dynamic by repeat capture."
   }
 }
