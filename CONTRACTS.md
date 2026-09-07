@@ -1256,3 +1256,108 @@ and grass batches in a 2.5-24 m band. It is bounded by what already OWNS the
 ground — park, built district, road corridor, parcel — and deliberately NOT by
 distance to a street: that bound left the upper Charles exactly as bare as
 before, because no road reaches it. Ground cover is not geography.
+
+## The expanded world sweep (2026-09-06)
+
+126 deterministic viewpoints, up from 49. Stratified by the context a player is
+in, not by area:
+
+    street 35  junction 22  local 15  park 14  traffic 12  skyline 10
+    water 10   special 8
+
+`local` is a <=2-lane residential street in a named neighbourhood — most of
+Boston, which a wide arterial cannot stand in for. `special` is where the world
+does something unusual and a rule is therefore most likely to be wrong: bridge
+decks, the steepest ground beside a road, the sharpest bends, the tallest
+setback towers. District spread: park 21, backBay 15, none 15, fenway 12,
+beaconHill 10, cambridge 10, charlestown 10, southEnd 9, financial 8, seaport 7,
+northEnd 6, water 3 — nothing over 17%. **Check that spread before trusting a
+verdict.**
+
+### Poses are terrain-independent
+
+A viewpoint stores `at: [x, z]` plus an `eye` height above whatever the ground
+turns out to be, resolved at capture time. Storing an absolute Y made the
+canonical set drift under the world — the embankment fix moved ten of the first
+forty-nine cameras, one by 11.3 m. A baseline whose cameras move is not a
+baseline. Terrain change now surfaces as the `groundY` metric instead.
+
+### Viewpoint ids are POSITIONAL
+
+`street_05` is the sixth street view in whatever set was generated. Regenerating
+with different quotas renumbers everything, so **a baseline is only comparable
+against the committed `viewpoints.json`**. To follow a specific place across a
+regeneration, key on `at`, not on `id`.
+
+### Validation happens at generation
+
+A pose is rejected before it enters the set if it is inside a parcel, in water,
+on a carriageway, or if a march along its aim direction hits a parcel within
+26 m. That last one matters: `unstick` would otherwise catch it at capture time
+by RETREATING the camera, silently relocating the viewpoint — one park camera in
+the 0.41 ha Post Office Square was being moved 50 m because its loop aimed at a
+tower 17 m away. All 126 now validate with `unstick` moving zero of them.
+
+### Baseline schema and tolerance policy
+
+`tools/world-sweep/baseline.json` — one row per view, ~40 KB. It is layered
+deliberately, because Boston has film grain, traffic and pedestrians:
+
+- **Geometric controls** (`groundY`, `roadDy`, `roadName`) — the half that
+  cannot move for a benign reason. A road shelf shows up here before any picture.
+- **World metrics** (`camDraws`, `camTris`, `shadowPct`, `nBuildings`, `nProps`,
+  `nParked`, `nVeg`) — from the systems' own instance data, not from pixels.
+- **Image statistics** (`mean`, percentiles, `dark`, `blown`, `detail`, `flat`,
+  a 4x3 tile summary) — tolerant, never exact.
+
+**No exact full-frame digest.** A pixel hash is only legitimate on a proven
+deterministic capture — a Model Lab fixture, or `capture({holdActors: true})` on
+static surfaces. Production traffic scenes have a measured cross-capture
+variance of 1.95 by 8x8 block mean against a same-capture floor of 0.46;
+requiring equality there manufactures failures.
+
+Classify a difference as EXPECTED (the change being made), BENIGN DYNAMIC
+(traffic, pedestrians, grain), SUSPICIOUS (statistically meaningful, no
+explanation yet) or REGRESSION (repeatable and attributable). Do not fail a
+sweep because a metric moved.
+
+Runtime ~8 s per view, ~18 min for the full daylight pass. Most of that is
+`capture()`'s own warmup and settle, which must not be shortened.
+
+## Night washout — attributed and closed (2026-09-06)
+
+The 49-view sweep found one night view clipping 2.1% of its frame. A 25-view
+night subset stratified by lamp family settles it:
+
+    cobra  9 views   median blown 0.0002   max 0.0081
+    acorn 12 views   median blown 0.0004   max 0.0046
+    twin  12 views   median blown 0.0010   max 0.0046
+
+No family repeats and no context repeats; the worst view in the subset is 0.81%.
+Re-measured at the original coordinate the same spot now reads **0.0000**, and
+its `aheadM` is 12.4 m where the flagged capture had a bus shelter **1.4 m** from
+the camera. It was one near-field object catching a lamp, not a lighting fault.
+
+Per the decision rule: isolated, therefore documented and left alone. **Global
+exposure, tone mapping and B1/B2 stay closed.**
+
+## Road/ground residual, classified (2026-09-06)
+
+All 349 samples where a road sits more than 3 m from the ground 6 m outside its
+corridor:
+
+    C  bridge / tunnel context        212   60.7%
+    B  another road's stamp owns it    88   25.2%
+    D  still-invalid shelf             45   12.9%
+    A  legitimate cut / embankment      3    0.9%
+    E  terrain sampling artefact        1    0.3%
+
+**Decide ownership by a road's STAMP radius, not its corridor.** An arterial's
+stamp reaches zB + BLEND, about 105 m; the corridor-based version of this rule
+mis-blamed 51 samples, because a point 40 m from a street 16 m higher up a hill
+sits on ground that street correctly owns.
+
+D is left alone: 45 samples of about 4 m on one arterial, against 13.5 m shelves
+before the fill landed. They are not a fill underestimate (per-segment
+estimation does not move them) and not water-guarded (420-728 m from any water).
+Forcing this metric to zero would mean flattening real Charlestown topography.

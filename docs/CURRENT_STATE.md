@@ -1551,3 +1551,82 @@ found the terrain bug now reads as an ordinary street.
 9. Mid-distance LOD 2 shells read flatter than the LOD 1 tier around them.
 10. The sweep itself: 49 views is enough to find systemic defects and too few to
     catch rare ones. Widening it is cheaper than any single fix on this list.
+
+## Expanded sweep + regression baseline — 2026-09-06 (`c04612b` … )
+
+The 49-view sweep found two systemic defects on its first run, which made
+coverage the limiting factor. This triples it, gives it a durable baseline, and
+uses it.
+
+| commit | change | effect |
+|---|---|---|
+| `c04612b` | the sweep grows to 126 views | +`local` and `special`, poses stop drifting |
+| `d706689` | embankment fill estimated per segment | spec chain 1,091 → 783 ms |
+
+### The instrument
+
+126 viewpoints — street 35, junction 22, local 15, park 14, traffic 12,
+skyline 10, water 10, special 8 — no district over 17%, all 126 validating with
+`unstick` moving zero of them. Two structural changes matter more than the
+count:
+
+- **Poses are terrain-independent.** Absolute Y made the canonical set drift
+  under the world; the embankment fix had moved ten of the first forty-nine
+  cameras, one by 11.3 m.
+- **View clearance is checked at generation.** A pose aimed into a parcel within
+  26 m is rejected, because `unstick` would otherwise silently RETREAT the
+  camera — it was moving one Post Office Square camera 50 m.
+
+Baseline schema, tolerance policy and the reasons there is no exact frame digest
+are in CONTRACTS.md.
+
+### What the 126-view daylight pass found
+
+Nothing of the size of the last two. The strongest signals resolved as:
+
+- **13 of 50 street/local views have under 8 buildings within 70 m, 4 have
+  none.** Attributed: Constitution Road and North Washington Street in
+  Charlestown, plus Charles Street South beside the Common. That is the
+  deferred street-graph and parcel gap, not a repairable defect.
+- **`park_03` has 14 props against a park median of 241.** The Esplanade shore
+  walk — a 1.5 km linear park far from any street. The frame reads as finished
+  riverside public realm. Correct, not sparse.
+- **High `nVeg` outliers** (up to 778 against a street median of 90) are the
+  shoreline planting from the previous pass, landing where it was meant to.
+
+### Night washout — attributed, and closed
+
+A 25-view night subset stratified by lamp family shows no family and no context
+repeating: cobra median 0.0002, acorn 0.0004, twin 0.0010, worst view 0.0081.
+Re-measured at the coordinate of the 2.1% view that triggered this, `blown` is
+now 0.0000, and its forward probe is 12.4 m where the flagged capture had a bus
+shelter 1.4 m from the camera. One near-field object catching a lamp.
+
+Per the decision rule: isolated, so documented and left alone. **Global
+exposure, tone mapping and B1/B2 remain closed.**
+
+### Road/ground residual, classified
+
+C bridge/tunnel 212 (60.7%), B another road's stamp 88 (25.2%), D still-invalid
+45 (12.9%), A legitimate cut/embankment 3, E sampling artefact 1. D is 45
+samples of about 4 m on Rutherford Avenue, against 13.5 m shelves before the
+fill. Not a fill underestimate and not water-guarded. Left alone deliberately.
+
+### Shoreline follow-up — closed
+
+The previous pass took vegetation 74,412 → 86,180. Ten waterfront views at
+8-12 per district context show bank coverage present, no water intrusion, no
+skyline obstruction and no repetition worth acting on. Not extended.
+
+### Remaining top SAFE priorities
+
+1. Widen the sweep again, or add a second condition pass to it. 126 views found
+   no new systemic defect, which is either good news or a coverage ceiling, and
+   only more coverage distinguishes those.
+2. `payStation` shares the `meter` budget key, so ~9% of metered street faces
+   end up with no kerbside equipment.
+3. Vehicle bumper rounding; bus glazing bay rhythm.
+4. `_clipParcel`'s one non-convex/sliver footprint per ~3,350 parcels.
+5. Mid-distance LOD 2 shells read flatter than the LOD 1 tier around them.
+6. Park walk width hierarchy and hedge density floor — tuning, no measured
+   defect behind either.

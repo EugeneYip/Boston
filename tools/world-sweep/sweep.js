@@ -310,3 +310,55 @@ export function outliers(rows, keys = ['detail', 'flat', 'dark', 'blown', 'mean'
   }
   return scored.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
 }
+
+/**
+ * Compare a fresh sweep against `baseline.json`, per CATEGORY.
+ *
+ * Deliberately not per view. A per-view table is only comparable against the
+ * exact committed `viewpoints.json` — ids are positional, so regenerating with
+ * different quotas renumbers everything — and a single view moving is an
+ * outlier to attribute, not a regression. A whole category moving is a
+ * regression.
+ *
+ * Nothing here fails on an exact frame match. Boston has film grain, traffic
+ * and pedestrians; measured cross-capture variance is 1.95 by 8x8 block mean
+ * against a same-capture floor of 0.46.
+ *
+ *   const base = await (await fetch('/tools/world-sweep/baseline.json')).json();
+ *   compare(rows, base);
+ */
+export function compare(rows, base) {
+  const ABS = { mean: 'meanAbs', detail: 'detailAbs', flat: 'flatAbs',
+                dark: 'darkAbs', blown: 'blownAbs' };
+  const FRAC = { camDraws: 'camDrawsFrac', camTris: 'camTrisFrac',
+                 nProps: 'nPropsFrac', nVeg: 'nVegFrac', nBuildings: 'nBuildingsFrac' };
+  const med = (a) => {
+    const v = a.filter(Number.isFinite).sort((x, y) => x - y);
+    return v.length ? v[Math.floor(v.length / 2)] : null;
+  };
+  const out = [];
+  for (const [cat, want] of Object.entries(base.categories)) {
+    const list = rows.filter(r => r.cat === cat);
+    if (!list.length) { out.push({ cat, verdict: 'MISSING', detail: 'no views captured' }); continue; }
+    if (list.length !== want.n) out.push({ cat, key: 'n', verdict: 'SUSPICIOUS', was: want.n, now: list.length });
+    for (const [k, tol] of Object.entries(ABS)) {
+      const now = med(list.map(r => r[k])), was = want[k] && want[k][1];
+      if (now == null || was == null) continue;
+      const d = Math.abs(now - was);
+      if (d > base.tolerance[tol]) {
+        out.push({ cat, key: k, verdict: 'SUSPICIOUS', was, now: +now.toFixed(4), delta: +d.toFixed(4) });
+      }
+    }
+    for (const [k, tol] of Object.entries(FRAC)) {
+      const now = med(list.map(r => r[k])), was = want[k] && want[k][1];
+      if (now == null || was == null || was === 0) continue;
+      const f = Math.abs(now - was) / was;
+      if (f > base.tolerance[tol]) {
+        out.push({ cat, key: k, verdict: 'SUSPICIOUS', was, now, frac: +f.toFixed(3) });
+      }
+    }
+  }
+  return { clean: out.length === 0, findings: out,
+           note: 'SUSPICIOUS is a prompt to attribute, not a failure. Classify as '
+               + 'EXPECTED / BENIGN DYNAMIC / SUSPICIOUS / REGRESSION before acting.' };
+}
