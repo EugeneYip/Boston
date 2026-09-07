@@ -139,6 +139,14 @@ export default class Player {
     this._ready = true;
     console.info(`[player] spawned at ${spawn.x.toFixed(0)}, ${spawn.y.toFixed(1)}, ` +
       `${spawn.z.toFixed(0)} (${this.city?.districtAt?.(spawn.x, spawn.z) ?? '?'})`);
+
+    // The car he starts next to. Placement is the vehicle system's business —
+    // this only says WHERE the player is, which is the one thing it owns that
+    // the factory does not. `vehicles` initialises before `player`, so it is
+    // there; if it ever is not, the player simply starts on foot.
+    try { ctx.get('vehicles')?.spawnStarter?.(ctx, spawn); } catch (err) {
+      console.warn('[player] starting vehicle could not be placed', err);
+    }
   }
 
   /** A pavement spawn near the Common, so the player starts somewhere that reads. */

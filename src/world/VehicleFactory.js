@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { yieldToPaint } from '../core/Yield.js';
 import Vehicle from '../physics/Vehicle.js';
+import { GROUP, groups } from '../physics/PhysicsWorld.js';
 import {
   VEHICLE_TYPES, VEHICLE_SPECS, createMaterialKit, buildVehicleVisual,
   getVehicleGeometry, getShellGeometry, disposeSharedGeometry,
@@ -45,6 +46,35 @@ const HYST = 1.12;
  * for it has to work, and a small trail of recently abandoned cars is part of
  * what makes the city feel used. Beyond that the oldest are reclaimed.
  */
+/**
+ * The starting vehicle's paint, frozen after measurement rather than taste.
+ *
+ * Four warm oranges were rendered on the actual SUV at the actual spawn slot and
+ * sampled from the frame in daylight, dusk, night and rain. The requirement is
+ * that it still reads ORANGE in all four — not red at night, not taxi yellow,
+ * not brown:
+ *
+ *   #e2621b   hue 10.4-19.0   min sat 0.539
+ *   #f07318   hue 13.0-24.4   min sat 0.557   <- chosen
+ *   #d9541a   hue  6.5-14.6   min sat 0.526   drops toward traffic red at night
+ *   #e87a22   hue 14.9-29.0   min sat 0.523   drifts toward amber in rain
+ *
+ * `#f07318` holds the highest minimum saturation and value of the four and sits
+ * furthest from both hazards: Boston's traffic reds are at hue 356-357 and its
+ * one golden car is at 46.6, so a 13-24 band is clear of both.
+ *
+ * It is also the only saturated orange in the city, and that is structural
+ * rather than lucky: across all 36 distinct colours in the fleet palettes, none
+ * has hue 10-45 with saturation >= 0.45 and value >= 120. Traffic's colour
+ * jitter multiplies every channel equally, so it moves value only and can never
+ * turn another car orange. The nearest approaches are the browns #6d3c2a
+ * (hue 16.1, value 109) and #6b3a2c (13.3, 107), both far too dark, and the
+ * golden #d8b12a at hue 46.6. See CONTRACTS.md before adding a palette colour.
+ */
+const STARTER_COLOUR = 0xF07318;
+/** Half-extents of the starter's parking footprint, with margin for its mirrors. */
+const STARTER_HALF = [1.05, 2.60];
+
 const ABANDONED_KEEP = 8;
 /**
  * Hard ceiling on abandoned cars, whatever the player does.
@@ -279,6 +309,92 @@ export default class VehicleFactory {
     const i = this.list.indexOf(v);
     if (i >= 0) this.list.splice(i, 1);
     v.dispose();
+  }
+
+  /**
+   * Park one deterministic SUV at the kerb beside the player's spawn.
+   *
+   * This is the obvious car to start exploring Boston in, so it is a plain
+   * `VehicleFactory` vehicle in every respect — real physics, ordinary handling,
+   * ordinary `park()`, and it joins the abandoned-vehicle lifecycle the moment
+   * the player leaves it. There is no starter subsystem and no immortality flag,
+   * because there is nothing about it that the factory could not already say.
+   *
+   * The slot is searched, not hardcoded. Kerbside parking bays are ~94% full of
+   * parked props, so it looks for a real gap: candidate kerb points are stepped
+   * along the nearest bay and rejected unless the SUV's footprint clears every
+   * PROP collider there. That test goes through the physics world rather than
+   * PropBatch's instance data, which keeps this out of an ownership model the
+   * project has deliberately deferred.
+   *
+   * Deterministic: the search reads only world geography, so the same city
+   * always yields the same slot.
+   *
+   * @returns {Vehicle|null}
+   */
+  spawnStarter(ctx, near) {
+    const city = ctx.get('city');
+    const net = city?.roads;
+    const P = ctx.physics ?? ctx.get?.('physics');
+    if (!net?.nearestEdge || !P?.world || !P.RAPIER) return null;
+    const ne = net.nearestEdge(near.x, near.z);
+    const ed = ne && net.edges[ne.edgeId];
+    if (!ed?.parking) return null;
+
+    const R = P.RAPIER;
+    // Act as a CHARACTER looking only at PROP, which is exactly the pairing the
+    // parked-car colliders are registered with.
+    const filter = groups(GROUP.CHARACTER, GROUP.PROP);
+    const shape = new R.Cuboid(STARTER_HALF[0], 0.7, STARTER_HALF[1]);
+
+    const kerbAt = (t) => {
+      const a = net.sample(ed.id, t);
+      const b = net.sample(ed.id, Math.min(1, t + 0.004));
+      if (!a || !b || !Number.isFinite(a.y)) return null;
+      const h = Math.atan2(-(b.x - a.x), -(b.z - a.z));
+      const nx = Math.cos(h), nz = -Math.sin(h);
+      // The player's own side of the street: he spawned on that pavement, and a
+      // car parked across four lanes of traffic is not "in front of" him.
+      const side = Math.sign((near.x - a.x) * nx + (near.z - a.z) * nz) || 1;
+      const off = ed.parking.offset * side;
+      const x = a.x + nx * off, z = a.z + nz * off;
+      const surf = city.surfaceAt(x, z, a.y);
+      return { x, z, y: surf.y, kind: surf.kind, heading: h };
+    };
+    const clear = (k) => !P.world.intersectionWithShape(
+      { x: k.x, y: k.y + 0.8, z: k.z },
+      { x: 0, y: Math.sin(k.heading / 2), z: 0, w: Math.cos(k.heading / 2) },
+      shape, undefined, filter);
+
+    // Step by about a car length either side of where the player is standing.
+    const step = 0.7 / Math.max(1, ed.length);
+    let best = null;
+    for (let i = -14; i <= 14; i++) {
+      const t = ne.t + i * step;
+      if (t < 0.01 || t > 0.99) continue;
+      const k = kerbAt(t);
+      if (!k || k.kind !== 'road' || !clear(k)) continue;
+      // Prefer a slot with room on BOTH sides, so it reads as parked in a gap
+      // rather than wedged against a bumper.
+      const room = (kerbAt(t - step * 3) && clear(kerbAt(t - step * 3)) ? 1 : 0)
+                 + (kerbAt(t + step * 3) && clear(kerbAt(t + step * 3)) ? 1 : 0);
+      const d = Math.hypot(k.x - near.x, k.z - near.z);
+      // Inside the on-foot enter range, so the prompt is up the moment he lands.
+      const fit = d < 4.4 && d > 2.2 ? 2 : d < 5.5 ? 1 : 0;
+      const score = room * 10 + fit * 4 - d;
+      if (!best || score > best.score) best = { ...k, t, d, score };
+    }
+    if (!best) return null;
+
+    const v = this.spawn('suv', { x: best.x, y: best.y, z: best.z }, best.heading,
+      { color: STARTER_COLOUR });
+    // Parked, in neutral, and it settles to sleep like any abandoned car.
+    v.park?.();
+    v._abandonedAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    try { v.body.setLinearDamping(1.4); v.body.setAngularDamping(2.2); } catch { /* older binding */ }
+    console.info(`[vehicles] starter SUV parked at ${best.x.toFixed(0)}, ${best.z.toFixed(0)} `
+      + `on ${ed.name || ed.type}, ${best.d.toFixed(1)} m from spawn`);
+    return v;
   }
 
   /** Route `ctx.input` into this car. The gameplay agent normally owns this. */
