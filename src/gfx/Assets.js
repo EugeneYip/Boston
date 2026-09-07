@@ -43,6 +43,43 @@ export default class Assets {
     return m;
   }
 
+  /**
+   * A registry-resident VARIANT of a library material.
+   *
+   * Cloning a library material to change one thing — turning on vertex colours,
+   * usually — quietly drops it out of the material system, because everything
+   * that maintains a material walks THIS map and nothing else: `Materials.adopt`
+   * stamps the wet response, and `setWetness` applies rain. Three separate
+   * places did exactly that (`City._terrainMaterial` and both of
+   * `Districts`'s surface builders) and the result was that the terrain and
+   * every park surface never got wet while the roads did.
+   *
+   * Two things have to be repaired on a clone, not one:
+   *
+   *  - it has to be in the registry, or nothing will ever update it;
+   *  - its recorded DRY colour has to be re-derived. `userData` comes through a
+   *    clone as JSON and `THREE.Color.toJSON()` returns a bare hex number, so
+   *    `wetnessColor` arrives as a number rather than a Color — and it recorded
+   *    the SOURCE's colour anyway, which is wrong the moment the variant sets
+   *    its own (these variants set white and let vertex colours tint).
+   *
+   * @param {string} key       registry key; a second call with it reuses the variant
+   * @param {THREE.Material} src  library material to clone
+   * @param {(m:THREE.Material)=>void} [mutate]  applied before wetness is re-stamped
+   */
+  variant(key, src, mutate) {
+    if (this.materials.has(key)) return this.materials.get(key);
+    const m = src.clone();
+    mutate?.(m);
+    if (m.userData.wetnessRough !== undefined) {
+      m.userData.wetnessRough = m.roughness;
+      m.userData.wetnessColor = m.color.clone();
+    }
+    m.name = key;
+    this.materials.set(key, m);
+    return m;
+  }
+
   geometry(key, fn) {
     if (this.geometries.has(key)) return this.geometries.get(key);
     const g = fn();

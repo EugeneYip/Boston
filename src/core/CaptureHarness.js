@@ -107,7 +107,14 @@ export default class CaptureHarness {
     const CAMERA_DRIVERS = new Set(['cameraRig', 'player', 'gameplay', 'missions']);
     // Systems whose per-frame updates a frozen shot must stop. `weather` is included
     // because rain PARTICLES animate under it.
-    const PAUSE_IDS = ['traffic', 'vehicles', 'peds', 'weather'];
+    // Actors are the things whose POSITIONS make two captures of one shot
+    // differ. Weather is not one of them: it is global scene state, and its own
+    // update is already deterministic under a frozen clock — it snaps the preset
+    // blend and the wetness ramp instead of easing them, precisely so a capture
+    // does not photograph a half-applied condition. Holding it still therefore
+    // buys no determinism and costs the requested condition entirely.
+    const ACTOR_IDS = ['traffic', 'vehicles', 'peds'];
+    const PAUSE_IDS = [...ACTOR_IDS, 'weather'];
     // The timeScale in force before the first freeze(), so unfreezing restores what
     // the caller actually had rather than a hardcoded default. null = not frozen.
     let _preFreezeScale = null;
@@ -480,7 +487,16 @@ export default class CaptureHarness {
         // cross-capture comparison at the cost of a street that does not
         // repopulate around a camera that has just teleported. Use it for A/B of
         // static surfaces; leave it off for anything being judged as a picture.
-        if (!holdActors) api.pauseActors(false);
+        // `holdActors` freezes traffic and crowds through warm-up. It must NOT
+        // freeze the weather: `Weather.update` is what applies the preset that
+        // was just requested, so a paused weather system means the shot is
+        // taken in whatever condition happened to be in force. Measured before
+        // this line changed — `capture({weather:'rain', holdActors:true})` gave
+        // wetness 0.000, rain intensity 0.000, asphalt at its dry roughness of
+        // 0.97 — against 0.900 / 0.720 / 0.331 for the identical call with
+        // `holdActors:false`. Every held-actor capture of a weather preset was
+        // a clear-weather capture wearing that preset's name.
+        api.pauseActors(false, holdActors ? ['weather'] : PAUSE_IDS);
         // Warm up: lets IBL, LOD and temporal effects settle.
         api.step(warmup);
         // Then wait for streaming to ACTUALLY finish rather than assuming a frame

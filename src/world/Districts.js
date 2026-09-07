@@ -320,9 +320,13 @@ export default class Districts {
       const src = materials?.get?.(kind === 'plaza' ? 'concrete' : 'grass');
       let mat;
       if (src) {
-        mat = src.clone();
-        mat.vertexColors = true;
-        mat.color.setRGB(1, 1, 1);
+        // Registry variant, not a bare clone: a clone never reaches
+        // `Assets.setWetness`, so these surfaces stayed dry in rain while the
+        // roads beside them did not. See `Assets.variant`.
+        mat = materials.assets.variant(`park_surface_${kind}`, src, (x) => {
+          x.vertexColors = true;
+          x.color.setRGB(1, 1, 1);
+          });
       } else {
         mat = new THREE.MeshStandardMaterial({
           vertexColors: true, roughness: kind === 'plaza' ? 0.9 : 0.98, metalness: 0,
@@ -341,7 +345,7 @@ export default class Districts {
       scene.add(mesh);
       this.meshes.push(mesh);
       this._owned = this._owned || [];
-      if (!src) this._owned.push(mat); else this._owned.push(mat);
+      if (!src) this._owned.push(mat);          // registry variants: Assets frees them
     }
 
     if (parkPaths?.length) this._buildPaths(scene, materials, parkPaths, lawnIdx);
@@ -572,9 +576,10 @@ export default class Districts {
         surface === 'stone' ? 'dirt' : surface === 'edge' ? 'granite' : 'sidewalk');
       let mat;
       if (src) {
-        mat = src.clone();
-        mat.vertexColors = true;
-        mat.color.setRGB(1, 1, 1);
+        mat = materials.assets.variant(`park_path_${surface}`, src, (x) => {
+          x.vertexColors = true;
+          x.color.setRGB(1, 1, 1);
+          });
       } else {
         mat = new THREE.MeshStandardMaterial({
           vertexColors: true, roughness: 0.95, metalness: 0,
@@ -594,7 +599,7 @@ export default class Districts {
       scene.add(mesh);
       this.meshes.push(mesh);
       this._owned = this._owned || [];
-      this._owned.push(mat);
+      if (!src) this._owned.push(mat);          // registry variants: Assets frees them
     }
   }
 

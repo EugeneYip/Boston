@@ -121,9 +121,21 @@ export default class City {
     const src = materials?.get?.('dirt');
     let m;
     if (src) {
-      m = src.clone();
-      m.vertexColors = true;
-      m.color.setRGB(1, 1, 1);
+      // Through the registry, not a bare clone. A private clone is invisible to
+      // `Assets.setWetness`, and this material is the entire ground plane —
+      // 110k triangles measured — so in rain the carriageway darkened and
+      // sheened while the ground it runs across stayed bone dry, with a visible
+      // step at every kerb.
+      //
+      // The reflection probe is not a change here: a clone inherits `envMap`
+      // from its already-adopted source, so this material carried the probe
+      // before and carries it now. Being in the registry means it is also
+      // re-pointed when the probe is rebuilt on a quality change, instead of
+      // holding a stale texture the way a private clone did.
+      m = materials.assets.variant('ground_terrain', src, (x) => {
+        x.vertexColors = true;
+        x.color.setRGB(1, 1, 1);
+      });
     } else {
       m = new THREE.MeshStandardMaterial({
         vertexColors: true, roughness: 0.97, metalness: 0.0,
@@ -131,7 +143,9 @@ export default class City {
       m.userData.wetnessRough = 0.97;
       m.userData.wetnessColor = m.color.clone();
     }
-    this._ownTerrainMat = m;
+    // Only the standalone fallback is ours to free; a registry variant is
+    // disposed by Assets.
+    this._ownTerrainMat = src ? null : m;
     return m;
   }
 
