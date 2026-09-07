@@ -61,8 +61,20 @@ export async function runRoute(B, route, opts = {}) {
   const city = e.systems.get('city');
   const net = city && city.roads;
   const g = (x, z) => city.groundHeight(x, z);
-  const frames = opts.frames ?? 2;
-  const pts = route.pts;
+  /**
+   * Frames per sample comes from the route's intended SPEED, not from a
+   * constant. A flat 2 frames on a 6 m drive step is 3 m per frame, which is
+   * 648 km/h, and at that velocity `Buildings` is behind for 82.5% of a route.
+   * The same route at 50 km/h is behind for 10%. `opts.stress` restores the
+   * flat cadence deliberately, and a stress run must be labelled as one.
+   */
+  const frames = opts.frames ?? (opts.stress ? 2
+    : Math.max(1, Math.min(24, Math.round((route.step / (route.mps || 1.5)) * 60))));
+  // Realistic speed and full route length are not affordable together: 300
+  // samples at 24 frames is 7,200 frames for one walk. Stress mode covers the
+  // whole route for breadth; the realistic pass measures a bounded section,
+  // which is where a LOD pop or a streaming stall would show anyway.
+  const pts = opts.stress ? route.pts : route.pts.slice(0, opts.maxSamples ?? 40);
 
   const poseAt = (i) => {
     const a = pts[i];
@@ -111,6 +123,8 @@ export async function runRoute(B, route, opts = {}) {
   }
   return { id: route.id, cat: route.cat, kind: route.kind, district: route.district,
            note: route.note, n: samples.length, step: route.step,
+           mps: route.mps, frames, mode: opts.stress ? 'stress' : 'realistic',
+           kmh: Math.round((route.step / frames) * 60 * 3.6),
            warmStreamed: warm && warm.streamed, samples };
 }
 
@@ -123,22 +137,46 @@ export function findEvents(run, opt = {}) {
   const ev = [];
   const relJump = (a, b, frac, floor) =>
     Math.abs(b - a) > Math.max(floor, frac * Math.max(1, Math.abs(a)));
+  /**
+   * Did a jump STAY jumped? A sample that spikes and is back to where it started
+   * two samples later is the frame a chunk rebuilt on, not a cost the world
+   * carries. This matters more than it sounds: on the first run 209 of 310
+   * events were `drawJump`, and stepping two extra frames at the same camera
+   * made every one of them vanish — draws went 794, 792, 783, 772, 771, 769
+   * where the 2-frame sampling had read a 150-draw, 1.05M-triangle spike.
+   * Measuring the sampler, not the game.
+   */
+  const persists = (i, key, from) => {
+    for (let k = i + 1; k <= Math.min(S.length - 1, i + 2); k++) {
+      if (!relJump(from, S[k][key], (opt[key] ?? 0.25) * 0.6, 24)) return false;
+    }
+    return true;
+  };
   for (let i = 1; i < S.length; i++) {
     const a = S[i - 1], b = S[i];
     if (relJump(a.draws, b.draws, opt.draws ?? 0.25, 40)) {
-      ev.push({ kind: 'drawJump', i, d: b.d, from: a.draws, to: b.draws });
+      ev.push({ kind: 'drawJump', i, d: b.d, from: a.draws, to: b.draws,
+                span: persists(i, 'draws', a.draws) ? 'sustained' : 'transient' });
     }
     if (relJump(a.inst, b.inst, opt.inst ?? 0.20, 400)) {
-      ev.push({ kind: 'instJump', i, d: b.d, from: a.inst, to: b.inst });
+      ev.push({ kind: 'instJump', i, d: b.d, from: a.inst, to: b.inst,
+                span: persists(i, 'inst', a.inst) ? 'sustained' : 'transient' });
     }
     if (Math.abs(b.meshes - a.meshes) > (opt.meshes ?? 14)) {
       ev.push({ kind: 'meshDelta', i, d: b.d, from: a.meshes, to: b.meshes });
     }
-    // Ground elevation is a smooth field; a step between two samples 2-6 m
-    // apart is terrain or a road shelf, not a hill.
-    const dy = Math.abs(b.groundY - a.groundY);
-    if (dy > (opt.groundStep ?? 1.2)) {
-      ev.push({ kind: 'groundStep', i, d: b.d, from: a.groundY, to: b.groundY, dy: +dy.toFixed(2) });
+    // A STEP is a change of slope, not a slope. Flagging |dy| alone reported
+    // eleven "steps" that were all Bunker Hill Street and Rutherford Avenue
+    // descending smoothly and monotonically — 16 m of fall over 24 m is a
+    // drumlin, not a defect. Compare against the previous gradient instead.
+    if (i >= 2) {
+      const prevDy = a.groundY - S[i - 2].groundY;
+      const dy = b.groundY - a.groundY;
+      const kink = Math.abs(dy - prevDy);
+      if (kink > (opt.groundKink ?? 1.5)) {
+        ev.push({ kind: 'groundKink', i, d: b.d, prevDy: +prevDy.toFixed(2),
+                  dy: +dy.toFixed(2), kink: +kink.toFixed(2) });
+      }
     }
     if (b.roadDy != null && Math.abs(b.roadDy) > (opt.roadDy ?? 3) &&
         (a.roadDy == null || Math.abs(a.roadDy) <= (opt.roadDy ?? 3))) {

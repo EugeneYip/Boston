@@ -1361,3 +1361,62 @@ D is left alone: 45 samples of about 4 m on one arterial, against 13.5 m shelves
 before the fill landed. They are not a fill underestimate (per-segment
 estimation does not move them) and not water-guarded (420-728 m from any water).
 Forcing this metric to zero would mean flattening real Charlestown topography.
+
+## Stable semantic view ids (2026-09-06)
+
+A sweep view is named by the world object it came from, never by its position in
+the generated list:
+
+    street:e8@0.51:R     junction:n9:e8      local:e19@0.56:R
+    traffic:e35@0.50:L   park:boston-common:loop#0
+    water:charles-river-basin:v11            skyline:backBay:h105:r0
+    special:bridge:e402
+
+`street_05` used to mean "the sixth street view in whatever set was generated",
+so a quota change renamed everything downstream and a per-view baseline stopped
+matching in silence. Verified by regenerating with street 35 -> 20 and
+junction 22 -> 30: **111 views survived with the same id and zero camera
+movement**, 15 removed and 8 added, both detectable. The positional label
+survives as `ord` for reading tables and is not the identity.
+
+## The dynamic traversal sweep (2026-09-06)
+
+`tools/world-sweep/routes.mjs` generates 23 canonical routes from production
+geography; `traverse.js` drives ONE renderer along them and records structural
+telemetry per sample. Routes are named the same way — `walk:sidewalk:e8`,
+`drive:grade:e503`, `walk:park:boston-common:diagonal`.
+
+    walk-sidewalk 6  walk-park 4  walk-promenade 1
+    drive-arterial 4  drive-curve 2  drive-grade 2  drive-bridge 2
+    drive-junctions 2                              3,946 samples, ~9 min
+
+Walk routes sample every 2 m, drive every 6 m, stepping 2 frames per sample.
+The sweep deliberately **does not settle between samples** — settling is what
+the static sweep does, and a world that is always settled can never show a
+streaming hole or a stale LOD. It settles ONCE at the route start so the run
+measures movement rather than arrival.
+
+**There is no universal motion score, and there must not be.** Camera motion
+changes most pixels by definition, so a frame-to-frame image difference measures
+the camera. Everything flagged is structural: an LOD bucket that jumped,
+geometry that appeared or vanished, a draw spike, a ground discontinuity.
+
+### Two detector traps, both found by being wrong first
+
+**A jump that reverts is the sampler, not the game.** On the first run 209 of
+310 events were `drawJump`. Stepping two extra frames at the same cameras made
+every one of them vanish: draws read 794, 792, 783, 772, 771, 769 where the
+2-frame sampling had reported a 150-draw, 1.05M-triangle spike at exactly 48 m
+intervals. Those are the frames a chunk rebuilt on. `findEvents` now marks a
+jump `transient` or `sustained` by whether it is still there two samples later,
+and only `sustained` deserves attribution.
+
+**A step is a change of SLOPE, not a slope.** Flagging `|dy|` between samples
+reported eleven ground "steps", all of them Bunker Hill Street and Rutherford
+Avenue descending smoothly and monotonically — 16 m of fall over 24 m is a
+drumlin. The detector now compares against the previous gradient (`groundKink`).
+
+**The shadow cascade alternates by design.** Held perfectly still, draws read
+766/761 and triangles 2,480k/2,620k on alternating frames. That is the
+documented round-robin refresh in `CascadedShadows` (period 2), it is ±5 draws,
+and it is not a defect. Any dynamic amplitude below that floor is noise.
