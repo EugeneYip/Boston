@@ -555,9 +555,13 @@ export default class Terrain {
    * A single Rapier heightfield for the whole world — vastly cheaper than a
    * trimesh and exactly consistent with `groundHeight()`.
    */
-  addCollider(physics) {
+  addCollider(physics, net = null) {
     const R = physics.RAPIER;
-    const N = 300;                               // 300 x 300 cells over 6.8 km
+    // Match the terrain raster exactly. The old 300x300 grid was 2.27x coarser
+    // than the 681x681 raster it samples, so it could not reproduce the surface
+    // it was supposed to represent — and, worse, a 10 m road corridor can pass
+    // between two vertices of a 22.7 m grid without either of them knowing.
+    const N = NX - 1;
     const span = SPAN;
     const heights = new Float32Array((N + 1) * (N + 1));
     for (let j = 0; j <= N; j++) {
@@ -576,6 +580,7 @@ export default class Terrain {
         heights[i * (N + 1) + j] = this.groundHeight(MINX + (i / N) * span, z);
       }
     }
+    if (net) this._cutCarriageway(heights, N, span, net);
     const body = physics.world.createRigidBody(R.RigidBodyDesc.fixed());
     const desc = R.ColliderDesc
       .heightfield(N, N, heights, { x: span, y: 1, z: span })
@@ -584,6 +589,74 @@ export default class Terrain {
     physics.world.createCollider(desc, body);
     this.collider = body;
     return body;
+  }
+
+  /**
+   * Sink the COLLISION ground under the carriageway. Collision only — the drawn
+   * terrain is untouched, so nothing about the hillside changes visually.
+   *
+   * `stampRoads` already caps every raster cell near a road to the road's own
+   * height at that cell's station, and on flat ground that is exact: measured on
+   * Beacon Street the ground sits at precisely `roadY - 0.40`, the cap value.
+   * It is not enough on a hill. The cap is applied per CELL, and the raster is
+   * 10 m; where a Beacon Hill street changes grade inside one cell, the bilinear
+   * surface between two correctly-capped cells still rises above the road
+   * between them. Measured over 3,535 road samples, 116 of them — 3.28%, all on
+   * Beacon Hill and North End streets — had the collision ground standing above
+   * the drivable road, by up to 1.02 m, with the terrain heightfield the
+   * TOPMOST collider at the road centreline.
+   *
+   * A car driving there does not climb it; it jams against invisible ground and
+   * stops. Reproduced on Rutherford Avenue: 133 m and immobile, with contact
+   * manifolds on the heightfield itself.
+   *
+   * Deepening `stampRoads` instead would work and is the wrong place: that cap
+   * runs on the raster the ground MESH is built from, and it reaches a full
+   * 11 m past the kerb, so a deeper cut would open a visible trench along every
+   * street in the city. The driving surface under a road is the road's own
+   * trimesh — measured covering 98%+ of carriageway samples, the remainder
+   * being rays that struck a tower roof first — so the collision ground beneath
+   * it only has to stay out of the way.
+   *
+   * Bridged edges are skipped: a bridge deck must not cut the ground under it.
+   */
+  _cutCarriageway(heights, N, span, net) {
+    const cell = span / N;
+    const stride = N + 1;
+    // Half a metre clears the worst measured overshoot with margin, and is
+    // shallow enough that if a road trimesh were ever missing, a car would drop
+    // a step rather than into a trench.
+    const CLEAR = 0.5;
+    for (const e of net.edges) {
+      if (e.bridged) continue;
+      // One cell of slack each side, so BOTH vertices that bracket the
+      // carriageway are cut and the interpolation between them cannot rise
+      // back through the asphalt.
+      const corridor = e.halfRoad + cell;
+      for (let k = 0; k < e.pts.length - 1; k++) {
+        const a = e.pts[k], b = e.pts[k + 1];
+        const vx = b.x - a.x, vz = b.z - a.z;
+        const L2 = vx * vx + vz * vz || 1;
+        const i0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - corridor - MINX) / cell));
+        const i1 = Math.min(N, Math.ceil((Math.max(a.x, b.x) + corridor - MINX) / cell));
+        const j0 = Math.max(0, Math.floor((Math.min(a.z, b.z) - corridor - MINZ) / cell));
+        const j1 = Math.min(N, Math.ceil((Math.max(a.z, b.z) + corridor - MINZ) / cell));
+        for (let i = i0; i <= i1; i++) {
+          const x = MINX + i * cell;
+          for (let j = j0; j <= j1; j++) {
+            const z = MINZ + j * cell;
+            let t = ((x - a.x) * vx + (z - a.z) * vz) / L2;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const dx = x - (a.x + vx * t), dz = z - (a.z + vz * t);
+            if (dx * dx + dz * dz > corridor * corridor) continue;
+            const cap = a.y + (b.y - a.y) * t - CLEAR;
+            // Same index convention as the fill above: row index runs along Z.
+            const idx = i * stride + j;
+            if (cap < heights[idx]) heights[idx] = cap;
+          }
+        }
+      }
+    }
   }
 
   dispose() {

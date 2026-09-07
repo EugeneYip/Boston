@@ -241,7 +241,7 @@ export default class City {
     this._physics = p;
     this.bodies = [];
     try {
-      this.bodies.push(this.terrain.addCollider(p));
+      this.bodies.push(this.terrain.addCollider(p, this.net));
     } catch (e) {
       console.warn('[city] heightfield collider failed, falling back to a plane', e);
       const b = p.world.createRigidBody(p.RAPIER.RigidBodyDesc.fixed());
