@@ -19,7 +19,7 @@
  */
 
 /** Downsampled frame, as luminance in 0..1. Null when the buffer is degenerate. */
-function readLuma(B, W = 96, H = 54) {
+export function readLuma(B, W = 96, H = 54) {
   const src = B.engine.renderer.domElement;
   const gl = B.engine.renderer.getContext();
   if (gl.drawingBufferWidth < 2 || gl.drawingBufferHeight < 2) return null;
@@ -41,7 +41,7 @@ function readLuma(B, W = 96, H = 54) {
 }
 
 /** Statistics that separate a blank slab from a busy street. */
-function frameStats(f) {
+export function frameStats(f) {
   if (!f) return null;
   const { W, H, lum } = f;
   const s = Float32Array.from(lum).sort();

@@ -30,17 +30,52 @@ const EYE_WALK = 1.65;
 const EYE_DRIVE = 1.35;
 
 /**
- * Metres per second the route is meant to be travelled at. The runner turns
- * this into frames-per-sample, and it is load-bearing.
+ * Metres per second the route is meant to be travelled at, and the name of the
+ * gameplay speed it corresponds to. The runner turns `mps` into
+ * frames-per-sample, and it is load-bearing.
  *
  * The first version stepped a flat 2 frames per sample, which on a 6 m drive
  * step is 3 m per frame — 648 km/h. At that speed `Buildings` is behind for
  * 82.5% of a route and the sweep reports a streaming crisis. The same route at
  * 26 frames per sample, 0.23 m per frame, 50 km/h, is behind for 10%. The
  * backlog was the instrument, not the world.
+ *
+ * The second version asked for 1.5 m/s and did not get it. The runner clamped
+ * frames-per-sample to 24, so a 2 m step ran at 2 m per 0.4 s — 5 m/s, 18 km/h,
+ * which is faster than `jog` and slower than `sprint` and is not a walk by any
+ * reading. The runner had been reporting that correctly in its own `kmh` field
+ * the whole time; the prose around it called it walking. So the speed is no
+ * longer a bare number: every route carries the NAME of its class and the
+ * source constant behind it, and the runner records the speed it actually
+ * achieved next to the one that was asked for.
+ *
+ * These are read from production, not from assumptions about human locomotion:
+ *   src/gameplay/Player.js   SPEED = { walk: 1.45, jog: 3.40, sprint: 6.30 }
+ *   src/ai/Navigation.js     PROFILE[type].speed
  */
-const WALK_MPS = 1.5;      // brisk walk
-const DRIVE_MPS = 14;      // ~50 km/h, an arterial in traffic
+export const CLASS = {
+  PLAYER_WALK:      { mps: 1.45, src: 'Player.js SPEED.walk' },
+  // Keyboard is always full deflection, and `_move` picks `jog` unless the
+  // stick is part-deflected, so this — not `walk` — is how the world is
+  // actually crossed on foot. It is the default for a pedestrian route.
+  PLAYER_JOG:       { mps: 3.40, src: 'Player.js SPEED.jog (default on foot)' },
+  PLAYER_SPRINT:    { mps: 6.30, src: 'Player.js SPEED.sprint' },
+  VEHICLE_ALLEY:    { mps: 6.7,  src: 'Navigation.js PROFILE.alley.speed' },
+  VEHICLE_STREET:   { mps: 11.2, src: 'Navigation.js PROFILE.street.speed' },
+  VEHICLE_ARTERIAL: { mps: 13.4, src: 'Navigation.js PROFILE.arterial.speed' },
+  VEHICLE_HIGHWAY:  { mps: 27.0, src: 'Navigation.js PROFILE.highway.speed' },
+  // Deliberately not a gameplay speed. This is the rate the previous pass ran
+  // its pedestrian routes at, kept because a faster traversal is a stronger
+  // streaming test — but it must never again be described as walking.
+  STRESS_FAST:      { mps: 5.00, src: 'not gameplay: previous pass frame clamp' },
+};
+
+/** Road class -> the speed a car actually drives it at. */
+const DRIVE_CLASS = {
+  highway: 'VEHICLE_HIGHWAY', arterial: 'VEHICLE_ARTERIAL',
+  street: 'VEHICLE_STREET', alley: 'VEHICLE_ALLEY',
+};
+const WALK_CLS = 'PLAYER_JOG';
 
 /* -------------------------------------------------------------------------- */
 
@@ -180,7 +215,8 @@ export function buildRoutes() {
         id: `walk:sidewalk:e${e.id}`, kind: 'walk', cat: 'walk-sidewalk',
         district: d, note: `${e.name || e.type} pavement, ${e.length | 0} m`,
         why: 'longest public street with a footway in this district',
-        eye: EYE_WALK, step: WALK_STEP, mps: WALK_MPS,
+        eye: EYE_WALK, step: WALK_STEP,
+        cls: WALK_CLS, mps: CLASS[WALK_CLS].mps,
         pts: resample(offsetLine(e, e.halfRoad + 0.16 + e.walk * 0.5, 1), WALK_STEP),
       });
     }
@@ -201,7 +237,8 @@ export function buildRoutes() {
         district: districtOf(p.pts[0].x, p.pts[0].z),
         note: `${park} ${role}, ${p.length | 0} m`,
         why: 'a generated park walk, which is guaranteed clear of planting',
-        eye: EYE_WALK, step: WALK_STEP, mps: WALK_MPS,
+        eye: EYE_WALK, step: WALK_STEP,
+        cls: WALK_CLS, mps: CLASS[WALK_CLS].mps,
         pts: resample(p.pts.map(q => [q.x, q.z]), WALK_STEP),
       });
     }
@@ -218,9 +255,13 @@ export function buildRoutes() {
   const drivenEdges = new Set();
   const pushDrive = (id, cat, e, note, why) => {
     if (drivenEdges.has(e.id)) return false;
+    // An arterial and a back street are not driven at the same speed, and the
+    // route is the wrong place to average them.
+    const dcls = DRIVE_CLASS[e.type] || 'VEHICLE_STREET';
     const ok = accept({
       id, kind: 'drive', cat, district: districtOf(e.pts[0].x, e.pts[0].z),
-      note, why, eye: EYE_DRIVE, step: DRIVE_STEP, mps: DRIVE_MPS,
+      note, why, eye: EYE_DRIVE, step: DRIVE_STEP,
+      cls: dcls, mps: CLASS[dcls].mps,
       pts: resample(driveLine(e), DRIVE_STEP),
     });
     if (ok) drivenEdges.add(e.id);
