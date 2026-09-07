@@ -198,7 +198,20 @@ export async function runRoute(B, route, opts = {}) {
 
   const err0 = B.errors.length, gl0 = B.glFaults.length;
   const samples = [];
+  /**
+   * Hand the event loop a turn every few samples.
+   *
+   * The sample loop is otherwise wholly synchronous: 40 samples at 35 frames is
+   * 1,400 renders of a 3.3M-triangle scene in one task, which blocks the main
+   * thread for roughly half a minute per route. Nothing can be scheduled during
+   * that — including a progress probe — so a route that is working and a page
+   * that has hung look exactly the same from outside, and a 23-route pass is
+   * observable only by whether a result eventually appears. Yielding costs no
+   * engine time and makes the run inspectable while it runs.
+   */
+  const breathe = () => new Promise(r => setTimeout(r, 0));
   for (let i = 0; i < pts.length; i++) {
+    if (i % 4 === 0) await breathe();
     const p = poseAt(i);
     B.setCamera(p.pos, p.look, opts.fov ?? 55);
     B.step(frames);
@@ -227,6 +240,7 @@ export async function runRoute(B, route, opts = {}) {
                  detail: px.detail, p99: px.p99 } : {}),
       ...(ls ? { L: ls } : {}),
     });
+    if (opts.onSample) opts.onSample(samples[samples.length - 1], i, pts.length);
   }
   // The achieved speed, not the requested one. These agree to within the
   // rounding of one frame unless `frames` was overridden or the cap bound, and
@@ -277,6 +291,25 @@ export function findEvents(run, opt = {}) {
     }
     return true;
   };
+  /**
+   * How big a luminance step this particular route has to take before it is
+   * worth reporting. Median absolute deviation of the step distribution, times
+   * a factor: a route that is CONSTANTLY changing brightness (a tree-lined
+   * pavement in sun) sets a high bar for itself, and a route that is uniformly
+   * lit sets a low one. `opt.lumaK` scales it; `opt.luma` overrides it outright.
+   */
+  let lumaTol = Infinity;
+  if (S.length > 3 && S[0].mean != null) {
+    const steps = [];
+    for (let i = 1; i < S.length; i++) steps.push(Math.abs(S[i].mean - S[i - 1].mean));
+    steps.sort((x, y) => x - y);
+    const med = steps[steps.length >> 1];
+    const dev = steps.map(v => Math.abs(v - med)).sort((x, y) => x - y);
+    const mad = dev[dev.length >> 1];
+    // A zero MAD means a perfectly regular route; fall back to the median step
+    // so the tolerance never collapses to zero and flags every sample.
+    lumaTol = opt.luma ?? Math.max(med + (opt.lumaK ?? 6) * (mad || med || 0.01), 0.04);
+  }
   for (let i = 1; i < S.length; i++) {
     const a = S[i - 1], b = S[i];
     if (relJump(a.draws, b.draws, opt.draws ?? 0.25, 40)) {
@@ -333,9 +366,20 @@ export function findEvents(run, opt = {}) {
                   span: absPersists(S, i, 'dark', a.dark, (opt.dark ?? 0.06) * 0.6) });
       }
       // Adaptation is supposed to move; a STEP in it is what reads as a pump.
-      if (Math.abs(b.mean - a.mean) > (opt.luma ?? 0.05)) {
+      //
+      // Calibrated against the ROUTE'S OWN spread, not against a constant. A
+      // fixed absolute threshold cannot work across conditions: at tod 11 the
+      // mean frame luminance is ~0.39 and 0.05 of it is what walking into a
+      // building's shadow costs — the first daylight control route produced
+      // seven of these and every one was a shadow — while at tod 22 the mean is
+      // near zero and the same 0.05 would never fire at all. `lumaTol` is
+      // derived per route below, from the median absolute deviation of its own
+      // sample-to-sample steps, which is the same MAD idiom the static sweep
+      // already uses to rank outliers within a category.
+      if (Math.abs(b.mean - a.mean) > lumaTol) {
         ev.push({ kind: 'lumaJump', i, d: b.d, from: a.mean, to: b.mean,
-                  span: absPersists(S, i, 'mean', a.mean, (opt.luma ?? 0.05) * 0.6) });
+                  tol: +lumaTol.toFixed(4),
+                  span: absPersists(S, i, 'mean', a.mean, lumaTol * 0.6) });
       }
     }
     if (b.L && a.L) {
@@ -411,6 +455,7 @@ export function summarise(run, events) {
       fams: [...new Set(S.map(s => s.L && s.L.fam).filter(Boolean))].sort(),
     } : {}),
     cls: run.cls, mps: run.mps, mpsGot: run.mpsGot, kmh: run.kmh,
+    lumaTol: events.find(e => e.tol != null)?.tol ?? null,
     mode: run.mode, tod: run.tod, weather: run.weather,
     events: by, nEvents: events.length,
   };

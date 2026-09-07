@@ -1746,6 +1746,7 @@ function wet(m) {
  */
 export function createMaterialKit(ctx) {
   const M = ctx?.get?.('materials');
+  const A = ctx?.assets;
   const owned = [];
   const own = (m) => { owned.push(m); return m; };
   const shared = (name, make) => {
@@ -1753,6 +1754,28 @@ export function createMaterialKit(ctx) {
     if (m && m.isMaterial) return m;
     return own(make());
   };
+  /**
+   * Author a material INTO the Assets registry, rather than privately.
+   *
+   * Three separate things in this engine walk `Assets.materials` and nothing
+   * else: `Materials.adopt` stamps the wet response from the WETNESS table, the
+   * same pass attaches the environment probe, and `Assets.setWetness` applies
+   * rain. A material that is only `own()`ed is invisible to all three, so
+   * calling `wet()` on one records an intention that can never be carried out.
+   *
+   * This is deliberately NOT `shared()`. `shared()` looks the part and is a trap
+   * for a key the materials library does not define: `Materials.get` never
+   * returns nullish — it warns once and hands back a generic `_fallback` at
+   * roughness 0.85 — so `shared('car_trim_dark', ...)` does not fall through to
+   * its own `make()`, it silently puts every vehicle's dark trim on the shared
+   * fallback. Measured when this fix was first written that way: registry 27 ->
+   * 28 with `_fallback` added and no `car_trim_dark` in it.
+   *
+   * Registering also transfers ownership — `Assets.dispose` frees the registry —
+   * so an adopted material must not also go into `owned`, or it is disposed
+   * twice.
+   */
+  const adopt = (name, make) => (A?.material ? A.material(name, make) : own(make()));
 
   const paintCache = new Map();
   const kit = {
@@ -1814,9 +1837,36 @@ export function createMaterialKit(ctx) {
     tire: shared('tire', () => wet(new THREE.MeshStandardMaterial({
       color: 0x14151a, metalness: 0.02, roughness: 0.90,
     }))),
-    trimDark: own(wet(new THREE.MeshStandardMaterial({
-      color: 0x1b1d21, metalness: 0.25, roughness: 0.62,
-    }))),
+    /**
+     * Adopted, not private, because it is the one material in the world that
+     * asked for rain and could not receive it.
+     *
+     * `wet()` stamps `wetnessRough`/`wetnessColor`, which is the opt-in marker
+     * `Assets.setWetness` looks for — but `setWetness` iterates the REGISTRY,
+     * and this material was `own()`ed, so it was never in it. Measured: of 94
+     * materials present in the scene, exactly one declared the opt-in and had
+     * never been stamped, and its roughness was 0.62. This one.
+     *
+     * It matters more than a trim strip because of the LOD map above: at LOD1
+     * `tire`, `exhaust`, `grille`, `under`, `gap`, `interior` and `caliper` all
+     * resolve to `trimDark`. So a car's tyres darkened and sheened in rain up
+     * close and stayed bone dry past the LOD switch — a wetness response that
+     * changed with distance, on every vehicle.
+     *
+     * The wet targets are set here rather than left to the table's default for
+     * an unnamed surface (rough 0.24, darken 0.45). They are the `metal|tire|
+     * rubber` row's values, because that is what this material actually stands
+     * in for at LOD1, and matching them is what keeps the LOD boundary from
+     * changing how wet a car looks.
+     */
+    trimDark: adopt('car_trim_dark', () => {
+      const m = wet(new THREE.MeshStandardMaterial({
+        color: 0x1b1d21, metalness: 0.25, roughness: 0.62,
+      }));
+      m.userData.wetRough = 0.20;
+      m.userData.wetDarken = 0.28;
+      return m;
+    }),
     under: own(new THREE.MeshStandardMaterial({
       color: 0x0b0c0e, metalness: 0.15, roughness: 0.95,
     })),
