@@ -40,6 +40,9 @@ function rng(seed) {
   };
 }
 
+/** Stable, filename-safe key for a named source object. */
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 const EYE = 1.65;                 // standing eye height, metres
 const MIN_SEP = 140;              // keep two viewpoints of a category apart
 
@@ -154,12 +157,21 @@ export function buildViewpoints() {
   const spaced = (cat, x, z, sep = MIN_SEP) =>
     !out.some(v => v.cat === cat && Math.hypot(v.at[0] - x, v.at[1] - z) < sep);
 
-  const push = (cat, district, x, z, height, lookAt, note, why) => {
+  /**
+   * `srcId` is the view's IDENTITY and must be derived from the world, never
+   * from position in this list. `street_05` meant "the sixth street view in
+   * whatever set was generated", so changing a quota renamed everything and a
+   * per-view baseline silently stopped matching. A road edge id does not move
+   * when a quota does, so a surviving view keeps its name, a removed one is
+   * detectable by absence, and a new one by being unknown.
+   */
+  const push = (cat, srcId, district, x, z, height, lookAt, note, why) => {
     // Elevated cameras look over the roofs; the ground-plane march does not
     // apply to them.
     if (height < 12 && !viewClear(x, z, lookAt[0], lookAt[2])) return false;
     out.push({
-      id: `${cat}_${out.filter(v => v.cat === cat).length.toString().padStart(2, '0')}`,
+      id: srcId,
+      ord: `${cat}_${out.filter(v => v.cat === cat).length.toString().padStart(2, '0')}`,
       cat, district, note, why,
       at: [+x.toFixed(1), +z.toFixed(1)],
       eye: +height.toFixed(2),
@@ -182,14 +194,15 @@ export function buildViewpoints() {
     for (const e of net.edges) {
       if (!(e.walk >= 0.3) || e.type === 'alley' || e.type === 'highway') continue;
       if (e.length < 55) continue;
-      const f = edgeAt(e, 0.42 + r() * 0.16);
+      const t = 0.42 + r() * 0.16;
+      const f = edgeAt(e, t);
       const side = r() < 0.5 ? 1 : -1;
       const off = e.halfRoad + 0.16 + e.walk * 0.5;
       const nx = -f.tz * side, nz = f.tx * side;
       const x = f.x + nx * off, z = f.z + nz * off;
       if (inParcel(x, z, 0.5) || inWater(x, z, 1) || onCarriageway(x, z)) continue;
       const ahead = edgeAt(e, Math.min(1, 0.42 + 40 / e.length));
-      cand.push({ x, z, d: districtOf(x, z), len: e.length,
+      cand.push({ x, z, d: districtOf(x, z), len: e.length, eid: e.id, t, side,
                   look: [ahead.x + nx * off * 0.4, terrain.groundHeight(ahead.x, ahead.z) + 1.4,
                          ahead.z + nz * off * 0.4] });
     }
@@ -207,7 +220,8 @@ export function buildViewpoints() {
         const list = byD.get(k);
         const c = list[round];
         if (!c || !spaced('street', c.x, c.z, 110)) continue;
-        push('street', c.d, c.x, c.z, EYE, c.look, 'pavement, looking along the street',
+        push('street', `street:e${c.eid}@${c.t.toFixed(2)}:${c.side > 0 ? 'R' : 'L'}`,
+             c.d, c.x, c.z, EYE, c.look, 'pavement, looking along the street',
              'on the footway of a public street >= 55 m, clear of parcel, water and carriageway');
       }
     }
@@ -229,7 +243,7 @@ export function buildViewpoints() {
       const off = e.halfRoad + 0.16 + e.walk * 0.5;
       const x = f.x - f.tz * off * side, z = f.z + f.tx * off * side;
       if (inParcel(x, z, 0.5) || inWater(x, z, 1) || onCarriageway(x, z)) continue;
-      cand.push({ x, z, d: districtOf(x, z), arms: arms.length,
+      cand.push({ x, z, d: districtOf(x, z), arms: arms.length, nid: n.id, eid: e.id,
                   look: [n.x, terrain.groundHeight(n.x, n.z) + 1.3, n.z] });
     }
     cand.sort((a, b) => b.arms - a.arms || a.x - b.x);
@@ -244,7 +258,8 @@ export function buildViewpoints() {
         if (count('junction') >= QUOTA.junction) break;
         const c = byD.get(k)[round];
         if (!c || !spaced('junction', c.x, c.z, 130)) continue;
-        push('junction', c.d, c.x, c.z, EYE, c.look, `${c.arms}-arm junction`,
+        push('junction', `junction:n${c.nid}:e${c.eid}`,
+             c.d, c.x, c.z, EYE, c.look, `${c.arms}-arm junction`,
              'corner footway of a 3+ arm junction, looking into the node');
       }
     }
@@ -271,7 +286,8 @@ export function buildViewpoints() {
         const i = Math.floor(p.pts.length * 0.3);
         const a = p.pts[i], b = p.pts[Math.min(p.pts.length - 1, i + 14)];
         if (!a || !b || !spaced('park', a.x, a.z, 90)) continue;
-        push('park', districtOf(a.x, a.z), a.x, a.z, EYE,
+        push('park', `park:${slug(name)}:${p.role}#${round}`,
+             districtOf(a.x, a.z), a.x, a.z, EYE,
              [b.x, terrain.groundHeight(b.x, b.z) + 1.3, b.z], `${name} (${p.role})`,
              'standing on a park walk, which is guaranteed clear of planting');
       }
@@ -311,7 +327,8 @@ export function buildViewpoints() {
         // world and the bank they were standing on was already the thing to fix.
         const ax = q.x - p.x, az = q.z - p.z;
         const al = Math.hypot(ax, az) || 1;
-        push('water', districtOf(found.x, found.z), found.x, found.z, EYE,
+        push('water', `water:${slug(body.name)}:v${i}`,
+             districtOf(found.x, found.z), found.x, found.z, EYE,
              [found.x + (ax / al) * 60 - gx * 6, terrain.groundHeight(found.x, found.z) + 1.2,
               found.z + (az / al) * 60 - gz * 6], `${body.name} shore, along the bank`,
              'first legal point 6-40 m inland of the ring, aimed along the shore not out to sea');
@@ -329,14 +346,15 @@ export function buildViewpoints() {
       const x = f.x - f.tz * off, z = f.z + f.tx * off;
       if (inParcel(x, z, 0.5) || inWater(x, z, 1) || onCarriageway(x, z)) continue;
       const ahead = edgeAt(e, Math.min(1, 0.5 + 60 / e.length));
-      cand.push({ x, z, lanes: e.lanes || 2, d: districtOf(x, z),
+      cand.push({ x, z, lanes: e.lanes || 2, d: districtOf(x, z), eid: e.id,
                   look: [ahead.x, terrain.groundHeight(ahead.x, ahead.z) + 1.2, ahead.z] });
     }
     cand.sort((a, b) => b.lanes - a.lanes);
     for (const c of cand) {
       if (count('traffic') >= QUOTA.traffic) break;
       if (!spaced('traffic', c.x, c.z, 190)) continue;
-      push('traffic', c.d, c.x, c.z, EYE, c.look, `${c.lanes}-lane arterial`,
+      push('traffic', `traffic:e${c.eid}@0.50:L`,
+           c.d, c.x, c.z, EYE, c.look, `${c.lanes}-lane arterial`,
            'kerb of an arterial >= 90 m, looking down the corridor');
     }
   }
@@ -353,7 +371,8 @@ export function buildViewpoints() {
       if (e.type !== 'street' || !(e.walk >= 0.3)) continue;
       if ((e.lanes || 2) > 2 || e.halfRoad > 6.5) continue;
       if (e.length < 40) continue;
-      const f = edgeAt(e, 0.35 + r() * 0.3);
+      const t = 0.35 + r() * 0.3;
+      const f = edgeAt(e, t);
       const d = districtOf(f.x, f.z);
       if (!RES.has(d)) continue;
       const side = r() < 0.5 ? 1 : -1;
@@ -362,7 +381,7 @@ export function buildViewpoints() {
       const x = f.x + nx * off, z = f.z + nz * off;
       if (inParcel(x, z, 0.5) || inWater(x, z, 1) || onCarriageway(x, z)) continue;
       const ahead = edgeAt(e, Math.min(1, 0.35 + 32 / e.length));
-      cand.push({ x, z, d, len: e.length,
+      cand.push({ x, z, d, len: e.length, eid: e.id, t, side,
                   look: [ahead.x + nx * off * 0.5, terrain.groundHeight(ahead.x, ahead.z) + 1.4,
                          ahead.z + nz * off * 0.5] });
     }
@@ -378,7 +397,8 @@ export function buildViewpoints() {
         if (count('local') >= QUOTA.local) break;
         const c = byD.get(k)[round];
         if (!c || !spaced('local', c.x, c.z, 90)) continue;
-        push('local', c.d, c.x, c.z, EYE, c.look, 'residential street',
+        push('local', `local:e${c.eid}@${c.t.toFixed(2)}:${c.side > 0 ? 'R' : 'L'}`,
+             c.d, c.x, c.z, EYE, c.look, 'residential street',
              'footway of a <=2-lane residential street in a named neighbourhood');
       }
     }
@@ -392,11 +412,11 @@ export function buildViewpoints() {
     // Returns 'full' when the quota is met and the caller should stop, 'skip'
     // when only this candidate failed. Conflating the two let one spacing
     // rejection abort a whole sub-category: `steep` produced a single view.
-    const add = (sub, x, z, eye, look, note, why) => {
+    const add = (sub, srcId, x, z, eye, look, note, why) => {
       if (count('special') >= QUOTA.special) return 'full';
       if (inWater(x, z, 1)) return 'skip';
       if (!spaced('special', x, z, 120)) return 'skip';
-      if (!push('special', districtOf(x, z), x, z, eye, look, `${sub}: ${note}`, why)) return 'skip';
+      if (!push('special', srcId, districtOf(x, z), x, z, eye, look, `${sub}: ${note}`, why)) return 'skip';
       return 'ok';
     };
     const sub = (kind) => out.filter(v => v.cat === 'special' && v.note.startsWith(kind)).length;
@@ -414,7 +434,7 @@ export function buildViewpoints() {
       const ahead = edgeAt(e, Math.min(1, 0.5 + 70 / e.length));
       const deckY = f.y !== undefined ? f.y : terrain.groundHeight(x, z);
       const eye = deckY - terrain.groundHeight(x, z) + EYE;
-      const rc = add('bridge', x, z, eye, [ahead.x, deckY + 1.3, ahead.z], nm,
+      const rc = add('bridge', `special:bridge:e${e.id}`, x, z, eye, [ahead.x, deckY + 1.3, ahead.z], nm,
                      'on a bridged edge, eye measured from the deck profile');
       if (rc === 'full') break;
       if (rc === 'ok') bridgeSeen.set(nm, (bridgeSeen.get(nm) || 0) + 1);
@@ -442,7 +462,7 @@ export function buildViewpoints() {
         const x = q.f.x - q.f.tz * off, z = q.f.z + q.f.tx * off;
         if (inParcel(x, z, 0.5) || onCarriageway(x, z)) continue;
         const ah = edgeAt(q.e, Math.min(1, 0.5 + 45 / q.e.length));
-        const rc = add('steep', x, z, EYE, [ah.x, terrain.groundHeight(ah.x, ah.z) + 1.3, ah.z],
+        const rc = add('steep', `special:steep:e${q.e.id}`, x, z, EYE, [ah.x, terrain.groundHeight(ah.x, ah.z) + 1.3, ah.z],
                        `${q.drop.toFixed(0)} m of fall within 40 m`,
                        'steepest ground beside a road: where a terrain rule breaks first');
         if (rc === 'full' || sub('steep') >= 3) break;
@@ -477,7 +497,7 @@ export function buildViewpoints() {
         const x = f.x - f.tz * off, z = f.z + f.tx * off;
         if (inParcel(x, z, 0.5) || onCarriageway(x, z)) continue;
         const ah = edgeAt(q.e, Math.min(0.95, q.at + 0.16));
-        const rc = add('curve', x, z, EYE, [ah.x, terrain.groundHeight(ah.x, ah.z) + 1.3, ah.z],
+        const rc = add('curve', `special:curve:e${q.e.id}`, x, z, EYE, [ah.x, terrain.groundHeight(ah.x, ah.z) + 1.3, ah.z],
                        `${(q.mx * 1000).toFixed(0)} mrad/m bend`,
                        'sharpest bend on a street: kerbside placement is a chord/polyline trap here');
         if (rc === 'full' || sub('curve') >= 3) break;
@@ -493,7 +513,7 @@ export function buildViewpoints() {
         const rad = 34;
         const x = b.cx + Math.cos(ang) * rad, z = b.cz + Math.sin(ang) * rad;
         if (inParcel(x, z, 0.5) || onCarriageway(x, z)) continue;
-        const rc = add('tower', x, z, EYE, [b.cx, (b.base || 0) + (b.h || 60) * 0.55, b.cz],
+        const rc = add('tower', `special:tower:x${Math.round(b.cx)}z${Math.round(b.cz)}`, x, z, EYE, [b.cx, (b.base || 0) + (b.h || 60) * 0.55, b.cz],
                        `${(b.h || 0).toFixed(0)} m setback tower`,
                        'footway beside the tallest setback towers, aimed up the massing');
         if (rc === 'full' || sub('tower') >= 3) break;
@@ -522,7 +542,8 @@ export function buildViewpoints() {
         const h = 70 + (count('skyline') % 3) * 35;
         const t = targets[ti++ % targets.length];
         if (inWater(cx, cz, 5) || !spaced('skyline', cx, cz, 220)) continue;
-        push('skyline', d, cx, cz, h, t, `${d} built centroid, ${h} m up`,
+        push('skyline', `skyline:${d}:h${h}:r${round}`,
+             d, cx, cz, h, t, `${d} built centroid, ${h} m up`,
              'above a district built centroid; roofs are half the frame from here');
       }
     }

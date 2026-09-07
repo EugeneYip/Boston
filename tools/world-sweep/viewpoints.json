@@ -3,7 +3,8 @@
  "count": 126,
  "views": [
   {
-   "id": "street_00",
+   "id": "street:e8@0.51:R",
+   "ord": "street_00",
    "cat": "street",
    "district": "backBay",
    "note": "pavement, looking along the street",
@@ -20,7 +21,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_01",
+   "id": "street:e247@0.53:L",
+   "ord": "street_01",
    "cat": "street",
    "district": "beaconHill",
    "note": "pavement, looking along the street",
@@ -37,7 +39,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_02",
+   "id": "street:e513@0.55:L",
+   "ord": "street_02",
    "cat": "street",
    "district": "cambridge",
    "note": "pavement, looking along the street",
@@ -54,7 +57,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "street_03",
+   "id": "street:e474@0.48:R",
+   "ord": "street_03",
    "cat": "street",
    "district": "fenway",
    "note": "pavement, looking along the street",
@@ -71,7 +75,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_04",
+   "id": "street:e381@0.54:L",
+   "ord": "street_04",
    "cat": "street",
    "district": "financial",
    "note": "pavement, looking along the street",
@@ -88,7 +93,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_05",
+   "id": "street:e405@0.48:L",
+   "ord": "street_05",
    "cat": "street",
    "district": "none",
    "note": "pavement, looking along the street",
@@ -105,7 +111,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_06",
+   "id": "street:e287@0.45:R",
+   "ord": "street_06",
    "cat": "street",
    "district": "northEnd",
    "note": "pavement, looking along the street",
@@ -122,7 +129,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_07",
+   "id": "street:e245@0.53:R",
+   "ord": "street_07",
    "cat": "street",
    "district": "park",
    "note": "pavement, looking along the street",
@@ -139,7 +147,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_08",
+   "id": "street:e417@0.54:L",
+   "ord": "street_08",
    "cat": "street",
    "district": "seaport",
    "note": "pavement, looking along the street",
@@ -156,7 +165,8 @@
    "aimEye": 1.39
   },
   {
-   "id": "street_09",
+   "id": "street:e398@0.43:R",
+   "ord": "street_09",
    "cat": "street",
    "district": "southEnd",
    "note": "pavement, looking along the street",
@@ -173,7 +183,8 @@
    "aimEye": 1.39
   },
   {
-   "id": "street_10",
+   "id": "street:e19@0.54:R",
+   "ord": "street_10",
    "cat": "street",
    "district": "backBay",
    "note": "pavement, looking along the street",
@@ -190,7 +201,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_11",
+   "id": "street:e212@0.43:L",
+   "ord": "street_11",
    "cat": "street",
    "district": "beaconHill",
    "note": "pavement, looking along the street",
@@ -207,7 +219,8 @@
    "aimEye": 1.21
   },
   {
-   "id": "street_12",
+   "id": "street:e524@0.43:L",
+   "ord": "street_12",
    "cat": "street",
    "district": "cambridge",
    "note": "pavement, looking along the street",
@@ -224,7 +237,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_13",
+   "id": "street:e508@0.45:L",
+   "ord": "street_13",
    "cat": "street",
    "district": "charlestown",
    "note": "pavement, looking along the street",
@@ -241,7 +255,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_14",
+   "id": "street:e56@0.53:R",
+   "ord": "street_14",
    "cat": "street",
    "district": "fenway",
    "note": "pavement, looking along the street",
@@ -258,7 +273,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_15",
+   "id": "street:e390@0.57:R",
+   "ord": "street_15",
    "cat": "street",
    "district": "financial",
    "note": "pavement, looking along the street",
@@ -275,7 +291,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_16",
+   "id": "street:e473@0.49:L",
+   "ord": "street_16",
    "cat": "street",
    "district": "none",
    "note": "pavement, looking along the street",
@@ -292,7 +309,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_17",
+   "id": "street:e479@0.44:R",
+   "ord": "street_17",
    "cat": "street",
    "district": "park",
    "note": "pavement, looking along the street",
@@ -309,7 +327,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_18",
+   "id": "street:e408@0.58:R",
+   "ord": "street_18",
    "cat": "street",
    "district": "seaport",
    "note": "pavement, looking along the street",
@@ -326,7 +345,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_19",
+   "id": "street:e312@0.56:R",
+   "ord": "street_19",
    "cat": "street",
    "district": "southEnd",
    "note": "pavement, looking along the street",
@@ -343,7 +363,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_20",
+   "id": "street:e201@0.58:R",
+   "ord": "street_20",
    "cat": "street",
    "district": "backBay",
    "note": "pavement, looking along the street",
@@ -360,7 +381,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_21",
+   "id": "street:e246@0.48:L",
+   "ord": "street_21",
    "cat": "street",
    "district": "beaconHill",
    "note": "pavement, looking along the street",
@@ -377,7 +399,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "street_22",
+   "id": "street:e517@0.55:L",
+   "ord": "street_22",
    "cat": "street",
    "district": "cambridge",
    "note": "pavement, looking along the street",
@@ -394,7 +417,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_23",
+   "id": "street:e475@0.42:R",
+   "ord": "street_23",
    "cat": "street",
    "district": "fenway",
    "note": "pavement, looking along the street",
@@ -411,7 +435,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_24",
+   "id": "street:e330@0.46:L",
+   "ord": "street_24",
    "cat": "street",
    "district": "financial",
    "note": "pavement, looking along the street",
@@ -428,7 +453,8 @@
    "aimEye": 1.39
   },
   {
-   "id": "street_25",
+   "id": "street:e313@0.57:L",
+   "ord": "street_25",
    "cat": "street",
    "district": "none",
    "note": "pavement, looking along the street",
@@ -445,7 +471,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "street_26",
+   "id": "street:e254@0.56:R",
+   "ord": "street_26",
    "cat": "street",
    "district": "northEnd",
    "note": "pavement, looking along the street",
@@ -462,7 +489,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_27",
+   "id": "street:e248@0.42:R",
+   "ord": "street_27",
    "cat": "street",
    "district": "park",
    "note": "pavement, looking along the street",
@@ -479,7 +507,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_28",
+   "id": "street:e410@0.57:L",
+   "ord": "street_28",
    "cat": "street",
    "district": "seaport",
    "note": "pavement, looking along the street",
@@ -496,7 +525,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_29",
+   "id": "street:e310@0.43:R",
+   "ord": "street_29",
    "cat": "street",
    "district": "southEnd",
    "note": "pavement, looking along the street",
@@ -513,7 +543,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_30",
+   "id": "street:e17@0.48:R",
+   "ord": "street_30",
    "cat": "street",
    "district": "backBay",
    "note": "pavement, looking along the street",
@@ -527,10 +558,11 @@
     -1684.6,
     475.5
    ],
-   "aimEye": 1.4
+   "aimEye": 1.38
   },
   {
-   "id": "street_31",
+   "id": "street:e234@0.52:L",
+   "ord": "street_31",
    "cat": "street",
    "district": "beaconHill",
    "note": "pavement, looking along the street",
@@ -547,7 +579,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_32",
+   "id": "street:e515@0.53:L",
+   "ord": "street_32",
    "cat": "street",
    "district": "cambridge",
    "note": "pavement, looking along the street",
@@ -564,7 +597,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "street_33",
+   "id": "street:e500@0.55:L",
+   "ord": "street_33",
    "cat": "street",
    "district": "charlestown",
    "note": "pavement, looking along the street",
@@ -581,7 +615,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "street_34",
+   "id": "street:e484@0.42:L",
+   "ord": "street_34",
    "cat": "street",
    "district": "fenway",
    "note": "pavement, looking along the street",
@@ -595,10 +630,11 @@
     -3003.9,
     1246.8
    ],
-   "aimEye": 1.4
+   "aimEye": 1.43
   },
   {
-   "id": "junction_00",
+   "id": "junction:n9:e8",
+   "ord": "junction_00",
    "cat": "junction",
    "district": "backBay",
    "note": "4-arm junction",
@@ -615,7 +651,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_01",
+   "id": "junction:n144:e209",
+   "ord": "junction_01",
    "cat": "junction",
    "district": "beaconHill",
    "note": "4-arm junction",
@@ -632,7 +669,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_02",
+   "id": "junction:n381:e520",
+   "ord": "junction_02",
    "cat": "junction",
    "district": "cambridge",
    "note": "4-arm junction",
@@ -649,7 +687,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_03",
+   "id": "junction:n358:e496",
+   "ord": "junction_03",
    "cat": "junction",
    "district": "charlestown",
    "note": "4-arm junction",
@@ -666,7 +705,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_04",
+   "id": "junction:n65:e58",
+   "ord": "junction_04",
    "cat": "junction",
    "district": "fenway",
    "note": "4-arm junction",
@@ -683,7 +723,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_05",
+   "id": "junction:n220:e302",
+   "ord": "junction_05",
    "cat": "junction",
    "district": "financial",
    "note": "6-arm junction",
@@ -700,7 +741,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_06",
+   "id": "junction:n334:e465",
+   "ord": "junction_06",
    "cat": "junction",
    "district": "none",
    "note": "4-arm junction",
@@ -717,7 +759,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_07",
+   "id": "junction:n191:e261",
+   "ord": "junction_07",
    "cat": "junction",
    "district": "northEnd",
    "note": "6-arm junction",
@@ -734,7 +777,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_08",
+   "id": "junction:n341:e478",
+   "ord": "junction_08",
    "cat": "junction",
    "district": "park",
    "note": "4-arm junction",
@@ -751,7 +795,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_09",
+   "id": "junction:n298:e406",
+   "ord": "junction_09",
    "cat": "junction",
    "district": "seaport",
    "note": "4-arm junction",
@@ -768,7 +813,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_10",
+   "id": "junction:n314:e427",
+   "ord": "junction_10",
    "cat": "junction",
    "district": "southEnd",
    "note": "4-arm junction",
@@ -785,7 +831,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_11",
+   "id": "junction:n50:e44",
+   "ord": "junction_11",
    "cat": "junction",
    "district": "backBay",
    "note": "4-arm junction",
@@ -802,7 +849,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_12",
+   "id": "junction:n380:e519",
+   "ord": "junction_12",
    "cat": "junction",
    "district": "cambridge",
    "note": "4-arm junction",
@@ -819,7 +867,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_13",
+   "id": "junction:n363:e502",
+   "ord": "junction_13",
    "cat": "junction",
    "district": "charlestown",
    "note": "4-arm junction",
@@ -836,7 +885,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_14",
+   "id": "junction:n40:e35",
+   "ord": "junction_14",
    "cat": "junction",
    "district": "fenway",
    "note": "4-arm junction",
@@ -853,7 +903,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_15",
+   "id": "junction:n139:e204",
+   "ord": "junction_15",
    "cat": "junction",
    "district": "none",
    "note": "4-arm junction",
@@ -870,7 +921,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_16",
+   "id": "junction:n185:e256",
+   "ord": "junction_16",
    "cat": "junction",
    "district": "northEnd",
    "note": "4-arm junction",
@@ -887,7 +939,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_17",
+   "id": "junction:n250:e333",
+   "ord": "junction_17",
    "cat": "junction",
    "district": "seaport",
    "note": "4-arm junction",
@@ -904,7 +957,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_18",
+   "id": "junction:n124:e147",
+   "ord": "junction_18",
    "cat": "junction",
    "district": "southEnd",
    "note": "4-arm junction",
@@ -921,7 +975,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_19",
+   "id": "junction:n333:e456",
+   "ord": "junction_19",
    "cat": "junction",
    "district": "cambridge",
    "note": "4-arm junction",
@@ -938,7 +993,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_20",
+   "id": "junction:n337:e475",
+   "ord": "junction_20",
    "cat": "junction",
    "district": "fenway",
    "note": "3-arm junction",
@@ -955,7 +1011,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "junction_21",
+   "id": "junction:n223:e305",
+   "ord": "junction_21",
    "cat": "junction",
    "district": "financial",
    "note": "4-arm junction",
@@ -972,7 +1029,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_00",
+   "id": "park:back-bay-fens:spine#0",
+   "ord": "park_00",
    "cat": "park",
    "district": "park",
    "note": "Back Bay Fens (spine)",
@@ -989,7 +1047,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_01",
+   "id": "park:boston-common:loop#0",
+   "ord": "park_01",
    "cat": "park",
    "district": "park",
    "note": "Boston Common (loop)",
@@ -1006,7 +1065,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_02",
+   "id": "park:bunker-hill-monument:loop#0",
+   "ord": "park_02",
    "cat": "park",
    "district": "park",
    "note": "Bunker Hill Monument (loop)",
@@ -1023,7 +1083,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_03",
+   "id": "park:charles-river-esplanade:shore#0",
+   "ord": "park_03",
    "cat": "park",
    "district": "park",
    "note": "Charles River Esplanade (shore)",
@@ -1040,7 +1101,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_04",
+   "id": "park:christopher-columbus-park:loop#0",
+   "ord": "park_04",
    "cat": "park",
    "district": "park",
    "note": "Christopher Columbus Park (loop)",
@@ -1057,7 +1119,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_05",
+   "id": "park:commonwealth-avenue-mall-1:spine#0",
+   "ord": "park_05",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 1 (spine)",
@@ -1074,7 +1137,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_06",
+   "id": "park:commonwealth-avenue-mall-2:spine#0",
+   "ord": "park_06",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 2 (spine)",
@@ -1091,7 +1155,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_07",
+   "id": "park:commonwealth-avenue-mall-3:spine#0",
+   "ord": "park_07",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 3 (spine)",
@@ -1108,7 +1173,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_08",
+   "id": "park:commonwealth-avenue-mall-4:spine#0",
+   "ord": "park_08",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 4 (spine)",
@@ -1125,7 +1191,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_09",
+   "id": "park:commonwealth-avenue-mall-5:spine#0",
+   "ord": "park_09",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 5 (spine)",
@@ -1142,7 +1209,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_10",
+   "id": "park:commonwealth-avenue-mall-6:spine#0",
+   "ord": "park_10",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 6 (spine)",
@@ -1159,7 +1227,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_11",
+   "id": "park:commonwealth-avenue-mall-7:spine#0",
+   "ord": "park_11",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 7 (spine)",
@@ -1176,7 +1245,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_12",
+   "id": "park:commonwealth-avenue-mall-8:spine#0",
+   "ord": "park_12",
    "cat": "park",
    "district": "park",
    "note": "Commonwealth Avenue Mall 8 (spine)",
@@ -1193,7 +1263,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "park_13",
+   "id": "park:public-garden:shore#0",
+   "ord": "park_13",
    "cat": "park",
    "district": "water",
    "note": "Public Garden (shore)",
@@ -1210,7 +1281,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "water_00",
+   "id": "water:charles-river-basin:v11",
+   "ord": "water_00",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1227,7 +1299,8 @@
    "aimEye": 0.53
   },
   {
-   "id": "water_01",
+   "id": "water:charles-river-basin:v26",
+   "ord": "water_01",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1244,7 +1317,8 @@
    "aimEye": 0.87
   },
   {
-   "id": "water_02",
+   "id": "water:charles-river-basin:v18",
+   "ord": "water_02",
    "cat": "water",
    "district": "cambridge",
    "note": "Charles River Basin shore, along the bank",
@@ -1261,7 +1335,8 @@
    "aimEye": 0.89
   },
   {
-   "id": "water_03",
+   "id": "water:charles-river-basin:v13",
+   "ord": "water_03",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1278,7 +1353,8 @@
    "aimEye": 0.83
   },
   {
-   "id": "water_04",
+   "id": "water:charles-river-basin:v15",
+   "ord": "water_04",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1295,7 +1371,8 @@
    "aimEye": 1.09
   },
   {
-   "id": "water_05",
+   "id": "water:charles-river-basin:v22",
+   "ord": "water_05",
    "cat": "water",
    "district": "water",
    "note": "Charles River Basin shore, along the bank",
@@ -1312,7 +1389,8 @@
    "aimEye": 0.78
   },
   {
-   "id": "water_06",
+   "id": "water:charles-river-basin:v2",
+   "ord": "water_06",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1329,7 +1407,8 @@
    "aimEye": 0.77
   },
   {
-   "id": "water_07",
+   "id": "water:charles-river-basin:v9",
+   "ord": "water_07",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1343,10 +1422,11 @@
     -702.9,
     -538.2
    ],
-   "aimEye": 1.01
+   "aimEye": 0.76
   },
   {
-   "id": "water_08",
+   "id": "water:charles-river-basin:v23",
+   "ord": "water_08",
    "cat": "water",
    "district": "none",
    "note": "Charles River Basin shore, along the bank",
@@ -1363,7 +1443,8 @@
    "aimEye": 0.59
   },
   {
-   "id": "water_09",
+   "id": "water:charles-river-basin:v7",
+   "ord": "water_09",
    "cat": "water",
    "district": "water",
    "note": "Charles River Basin shore, along the bank",
@@ -1380,7 +1461,8 @@
    "aimEye": 0.8
   },
   {
-   "id": "traffic_00",
+   "id": "traffic:e35@0.50:L",
+   "ord": "traffic_00",
    "cat": "traffic",
    "district": "fenway",
    "note": "4-lane arterial",
@@ -1397,7 +1479,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_01",
+   "id": "traffic:e46@0.50:L",
+   "ord": "traffic_01",
    "cat": "traffic",
    "district": "park",
    "note": "4-lane arterial",
@@ -1414,7 +1497,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_02",
+   "id": "traffic:e47@0.50:L",
+   "ord": "traffic_02",
    "cat": "traffic",
    "district": "park",
    "note": "4-lane arterial",
@@ -1431,7 +1515,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_03",
+   "id": "traffic:e49@0.50:L",
+   "ord": "traffic_03",
    "cat": "traffic",
    "district": "backBay",
    "note": "4-lane arterial",
@@ -1448,7 +1533,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_04",
+   "id": "traffic:e50@0.50:L",
+   "ord": "traffic_04",
    "cat": "traffic",
    "district": "backBay",
    "note": "4-lane arterial",
@@ -1465,7 +1551,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_05",
+   "id": "traffic:e52@0.50:L",
+   "ord": "traffic_05",
    "cat": "traffic",
    "district": "backBay",
    "note": "4-lane arterial",
@@ -1482,7 +1569,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_06",
+   "id": "traffic:e54@0.50:L",
+   "ord": "traffic_06",
    "cat": "traffic",
    "district": "backBay",
    "note": "4-lane arterial",
@@ -1499,7 +1587,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_07",
+   "id": "traffic:e56@0.50:L",
+   "ord": "traffic_07",
    "cat": "traffic",
    "district": "fenway",
    "note": "4-lane arterial",
@@ -1516,7 +1605,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_08",
+   "id": "traffic:e58@0.50:L",
+   "ord": "traffic_08",
    "cat": "traffic",
    "district": "fenway",
    "note": "4-lane arterial",
@@ -1533,7 +1623,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_09",
+   "id": "traffic:e59@0.50:L",
+   "ord": "traffic_09",
    "cat": "traffic",
    "district": "fenway",
    "note": "4-lane arterial",
@@ -1550,7 +1641,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_10",
+   "id": "traffic:e247@0.50:L",
+   "ord": "traffic_10",
    "cat": "traffic",
    "district": "beaconHill",
    "note": "4-lane arterial",
@@ -1567,7 +1659,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "traffic_11",
+   "id": "traffic:e299@0.50:L",
+   "ord": "traffic_11",
    "cat": "traffic",
    "district": "park",
    "note": "4-lane arterial",
@@ -1584,7 +1677,8 @@
    "aimEye": 1.2
   },
   {
-   "id": "local_00",
+   "id": "local:e19@0.56:R",
+   "ord": "local_00",
    "cat": "local",
    "district": "backBay",
    "note": "residential street",
@@ -1598,10 +1692,11 @@
     -1810.1,
     621.5
    ],
-   "aimEye": 1.42
+   "aimEye": 1.4
   },
   {
-   "id": "local_01",
+   "id": "local:e507@0.56:L",
+   "ord": "local_01",
    "cat": "local",
    "district": "charlestown",
    "note": "residential street",
@@ -1618,7 +1713,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_02",
+   "id": "local:e120@0.45:R",
+   "ord": "local_02",
    "cat": "local",
    "district": "southEnd",
    "note": "residential street",
@@ -1635,7 +1731,8 @@
    "aimEye": 1.39
   },
   {
-   "id": "local_03",
+   "id": "local:e201@0.61:L",
+   "ord": "local_03",
    "cat": "local",
    "district": "backBay",
    "note": "residential street",
@@ -1652,7 +1749,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_04",
+   "id": "local:e246@0.44:L",
+   "ord": "local_04",
    "cat": "local",
    "district": "beaconHill",
    "note": "residential street",
@@ -1669,7 +1767,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_05",
+   "id": "local:e508@0.36:R",
+   "ord": "local_05",
    "cat": "local",
    "district": "charlestown",
    "note": "residential street",
@@ -1686,7 +1785,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_06",
+   "id": "local:e432@0.45:L",
+   "ord": "local_06",
    "cat": "local",
    "district": "southEnd",
    "note": "residential street",
@@ -1703,7 +1803,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_07",
+   "id": "local:e17@0.62:L",
+   "ord": "local_07",
    "cat": "local",
    "district": "backBay",
    "note": "residential street",
@@ -1717,10 +1818,11 @@
     -1662.3,
     475
    ],
-   "aimEye": 1.41
+   "aimEye": 1.4
   },
   {
-   "id": "local_08",
+   "id": "local:e234@0.58:L",
+   "ord": "local_08",
    "cat": "local",
    "district": "beaconHill",
    "note": "residential street",
@@ -1737,7 +1839,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_09",
+   "id": "local:e503@0.55:L",
+   "ord": "local_09",
    "cat": "local",
    "district": "charlestown",
    "note": "residential street",
@@ -1754,7 +1857,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "local_10",
+   "id": "local:e279@0.63:L",
+   "ord": "local_10",
    "cat": "local",
    "district": "northEnd",
    "note": "residential street",
@@ -1771,7 +1875,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_11",
+   "id": "local:e430@0.53:L",
+   "ord": "local_11",
    "cat": "local",
    "district": "southEnd",
    "note": "residential street",
@@ -1788,7 +1893,8 @@
    "aimEye": 1.41
   },
   {
-   "id": "local_12",
+   "id": "local:e15@0.41:L",
+   "ord": "local_12",
    "cat": "local",
    "district": "backBay",
    "note": "residential street",
@@ -1805,7 +1911,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "local_13",
+   "id": "local:e214@0.61:L",
+   "ord": "local_13",
    "cat": "local",
    "district": "beaconHill",
    "note": "residential street",
@@ -1819,10 +1926,11 @@
     -263.3,
     -381
    ],
-   "aimEye": 1.33
+   "aimEye": 1.35
   },
   {
-   "id": "local_14",
+   "id": "local:e510@0.46:L",
+   "ord": "local_14",
    "cat": "local",
    "district": "charlestown",
    "note": "residential street",
@@ -1839,7 +1947,8 @@
    "aimEye": 1.4
   },
   {
-   "id": "special_00",
+   "id": "special:bridge:e402",
+   "ord": "special_00",
    "cat": "special",
    "district": "none",
    "note": "bridge: North Washington Street",
@@ -1856,7 +1965,8 @@
    "aimEye": 1.31
   },
   {
-   "id": "special_01",
+   "id": "special:bridge:e403",
+   "ord": "special_01",
    "cat": "special",
    "district": "park",
    "note": "bridge: North Washington Street",
@@ -1873,7 +1983,8 @@
    "aimEye": 1.46
   },
   {
-   "id": "special_02",
+   "id": "special:bridge:e456",
+   "ord": "special_02",
    "cat": "special",
    "district": "cambridge",
    "note": "bridge: Massachusetts Avenue",
@@ -1887,10 +1998,11 @@
     -2288.6,
     -495.8
    ],
-   "aimEye": 1.56
+   "aimEye": 1.49
   },
   {
-   "id": "special_03",
+   "id": "special:steep:e497",
+   "ord": "special_03",
    "cat": "special",
    "district": "charlestown",
    "note": "steep: 13 m of fall within 40 m",
@@ -1907,7 +2019,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "special_04",
+   "id": "special:curve:e417",
+   "ord": "special_04",
    "cat": "special",
    "district": "seaport",
    "note": "curve: 87 mrad/m bend",
@@ -1924,7 +2037,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "special_05",
+   "id": "special:curve:e389",
+   "ord": "special_05",
    "cat": "special",
    "district": "financial",
    "note": "curve: 53 mrad/m bend",
@@ -1941,7 +2055,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "special_06",
+   "id": "special:curve:e381",
+   "ord": "special_06",
    "cat": "special",
    "district": "none",
    "note": "curve: 52 mrad/m bend",
@@ -1958,7 +2073,8 @@
    "aimEye": 1.3
   },
   {
-   "id": "special_07",
+   "id": "special:tower:x393z-617",
+   "ord": "special_07",
    "cat": "special",
    "district": "financial",
    "note": "tower: 59 m setback tower",
@@ -1975,7 +2091,8 @@
    "aimEye": 32.45
   },
   {
-   "id": "skyline_00",
+   "id": "skyline:southEnd:h70:r0",
+   "ord": "skyline_00",
    "cat": "skyline",
    "district": "southEnd",
    "note": "southEnd built centroid, 70 m up",
@@ -1992,7 +2109,8 @@
    "aimEye": 22.42
   },
   {
-   "id": "skyline_01",
+   "id": "skyline:backBay:h105:r0",
+   "ord": "skyline_01",
    "cat": "skyline",
    "district": "backBay",
    "note": "backBay built centroid, 105 m up",
@@ -2009,7 +2127,8 @@
    "aimEye": 53
   },
   {
-   "id": "skyline_02",
+   "id": "skyline:beaconHill:h140:r0",
+   "ord": "skyline_02",
    "cat": "skyline",
    "district": "beaconHill",
    "note": "beaconHill built centroid, 140 m up",
@@ -2026,7 +2145,8 @@
    "aimEye": 26.17
   },
   {
-   "id": "skyline_03",
+   "id": "skyline:none:h70:r0",
+   "ord": "skyline_03",
    "cat": "skyline",
    "district": "none",
    "note": "none built centroid, 70 m up",
@@ -2043,7 +2163,8 @@
    "aimEye": 45.04
   },
   {
-   "id": "skyline_04",
+   "id": "skyline:northEnd:h105:r0",
+   "ord": "skyline_04",
    "cat": "skyline",
    "district": "northEnd",
    "note": "northEnd built centroid, 105 m up",
@@ -2060,7 +2181,8 @@
    "aimEye": 22.42
   },
   {
-   "id": "skyline_05",
+   "id": "skyline:charlestown:h140:r0",
+   "ord": "skyline_05",
    "cat": "skyline",
    "district": "charlestown",
    "note": "charlestown built centroid, 140 m up",
@@ -2077,7 +2199,8 @@
    "aimEye": 53
   },
   {
-   "id": "skyline_06",
+   "id": "skyline:fenway:h70:r0",
+   "ord": "skyline_06",
    "cat": "skyline",
    "district": "fenway",
    "note": "fenway built centroid, 70 m up",
@@ -2094,7 +2217,8 @@
    "aimEye": 26.17
   },
   {
-   "id": "skyline_07",
+   "id": "skyline:financial:h105:r0",
+   "ord": "skyline_07",
    "cat": "skyline",
    "district": "financial",
    "note": "financial built centroid, 105 m up",
@@ -2111,7 +2235,8 @@
    "aimEye": 45.04
   },
   {
-   "id": "skyline_08",
+   "id": "skyline:cambridge:h140:r0",
+   "ord": "skyline_08",
    "cat": "skyline",
    "district": "cambridge",
    "note": "cambridge built centroid, 140 m up",
@@ -2128,7 +2253,8 @@
    "aimEye": 22.42
   },
   {
-   "id": "skyline_09",
+   "id": "skyline:seaport:h70:r0",
+   "ord": "skyline_09",
    "cat": "skyline",
    "district": "seaport",
    "note": "seaport built centroid, 70 m up",
