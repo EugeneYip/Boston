@@ -1420,3 +1420,39 @@ drumlin. The detector now compares against the previous gradient (`groundKink`).
 766/761 and triangles 2,480k/2,620k on alternating frames. That is the
 documented round-robin refresh in `CascadedShadows` (period 2), it is ±5 draws,
 and it is not a defect. Any dynamic amplitude below that floor is noise.
+
+### Dynamic sweep result at realistic speed (2026-09-06)
+
+Running the same 23 routes at walking/driving speed instead of the flat cadence:
+
+    events            310 -> 17        drawJump      209 -> 0
+    unsettled mean   ~24% -> 0.9%      worst route  83.8% -> 8.3%
+    instJump/meshDelta  1 -> 0         errors, glFaults  0
+
+What survives is `lodJump` 11 (all `veg_shrub`, chunk-granular LOD on a blob
+that reduces 52 -> 18 triangles, so a genuine ladder), `groundKink` 3 (all
+Bunker Hill Street, 1.5-3.5 m slope changes on the steepest road in the world)
+and `roadShelf` 3. Nothing there is worth a source change.
+
+The lesson is the number 310 -> 17: on a moving instrument, **almost everything
+the first run reports is the instrument**. Fix the sampler before believing it.
+
+## Quality preset contract — checked (2026-09-06)
+
+Three presets, three view contexts, instances counted from the systems' own data:
+
+    preset  drawDist  cascades  ssao   street   junction   park    street kTris
+    high        2200         3   on     5,556      4,719   6,694          2,374
+    medium      1400         3   on     3,166      2,718   3,822          1,471
+    low          900         2  off     2,020      1,674   2,371            931
+
+Instance ratios against high are **0.57 / 0.58 / 0.57 at medium** and
+**0.36 / 0.35 / 0.35 at low** — consistent across contexts, monotonic, and
+single-application (a squared density would show ~0.32 at medium). No object
+class disappears: the park still carries 2,371 instances at low and the junction
+1,674. `errors []`, `glFaults []` and `validate().ok` at every preset.
+
+Graceful degradation holds. Do not spend time making low look like high.
+
+One nit, not worth a commit: `setQuality('potato')` silently keeps the previous
+preset instead of warning.

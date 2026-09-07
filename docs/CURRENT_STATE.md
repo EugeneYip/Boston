@@ -1641,3 +1641,67 @@ skyline obstruction and no repetition worth acting on. Not extended.
 5. Mid-distance LOD 2 shells read flatter than the LOD 1 tier around them.
 6. Park walk width hierarchy and hedge density floor — tuning, no measured
    defect behind either.
+
+## Dynamic traversal sweep — 2026-09-06 (`b45d2e7` … )
+
+The static instrument was saturated: 126 settled views over four conditions
+found nothing new. Movement is the other axis, and it found one real defect and
+a great deal about the instrument.
+
+| commit | change | effect |
+|---|---|---|
+| `b45d2e7` | views get world-derived ids | a per-view baseline becomes possible |
+| `f257aa4` | hedge far LOD is a real simplification | -383,212 triangles a frame |
+| `b35db48` | the traversal sweep, and its speed | 23 routes, 3,946 samples |
+
+### The one real defect
+
+`veg_hedge` had two LOD levels that were both `buildHedge(seed)` with only the
+SEED differing — 70 triangles either side of the 85 m switch, against
+`veg_shrub`'s honest 52 -> 18 and `veg_shrub2`'s 60 -> 20. The far tier bought a
+second geometry, a second mesh and a second draw call, saved nothing, and
+changed the silhouette at the boundary because the seed moved. 10,335 instances.
+
+Fixed by giving `buildHedge` a card count and sharing the seed. Same camera,
+same instance split (330 near / 618 far): frame triangles 4,793,902 ->
+4,410,690, draws 702 -> 696, the two frames indistinguishable.
+
+**Correction to `f257aa4`'s message:** it says `veg_hedge` was the loudest
+`lodJump` source. It was not — every `lodJump` event was `veg_shrub`, which is
+not in the watch list by name. The hedge was found by reading the LOD ladder of
+every vegetation batch, which the sweep prompted but did not itself report.
+
+### Everything else was the instrument
+
+    events            310 -> 17        drawJump      209 -> 0
+    unsettled mean   ~24% -> 0.9%      worst route  83.8% -> 8.3%
+
+Three sampler faults, each caught by disbelieving the first result:
+
+- **Speed.** 2 frames per 6 m sample is 3 m/frame — 648 km/h. `Buildings` is
+  behind for 82.5% of Harrison Avenue at that velocity and 10% at 50 km/h.
+- **Transients.** Stepping two extra frames at the same cameras made every
+  `drawJump` vanish; they were chunk-rebuild frames.
+- **Slope vs step.** Eleven ground "steps" were Bunker Hill Street descending
+  16 m over 24 m.
+
+### Preset contract — clean
+
+Instances scale to 0.57 of high at medium and 0.35 at low, consistently across
+street, junction and park; triangles 2.37M -> 1.47M -> 0.93M; SSAO off and
+cascades 3 -> 2 at low; no class disappears; `errors []`, `glFaults []`,
+`validate().ok` at every preset.
+
+### Remaining SAFE priorities
+
+1. Widen the dynamic route set, or add night/rain conditions to it. 23 routes at
+   realistic speed produced 17 events; more coverage is the only way to know
+   whether that is a clean world or a small sample.
+2. `veg_shrub` LOD is chunk-granular, so a 96 m block swaps together. A real
+   ladder, but `splitNear` (already used by parked cars) would make it
+   per-instance if it ever reads as a pop.
+3. `payStation` shares the `meter` budget key, so ~9% of metered faces get no
+   kerbside equipment.
+4. Vehicle bumper rounding; bus glazing bay rhythm.
+5. `_clipParcel`'s one sliver footprint per ~3,350 parcels.
+6. `setQuality` accepts an unknown preset name silently.
