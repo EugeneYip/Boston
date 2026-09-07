@@ -68,6 +68,41 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern hero district — factual audit done, no geometry built (2026-09-07)
+
+`docs/neu/` is the evidence package for the owner's Northeastern hero district;
+`tools/neu-audit/` regenerates it. **No `src/` file changed** — this was a
+source-of-truth mission, and gate item 1 of the six-point hero-district gate in
+`AI_HANDOFF.md` §0b is now satisfied.
+
+What it establishes, all machine-measured:
+
+- **The projection was never the problem.** `src/core/Geo.js` is exact by
+  construction and world content stores real lat/lon. The hand-traced *content*
+  sits a **24.7 m median** from OSM footprint centroids across 11 city-wide
+  anchors (p90 51.4 m definition-clean), with only a 15.4 m mean offset — so no
+  rotation, scale or datum fault. External GIS geometry imports safely but lands
+  25–50 m off the existing streets, which is why the district must **replace**
+  the geography in its envelope rather than graft onto it.
+- **Huntington Avenue is a 9-vertex polyline a median 107.6 m from its real
+  centreline**, peaking at 152 m *at the campus*, and it does not enter the campus
+  bounding box at all.
+- **The campus is empty because the roads are.** Parcels come from road frontage,
+  so with only 10.9% of campus within 40 m of a game road (median 182 m), the
+  engine builds 118 generic buildings where 107 real ones stand.
+- **`districtAt` is null over most of campus**, so `buildPlots` falls back to
+  `Z.southEnd` and a university generates as South End brownstones. Cheapest fix
+  in the district, highest leverage.
+- **No authoritative building height exists anywhere.** The university's own layer
+  publishes `Height_Relative` and `Levels_Above_Ground` as `0` for all 104 Boston
+  rows; OSM tags 34 of 1,737. Storeys implied from gross area are an upper bound,
+  marked confidence D and never promoted.
+
+**Terrain here is CLOSED and this audit is the reason.** USGS 3DEP puts campus
+relief at ~2.6 m against the game's 1.7 m — the campus genuinely is flat. Do not
+open terrain work because the area looks featureless; it looks featureless because
+nothing is built on it.
+
 ## Building collision — corrected 2026-09-05 (`4f85110`, `37f48bc`)
 
 **Buildings were never non-solid, and are now solid in the right place.** The claim

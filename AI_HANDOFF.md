@@ -91,6 +91,38 @@ transit context, and the surrounding urban fabric.
 5. eye-level QA passes;
 6. vehicle and pedestrian access passes.
 
+**Gate item 1 is done.** `docs/neu/` holds the factual source package — official
+Northeastern footprints, MBTA transit, OSM connective geometry, a measured gap
+matrix and four evidenced arrival candidates. Read `docs/neu/README.md` before
+proposing any Northeastern work; regenerate with `node tools/neu-audit/fetch.mjs
+&& node tools/neu-audit/build.mjs`. Three findings change what the modelling
+waves should do, so they are repeated here rather than left to be rediscovered:
+
+- **The campus is empty because the roads are.** Parcels are cut from road
+  frontage, so ground far from a street produces no city. Only 10.9% of the real
+  campus lies within 40 m of any game road. Fix the streets and the fabric
+  follows; model buildings first and they will stand in a void.
+- **Huntington Avenue is a 9-vertex polyline a median 107.6 m from its real
+  centreline, worst — 152 m — exactly at the campus.** It does not enter the
+  campus bounding box at all. Re-tracing it is cheap and blocks everything else.
+- **`districtAt` returns null over most of the campus**, and `buildPlots` falls
+  back to `Z.southEnd`, so the university currently generates as South End
+  brownstones. A data fix with no geometry attached, and the highest leverage
+  per unit of work in the whole district.
+
+Two things the package deliberately does **not** settle. There is **no
+authoritative building height anywhere** — the university's own layer publishes
+`Height_Relative` and `Levels_Above_Ground` as `0` for all 104 Boston rows, and
+storeys implied from gross area are an upper bound marked confidence D. And
+there is **no single principal entrance**: the university calls Krentzman
+Quadrangle one of its primary gateways, and the busiest real arrival is Ruggles,
+a transit interchange. Both are owner decisions, not gaps to be filled in by
+whoever picks the work up.
+
+**Terrain here is CLOSED, and the audit is why.** USGS 3DEP puts campus relief at
+~2.6 m against the game's 1.7 m. The campus really is flat; do not open terrain
+work on the strength of it looking featureless.
+
 **Only after that gate** does the canonical player spawn move to the principal
 Northeastern entrance, and the orange starting SUV move with it to a canonical
 position beside it. Until then the spawn stays where it is, on the Tremont
