@@ -220,22 +220,24 @@ export default class Terrain {
       const REACH = rad > 1400 ? FAR : NEAR;
       const zA = e.halfRoad + 0.25 + REACH;               // never above the gutter
       const zB = zA + REACH + (e.walk > 0.3 ? e.walk : 0); // never above the kerb top
-      // Does this edge stand ABOVE the ground beside it? Only then is the wide
-      // box worth scanning, which keeps the flat 95% of Boston at its old cost.
-      let fill = 0;
-      {
-        const m = e.pts[(e.pts.length / 2) | 0];
-        const p0 = e.pts[0], p1 = e.pts[e.pts.length - 1];
-        const L = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
-        const nx = -(p1.z - p0.z) / L, nz = (p1.x - p0.x) / L;
-        for (const side of [-1, 1]) {
-          const d = zB + 6;
-          fill = Math.max(fill, m.y - this.groundHeight(m.x + nx * d * side, m.z + nz * d * side));
-        }
-      }
-      const outer = zB + (fill > 1 ? Math.min(FILL_REACH, fill * BATTER + BLEND) : BLEND);
       for (let i = 0; i < e.pts.length - 1; i++) {
         const a = e.pts[i], b = e.pts[i + 1];
+        // Does THIS SEGMENT stand above the ground beside it? Asking once per
+        // edge from its midpoint underestimates a long edge that is at grade in
+        // the middle and on fill at its ends: Rutherford Avenue kept 44 residual
+        // steps of about 4 m that way. Only segments that need it pay for the
+        // wide box, so the flat 95% of Boston keeps its old cost.
+        let fill = 0;
+        {
+          const mx2 = (a.x + b.x) / 2, mz2 = (a.z + b.z) / 2, my2 = (a.y + b.y) / 2;
+          const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+          const nx = -(b.z - a.z) / L, nz = (b.x - a.x) / L;
+          for (const side of [-1, 1]) {
+            const d = zB + 6;
+            fill = Math.max(fill, my2 - this.groundHeight(mx2 + nx * d * side, mz2 + nz * d * side));
+          }
+        }
+        const outer = zB + (fill > 1 ? Math.min(FILL_REACH, fill * BATTER + BLEND) : BLEND);
         const i0 = Math.max(0, Math.floor((Math.min(a.x, b.x) - outer - MINX) / CELL));
         const i1 = Math.min(NX - 1, Math.ceil((Math.max(a.x, b.x) + outer - MINX) / CELL));
         const j0 = Math.max(0, Math.floor((Math.min(a.z, b.z) - outer - MINZ) / CELL));
