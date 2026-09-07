@@ -1574,3 +1574,78 @@ scheduled during a route and a working run is indistinguishable from a hung
 page. `runRoute` yields every four samples. Results also POST to the sink **per
 route**, never per pass: two passes were lost whole this session for posting
 only at the end.
+
+## A sweep is only comparable at the viewport it was captured at (2026-09-07)
+
+`baseline.json` is schema 4 and records `viewport: { buffer, aspect }`. Pixel
+fields — `mean`, `detail`, `flat`, `dark`, `blown`, `tiles` — are comparable
+only at that aspect. Two independent failures follow from a collapsed canvas and
+neither raises an error:
+
+- **`fov` is VERTICAL.** The horizontal field is a function of aspect, so at
+  8.4:1 a street view frames a different scene than at 16:9. One view measured
+  0.233, 0.368 and 0.483 across three runs at three pane sizes — three
+  pictures, not three measurements.
+- **Convergence becomes impossible.** `CaptureHarness` settles by watching six
+  band means with a threshold of 0.05 on a **0..255** scale, relying on the band
+  average to cancel film grain (~2.3 luma/pixel). The margin scales with the
+  sample count: 24,750 samples per band at 1920x1080 gives a frame-to-frame
+  sigma of 0.021 and 2.4x headroom; 325 samples at 453x54 gives 0.180, i.e. 3.6x
+  the threshold, so grain alone runs the loop to its 180-frame cap on every
+  shot.
+
+`runSweep` calls `viewportCheck()` once and warns with the numbers; every row
+carries `buffer`, `aspect` and `viewportOk`. **Before believing any luminance
+delta, check the aspect on both sides and `converged` on both sides.** A
+`converged: false` row with `streamDone: true` means the viewport, not
+streaming — that distinction is what corrected a whole pass's misdiagnosis.
+
+## Abandoned player vehicles (2026-09-07)
+
+`Traffic.takeOver` is the only caller of `VehicleFactory.spawn`, so every entry
+in `factory.list` is a car the player acquired.
+
+- **A car the player steps out of must be parked, not merely released.**
+  `Vehicle.setInput` PERSISTS and nothing calls `_readInput` for a car that is
+  no longer `playerVehicle`, so it keeps whatever the player last held — exit at
+  full throttle and it drives itself across the city forever with the steering
+  locked. `VehicleFactory._onExit` calls `Vehicle.park()`.
+- **Neutral, not a brake input.** The clutch deliberately slips near idle so a
+  car creeps away from rest instead of stalling; that is correct while someone
+  is driving and wrong the moment they get out. Raising linear damping alone did
+  nothing — measured flat at 2.3 m/s over 720 frames — because the drivetrain
+  replaced the energy every step. `park()` engages gear 0 and disables the auto
+  gearbox. A handbrake input would work too and would leave `brakeLightOn` true
+  on an empty car forever.
+- **`_onEnter` must `unpark()`** and restore the authored damping, recorded per
+  vehicle at spawn as `_dampBase` / `_angDampBase`.
+- **The reaper's invariants are absolute and the cap is not.** Never the car the
+  player is driving, never one moving faster than `REAP_SPEED`, never one inside
+  the view frustum, never one closer than `REAP_NEAR`. Soft cap
+  `ABANDONED_KEEP` beyond `REAP_RADIUS`; hard ceiling `ABANDONED_MAX` relaxes
+  only the distance rule. A strict numeric cap is impossible by construction: if
+  every car is near and on screen, none may be taken.
+- **Do not turn Traffic into physics cars.** Traffic is kinematic because a
+  city's worth of Rapier raycast vehicles costs ~20 ms a frame.
+
+## The enter prompt and the reach test are one call (2026-09-07)
+
+`Player.enterCandidate(ctx)` returns `{kind:'vehicle'|'traffic', obj}` or null,
+and both `_tryEnterVehicle` and the HUD prompt call it. A prompt that appears
+when `F` does nothing, or fails to appear when it would work, is worse than no
+prompt — so the range constants live in exactly one place. `kind` is what lets
+the label distinguish commandeering an AI car from entering a physical one.
+
+## Vehicle physics: known high-centring trap (2026-09-07)
+
+**Open, and an owner decision.** The player's car can come to rest with its
+driven axle in the air and the other planted, after which no input recovers it:
+measured at 6279 rpm and 0.00 m/s on full throttle, 0.04 m on reverse with gear
+-1 engaged, front wheels `contact: false` at full suspension extension spinning
+at 46.8 rad/s while both rear wheels were planted at omega 0, on ground normals
+of 1.0 and with no collider within 3.2 m but its own and the world statics.
+Three independent drives reached it within 200-260 m.
+
+Any fix touches the tyre model or world collision, both closed by standing
+policy. Do not attempt one without an explicit decision. The consequence is
+bounded: `F` still exits, and the stranded car parks, sleeps and is reclaimed.

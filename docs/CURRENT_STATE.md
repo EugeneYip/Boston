@@ -1924,3 +1924,210 @@ data worth nothing. B2 remains closed.
    accepts an unknown material name almost as silently, warning once and
    returning a generic `_fallback`, which is how the first attempt at the
    `trimDark` fix put every vehicle's dark trim on the fallback material.
+
+## Owed regression + vehicle acquisition audit — 2026-09-07 (`7126b5c` … )
+
+Baseline `9d18d7b`.
+
+### The owed static regression passes, and the previous diagnosis was wrong
+
+126 views re-swept dry at tod 11: **123/126 converged**, settled median 18
+against the baseline's 15, **zero count or geometry violations** — camDraws,
+camTris, nProps, nVeg and nBuildings all inside tolerance on every view — and a
+mean luminance bias of **-0.0007**. Twelve pixel deltas remained, all
+single-field.
+
+Those twelve are benign dynamic, by repeat capture rather than assertion:
+`junction:n9:e8` read 0.4492 / 0.4497 / 0.4487 against a baseline of 0.4498 and
+then 0.4124 with its top-right tile dropping 68 -> 36; `street:e8` oscillated
+0.392 / 0.363 / 0.376 / 0.395 with that tile flipping 80 / 59 / 62 / 80, the
+baseline inside the range. Moving occluders in one tile, with actors live.
+
+So trimDark adoption, the six cloned ground/park wetness variants and releasing
+weather from `holdActors` introduce **no static regression**.
+
+**The 217 violations of the previous pass were the browser pane, not the code.**
+It had collapsed to 302x36 CSS pixels: drawing buffer 453x54, camera aspect
+**8.389**. Two independent failures follow and neither raises an error.
+
+`fov` is VERTICAL, so the horizontal field is a function of aspect — at 8.4:1 a
+street view frames a different scene than at 16:9, which is why one view read
+0.233, 0.368 and 0.483 across three runs. Three different pictures.
+
+And convergence becomes arithmetically impossible. The settle loop watches six
+band means with a threshold of 0.05 on a 0..255 scale, relying on the band
+average to cancel film grain at ~2.3 luma/pixel: 24,750 samples per band at
+1920x1080 gives a frame-to-frame sigma of 0.021 and 2.4x of headroom, while 325
+samples at 453x54 gives 0.180 — 3.6x the threshold. Grain alone runs the loop to
+its cap every time, which is what 8/8 views did.
+
+The previous pass blamed the wall-clock build budget in `Buildings._drain` under
+memory pressure. The field added at the end of that pass disproves it: every
+unconverged row also reported `streamDone: true`. Streaming had finished, and
+held at one view the frame was stable to 0.001 with the adapted exposure pinned
+at -4.000.
+
+`viewportCheck()` now runs once per sweep and warns with the numbers; every row
+carries buffer, aspect and `viewportOk`; `baseline.json` is schema 4 recording
+the viewport it was captured at.
+
+### Vehicle acquisition works, and is now discoverable
+
+`Player._tryEnterVehicle` -> `Traffic.nearestCar` -> `Traffic.takeOver` ->
+`VehicleFactory.spawn` was audited end to end in the running game.
+
+**Takeover continuity is exact.** Five of six trials across stopped, slow and
+normal-speed cars and across sedan, SUV, van and truck: position delta
+**0.000 m**, heading delta **0.00 deg**, type and colour matched, the kinematic
+car removed as the physical one appears. Momentum carries — `linvel` 12.00
+immediately for a car doing 12.09, clamped by `takeOver`'s 12 m/s cap, with
+`v.speed` catching up one frame later.
+
+The sixth trial got a different car 4.0 m away: `nearestCar` is nearest by
+distance and ignores facing, so with two cars close together the player can get
+the one he is not looking at. Recorded, not fixed.
+
+**Driving works.** Real `KeyW` through the normal routing drives the car
+(0 -> 4.27 m/s), and `setPlayerVehicle` is wired through the bus at
+`VehicleFactory._onEnter` — an earlier grep that excluded that file suggested
+otherwise and was wrong. Road-following runs with real keyboard input reached
+54 km/h and stayed on the carriageway (roadDist 0.1-11 m, zero samples beyond
+16 m), across park, backBay and financial, with `errors []`, `glFaults []`,
+`validate().ok` and a chase camera throughout.
+
+**Exit is safe.** 28 lane-centre spots across arterial, street, alley and
+highway: no building intrusion, worst height drop 0.61 m, exit always 1.75 m
+from the car. Ten bridged edges: **10/10 stayed on the deck**, drop 0.56-0.60 m,
+so `surfaceHeight(x, z, carY)` does its job and nobody falls to the street
+below. Eight alleys hard against the left kerb: 8/8 clear.
+
+Twelve kerb-side street exits found one — Marlborough Street edge 16 — where
+`unstick` reports the player inside a building footprint and would move him
+10 m. Measured in gameplay rather than by the oracle: he is grounded, is not
+pushed by the solver, and walks away at 3.16 m in 1.5 s against an expected 5.1.
+Back Bay brownstone footprints include rear yards, so the oracle overstates it.
+Impeded, not blocked, and no exit-position search was added for it.
+
+**Discoverability, measured.** From a standing start on 9 pavements the nearest
+AI car was a median 61.9 m away, but standing still for six seconds brought one
+to a median closest approach of **6.0 m**, and 5 of 9 spots put a car inside the
+6.2 m reach within 3 seconds. Acquisition on any through road takes seconds, so
+no dedicated spawned car is warranted. Quiet back streets need a walk to a
+bigger road.
+
+The HUD had no prompt of any kind, so the mechanic was undiscoverable. There is
+now one restrained line driven by `Player.enterCandidate()` — the same call `F`
+makes, so it cannot promise what the key will not deliver.
+
+### Abandoned cars: three bugs behind one symptom
+
+`Traffic.takeOver` is the only thing that ever spawns a physical vehicle and
+nothing ever removed one. Twelve consecutive thefts: `list` +1.00 each, rigid
+bodies +1.00, LightManager sources +4.33, never a despawn. `despawn()` was
+already complete — it had no caller.
+
+A reaper alone reclaimed almost nothing: 24 thefts still left 21 vehicles.
+Instrumenting the reject reasons said all 32 candidates were "still moving", and
+they were: a median 2.7 km behind the player, every one rolling at 2-5 m/s with
+`isSleeping()` false, level and on the ground, indefinitely.
+
+Two causes. `setInput` PERSISTS and nothing calls `_readInput` for a car that is
+no longer `playerVehicle`, so it keeps whatever the player last held — step out
+at full throttle and it drives itself across the city with the steering locked.
+And neutralising the input is not enough: the clutch deliberately slips near
+idle so a car creeps away from rest instead of stalling, which is right while
+someone is driving and wrong the moment they get out. Linear damping of 1.4 did
+nothing, measured flat at 2.3 m/s across 720 frames, because the drivetrain
+replaced the energy every step.
+
+`Vehicle.park()` — neutral, no input, no auto upshift — is what actually stops
+it, without the brake lamps a handbrake input would leave burning. Measured:
+abandoned at 12.05 m/s with the throttle held, it rolls 3.25 -> 0.84 -> 0.10 ->
+0.00 and the body is asleep by frame 240; re-entering restores gear 1 and it
+drives away at 5.16 m/s.
+
+With cars that come to rest the lifecycle works: soft cap 8, hard ceiling 14,
+and four invariants in both passes — never the player's car, never one moving,
+never one in the view frustum, never one closer than 45 m. Cross-map loop, 15
+thefts with the player driving between them: `list` plateaus at **8**, bodies at
+~65, light sources at 4040, 5 of the 8 asleep.
+
+Two tiers because the brief's own constraint makes a strict cap impossible:
+"never delete a vehicle currently visible, occupied or moving materially" means
+that if every car is near and on screen, none may go. Traffic spawns around the
+camera, so joyriding one district left 24 thefts' worth of cars all inside the
+protection radius.
+
+### OWNER DECISION — the player's car can high-centre and never move again
+
+Three independent road-following drives with real input all ended the same way
+within 200-260 m: the car stops and **no input recovers it**. Measured on the
+stuck car at (120.7, 348.6), 8.7 m from an arterial centreline:
+
+- full throttle: engine **6279 rpm**, speed **0.00**;
+- reverse: gear engages at **-1**, car moves **0.04 m**;
+- steer-out plus throttle: **0.04 m** total.
+
+Not wedged against anything. Only three colliders within 3.2 m — its own, and
+the two world static trimeshes. The wheels say why:
+
+| wheel | contact | suspension | omega |
+|---|---|---|---|
+| 0 front | **false** | 0.340 (full extension) | **46.8** |
+| 1 front | **false** | 0.340 (full extension) | **46.8** |
+| 2 rear | true | 0.202 | 0 |
+| 3 rear | true | 0.173 | 0 |
+
+The driven axle is in the air with the rear planted, so every newton-metre goes
+into wheel spin. Ground normals are 1.0 throughout — it is balanced on flat
+geometry, not a slope.
+
+This sits on the do-not-reopen list twice over — core tyre model and world
+collision — and a fix is a real design decision (a torque path to whichever axle
+has grip, or an anti-high-centre nudge), so it is **left for the owner**.
+
+The consequence is bounded rather than a soft lock: `F` still exits, and after
+this batch the stranded car parks, sleeps and is reclaimed by the reaper. The
+player loses a car, not the session.
+
+### Parked cars: promotion is feasible, the blockers are ownership
+
+Parked cars are `PropBatch` instances, ~17,282 of them, with one oriented cuboid
+each on a **single global fixed body** built in one 98.5 ms pass, filtered
+PROP -> CHARACTER only.
+
+The encouraging half: `PARKED_MIX` already maps each prop name to a
+VehicleFactory type and a colour index — `['carSedanA', 'sedan', 0]` — so type
+and colour identity are recoverable with no new plumbing, and instance
+transforms are readable from the batch's baked `mats`.
+
+The blockers, precisely:
+
+1. **No instance -> collider mapping.** `_buildCarColliders` keeps a count
+   (`this._carColliders = made`) and nothing else. Suppressing one car's
+   collision means retaining 17,282 handles or rebuilding the body — a ~100 ms
+   hitch per theft.
+2. **No per-instance suppression that survives `refresh()`.** `mats` is
+   authoritative and LOD re-selection rebuilds per-chunk instance lists from it
+   whenever the camera crosses a 96 m chunk, so hiding one instance needs a
+   suppression set consulted inside that hot loop — 99 batches, ~159k instances.
+3. **Geometry differs.** A parked car is merged prop geometry, not
+   `buildVehicleVisual` output, so a promoted car would change shape on entry —
+   the one thing takeover continuity is supposed to prevent.
+
+Both (1) and (2) are changes to PropBatch identity and instance ownership, which
+this brief explicitly does not authorise. **Not implemented.** Moving-traffic
+acquisition remains the V1 transport mechanic, which the measurements above say
+is adequate.
+
+### Remaining vehicle-gameplay issues
+
+1. **High-centring immobilises the player's car** (above). Owner decision.
+2. `nearestCar` ignores facing, so two cars close together can hand the player
+   the wrong one.
+3. Parked-car promotion, blocked on PropBatch instance ownership.
+4. Abandoned cars are reclaimed only when out of frustum and beyond 45 m, so a
+   player who never leaves one district can hold more than the ceiling. The
+   invariants are deliberately absolute; this is the price.
+5. `Player.ctx` is not the engine ctx and has no `input` on it, which is
+   confusing enough that it cost a debugging cycle here.
