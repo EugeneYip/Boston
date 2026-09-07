@@ -661,7 +661,21 @@ function buildClump(cell, r, squash, cards, seed, colHex, wind) {
 }
 
 /** A 1.2m run of clipped hedge. */
-function buildHedge(seed) {
+/**
+ * A clipped hedge block, `cards` foliage cards per face.
+ *
+ * The card count is the LOD knob, exactly as the leaf count is for
+ * `buildClump`. It had no knob at all: both hedge LODs were `buildHedge(seed)`
+ * with only the SEED differing, so the "simplified" level was a different
+ * random hedge of identical cost -- 70 triangles either side of the 85 m
+ * switch, with 618 instances sitting in the far tier in a single measured
+ * frame. It bought a second InstancedMesh and a second draw call, saved
+ * nothing, and changed the silhouette at the boundary because the seed moved.
+ *
+ * Both levels now share a seed, so the far tier is a sparser version of the
+ * SAME hedge rather than a different one.
+ */
+function buildHedge(cards, seed) {
   const M = new Mesh3();
   const rng = new RNG(seed);
   const col = asLin('#3d5f28');
@@ -672,7 +686,7 @@ function buildHedge(seed) {
     [0, H / 2, 0, 0, 1, 0],
   ];
   for (const [fx, fy, fz, nx, ny, nz] of faces) {
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < cards; i++) {
       const jx = fx + (nx ? 0 : rng.range(-W / 2, W / 2)) * 0.7;
       const jz = fz + (nz ? 0 : rng.range(-D / 2, D / 2)) * 0.7;
       const jy = H / 2 + fy + (ny ? 0 : rng.range(-H / 2, H / 2)) * 0.75;
@@ -853,8 +867,8 @@ uniform float uSeasonMix;`)
       [buildClump(V.flowers, 0.55, 0.35, 18, 4005, '#7a8a45', 0.4), 65],
     ]);
     const hedgeB = clump('veg_hedge', null, [
-      [buildHedge(4006), 85],
-      [buildHedge(4007), 190],
+      [buildHedge(7, 4006), 85],
+      [buildHedge(3, 4006), 190],
     ]);
     const grassB = clump('veg_grass', null, [
       [buildGrassTuft(4008), 44],
