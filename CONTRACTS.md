@@ -1456,3 +1456,121 @@ Graceful degradation holds. Do not spend time making low look like high.
 
 One nit, not worth a commit: `setQuality('potato')` silently keeps the previous
 preset instead of warning.
+
+## Material registration, wetness, and the registry (2026-09-07)
+
+**`Assets.materials` is the only list anything walks.** `Materials.adopt` stamps
+the wet response from the WETNESS table and attaches the environment probe by
+iterating it; `Assets.setWetness` applies rain by iterating it. A material that
+is not in it receives none of those, forever.
+
+- **`wet(m)` is a request, not a guarantee.** It stamps
+  `userData.wetnessRough`/`wetnessColor`, which is the marker `setWetness` looks
+  for — but only if the material is in the registry. Calling `wet()` on a
+  privately-owned material records an intention that can never be carried out.
+- **To author a material into the registry, use `Assets.material(key, make)`.**
+  To author a VARIANT of a library material, use **`Assets.variant(key, src,
+  mutate)`**: it registers the clone AND re-derives the dry colour. Both are
+  required. `userData` comes through `clone()` as JSON and
+  `THREE.Color.toJSON()` returns a bare hex number, so a clone's `wetnessColor`
+  is a number rather than a Color, and it recorded the SOURCE's colour anyway —
+  wrong the moment the variant sets its own.
+- **Registering transfers ownership.** `Assets.dispose` frees the registry, so a
+  registered material must NOT also go into a local `_owned`/`owned` list.
+- **`shared(name, make)` in `VehicleModels` is not an adoption helper and is a
+  trap for a new key.** `Materials.get` never returns nullish: for an unknown
+  name it warns once and returns a generic `_fallback` at roughness 0.85. So
+  `shared()` cannot fall through to its own `make()`, and using it for a key the
+  library does not define silently reassigns the slot to the shared fallback.
+  Use `adopt()` (the local helper) or `Assets.material` instead.
+- Only **glass** is deliberately excluded from wetness. Everything else outdoors
+  sets `wetnessRough`/`wetnessColor`.
+
+## Weather is not an actor (2026-09-07)
+
+`capture({holdActors: true})` freezes traffic, vehicles and peds through warm-up
+so a capture is deterministic for cross-capture comparison. It must **never**
+freeze `weather`: `Weather.update` is what applies the preset the caller asked
+for, so a paused weather system means the shot is taken in whatever condition
+was already in force. Measured: `capture({weather:'rain', holdActors:true})`
+gave wetness 0.000 / rain 0.000 / asphalt 0.970 against 0.900 / 0.720 / 0.331
+for the identical call without the flag.
+
+`ACTOR_IDS` and `PAUSE_IDS` are separate for this reason. Weather's update is
+already deterministic under a frozen clock — it snaps the preset blend and the
+wetness ramp rather than easing them, precisely so a capture cannot photograph a
+half-applied condition.
+
+Also: `Weather.set(name)` early-returns when `name === this.state`, so a
+`setWeather` to the condition already in force is a no-op. Reset to `clear`
+between condition A/Bs or the second leg silently measures the first.
+
+## A capture that did not converge is not comparable (2026-09-07)
+
+`CaptureHarness` settles by stepping until the luminance bands stop moving and
+**gives up at 180 frames**. `settledFrames === 180` means the frame was still
+changing when the shot was taken: the world is mid-stream and its buildings are
+LOD-2 shell, which reads pale and flat and lighter in triangles.
+
+This is load-dependent, not commit-dependent. `Buildings._drain` spends a
+**wall-clock** millisecond budget per frame (6 ms, 24 during boot, 50 for
+`CATCHUP_FRAMES` after a teleport), so how much of the world streams per frame
+depends on how busy the machine is. Same 126 views, same commit: a healthy
+machine settled with a median of **15** frames and 2 views capped; under memory
+pressure the median was **153** with **55** capped, and those captures ran 7.9%
+lighter in triangles, brighter and flatter — 217 tolerance violations that were
+not a regression.
+
+**Rules.** `baseline.json` is schema 3 and stamps every row with its `settled`
+cost. Pixel fields — `mean`, `detail`, `flat`, `dark`, `blown`, `tiles` — are
+comparable only between rows that CONVERGED. Geometry and counts may be compared
+freely. Before believing any luminance delta, check `settled` on both sides; and
+if the machine is loaded, run a back-to-back A/A first to establish the noise
+floor. Under load, measured A/A on `mean` reached **0.0797** against a tolerance
+of 0.06 — the instrument could not reproduce itself.
+
+## Dynamic route speeds come from source (2026-09-07)
+
+Route speed classes are read from the production constants and named in the
+data: `PLAYER_WALK` 1.45, `PLAYER_JOG` 3.40 (the default on foot — keyboard is
+always full deflection), `PLAYER_SPRINT` 6.30, from `Player.js SPEED`; and
+`VEHICLE_ALLEY` 6.7 / `VEHICLE_STREET` 11.2 / `VEHICLE_ARTERIAL` 13.4 /
+`VEHICLE_HIGHWAY` 27.0 from `Navigation.js PROFILE[type].speed`. `STRESS_FAST`
+5.00 is explicitly not a gameplay speed.
+
+Every run records the class, the requested `mps`, the **achieved** `mpsGot` and
+`kmh`, and `clamped` when the 240-frame cap binds. A traversal must never again
+be described in prose as a speed it was not run at: the previous pass reported
+18 km/h as walking because the runner clamped frames-per-sample to 24 while
+`routes.mjs` asked for 1.5 m/s.
+
+Cross-checked against the live sim: 96 active traffic cars measured p10 3.05,
+median 10.38, p90 12.74, max 15.35 m/s.
+
+## Condition sweeps (2026-09-07)
+
+`tools/world-sweep/conditions.js` owns WHICH routes run under WHICH condition,
+with the coverage claim attached to each route. `TOD` must name every condition
+it supports and `runCondition` **throws** for one it does not — the first rain
+pass ran at tod 22 because `TOD` had no `rain` key and the fallback was
+`TOD.night`.
+
+Night event thresholds are absolute, not fractional, because at night the mean
+luminance is near zero and every fractional test becomes infinitely sensitive to
+it. The luminance trigger is calibrated **per route** from the MAD of its own
+step distribution — the same idiom the static sweep uses to rank outliers within
+a category. A fixed absolute threshold produced 137 daylight `lumaJump` events
+that were all just shadows.
+
+`exposureJump` fires only when the meter moves and the SCENE does not.
+Adaptation tracking a scene change is the system working; `probeLuminance` is
+what tells them apart, and it is opt-in because the readback stalls the pipeline.
+
+## Long browser loops must yield (2026-09-07)
+
+A traversal sample loop is otherwise wholly synchronous — 40 samples at 35
+frames is 1,400 renders of a 3.3M-triangle scene in one task — so nothing can be
+scheduled during a route and a working run is indistinguishable from a hung
+page. `runRoute` yields every four samples. Results also POST to the sink **per
+route**, never per pass: two passes were lost whole this session for posting
+only at the end.

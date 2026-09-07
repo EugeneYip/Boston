@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "captured": "2026-09-07",
   "commit": "86182f2",
   "views": 126,
@@ -34,7 +34,15 @@
     "excluded": [
       "digest"
     ],
-    "note": "Fractional for counts and triangles, absolute for luminance, metres and tile percent. NO exact frame digest: production scenes carry film grain, traffic and pedestrians, and measured cross-capture variance is 1.95 by 8x8 block mean against a same-capture floor of 0.46. A pixel hash is legitimate only on a proven-deterministic capture - a Model Lab fixture, or capture({holdActors:true}) on static surfaces."
+    "note": "Fractional for counts and triangles, absolute for luminance, metres and tile percent. NO exact frame digest: production scenes carry film grain, traffic and pedestrians, and measured cross-capture variance is 1.95 by 8x8 block mean against a same-capture floor of 0.46. A pixel hash is legitimate only on a proven-deterministic capture - a Model Lab fixture, or capture({holdActors:true}) on static surfaces.",
+    "requiresConverged": [
+      "mean",
+      "detail",
+      "flat",
+      "dark",
+      "blown",
+      "tiles"
+    ]
   },
   "classify": [
     "EXPECTED - explained by the change being made",
@@ -534,7 +542,8 @@
       "flat": 0.1501,
       "dark": 0.0125,
       "blown": 0,
-      "tiles": "9 40 79 18 15 26 45 21 31 62 63 34"
+      "tiles": "9 40 79 18 15 26 45 21 31 62 63 34",
+      "settled": 63
     },
     {
       "id": "street:e247@0.53:L",
@@ -561,7 +570,8 @@
       "flat": 0.1806,
       "dark": 0.0004,
       "blown": 0.0062,
-      "tiles": "18 79 33 19 29 45 28 21 16 31 26 28"
+      "tiles": "18 79 33 19 29 45 28 21 16 31 26 28",
+      "settled": 6
     },
     {
       "id": "street:e513@0.55:L",
@@ -588,7 +598,8 @@
       "flat": 0.1019,
       "dark": 0.0006,
       "blown": 0,
-      "tiles": "27 68 33 29 14 28 40 31 30 61 56 44"
+      "tiles": "27 68 33 29 14 28 40 31 30 61 56 44",
+      "settled": 27
     },
     {
       "id": "street:e474@0.48:R",
@@ -615,7 +626,8 @@
       "flat": 0.1206,
       "dark": 0.0012,
       "blown": 0.0004,
-      "tiles": "29 39 47 24 26 49 37 21 33 39 43 33"
+      "tiles": "29 39 47 24 26 49 37 21 33 39 43 33",
+      "settled": 66
     },
     {
       "id": "street:e381@0.54:L",
@@ -642,7 +654,8 @@
       "flat": 0.2114,
       "dark": 0.0014,
       "blown": 0,
-      "tiles": "25 18 36 47 29 12 36 43 30 7 23 32"
+      "tiles": "25 18 36 47 29 12 36 43 30 7 23 32",
+      "settled": 90
     },
     {
       "id": "street:e405@0.48:L",
@@ -669,7 +682,8 @@
       "flat": 0.1483,
       "dark": 0,
       "blown": 0,
-      "tiles": "84 88 77 77 46 50 39 35 22 22 20 22"
+      "tiles": "84 88 77 77 46 50 39 35 22 22 20 22",
+      "settled": 39
     },
     {
       "id": "street:e287@0.45:R",
@@ -696,7 +710,8 @@
       "flat": 0.1318,
       "dark": 0.0098,
       "blown": 0,
-      "tiles": "30 50 28 19 24 29 35 31 9 61 52 36"
+      "tiles": "30 50 28 19 24 29 35 31 9 61 52 36",
+      "settled": 72
     },
     {
       "id": "street:e245@0.53:R",
@@ -723,7 +738,8 @@
       "flat": 0.1541,
       "dark": 0,
       "blown": 0.0027,
-      "tiles": "21 18 41 65 27 32 20 33 27 22 15 37"
+      "tiles": "21 18 41 65 27 32 20 33 27 22 15 37",
+      "settled": 6
     },
     {
       "id": "street:e417@0.54:L",
@@ -750,7 +766,8 @@
       "flat": 0.2307,
       "dark": 0.0058,
       "blown": 0,
-      "tiles": "27 19 24 40 22 21 37 32 33 33 29 9"
+      "tiles": "27 19 24 40 22 21 37 32 33 33 29 9",
+      "settled": 27
     },
     {
       "id": "street:e398@0.43:R",
@@ -777,7 +794,8 @@
       "flat": 0.1543,
       "dark": 0.0023,
       "blown": 0.0002,
-      "tiles": "43 27 13 22 31 30 25 17 15 31 58 65"
+      "tiles": "43 27 13 22 31 30 25 17 15 31 58 65",
+      "settled": 15
     },
     {
       "id": "street:e19@0.54:R",
@@ -804,7 +822,8 @@
       "flat": 0.1348,
       "dark": 0.0025,
       "blown": 0,
-      "tiles": "34 43 17 30 43 31 31 34 36 25 37 45"
+      "tiles": "34 43 17 30 43 31 31 34 36 25 37 45",
+      "settled": 15
     },
     {
       "id": "street:e212@0.43:L",
@@ -831,7 +850,8 @@
       "flat": 0.2054,
       "dark": 0.0062,
       "blown": 0.0002,
-      "tiles": "64 24 16 19 50 32 31 26 20 24 25 10"
+      "tiles": "64 24 16 19 50 32 31 26 20 24 25 10",
+      "settled": 147
     },
     {
       "id": "street:e524@0.43:L",
@@ -858,7 +878,8 @@
       "flat": 0.136,
       "dark": 0.0002,
       "blown": 0,
-      "tiles": "16 20 50 67 18 39 28 29 36 29 31 24"
+      "tiles": "16 20 50 67 18 39 28 29 36 29 31 24",
+      "settled": 6
     },
     {
       "id": "street:e508@0.45:L",
@@ -885,7 +906,8 @@
       "flat": 0.0883,
       "dark": 0.0112,
       "blown": 0,
-      "tiles": "84 71 75 31 55 53 31 25 57 58 42 13"
+      "tiles": "84 71 75 31 55 53 31 25 57 58 42 13",
+      "settled": 126
     },
     {
       "id": "street:e56@0.53:R",
@@ -912,7 +934,8 @@
       "flat": 0.1277,
       "dark": 0.0027,
       "blown": 0,
-      "tiles": "56 22 37 15 39 46 47 26 27 34 38 24"
+      "tiles": "56 22 37 15 39 46 47 26 27 34 38 24",
+      "settled": 6
     },
     {
       "id": "street:e390@0.57:R",
@@ -939,7 +962,8 @@
       "flat": 0.1595,
       "dark": 0.0023,
       "blown": 0,
-      "tiles": "27 54 45 35 24 41 34 22 25 34 27 9"
+      "tiles": "27 54 45 35 24 41 34 22 25 34 27 9",
+      "settled": 6
     },
     {
       "id": "street:e473@0.49:L",
@@ -966,7 +990,8 @@
       "flat": 0.0986,
       "dark": 0.0023,
       "blown": 0,
-      "tiles": "50 39 21 23 41 45 31 29 20 48 37 43"
+      "tiles": "50 39 21 23 41 45 31 29 20 48 37 43",
+      "settled": 6
     },
     {
       "id": "street:e479@0.44:R",
@@ -993,7 +1018,8 @@
       "flat": 0.152,
       "dark": 0.0006,
       "blown": 0,
-      "tiles": "11 14 15 10 27 35 33 22 27 40 47 35"
+      "tiles": "11 14 15 10 27 35 33 22 27 40 47 35",
+      "settled": 6
     },
     {
       "id": "street:e408@0.58:R",
@@ -1020,7 +1046,8 @@
       "flat": 0.1686,
       "dark": 0.0004,
       "blown": 0,
-      "tiles": "29 30 44 47 34 37 30 20 27 30 28 20"
+      "tiles": "29 30 44 47 34 37 30 20 27 30 28 20",
+      "settled": 6
     },
     {
       "id": "street:e312@0.56:R",
@@ -1047,7 +1074,8 @@
       "flat": 0.075,
       "dark": 0.0083,
       "blown": 0,
-      "tiles": "31 15 62 50 26 24 40 48 49 60 49 39"
+      "tiles": "31 15 62 50 26 24 40 48 49 60 49 39",
+      "settled": 6
     },
     {
       "id": "street:e201@0.58:R",
@@ -1074,7 +1102,8 @@
       "flat": 0.1944,
       "dark": 0.0006,
       "blown": 0.0002,
-      "tiles": "16 24 51 31 16 22 44 27 22 20 73 54"
+      "tiles": "16 24 51 31 16 22 44 27 22 20 73 54",
+      "settled": 102
     },
     {
       "id": "street:e246@0.48:L",
@@ -1101,7 +1130,8 @@
       "flat": 0.2043,
       "dark": 0.0027,
       "blown": 0,
-      "tiles": "33 21 31 18 24 23 30 42 20 12 13 26"
+      "tiles": "33 21 31 18 24 23 30 42 20 12 13 26",
+      "settled": 21
     },
     {
       "id": "street:e517@0.55:L",
@@ -1128,7 +1158,8 @@
       "flat": 0.1015,
       "dark": 0.0025,
       "blown": 0,
-      "tiles": "20 35 21 47 15 28 49 50 44 58 27 45"
+      "tiles": "20 35 21 47 15 28 49 50 44 58 27 45",
+      "settled": 81
     },
     {
       "id": "street:e475@0.42:R",
@@ -1155,7 +1186,8 @@
       "flat": 0.1532,
       "dark": 0.0054,
       "blown": 0,
-      "tiles": "21 35 37 30 21 32 45 26 30 40 35 26"
+      "tiles": "21 35 37 30 21 32 45 26 30 40 35 26",
+      "settled": 48
     },
     {
       "id": "street:e330@0.46:L",
@@ -1182,7 +1214,8 @@
       "flat": 0.1181,
       "dark": 0.0046,
       "blown": 0.0004,
-      "tiles": "40 64 36 42 22 51 27 26 53 70 58 17"
+      "tiles": "40 64 36 42 22 51 27 26 53 70 58 17",
+      "settled": 72
     },
     {
       "id": "street:e313@0.57:L",
@@ -1209,7 +1242,8 @@
       "flat": 0.1368,
       "dark": 0.0014,
       "blown": 0.0058,
-      "tiles": "24 73 49 28 18 29 33 37 30 51 28 25"
+      "tiles": "24 73 49 28 18 29 33 37 30 51 28 25",
+      "settled": 72
     },
     {
       "id": "street:e254@0.56:R",
@@ -1236,7 +1270,8 @@
       "flat": 0.1711,
       "dark": 0.0035,
       "blown": 0.0054,
-      "tiles": "20 42 39 14 19 27 32 26 13 47 48 39"
+      "tiles": "20 42 39 14 19 27 32 26 13 47 48 39",
+      "settled": 84
     },
     {
       "id": "street:e248@0.42:R",
@@ -1263,7 +1298,8 @@
       "flat": 0.1615,
       "dark": 0.0004,
       "blown": 0.0002,
-      "tiles": "18 18 19 16 31 30 30 20 13 30 34 29"
+      "tiles": "18 18 19 16 31 30 30 20 13 30 34 29",
+      "settled": 33
     },
     {
       "id": "street:e410@0.57:L",
@@ -1290,7 +1326,8 @@
       "flat": 0.1219,
       "dark": 0.0108,
       "blown": 0,
-      "tiles": "10 15 47 77 20 30 46 56 26 68 73 57"
+      "tiles": "10 15 47 77 20 30 46 56 26 68 73 57",
+      "settled": 36
     },
     {
       "id": "street:e310@0.43:R",
@@ -1317,7 +1354,8 @@
       "flat": 0.1379,
       "dark": 0.0081,
       "blown": 0,
-      "tiles": "32 80 67 13 15 40 47 12 31 63 61 49"
+      "tiles": "32 80 67 13 15 40 47 12 31 63 61 49",
+      "settled": 6
     },
     {
       "id": "street:e17@0.48:R",
@@ -1344,7 +1382,8 @@
       "flat": 0.175,
       "dark": 0.0015,
       "blown": 0.0015,
-      "tiles": "21 67 36 19 17 45 34 18 10 41 41 19"
+      "tiles": "21 67 36 19 17 45 34 18 10 41 41 19",
+      "settled": 6
     },
     {
       "id": "street:e234@0.52:L",
@@ -1371,7 +1410,8 @@
       "flat": 0.1456,
       "dark": 0.0058,
       "blown": 0,
-      "tiles": "22 67 26 9 19 37 37 23 45 71 48 19"
+      "tiles": "22 67 26 9 19 37 37 23 45 71 48 19",
+      "settled": 6
     },
     {
       "id": "street:e515@0.53:L",
@@ -1398,7 +1438,8 @@
       "flat": 0.1152,
       "dark": 0.0046,
       "blown": 0,
-      "tiles": "26 53 27 22 14 38 41 27 47 73 53 61"
+      "tiles": "26 53 27 22 14 38 41 27 47 73 53 61",
+      "settled": 12
     },
     {
       "id": "street:e500@0.55:L",
@@ -1425,7 +1466,8 @@
       "flat": 0.158,
       "dark": 0.0015,
       "blown": 0.0102,
-      "tiles": "70 24 17 15 48 33 21 19 42 37 38 21"
+      "tiles": "70 24 17 15 48 33 21 19 42 37 38 21",
+      "settled": 159
     },
     {
       "id": "street:e484@0.42:L",
@@ -1452,7 +1494,8 @@
       "flat": 0.1208,
       "dark": 0.0039,
       "blown": 0,
-      "tiles": "47 22 29 38 35 34 26 21 61 71 38 21"
+      "tiles": "47 22 29 38 35 34 26 21 61 71 38 21",
+      "settled": 30
     },
     {
       "id": "junction:n9:e8",
@@ -1479,7 +1522,8 @@
       "flat": 0.0893,
       "dark": 0.0048,
       "blown": 0,
-      "tiles": "76 68 67 23 30 26 38 23 30 50 58 52"
+      "tiles": "76 68 67 23 30 26 38 23 30 50 58 52",
+      "settled": 24
     },
     {
       "id": "junction:n144:e209",
@@ -1506,7 +1550,8 @@
       "flat": 0.1103,
       "dark": 0.0062,
       "blown": 0.0133,
-      "tiles": "51 70 65 29 29 36 42 33 11 17 23 19"
+      "tiles": "51 70 65 29 29 36 42 33 11 17 23 19",
+      "settled": 45
     },
     {
       "id": "junction:n381:e520",
@@ -1533,7 +1578,8 @@
       "flat": 0.0866,
       "dark": 0.0044,
       "blown": 0,
-      "tiles": "21 68 39 43 23 39 40 27 45 59 61 33"
+      "tiles": "21 68 39 43 23 39 40 27 45 59 61 33",
+      "settled": 9
     },
     {
       "id": "junction:n358:e496",
@@ -1560,7 +1606,8 @@
       "flat": 0.1177,
       "dark": 0.0017,
       "blown": 0,
-      "tiles": "50 93 88 41 47 47 38 20 36 31 22 14"
+      "tiles": "50 93 88 41 47 47 38 20 36 31 22 14",
+      "settled": 6
     },
     {
       "id": "junction:n65:e58",
@@ -1587,7 +1634,8 @@
       "flat": 0.1146,
       "dark": 0,
       "blown": 0,
-      "tiles": "26 42 59 34 29 33 43 27 44 56 56 54"
+      "tiles": "26 42 59 34 29 33 43 27 44 56 56 54",
+      "settled": 6
     },
     {
       "id": "junction:n220:e302",
@@ -1614,7 +1662,8 @@
       "flat": 0.1348,
       "dark": 0.0046,
       "blown": 0,
-      "tiles": "21 41 31 35 29 32 35 42 22 45 50 24"
+      "tiles": "21 41 31 35 29 32 35 42 22 45 50 24",
+      "settled": 6
     },
     {
       "id": "junction:n334:e465",
@@ -1641,7 +1690,8 @@
       "flat": 0.1042,
       "dark": 0.0014,
       "blown": 0,
-      "tiles": "23 50 82 43 26 42 58 38 36 51 54 57"
+      "tiles": "23 50 82 43 26 42 58 38 36 51 54 57",
+      "settled": 9
     },
     {
       "id": "junction:n191:e261",
@@ -1668,7 +1718,8 @@
       "flat": 0.1343,
       "dark": 0,
       "blown": 0,
-      "tiles": "65 43 17 72 26 20 31 34 26 15 48 69"
+      "tiles": "65 43 17 72 26 20 31 34 26 15 48 69",
+      "settled": 27
     },
     {
       "id": "junction:n341:e478",
@@ -1695,7 +1746,8 @@
       "flat": 0.1665,
       "dark": 0.0025,
       "blown": 0.0002,
-      "tiles": "22 37 17 12 18 30 31 32 14 21 34 33"
+      "tiles": "22 37 17 12 18 30 31 32 14 21 34 33",
+      "settled": 15
     },
     {
       "id": "junction:n298:e406",
@@ -1722,7 +1774,8 @@
       "flat": 0.1404,
       "dark": 0.001,
       "blown": 0,
-      "tiles": "80 45 52 15 45 32 37 32 36 31 34 32"
+      "tiles": "80 45 52 15 45 32 37 32 36 31 34 32",
+      "settled": 6
     },
     {
       "id": "junction:n314:e427",
@@ -1749,7 +1802,8 @@
       "flat": 0.0926,
       "dark": 0.0083,
       "blown": 0,
-      "tiles": "42 76 67 82 21 42 29 18 46 47 47 22"
+      "tiles": "42 76 67 82 21 42 29 18 46 47 47 22",
+      "settled": 108
     },
     {
       "id": "junction:n50:e44",
@@ -1776,7 +1830,8 @@
       "flat": 0.0762,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "63 60 64 11 31 36 43 19 41 52 62 52"
+      "tiles": "63 60 64 11 31 36 43 19 41 52 62 52",
+      "settled": 9
     },
     {
       "id": "junction:n380:e519",
@@ -1803,7 +1858,8 @@
       "flat": 0.1175,
       "dark": 0.0052,
       "blown": 0,
-      "tiles": "52 72 67 18 32 34 45 24 48 59 57 61"
+      "tiles": "52 72 67 18 32 34 45 24 48 59 57 61",
+      "settled": 6
     },
     {
       "id": "junction:n363:e502",
@@ -1830,7 +1886,8 @@
       "flat": 0.1312,
       "dark": 0.0029,
       "blown": 0.0004,
-      "tiles": "22 64 90 35 11 36 37 25 21 35 38 34"
+      "tiles": "22 64 90 35 11 36 37 25 21 35 38 34",
+      "settled": 9
     },
     {
       "id": "junction:n40:e35",
@@ -1857,7 +1914,8 @@
       "flat": 0.0895,
       "dark": 0.0023,
       "blown": 0,
-      "tiles": "30 61 44 32 26 39 37 36 38 53 47 33"
+      "tiles": "30 61 44 32 26 39 37 36 38 53 47 33",
+      "settled": 33
     },
     {
       "id": "junction:n139:e204",
@@ -1884,7 +1942,8 @@
       "flat": 0.1551,
       "dark": 0.0089,
       "blown": 0,
-      "tiles": "70 88 80 66 15 46 49 30 12 23 33 29"
+      "tiles": "70 88 80 66 15 46 49 30 12 23 33 29",
+      "settled": 93
     },
     {
       "id": "junction:n185:e256",
@@ -1911,7 +1970,8 @@
       "flat": 0.1368,
       "dark": 0.0031,
       "blown": 0.0025,
-      "tiles": "23 12 40 42 31 32 37 30 27 69 47 13"
+      "tiles": "23 12 40 42 31 32 37 30 27 69 47 13",
+      "settled": 81
     },
     {
       "id": "junction:n250:e333",
@@ -1938,7 +1998,8 @@
       "flat": 0.1624,
       "dark": 0.0069,
       "blown": 0,
-      "tiles": "25 30 51 74 25 37 42 40 24 28 37 25"
+      "tiles": "25 30 51 74 25 37 42 40 24 28 37 25",
+      "settled": 30
     },
     {
       "id": "junction:n124:e147",
@@ -1965,7 +2026,8 @@
       "flat": 0.0812,
       "dark": 0.0137,
       "blown": 0,
-      "tiles": "34 67 84 27 27 30 42 30 14 41 67 54"
+      "tiles": "34 67 84 27 27 30 42 30 14 41 67 54",
+      "settled": 36
     },
     {
       "id": "junction:n333:e456",
@@ -1992,7 +2054,8 @@
       "flat": 0.148,
       "dark": 0,
       "blown": 0,
-      "tiles": "64 69 76 73 34 42 41 36 25 29 29 25"
+      "tiles": "64 69 76 73 34 42 41 36 25 29 29 25",
+      "settled": 6
     },
     {
       "id": "junction:n337:e475",
@@ -2019,7 +2082,8 @@
       "flat": 0.0899,
       "dark": 0.0056,
       "blown": 0,
-      "tiles": "20 29 73 58 15 28 43 32 28 53 61 53"
+      "tiles": "20 29 73 58 15 28 43 32 28 53 61 53",
+      "settled": 36
     },
     {
       "id": "junction:n223:e305",
@@ -2046,7 +2110,8 @@
       "flat": 0.1242,
       "dark": 0,
       "blown": 0,
-      "tiles": "21 25 48 22 31 39 43 26 51 57 35 22"
+      "tiles": "21 25 48 22 31 39 43 26 51 57 35 22",
+      "settled": 6
     },
     {
       "id": "park:back-bay-fens:spine#0",
@@ -2073,7 +2138,8 @@
       "flat": 0.1952,
       "dark": 0,
       "blown": 0,
-      "tiles": "15 15 11 10 21 26 28 19 19 33 36 24"
+      "tiles": "15 15 11 10 21 26 28 19 19 33 36 24",
+      "settled": 6
     },
     {
       "id": "park:boston-common:loop#0",
@@ -2100,7 +2166,8 @@
       "flat": 0.1019,
       "dark": 0.0062,
       "blown": 0,
-      "tiles": "13 22 67 21 42 41 44 24 60 51 48 26"
+      "tiles": "13 22 67 21 42 41 44 24 60 51 48 26",
+      "settled": 27
     },
     {
       "id": "park:bunker-hill-monument:loop#0",
@@ -2127,7 +2194,8 @@
       "flat": 0.2199,
       "dark": 0,
       "blown": 0.0012,
-      "tiles": "93 29 28 23 35 26 34 21 19 34 31 18"
+      "tiles": "93 29 28 23 35 26 34 21 19 34 31 18",
+      "settled": 15
     },
     {
       "id": "park:charles-river-esplanade:shore#0",
@@ -2154,7 +2222,8 @@
       "flat": 0.1264,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "89 79 14 9 85 69 26 33 30 43 34 26"
+      "tiles": "89 79 14 9 85 69 26 33 30 43 34 26",
+      "settled": 6
     },
     {
       "id": "park:christopher-columbus-park:loop#0",
@@ -2181,7 +2250,8 @@
       "flat": 0.1182,
       "dark": 0.0004,
       "blown": 0.0008,
-      "tiles": "19 49 49 12 50 56 33 25 29 39 37 36"
+      "tiles": "19 49 49 12 50 56 33 25 29 39 37 36",
+      "settled": 123
     },
     {
       "id": "park:commonwealth-avenue-mall-1:spine#0",
@@ -2208,7 +2278,8 @@
       "flat": 0.1973,
       "dark": 0.0008,
       "blown": 0.017,
-      "tiles": "11 13 69 65 16 27 35 36 12 22 50 18"
+      "tiles": "11 13 69 65 16 27 35 36 12 22 50 18",
+      "settled": 87
     },
     {
       "id": "park:commonwealth-avenue-mall-2:spine#0",
@@ -2235,7 +2306,8 @@
       "flat": 0.1514,
       "dark": 0.001,
       "blown": 0.0284,
-      "tiles": "15 45 85 62 20 26 37 33 12 21 24 13"
+      "tiles": "15 45 85 62 20 26 37 33 12 21 24 13",
+      "settled": 6
     },
     {
       "id": "park:commonwealth-avenue-mall-3:spine#0",
@@ -2262,7 +2334,8 @@
       "flat": 0.1748,
       "dark": 0,
       "blown": 0.0012,
-      "tiles": "15 24 27 20 27 31 40 20 18 29 33 19"
+      "tiles": "15 24 27 20 27 31 40 20 18 29 33 19",
+      "settled": 12
     },
     {
       "id": "park:commonwealth-avenue-mall-4:spine#0",
@@ -2289,7 +2362,8 @@
       "flat": 0.1433,
       "dark": 0.0002,
       "blown": 0.0029,
-      "tiles": "22 22 41 14 33 28 27 23 39 49 40 35"
+      "tiles": "22 22 41 14 33 28 27 23 39 49 40 35",
+      "settled": 36
     },
     {
       "id": "park:commonwealth-avenue-mall-5:spine#0",
@@ -2316,7 +2390,8 @@
       "flat": 0.1364,
       "dark": 0.0052,
       "blown": 0.0035,
-      "tiles": "13 11 43 65 23 23 31 24 20 44 53 28"
+      "tiles": "13 11 43 65 23 23 31 24 20 44 53 28",
+      "settled": 27
     },
     {
       "id": "park:commonwealth-avenue-mall-6:spine#0",
@@ -2343,7 +2418,8 @@
       "flat": 0.1474,
       "dark": 0.0004,
       "blown": 0.011,
-      "tiles": "17 62 38 34 16 27 33 24 13 25 27 17"
+      "tiles": "17 62 38 34 16 27 33 24 13 25 27 17",
+      "settled": 33
     },
     {
       "id": "park:commonwealth-avenue-mall-7:spine#0",
@@ -2370,7 +2446,8 @@
       "flat": 0.173,
       "dark": 0,
       "blown": 0.0052,
-      "tiles": "18 60 25 16 26 32 29 28 13 27 32 19"
+      "tiles": "18 60 25 16 26 32 29 28 13 27 32 19",
+      "settled": 36
     },
     {
       "id": "park:commonwealth-avenue-mall-8:spine#0",
@@ -2397,7 +2474,8 @@
       "flat": 0.1861,
       "dark": 0,
       "blown": 0.001,
-      "tiles": "9 26 17 11 25 28 28 28 28 28 29 22"
+      "tiles": "9 26 17 11 25 28 28 28 28 28 29 22",
+      "settled": 45
     },
     {
       "id": "park:public-garden:shore#0",
@@ -2424,7 +2502,9 @@
       "flat": 0.1846,
       "dark": 0.0004,
       "blown": 0,
-      "tiles": "13 26 23 13 14 30 36 16 17 25 27 16"
+      "tiles": "13 26 23 13 14 30 36 16 17 25 27 16",
+      "settled": 180,
+      "converged": false
     },
     {
       "id": "water:charles-river-basin:v11",
@@ -2451,7 +2531,8 @@
       "flat": 0.2025,
       "dark": 0,
       "blown": 0,
-      "tiles": "78 81 81 77 51 53 51 41 18 22 22 18"
+      "tiles": "78 81 81 77 51 53 51 41 18 22 22 18",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v26",
@@ -2478,7 +2559,8 @@
       "flat": 0.1715,
       "dark": 0,
       "blown": 0,
-      "tiles": "75 75 76 74 67 57 51 44 23 20 18 15"
+      "tiles": "75 75 76 74 67 57 51 44 23 20 18 15",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v18",
@@ -2505,7 +2587,8 @@
       "flat": 0.1804,
       "dark": 0,
       "blown": 0,
-      "tiles": "73 81 75 75 68 55 38 30 25 23 22 18"
+      "tiles": "73 81 75 75 68 55 38 30 25 23 22 18",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v13",
@@ -2532,7 +2615,8 @@
       "flat": 0.162,
       "dark": 0.0006,
       "blown": 0,
-      "tiles": "72 78 76 73 71 58 50 38 23 20 19 16"
+      "tiles": "72 78 76 73 71 58 50 38 23 20 19 16",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v15",
@@ -2559,7 +2643,8 @@
       "flat": 0.1534,
       "dark": 0,
       "blown": 0,
-      "tiles": "70 72 72 75 68 58 51 45 27 19 19 15"
+      "tiles": "70 72 72 75 68 58 51 45 27 19 19 15",
+      "settled": 15
     },
     {
       "id": "water:charles-river-basin:v22",
@@ -2586,7 +2671,8 @@
       "flat": 0.1777,
       "dark": 0.0002,
       "blown": 0,
-      "tiles": "75 81 81 65 70 61 44 19 25 23 22 18"
+      "tiles": "75 81 81 65 70 61 44 19 25 23 22 18",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v2",
@@ -2613,7 +2699,8 @@
       "flat": 0.1628,
       "dark": 0.0004,
       "blown": 0,
-      "tiles": "77 80 86 79 70 58 39 29 23 20 21 17"
+      "tiles": "77 80 86 79 70 58 39 29 23 20 21 17",
+      "settled": 18
     },
     {
       "id": "water:charles-river-basin:v9",
@@ -2640,7 +2727,8 @@
       "flat": 0.1323,
       "dark": 0.0027,
       "blown": 0,
-      "tiles": "89 91 42 6 86 70 20 13 38 28 26 26"
+      "tiles": "89 91 42 6 86 70 20 13 38 28 26 26",
+      "settled": 27
     },
     {
       "id": "water:charles-river-basin:v23",
@@ -2667,7 +2755,8 @@
       "flat": 0.1825,
       "dark": 0,
       "blown": 0,
-      "tiles": "77 78 79 75 70 60 45 21 24 22 21 17"
+      "tiles": "77 78 79 75 70 60 45 21 24 22 21 17",
+      "settled": 6
     },
     {
       "id": "water:charles-river-basin:v7",
@@ -2694,7 +2783,8 @@
       "flat": 0.1343,
       "dark": 0.0012,
       "blown": 0,
-      "tiles": "88 89 43 38 84 64 29 37 34 29 20 10"
+      "tiles": "88 89 43 38 84 64 29 37 34 29 20 10",
+      "settled": 51
     },
     {
       "id": "traffic:e35@0.50:L",
@@ -2721,7 +2811,8 @@
       "flat": 0.091,
       "dark": 0.0004,
       "blown": 0,
-      "tiles": "21 45 54 34 16 29 41 36 45 62 65 59"
+      "tiles": "21 45 54 34 16 29 41 36 45 62 65 59",
+      "settled": 45
     },
     {
       "id": "traffic:e46@0.50:L",
@@ -2748,7 +2839,8 @@
       "flat": 0.1821,
       "dark": 0.0004,
       "blown": 0,
-      "tiles": "23 20 12 9 26 25 29 17 18 67 72 54"
+      "tiles": "23 20 12 9 26 25 29 17 18 67 72 54",
+      "settled": 63
     },
     {
       "id": "traffic:e47@0.50:L",
@@ -2775,7 +2867,8 @@
       "flat": 0.1464,
       "dark": 0.0025,
       "blown": 0,
-      "tiles": "19 34 15 21 30 40 30 23 14 46 47 27"
+      "tiles": "19 34 15 21 30 40 30 23 14 46 47 27",
+      "settled": 51
     },
     {
       "id": "traffic:e49@0.50:L",
@@ -2802,7 +2895,8 @@
       "flat": 0.1291,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "12 34 21 23 33 39 26 12 62 71 62 26"
+      "tiles": "12 34 21 23 33 39 26 12 62 71 62 26",
+      "settled": 6
     },
     {
       "id": "traffic:e50@0.50:L",
@@ -2829,7 +2923,8 @@
       "flat": 0.1397,
       "dark": 0.0029,
       "blown": 0.0037,
-      "tiles": "58 44 17 15 21 39 30 18 15 58 46 27"
+      "tiles": "58 44 17 15 21 39 30 18 15 58 46 27",
+      "settled": 15
     },
     {
       "id": "traffic:e52@0.50:L",
@@ -2856,7 +2951,8 @@
       "flat": 0.1541,
       "dark": 0.0062,
       "blown": 0.0014,
-      "tiles": "25 59 23 32 28 25 30 22 22 60 30 11"
+      "tiles": "25 59 23 32 28 25 30 22 22 60 30 11",
+      "settled": 99
     },
     {
       "id": "traffic:e54@0.50:L",
@@ -2883,7 +2979,8 @@
       "flat": 0.1545,
       "dark": 0.0012,
       "blown": 0,
-      "tiles": "24 45 19 13 18 28 39 17 54 73 77 73"
+      "tiles": "24 45 19 13 18 28 39 17 54 73 77 73",
+      "settled": 12
     },
     {
       "id": "traffic:e56@0.50:L",
@@ -2910,7 +3007,8 @@
       "flat": 0.1709,
       "dark": 0.0002,
       "blown": 0,
-      "tiles": "45 77 31 24 51 50 32 22 44 37 24 23"
+      "tiles": "45 77 31 24 51 50 32 22 44 37 24 23",
+      "settled": 54
     },
     {
       "id": "traffic:e58@0.50:L",
@@ -2937,7 +3035,8 @@
       "flat": 0.1242,
       "dark": 0.0058,
       "blown": 0,
-      "tiles": "15 46 57 35 17 25 51 28 44 63 67 64"
+      "tiles": "15 46 57 35 17 25 51 28 44 63 67 64",
+      "settled": 30
     },
     {
       "id": "traffic:e59@0.50:L",
@@ -2964,7 +3063,8 @@
       "flat": 0.1404,
       "dark": 0.0014,
       "blown": 0,
-      "tiles": "23 51 21 22 41 45 48 21 27 29 33 28"
+      "tiles": "23 51 21 22 41 45 48 21 27 29 33 28",
+      "settled": 12
     },
     {
       "id": "traffic:e247@0.50:L",
@@ -2991,7 +3091,8 @@
       "flat": 0.1894,
       "dark": 0.0004,
       "blown": 0.0118,
-      "tiles": "31 67 21 33 40 30 27 30 13 14 15 18"
+      "tiles": "31 67 21 33 40 30 27 30 13 14 15 18",
+      "settled": 6
     },
     {
       "id": "traffic:e299@0.50:L",
@@ -3018,7 +3119,8 @@
       "flat": 0.1497,
       "dark": 0.0058,
       "blown": 0,
-      "tiles": "17 32 20 15 27 30 37 28 11 33 39 31"
+      "tiles": "17 32 20 15 27 30 37 28 11 33 39 31",
+      "settled": 15
     },
     {
       "id": "local:e19@0.56:R",
@@ -3045,7 +3147,8 @@
       "flat": 0.1707,
       "dark": 0.0006,
       "blown": 0.0029,
-      "tiles": "10 28 38 10 21 34 54 10 35 39 29 9"
+      "tiles": "10 28 38 10 21 34 54 10 35 39 29 9",
+      "settled": 6
     },
     {
       "id": "local:e507@0.56:L",
@@ -3072,7 +3175,8 @@
       "flat": 0.1094,
       "dark": 0.0033,
       "blown": 0,
-      "tiles": "26 48 20 46 20 40 36 28 37 69 70 64"
+      "tiles": "26 48 20 46 20 40 36 28 37 69 70 64",
+      "settled": 27
     },
     {
       "id": "local:e120@0.45:R",
@@ -3099,7 +3203,8 @@
       "flat": 0.1802,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "25 23 27 23 25 18 22 26 47 70 62 28"
+      "tiles": "25 23 27 23 25 18 22 26 47 70 62 28",
+      "settled": 6
     },
     {
       "id": "local:e201@0.61:L",
@@ -3126,7 +3231,8 @@
       "flat": 0.1269,
       "dark": 0.0068,
       "blown": 0.0012,
-      "tiles": "89 40 40 49 36 23 33 44 17 13 22 21"
+      "tiles": "89 40 40 49 36 23 33 44 17 13 22 21",
+      "settled": 6
     },
     {
       "id": "local:e246@0.44:L",
@@ -3153,7 +3259,8 @@
       "flat": 0.2039,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "27 16 17 20 17 33 35 21 37 66 32 24"
+      "tiles": "27 16 17 20 17 33 35 21 37 66 32 24",
+      "settled": 60
     },
     {
       "id": "local:e508@0.36:R",
@@ -3180,7 +3287,9 @@
       "flat": 0.1327,
       "dark": 0.0154,
       "blown": 0,
-      "tiles": "44 39 85 88 57 54 60 52 34 62 25 10"
+      "tiles": "44 39 85 88 57 54 60 52 34 62 25 10",
+      "settled": 180,
+      "converged": false
     },
     {
       "id": "local:e432@0.45:L",
@@ -3207,7 +3316,8 @@
       "flat": 0.1264,
       "dark": 0.0027,
       "blown": 0.0044,
-      "tiles": "12 32 27 20 35 44 21 20 41 38 29 44"
+      "tiles": "12 32 27 20 35 44 21 20 41 38 29 44",
+      "settled": 6
     },
     {
       "id": "local:e17@0.62:L",
@@ -3234,7 +3344,8 @@
       "flat": 0.1435,
       "dark": 0.0098,
       "blown": 0.0033,
-      "tiles": "22 46 64 36 35 23 33 24 15 51 43 48"
+      "tiles": "22 46 64 36 35 23 33 24 15 51 43 48",
+      "settled": 72
     },
     {
       "id": "local:e234@0.58:L",
@@ -3261,7 +3372,8 @@
       "flat": 0.0941,
       "dark": 0.0077,
       "blown": 0.0035,
-      "tiles": "17 20 68 39 48 33 31 31 19 32 60 58"
+      "tiles": "17 20 68 39 48 33 31 31 19 32 60 58",
+      "settled": 69
     },
     {
       "id": "local:e503@0.55:L",
@@ -3288,7 +3400,8 @@
       "flat": 0.1236,
       "dark": 0,
       "blown": 0.0004,
-      "tiles": "44 36 46 43 36 37 43 40 32 31 21 29"
+      "tiles": "44 36 46 43 36 37 43 40 32 31 21 29",
+      "settled": 15
     },
     {
       "id": "local:e279@0.63:L",
@@ -3315,7 +3428,8 @@
       "flat": 0.1291,
       "dark": 0.0037,
       "blown": 0,
-      "tiles": "39 38 11 36 31 43 27 22 16 34 71 48"
+      "tiles": "39 38 11 36 31 43 27 22 16 34 71 48",
+      "settled": 69
     },
     {
       "id": "local:e430@0.53:L",
@@ -3342,7 +3456,8 @@
       "flat": 0.1703,
       "dark": 0.0037,
       "blown": 0.0029,
-      "tiles": "18 36 25 19 37 24 28 27 9 28 23 31"
+      "tiles": "18 36 25 19 37 24 28 27 9 28 23 31",
+      "settled": 36
     },
     {
       "id": "local:e15@0.41:L",
@@ -3369,7 +3484,8 @@
       "flat": 0.1929,
       "dark": 0.0035,
       "blown": 0,
-      "tiles": "27 23 21 20 28 24 22 35 55 47 14 9"
+      "tiles": "27 23 21 20 28 24 22 35 55 47 14 9",
+      "settled": 63
     },
     {
       "id": "local:e214@0.61:L",
@@ -3396,7 +3512,8 @@
       "flat": 0.2157,
       "dark": 0.0006,
       "blown": 0,
-      "tiles": "7 18 16 21 8 24 39 21 7 22 34 28"
+      "tiles": "7 18 16 21 8 24 39 21 7 22 34 28",
+      "settled": 6
     },
     {
       "id": "local:e510@0.46:L",
@@ -3423,7 +3540,8 @@
       "flat": 0.2286,
       "dark": 0.0035,
       "blown": 0.0006,
-      "tiles": "9 11 14 47 14 12 26 54 28 25 40 50"
+      "tiles": "9 11 14 47 14 12 26 54 28 25 40 50",
+      "settled": 54
     },
     {
       "id": "special:bridge:e402",
@@ -3450,7 +3568,8 @@
       "flat": 0.0766,
       "dark": 0.0002,
       "blown": 0,
-      "tiles": "83 85 79 34 61 42 36 14 33 49 63 38"
+      "tiles": "83 85 79 34 61 42 36 14 33 49 63 38",
+      "settled": 6
     },
     {
       "id": "special:bridge:e403",
@@ -3477,7 +3596,8 @@
       "flat": 0.1775,
       "dark": 0.0002,
       "blown": 0,
-      "tiles": "34 33 14 9 41 32 41 25 18 20 22 31"
+      "tiles": "34 33 14 9 41 32 41 25 18 20 22 31",
+      "settled": 6
     },
     {
       "id": "special:bridge:e456",
@@ -3504,7 +3624,8 @@
       "flat": 0.1103,
       "dark": 0,
       "blown": 0.0004,
-      "tiles": "41 58 70 49 35 36 45 36 38 51 48 38"
+      "tiles": "41 58 70 49 35 36 45 36 38 51 48 38",
+      "settled": 51
     },
     {
       "id": "special:steep:e497",
@@ -3531,7 +3652,8 @@
       "flat": 0.2323,
       "dark": 0,
       "blown": 0.0218,
-      "tiles": "68 75 70 23 43 46 42 29 5 8 8 12"
+      "tiles": "68 75 70 23 43 46 42 29 5 8 8 12",
+      "settled": 6
     },
     {
       "id": "special:curve:e417",
@@ -3558,7 +3680,8 @@
       "flat": 0.1298,
       "dark": 0.0008,
       "blown": 0,
-      "tiles": "20 32 23 41 32 33 47 37 24 33 36 30"
+      "tiles": "20 32 23 41 32 33 47 37 24 33 36 30",
+      "settled": 9
     },
     {
       "id": "special:curve:e389",
@@ -3585,7 +3708,8 @@
       "flat": 0.1534,
       "dark": 0.0027,
       "blown": 0,
-      "tiles": "27 25 46 55 40 39 45 36 44 29 36 30"
+      "tiles": "27 25 46 55 40 39 45 36 44 29 36 30",
+      "settled": 6
     },
     {
       "id": "special:curve:e381",
@@ -3612,7 +3736,8 @@
       "flat": 0.1572,
       "dark": 0,
       "blown": 0,
-      "tiles": "43 35 32 21 36 35 32 25 26 37 48 26"
+      "tiles": "43 35 32 21 36 35 32 25 26 37 48 26",
+      "settled": 6
     },
     {
       "id": "special:tower:x393z-617",
@@ -3639,7 +3764,8 @@
       "flat": 0.114,
       "dark": 0,
       "blown": 0,
-      "tiles": "57 63 56 76 42 33 34 70 21 26 29 47"
+      "tiles": "57 63 56 76 42 33 34 70 21 26 29 47",
+      "settled": 6
     },
     {
       "id": "skyline:southEnd:h70:r0",
@@ -3666,7 +3792,8 @@
       "flat": 0.1209,
       "dark": 0,
       "blown": 0,
-      "tiles": "68 84 86 86 19 50 55 51 18 24 29 27"
+      "tiles": "68 84 86 86 19 50 55 51 18 24 29 27",
+      "settled": 6
     },
     {
       "id": "skyline:backBay:h105:r0",
@@ -3693,7 +3820,8 @@
       "flat": 0.0997,
       "dark": 0,
       "blown": 0,
-      "tiles": "71 73 80 74 54 55 52 50 16 22 24 18"
+      "tiles": "71 73 80 74 54 55 52 50 16 22 24 18",
+      "settled": 15
     },
     {
       "id": "skyline:beaconHill:h140:r0",
@@ -3720,7 +3848,8 @@
       "flat": 0.0885,
       "dark": 0,
       "blown": 0,
-      "tiles": "81 86 84 80 37 41 40 39 25 29 30 22"
+      "tiles": "81 86 84 80 37 41 40 39 25 29 30 22",
+      "settled": 6
     },
     {
       "id": "skyline:none:h70:r0",
@@ -3747,7 +3876,8 @@
       "flat": 0.0965,
       "dark": 0,
       "blown": 0,
-      "tiles": "80 80 83 85 56 56 45 38 20 22 25 20"
+      "tiles": "80 80 83 85 56 56 45 38 20 22 25 20",
+      "settled": 6
     },
     {
       "id": "skyline:northEnd:h105:r0",
@@ -3774,7 +3904,8 @@
       "flat": 0.1248,
       "dark": 0,
       "blown": 0,
-      "tiles": "76 80 77 74 40 49 50 52 21 21 25 21"
+      "tiles": "76 80 77 74 40 49 50 52 21 21 25 21",
+      "settled": 6
     },
     {
       "id": "skyline:charlestown:h140:r0",
@@ -3801,7 +3932,8 @@
       "flat": 0.1015,
       "dark": 0,
       "blown": 0,
-      "tiles": "71 71 70 69 56 54 54 52 19 23 22 17"
+      "tiles": "71 71 70 69 56 54 54 52 19 23 22 17",
+      "settled": 12
     },
     {
       "id": "skyline:fenway:h70:r0",
@@ -3828,7 +3960,8 @@
       "flat": 0.1624,
       "dark": 0,
       "blown": 0,
-      "tiles": "76 78 82 79 54 55 53 47 15 22 22 17"
+      "tiles": "76 78 82 79 54 55 53 47 15 22 22 17",
+      "settled": 6
     },
     {
       "id": "skyline:financial:h105:r0",
@@ -3855,7 +3988,8 @@
       "flat": 0.1424,
       "dark": 0,
       "blown": 0,
-      "tiles": "63 72 82 86 28 34 50 37 17 34 23 24"
+      "tiles": "63 72 82 86 28 34 50 37 17 34 23 24",
+      "settled": 15
     },
     {
       "id": "skyline:cambridge:h140:r0",
@@ -3882,7 +4016,8 @@
       "flat": 0.1044,
       "dark": 0,
       "blown": 0,
-      "tiles": "64 74 75 67 49 54 56 52 16 23 19 24"
+      "tiles": "64 74 75 67 49 54 56 52 16 23 19 24",
+      "settled": 6
     },
     {
       "id": "skyline:seaport:h70:r0",
@@ -3909,7 +4044,14 @@
       "flat": 0.1653,
       "dark": 0,
       "blown": 0,
-      "tiles": "75 80 87 85 28 35 44 40 17 19 27 25"
+      "tiles": "75 80 87 85 28 35 44 40 17 19 27 25",
+      "settled": 6
     }
-  ]
+  ],
+  "capture": {
+    "settledMedian": 15,
+    "notConverged": 2,
+    "rule": "A row is pixel-comparable only if it CONVERGED. `settled` is the frames CaptureHarness spent waiting for the luminance bands to stop moving; it gives up at 180, and 180 means the frame was still changing and the world was mid-stream, so the buildings in it are LOD-2 shell - pale and flat. Rows carry `converged: false` when that happened. Compare geometry and counts freely; do NOT compare mean/detail/flat/dark/blown/tiles against a row that did not converge, and do not compare a FRESH row that did not converge against anything.",
+    "why": "Buildings._drain spends a wall-clock millisecond budget per frame, so how much of the world streams per frame depends on machine load. Same 126 views, same commit: a healthy machine settled with a median of 15 frames and 2 views capped; under memory pressure the median was 153 with 55 capped, and those captures ran 7.9% lighter in triangles, brighter and flatter. A back-to-back A/A repeat under load moved `mean` by up to 0.0797 against a 0.06 tolerance. Check this before believing any luminance delta."
+  }
 }

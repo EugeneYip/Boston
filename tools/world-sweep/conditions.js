@@ -26,7 +26,7 @@ import { runRoute, findEvents, summarise } from './traverse.js';
  * result is comparable with a settled one at the same hour.
  *   day 11:00, dusk 19.4 (inside the B2 interval), night 22:00.
  */
-export const TOD = { day: 11, dusk: 19.4, night: 22 };
+export const TOD = { day: 11, dusk: 19.4, night: 22, rain: 11 };
 
 /**
  * Night subset — 12 routes, one per lighting context worth separating.
@@ -109,7 +109,15 @@ function evidence(run, events, keys) {
  */
 export async function runCondition(B, routes, subset, opts = {}) {
   const cond = opts.cond || 'night';
-  const tod = opts.tod ?? TOD[cond] ?? TOD.night;
+  // Explicit, and it throws rather than guessing. The first rain pass ran at
+  // tod 22 because `TOD` had no `rain` key and the fallback was `TOD.night`, so
+  // a condition named in the brief as a daylight one silently became a night
+  // one. The run records tod and weather so it was still readable after the
+  // fact, but a default that quiet is a trap, not a default.
+  const tod = opts.tod ?? TOD[cond];
+  if (!Number.isFinite(tod)) {
+    throw new Error(`runCondition: no time of day for condition "${cond}" — add it to TOD or pass opts.tod`);
+  }
   const weather = opts.weather ?? (cond === 'rain' ? 'rain' : 'clear');
   const byId = new Map(routes.map(r => [r.id, r]));
   const out = { cond, tod, weather, started: new Date().toISOString(), runs: [] };

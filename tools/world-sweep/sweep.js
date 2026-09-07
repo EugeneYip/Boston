@@ -269,6 +269,28 @@ export async function runSweep(B, views, opts = {}) {
       instances, visMeshes,
       ...nearbyCounts(idx, v.at[0], v.at[1]),
       streamed: cap && cap.streamed, settled: cap && cap.settledFrames,
+      /**
+       * Did the capture CONVERGE, or did it run out of frames?
+       *
+       * `CaptureHarness` settles by stepping until the luminance bands stop
+       * moving, and gives up at 180 frames. `settledFrames === 180` therefore
+       * means the frame was still changing when the shot was taken — the world
+       * is mid-stream and the buildings in it are LOD-2 shell, which reads as
+       * pale and flat. Its pixels are not comparable with a converged row.
+       *
+       * This is not hypothetical. The build budget in `Buildings._drain` is a
+       * WALL-CLOCK millisecond budget (6 ms, 24 during boot, 50 after a
+       * teleport), so how much of the world streams per frame depends on how
+       * busy the machine is. Measured on the same 126 views, same commit: a
+       * healthy machine settled with a median of 15 frames and 2 views capped;
+       * under memory pressure the median was 153 and 55 views capped, and the
+       * capped captures came out 7.9% lighter in triangles, brighter and
+       * flatter. A back-to-back A/A repeat under that load moved `mean` by up
+       * to 0.0797 against a tolerance of 0.06 — the instrument could no longer
+       * reproduce itself, let alone detect a regression.
+       */
+      converged: cap ? cap.settledFrames < 180 : null,
+      streamDone: B.settled(),
       ...(stats || {}), ...probe,
     });
   }

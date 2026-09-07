@@ -1705,3 +1705,222 @@ cascades 3 -> 2 at low; no class disappears; `errors []`, `glFaults []`,
 4. Vehicle bumper rounding; bus glazing bay rhythm.
 5. `_clipParcel`'s one sliver footprint per ~3,350 parcels.
 6. `setQuality` accepts an unknown preset name silently.
+
+## Night + rain traversal — 2026-09-07 (`a6697e4` … )
+
+Baseline `86182f2`. The dynamic axis got conditions, and the instrument got the
+two things it needed before conditions could mean anything.
+
+### Preludes
+
+**Per-view static baseline.** The previous pass gave every viewpoint an identity
+derived from its source object and stopped there, leaving the committed file as
+category p10/median/p90. There are now 126 rows carrying pose, groundY, roadDy,
+camera-only draws and triangles, shadow share, static neighbour counts,
+luminance, detail, flatness and a 4x3 tile summary. No frame digest.
+
+The rows reached the repo without passing through a conversation. A previous
+pass abandoned this as too risky to transcribe by hand and was right; the
+browser now POSTs to a local sink and Node builds the file from the bytes on
+disk, in chunks, so an interruption costs a chunk rather than a pass.
+
+**No traffic column.** It was designed, measured, and the measurement was of the
+wrong thing: traffic is spawned in a ring around the CAMERA — with the camera
+parked at one view, all 96 active cars lay within 332 m of it and 86 within
+300 m — so counting cars near a view the camera is not standing at returns zero
+by construction, which it did for 123 of 126 views. Vehicle density belongs on
+the drive routes, which follow the carriageway.
+
+**Speeds, from source.** `Player.js SPEED = { walk: 1.45, jog: 3.40,
+sprint: 6.30 }`; `Navigation.js PROFILE[type].speed = 27.0 / 13.4 / 11.2 / 6.7`.
+The previous pass called its pedestrian routes realistic walking at 18 km/h.
+18 km/h is neither: it is above `jog` and below `sprint`. `routes.mjs` had asked
+for 1.5 m/s and the RUNNER clamped frames-per-sample to 24, which on a 2 m step
+is 5 m/s regardless of what was requested. The runner's own `kmh` field had been
+reporting it correctly the whole time.
+
+Every route now carries the NAME of its class and the constant behind it, the
+runner records the speed it ACHIEVED, the cap is 240 frames and says so when it
+binds, and drive speed comes from the road class rather than one global 14 m/s.
+Checked against the live sim, not just the constants: 96 active cars measured
+p10 3.05, median 10.38, p90 12.74, max 15.35 m/s.
+
+**The previous batch stands.** Re-run at corrected speeds, all 23 routes,
+daylight: `lodJump` 11, `groundKink` 3 (all Bunker Hill Street), `roadShelf` 3,
+`drawJump` 0 — identical counts to the previous pass for every trigger that
+existed then. Streaming improved, because pedestrians now move at 3.40 m/s
+instead of 5.0: unsettled mean 0.9% -> 0.67%, worst 8.3% -> 2.9%. Only the
+label was wrong. The drive results were never affected: 15.0 m/s against an
+arterial's 13.4 is 12% fast, inside the spread of real traffic.
+
+### Night — 12 routes, tod 22, no defect
+
+Coverage: cobra-lit arterial, vehicle-heavy corridor, heritage pavement,
+financial-district pavement, dark residential street, park path, waterfront
+promenade, two junction sequences, curve, grade, bridge approach. Lamp families
+seen, in both taxonomies the project uses: `cobra-led` and `acorn-led`.
+
+| | night, 12 routes |
+|---|---|
+| clipped-white p90 | 0 on 10 of 12 routes, 0.01 on two |
+| crushed-black p90 | <= 0.04 everywhere |
+| `nReal` (real pooled lights) | **15 on every route, at every percentile** |
+| `realSum` p50 | 1186 - 1338 |
+| unsettled | 0 - 5% |
+| errors / GL faults | 0 |
+
+`LightManager` re-aims a FIXED pool of 15 real lights at the most important
+sources near the camera each frame and stands the rest in with additive proxies,
+which is the one lighting mechanism that only exists while the camera moves. It
+does not misbehave: the pool is **saturated at constant total intensity** for
+every night route, so re-aiming produces no brightness step. There is always
+another strong candidate to take a freed slot.
+
+Two `clipJump` events in ~480 night samples, **both transient** — 0.0002 ->
+0.0419 -> 0.0002 in one case — both `cobra-led`, both the near-field-object
+signature already attributed for the static washout. Per the standing decision
+rule: isolated, not repeated across families or contexts. **Global exposure,
+tone mapping and B1/B2 remain CLOSED.**
+
+### No exposure pumping, measured rather than assumed
+
+18 sustained luminance steps looked like pumping. They are not. `probeLuminance`
+gives the meter's adapted log2 value and the scene BEFORE it; on
+`walk:sidewalk:e247` the **scene moved 4.19 stops while the meter moved 1.25**,
+which is `AutoExposurePass` deliberately under-following a darkening exactly as
+its own comments describe. Frame p90 scene luminance reaches **-0.16 log2** when
+a lamp fixture enters frame, and `blown` never exceeds 0.0008 with `dark` peaking
+at 0.065. The output is not clipping; the frame mean is following the scene.
+
+That telemetry is now part of the runner (opt-in, because the readback stalls
+the pipeline), and `exposureJump` fires only when the meter moves and the scene
+does not — the only version of the event that is a defect.
+
+### Rain — the real finding
+
+Wetness is a single global scalar applied through `Assets.setWetness`, which
+iterates the Assets REGISTRY. Three places clone a library material to turn on
+vertex colours — `City._terrainMaterial` and both of `Districts`'s surface
+builders — and a clone is not in the registry. So six surfaces carried the
+wetness opt-in and could never receive it.
+
+Measured at wetness 0.9, before the fix:
+
+| surface | was | table wants |
+|---|---|---|
+| `ground_terrain` (110,152 tris, 3 meshes) | 0.99 dry | 0.477 |
+| `park_surface_lawn` | 0.96 | 0.591 |
+| `park_surface_plaza`, `park_path_paved` | 0.97 | 0.367 |
+| `park_path_stone` | 0.99 | 0.477 |
+| `park_path_edge` | 0.95 | 0.365 |
+| registry `asphalt`, for comparison | **0.331 correctly wet** | 0.331 |
+
+The carriageway darkened and sheened in rain and the ground it runs across did
+not, with a step at every kerb and every park path edge.
+
+Found by auditing what is NOT in the registry, not by looking at a picture. An
+earlier pass of the same audit counted only materials that were *unstamped* and
+found exactly one (`trimDark`); these six are stamped, because they were cloned
+from stamped sources, so the right predicate was registry membership.
+
+`Assets.variant()` registers the clone and re-derives its dry colour — which
+matters because `userData` comes through `clone()` as JSON and
+`THREE.Color.toJSON()` returns a bare hex number, so `wetnessColor` arrived as a
+number rather than a Color, and recorded the SOURCE's colour anyway.
+
+Magnitude, same frame, only these six reverted: a park framing moves mean
+luminance 0.265 -> 0.3226, **+21.7%**. A street framing moves +0.0% and a local
+street +0.1%, because what you see of the ground on a street is road and
+pavement and both were already registry materials. At wetness 0 the state is
+identical to before, so dry daylight cannot have moved. No response was
+invented — these surfaces get the response their own family already had.
+
+**Rain state is otherwise coherent.** After a full rain traversal, all 20
+wetness-capable registry materials sat exactly where the current wetness implies
+(zero mismatches), and the registry did not grow during the traversal, so
+streaming cannot produce an un-wetted surface. No wet -> dry -> wet, no sheen
+reset, no material bank mismatch. Rain at night, 8 routes: crushed-black p90
+**exactly 0 on every route**, clipped-white p90 0 on 7 of 8.
+
+### `holdActors` was discarding the requested weather
+
+`PAUSE_IDS` put `weather` alongside traffic, vehicles and peds, and
+`capture({holdActors: true})` keeps that set frozen through warm-up. But
+`Weather.update` is what applies the preset the caller just asked for.
+
+Controlled A/B, identical call but for the flag: `holdActors: false` gave
+wetness 0.900, rain 0.720, asphalt 0.331. `holdActors: true` gave **0.000,
+0.000 and 0.970** — a clear dry day wearing the rain preset's name. Any
+held-actor capture of any weather preset was measuring clear weather.
+
+Weather is not an actor. Actors are the things whose POSITIONS make two captures
+differ; Weather's update is already deterministic under a frozen clock, snapping
+the preset blend and the wetness ramp instead of easing them, precisely so a
+capture does not photograph a half-applied condition. It is now released even
+when actors are held: both paths give 0.900 / 0.720 / 0.331 with traffic still
+paused.
+
+### The static regression could not be run, and that is a finding
+
+126 views re-swept dry at tod 11 produced 217 tolerance violations — uniformly
+brighter (+0.03 to +0.06 mean) and flatter (-0.008 to -0.015 detail) across all
+eight categories, including `water` and `skyline`, which contain none of what
+changed. It is not a regression. The captures did not finish:
+
+| | baseline run | regression run |
+|---|---|---|
+| `settledFrames` p50 | **15** | **153** |
+| views at the 180-frame cap | 2 | 55 |
+| `camTris` p50 | 1,338,784 | 1,226,319 |
+
+`Buildings._drain` spends a **wall-clock** millisecond budget per frame (6 ms,
+24 during boot, 50 after a teleport), so how much of the world streams per frame
+depends on machine load. Under memory pressure the settle loop runs out of
+frames, the shot is taken mid-stream, and the buildings in it are LOD-2 shell —
+pale and flat, and lighter in triangles.
+
+Confirmed by A/A rather than argued: the same 12 views captured twice
+back-to-back, same code, hit the settle cap on 10 of 12 in **both** repeats and
+moved `mean` by up to **0.0797** against a tolerance of 0.06. The instrument
+could not reproduce itself, so it could not detect a regression either way.
+
+`baseline.json` is schema 3: every row is stamped with the `settled` cost it was
+captured at, and pixel fields are comparable only for a row that CONVERGED. The
+committed baseline was captured healthy — median 15 frames, 2 of 126 capped.
+The sweep now records `converged` and `streamDone` per row.
+
+**What can be asserted about the three source changes:** they are provably inert
+at wetness 0, measured directly on material state (asphalt 0.97, ground 0.99,
+wetness 0), and they add only material registration — nothing touches streaming
+or the shading of unrelated surfaces. The rain magnitude was measured in a
+single frame with only the six surfaces reverted, which isolates them from load
+entirely. A clean full-sweep regression is owed on a healthy machine.
+
+### Not run
+
+Dusk. All three resource stop-conditions were met — free memory 38% -> 31%,
+swap used 3.9 -> 5.3 GB with the swap file itself resized 5 -> 6 GB, and runtime
+degraded to where the capture instrument no longer reproduced itself. Running a
+condition sweep whose luminance numbers could not be trusted would have produced
+data worth nothing. B2 remains closed.
+
+### Remaining SAFE priorities
+
+1. Re-run the 126-view static sweep on a healthy machine and confirm the three
+   source changes against the schema-3 baseline. This is owed, not optional.
+2. Dusk dynamic subset, 4-6 routes, once the machine can converge a capture.
+3. `headJump` fires 38 times at night on a threshold of >2 headlights; cars
+   entering and leaving a 120 m radius at 48 km/h routinely change the count by
+   3-4. Either widen it or key it to screen-space size.
+4. The real-light pool is saturated at 15 with `nAct` up to 141 near a junction.
+   Nothing misbehaves, but the *selection* is never tested against a case where
+   a genuinely important light loses its slot.
+5. `veg_shrub` LOD is chunk-granular, so a 96 m block swaps together.
+6. `payStation` shares the `meter` budget key, so ~9% of metered faces get no
+   kerbside equipment.
+7. Vehicle bumper rounding; bus glazing bay rhythm.
+8. `_clipParcel`'s one sliver footprint per ~3,350 parcels.
+9. `setQuality` accepts an unknown preset name silently — and `Materials.get`
+   accepts an unknown material name almost as silently, warning once and
+   returning a generic `_fallback`, which is how the first attempt at the
+   `trimDark` fix put every vehicle's dark trim on the fallback material.

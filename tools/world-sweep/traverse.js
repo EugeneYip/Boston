@@ -227,6 +227,29 @@ export async function runRoute(B, route, opts = {}) {
     // night pass and pure overhead on a daylight LOD pass that ignores it.
     const px = opts.luma ? frameStats(readLuma(B)) : null;
     const ls = opts.lights ? lightState(B, p.pos, g) : null;
+    /**
+     * The exposure meter's own state, and the scene BEFORE it.
+     *
+     * This is what separates "the frame got brighter" from "the exposure
+     * pumped", and without it a luminance step is not attributable. Eighteen
+     * sustained steps on the night pass looked like pumping and were not:
+     * measured on `walk:sidewalk:e247` the scene moved 4.19 stops while the
+     * meter moved 1.25, which is `AutoExposurePass` deliberately under-
+     * following a darkening, with `blown` never above 0.0008. The lamp fixture
+     * entering frame took scene p90 to -0.16 log2 and the output did not clip.
+     *
+     * Opt-in and off by default: `probeLuminance` stalls the pipeline to read
+     * back, and its own docs say never to call it per frame. On a 40-sample
+     * diagnostic route that is affordable; on a full pass it is not.
+     */
+    let ex = null;
+    if (opts.exposure && B.probeLuminance) {
+      const pr = B.probeLuminance();
+      const lum = Array.from(pr.logLum).filter(v => v > -19).sort((a, b) => a - b);
+      ex = { adapted: +pr.adapted.toFixed(3),
+             sceneP50: lum.length ? +lum[lum.length >> 1].toFixed(3) : null,
+             sceneP90: lum.length ? +lum[Math.floor(lum.length * 0.9)].toFixed(3) : null };
+    }
     samples.push({
       i, d: +(i * route.step).toFixed(0),
       groundY: +p.groundY.toFixed(2), camY: +p.pos[1].toFixed(2),
@@ -239,6 +262,7 @@ export async function runRoute(B, route, opts = {}) {
       ...(px ? { mean: px.mean, blown: px.blown, dark: px.dark,
                  detail: px.detail, p99: px.p99 } : {}),
       ...(ls ? { L: ls } : {}),
+      ...(ex ? { X: ex } : {}),
     });
     if (opts.onSample) opts.onSample(samples[samples.length - 1], i, pts.length);
   }
@@ -399,6 +423,19 @@ export function findEvents(run, opt = {}) {
       }
       if (Math.abs(b.L.nWin - a.L.nWin) > (opt.win ?? 40)) {
         ev.push({ kind: 'winJump', i, d: b.d, from: a.L.nWin, to: b.L.nWin });
+      }
+    }
+    if (b.X && a.X) {
+      // A meter step that the SCENE does not account for. Adaptation tracking a
+      // scene change is the system working; adaptation moving on its own is the
+      // defect this is looking for, and the difference is the only thing worth
+      // reporting.
+      const dAd = Math.abs(b.X.adapted - a.X.adapted);
+      const dSc = Math.abs((b.X.sceneP50 ?? 0) - (a.X.sceneP50 ?? 0));
+      if (dAd > (opt.adapted ?? 0.6) && dAd > dSc) {
+        ev.push({ kind: 'exposureJump', i, d: b.d,
+                  adapted: [a.X.adapted, b.X.adapted], scene: [a.X.sceneP50, b.X.sceneP50],
+                  dAdapted: +dAd.toFixed(3), dScene: +dSc.toFixed(3) });
       }
     }
     if (b.err > a.err) ev.push({ kind: 'error', i, d: b.d, n: b.err - a.err });
