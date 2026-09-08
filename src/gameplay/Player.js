@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
 import {
-  CrowdMesh, dressActor, clipForSpeed, phaseRate, CLIP_ROW, REF_HEIGHT,
+  CrowdMesh, HERO, dressActor, clipForSpeed, phaseRate, CLIP_ROW, REF_HEIGHT,
 } from './Character.js';
 
 /**
@@ -140,7 +140,10 @@ export default class Player {
 
     // Visual: one instance of the same rig the crowd uses, so it shares the
     // shader program and the animation texture — one extra draw call, total.
-    this._crowd = new CrowdMesh(ctx, 0, 1, { castShadow: true, name: 'player_body' });
+    // The player gets its own geometry, not the crowd's LOD 0. Same class, same
+    // material, same clips — one instance, so the extra rings cost nothing that
+    // matters, and the pedestrians are untouched.
+    this._crowd = new CrowdMesh(ctx, HERO, 1, { castShadow: true, name: 'player_body' });
     ctx.scene.add(this._crowd.mesh);
     this._actor = makeActor();
     this._actor.x = spawn.x; this._actor.y = spawn.y; this._actor.z = spawn.z;

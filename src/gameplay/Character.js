@@ -85,6 +85,9 @@ export const REST = (() => {
 })();
 
 /** Clip order in the animation texture. `clipRow(name)` gives the base row. */
+/** LOD id for the player's dedicated mesh. Not a crowd tier — see `buildHeroGeometry`. */
+export const HERO = 2;
+
 export const CLIPS = ['idle', 'walk', 'jog', 'run', 'sit', 'crouch'];
 export const CLIP_ROW = {};
 for (let i = 0; i < CLIPS.length; i++) CLIP_ROW[CLIPS[i]] = i * ROWS_PER_CLIP;
@@ -619,6 +622,158 @@ export function buildCharacterGeometry(lod = 0) {
   return B.geometry(lod === 0 ? 'character_lod0' : 'character_lod1');
 }
 
+
+/**
+ * The player's own mesh.
+ *
+ * Deliberately a SEPARATE builder rather than another branch inside
+ * `buildCharacterGeometry`. The crowd geometry is shaped by a constraint the
+ * player does not share — hundreds of instances, so every ring costs the whole
+ * street — and the two will keep diverging. Keeping them apart is also what makes
+ * "crowd cost unchanged" checkable rather than asserted: nothing below is on the
+ * pedestrian path.
+ *
+ * Same 16 bones, same rest pose, same zones, same material and the same
+ * animation texture, so every existing clip drives this without knowing it
+ * changed. Only the surface differs.
+ *
+ * What the crowd mesh gets wrong at third-person range, measured on the rest
+ * pose before this existed:
+ *
+ *   - the profile is a plank. Side silhouette area was 54% of the front; a
+ *     standing human is nearer 70%. The torso loft was a single ellipse column
+ *     with no chest, no seat and no front-to-back movement at all.
+ *   - there is no neck. The skull sat on the shoulders with a 0.10 m tube
+ *     between them that reads as a gap, not a neck.
+ *   - the head is too wide: 0.198 m across on a 1.75 m rig, against ~0.155 real.
+ *   - the feet do not exist in profile, which is the single loudest missing cue
+ *     in a walk cycle.
+ *   - hands are 0.06 m boxes, so the arms end in stubs.
+ *
+ * Fixed here by adding depth where a body has depth, not by adding detail.
+ */
+export function buildHeroGeometry() {
+  const B = new Build();
+  const S = 10;                       // limb sides; one instance, so afford it
+  const R = REST;
+  const px = (b) => R[b * 3], py = (b) => R[b * 3 + 1];
+
+  // -- torso -----------------------------------------------------------------
+  // Same loft as the crowd, plus a per-ring z offset. That offset is the whole
+  // profile: the seat sits back, the chest sits forward, and the waist passes
+  // through. Without it no amount of radius makes a silhouette that reads as a
+  // person from the side.
+  //  y,     rx,    rz,    cz,     bone,        zone
+  const TORSO = [
+    [0.840, 0.132, 0.104, 0.012, BONE.pelvis, Z_BOT],
+    [0.895, 0.151, 0.120, 0.016, BONE.pelvis, Z_BOT],
+    [0.960, 0.147, 0.112, 0.007, BONE.pelvis, Z_TOP],
+    [1.030, 0.135, 0.100, 0.000, BONE.spine, Z_TOP],
+    [1.105, 0.141, 0.107, -0.006, BONE.spine, Z_TOP],
+    [1.185, 0.159, 0.119, -0.012, BONE.chest, Z_TOP],
+    [1.265, 0.177, 0.125, -0.013, BONE.chest, Z_TOP],
+    [1.335, 0.187, 0.118, -0.009, BONE.chest, Z_TOP],
+    [1.392, 0.166, 0.100, -0.002, BONE.chest, Z_TOP],
+    [1.418, 0.107, 0.079, 0.000, BONE.chest, Z_TOP],
+  ];
+  const ringsT = [];
+  for (let i = 0; i < TORSO.length; i++) {
+    const [y, rx, rz, cz, bone, zone] = TORSO[i];
+    const ring = [];
+    for (let j = 0; j < S + 1; j++) {
+      const a = (j / (S + 1)) * TAU;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const dx = ca * rx, dz = sa * rz + cz;
+      const ny = i === 0 ? -0.5 : i === TORSO.length - 1 ? 0.5 : 0;
+      ring.push(B.v(dx, y, dz, ca / rx, ny, sa / rz, bone,
+        dx, 0, dz, zone, shadeFor(ca, ny, sa, y, i === 0 ? 0.35 : 0)));
+    }
+    ringsT.push(ring);
+  }
+  for (let i = 0; i < ringsT.length - 1; i++) {
+    const a = ringsT[i], b = ringsT[i + 1];
+    for (let j = 0; j < a.length; j++) {
+      const j2 = (j + 1) % a.length;
+      B.quad(a[j], b[j], b[j2], a[j2]);
+    }
+  }
+  const capB = B.v(0, 0.830, 0.012, 0, -1, 0, BONE.pelvis, 0, 0, 0, Z_BOT, 0.5);
+  for (let j = 0; j < ringsT[0].length; j++)
+    B.tri(ringsT[0][j], ringsT[0][(j + 1) % ringsT[0].length], capB);
+  const top = ringsT[ringsT.length - 1];
+  const capT = B.v(0, 1.432, 0, 0, 1, 0, BONE.chest, 0, 0, 0, Z_TOP, 1.0);
+  for (let j = 0; j < top.length; j++) B.tri(top[j], capT, top[(j + 1) % top.length]);
+
+  // -- neck and head ---------------------------------------------------------
+  // A real neck: thicker than the crowd's 0.052 and long enough to see, set very
+  // slightly forward because a head sits in front of the spine, not on top of it.
+  tube(B, 0, -0.006, 1.408, 1.508, 0.063, 0.057, 8, BONE.head, Z_SKIN,
+    { girth: 0.35, crease0: 0.5, crease1: 0.08 });
+  // Skull: narrower across than the crowd's, and deeper than it is wide.
+  blob(B, 0, 1.596, -0.002, 0.081, 0.114, 0.101, 10, 7, BONE.head, Z_SKIN,
+    { girth: 0.22, yBias: 0.18 });
+  // No jaw blob. Two overlapping ellipsoids cannot blend — they meet in a hard
+  // shading seam, and every size tried read as either a cracked egg or a muzzle.
+  // A chin needs the head modelled as one surface, which is the later face rung;
+  // a narrower skull over a real neck is the Rung-1 win and it is artefact-free.
+  // Hair tracks the narrower skull. Widening the skull's ratio here is what puts
+  // hair on the forehead and turns the front of the head brown.
+  blob(B, 0, 1.604, 0.026, 0.0855, 0.117, 0.097, 10, 5,
+    BONE.head, Z_HAIR, { girth: 0.2, yBias: 0.2, crease: 0.1, phiMax: Math.PI * 0.70 });
+
+  // -- limbs -----------------------------------------------------------------
+  for (const s of [1, -1]) {
+    const arm = s > 0 ? BONE.armL : BONE.armR;
+    const fore = s > 0 ? BONE.foreL : BONE.foreR;
+    const hand = s > 0 ? BONE.handL : BONE.handR;
+    const thigh = s > 0 ? BONE.thighL : BONE.thighR;
+    const shin = s > 0 ? BONE.shinL : BONE.shinR;
+    const foot = s > 0 ? BONE.footL : BONE.footR;
+    const ax = px(arm), lx = px(thigh);
+    const ay = py(arm), fy = py(fore), hy = py(hand);
+    const ty = py(thigh), sy = py(shin), oy = py(foot);
+
+    // Deltoid, pulled inboard and up so it reads as the top of the shoulder
+    // rather than a ball stuck on the side of one.
+    blob(B, ax - s * 0.012, ay + 0.014, -0.004, 0.070, 0.068, 0.064, 8, 5, arm, Z_TOP,
+      { girth: 1, crease: 0.3 });
+    // Upper arm in two segments so the bicep can be thicker than the elbow.
+    const mid = ay + (fy - ay) * 0.45;
+    tube(B, ax, 0, ay, mid, 0.056, 0.050, S, arm, Z_TOP, { flat: 0.9, crease0: 0.3 });
+    tube(B, ax, 0, mid, fy, 0.050, 0.041, S, arm, Z_TOP, { flat: 0.9 });
+    blob(B, ax, fy, 0, 0.044, 0.044, 0.042, 7, 4, fore, Z_SLEEVE, { girth: 1 });
+    const fmid = fy + (hy - fy) * 0.4;
+    tube(B, ax, 0, fy, fmid, 0.045, 0.040, S, fore, Z_SLEEVE, { flat: 0.9 });
+    tube(B, ax, 0, fmid, hy + 0.01, 0.040, 0.031, S, fore, Z_SLEEVE, { flat: 0.88 });
+    // Hand as a mitten: longer and thinner than the crowd's cube, tapered to the
+    // knuckles, with a thumb pad. No fingers — that is Rung 2.
+    box(B, ax, hy - 0.042, -0.004, 0.032, 0.058, 0.024, hand, Z_SKIN,
+      { girth: 0.6, crease: 0.2, taper: 0.82 });
+    blob(B, ax - s * 0.026, hy - 0.030, -0.006, 0.018, 0.030, 0.019, 6, 3, hand, Z_SKIN,
+      { girth: 0.6, crease: 0.2 });
+
+    // Hip, thigh, knee.
+    blob(B, lx, ty, 0.004, 0.090, 0.084, 0.086, 8, 5, thigh, Z_BOT, { girth: 1, crease: 0.35 });
+    const tmid = ty + (sy - ty) * 0.5;
+    tube(B, lx, 0, ty, tmid, 0.092, 0.076, S, thigh, Z_BOT, { flat: 0.94, crease0: 0.4 });
+    tube(B, lx, 0, tmid, sy, 0.076, 0.062, S, thigh, Z_BOT, { flat: 0.94 });
+    blob(B, lx, sy, 0.004, 0.064, 0.062, 0.062, 7, 4, shin, Z_BOT, { girth: 1 });
+    // Calf: the bulge sits high on the shin, so the taper has to reverse before
+    // it runs to the ankle. A single tapered tube gives a chicken leg.
+    const cy = sy + (oy - sy) * 0.28;
+    tube(B, lx, -0.004, sy, cy, 0.062, 0.070, S, shin, Z_BOT, { flat: 0.92 });
+    tube(B, lx, -0.004, cy, oy + 0.015, 0.070, 0.042, S, shin, Z_BOT, { flat: 0.9 });
+    // Shoe. Longer, with the toe tapered and lifted and a separate heel block —
+    // this is the profile cue the crowd mesh has none of.
+    box(B, lx, 0.042, -0.062, 0.048, 0.042, 0.132, foot, Z_SHOE,
+      { girth: 0.45, crease: 0.25, taper: 0.72 });
+    box(B, lx, 0.030, 0.052, 0.043, 0.030, 0.048, foot, Z_SHOE,
+      { girth: 0.45, crease: 0.3 });
+  }
+
+  return B.geometry('character_hero');
+}
+
 /* ========================================================================== */
 /*  Material                                                                   */
 /* ========================================================================== */
@@ -750,12 +905,15 @@ const _eul = new THREE.Euler(0, 0, 0, 'YXZ');
  */
 export class CrowdMesh {
   /**
-   * @param {number} lod 0 full, 1 simplified
+   * @param {number} lod 0 full, 1 simplified, `HERO` the player's own mesh
    * @param {number} cap maximum simultaneous characters in this mesh
    */
   constructor(ctx, lod, cap, { castShadow = false, name = 'crowd' } = {}) {
     const { material, depth } = characterMaterials(ctx);
-    this.geometry = buildCharacterGeometry(lod);
+    // `HERO` is the player's own mesh. It shares this class, the material, the
+    // animation texture and every clip; only the geometry is its own, which is
+    // what keeps the crowd's per-instance cost exactly where it was.
+    this.geometry = lod === HERO ? buildHeroGeometry() : buildCharacterGeometry(lod);
     this.cap = cap;
     this.n = 0;
 
