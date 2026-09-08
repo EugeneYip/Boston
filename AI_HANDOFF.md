@@ -159,6 +159,26 @@ Do not start with a facial rig. Do not rewrite the character system
 speculatively. The first rung that is worth doing on its own is silhouette and
 proportion, because it is what the player sees in every third-person frame.
 
+**Rung 1 is done** (`2197fef`). `buildHeroGeometry` in `src/gameplay/Character.js`
+is the player's own mesh; `CrowdMesh` dispatches on the exported `HERO` lod id and
+`Player` asks for it. Read that function's comment before touching the character
+system — it records what the crowd mesh gets wrong at third-person range and why,
+with the measurements.
+
+The contract it establishes, and the one to keep: **the player and the crowd share
+gameplay and animation, and differ only in surface.** Same 16 bones, same rest
+pose, same animation texture, same clips, same `ped_body` material. A rung that
+needs a new bone or a new clip is a change to both; a rung that needs a better
+shape is a change to `buildHeroGeometry` alone. Verified after rung 1: peds_near
+still 676 triangles, peds_far still 287, one material across all three meshes.
+
+Two things rung 1 deliberately did NOT do. There is **no jaw or chin** — three
+sizes were tried and every one read as a cracked egg or a muzzle, because two
+overlapping ellipsoids meet in a hard shading seam and cannot blend. A chin wants
+the head built as a single surface, which belongs with rung 8. And **clothing is
+still painted, not modelled**: there is no jacket shell or trouser volume, only
+zone colours on one skin. That is rung 3, and it is the next cheap silhouette win.
+
 ## 1. Orient yourself (10 minutes)
 Read in this order:
 1. `AGENTS.md` — rules, stack, exact validation commands.

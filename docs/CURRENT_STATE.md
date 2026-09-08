@@ -68,6 +68,67 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Player hero mesh — rung 1 (2026-09-07, `2197fef`)
+
+The player was one instance of the pedestrian mesh. It now has its own geometry,
+`buildHeroGeometry`, dispatched by `CrowdMesh` on the exported `HERO` lod id.
+
+**Player and crowd share everything except surface.** Same 16 bones, rest pose,
+animation texture, clips and `ped_body` material. That is the contract to keep.
+
+| | crowd LOD 0 (before) | hero (after) |
+|---|---|---|
+| triangles | 676 | **1310** (one instance: +634 against a 2.1M frame) |
+| side silhouette area | 0.163 m² | **0.222 m²** (+36%) |
+| front silhouette area | 0.358 m² | **0.467 m²** (+30%) |
+| side ÷ front | 0.455 | 0.475 |
+| standing height | 1.712 | 1.722 |
+| head width | 0.198 | **0.172** |
+
+What was actually wrong, measured on the rest pose: the torso was a single centred
+ellipse column, so **in profile the player was a plank** — no chest, no seat, no
+front-to-back movement anywhere. The fix is a per-ring **z offset** on the torso
+loft; radius alone cannot make a profile. Plus a real neck (there was a 0.10 m
+tube reading as a gap), two-segment arms and thighs so bicep and calf can exceed
+the joints below them, a mitten hand with a thumb pad, and a shoe with a tapered
+toe and heel block.
+
+**Crowd cost is unchanged and checked, not assumed:** peds_near 676 tris,
+peds_far 287, and all three meshes share one material — no new draw call, no new
+program. Chase frame 4.3 ms, two bursts agreeing inside 0.4 ms.
+
+**No jaw, on purpose.** Three sizes were tried; every one read as a cracked egg or
+a muzzle. Two overlapping ellipsoids meet in a hard shading seam and cannot blend,
+and a chin needs the head as one surface — that is the face rung, last.
+
+QA: all six clips render clean, crouch folds with no knee pinch or
+interpenetration, and enter → sit → exit works with the seated pose correct at the
+wheel.
+
+## Wall props need a wall, not a zoning cap (2026-09-07, `cb9cba6`)
+
+Everything mounted on a facade sized itself from `frontage.maxHeight`, the
+district ZONING CAP. In the Financial District that is 240 m, so a 26 m building
+could be handed a water stain 107 m up with nothing behind it.
+
+Measured over the streamed set at spawn: **16 of 26 `waterWall` instances stood
+above their own roof, worst by 142.9 m**, and `satDish` had the identical bug
+(1 of 2, by 83.4 m) which nobody had looked for. `grimeWall` escaped only because
+its floors term clamps at 7 storeys — a bound on the symptom, not a fix.
+
+`makeWallHeight` (Props.js) resolves the building actually behind a frontage from
+`buildings.specs`. **Probed, not joined by key** — `_superblocks` merges plots into
+one building and `_clipParcel` insets the footprint, so a frontage and its
+building share neither an id nor an edge. Four inset depths × three points along
+the run resolve 95.1%; the rest have no building and callers skip them. Lazy and
+memoised, because `Props.deps` lacks `buildings` and whichever consumer calls
+`getLayout` first builds the layout.
+
+After: zero wall props above their own roof across Northeastern, the Financial
+District, the North End and Back Bay. Two survivors the audit flagged were the
+audit's own error — at a party wall between a 57 m and a 93 m tower it credited
+the shorter neighbour.
+
 ## Northeastern Wave 0 — road geography + campus district (2026-09-07, `659691a`)
 
 The first hero-district wave that changes the world. Geography only: no building
