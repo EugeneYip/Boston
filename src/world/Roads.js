@@ -23,6 +23,10 @@ const CROWN = 0.09;         // camber drop from centreline to gutter
 const CROSSWALK = 3.0;      // depth of a zebra band
 const KERB_H = 0.145;
 const VERGE = 2.2;          // graded strip that hides the terrain stamp seam
+const VERGE_DROP = 0.46;    // its fall to the toe where the road stamp reaches
+const VERGE_BURY = 0.06;    // metres the toe is sunk INTO the ground it lands on
+const VERGE_GRADE = 32 * Math.PI / 180;   // steepest bank the toe may cut to reach it
+const WALK_FALL = 0.05;     // the pavement's cross-fall back towards the kerb
 
 // Atlas tiles: 0 asphalt aggregate | 1 concrete slab | 2 red brick | 3 granite sett
 const T_ASPHALT = 0, T_CONCRETE = 1, T_BRICK = 2, T_COBBLE = 3;
@@ -1371,17 +1375,33 @@ export default class Roads {
                      scale: KERB_SCALE, cls: W_KERB_TOP });
         const w0 = edge + side * 0.16, w1 = edge + side * (0.16 + walk);
         bands.push({ o0: side < 0 ? w1 : w0, o1: side < 0 ? w0 : w1,
-                     y0: KERB_H + (side < 0 ? 0.05 : 0.0), y1: KERB_H + (side < 0 ? 0.0 : 0.05),
+                     y0: KERB_H + (side < 0 ? WALK_FALL : 0), y1: KERB_H + (side < 0 ? 0 : WALK_FALL),
                      tile: wt, tint: wc, rough: brick ? 0.9 : 0.88,
                      scale: brick ? 1.9 : 2.6, cls: W_WALK });
         // Graded verge behind the pavement. The terrain raster is stamped a
         // little low around every street so it can never poke through the
         // asphalt; this closes that seam instead of leaving a visible lip.
+        //
+        // `-VERGE_DROP` is only the fall the STAMP needs. It is not enough where
+        // the ground is naturally lower than the stamp cap -- a road on fill --
+        // because the stamp only ever cuts down, so the toe hangs in the air and
+        // the band becomes a floating sheet. `_vergeToe` finds the real ground
+        // per station; this stays as the fallback for a build with no terrain.
+        //
+        // The inner edge is `KERB_H + WALK_FALL`, not `KERB_H`: the pavement
+        // falls back towards the kerb, so its OUTER edge -- the one the verge
+        // joins -- is a cross-fall high. Reading only `KERB_H` left a 50 mm lip
+        // along every verge join in the city. On the flat that is a 50 mm step
+        // and nobody notices. At the top of a 24 degree bank it is a wall: it
+        // presents at 52-55 degrees, which is the controller's own climb limit,
+        // and it stopped the player 0.26 m short of the Huntington footway
+        // after he had already climbed 0.86 m of the 0.96 m.
         const v1 = edge + side * (0.16 + walk + VERGE);
         bands.push({ o0: side < 0 ? v1 : w1, o1: side < 0 ? w1 : v1,
-                     y0: side < 0 ? -0.46 : KERB_H, y1: side < 0 ? KERB_H : -0.46,
+                     y0: side < 0 ? -VERGE_DROP : KERB_H + WALK_FALL,
+                     y1: side < 0 ? KERB_H + WALK_FALL : -VERGE_DROP,
                      tile: T_CONCRETE, tint: C.verge, rough: 0.98, scale: 3.4,
-                     cls: W_VERGE });
+                     cls: W_VERGE, toe: side < 0 ? 0 : 1 });
       }
     }
     return { bands, L, R, half, shift, lanes,
@@ -1451,6 +1471,47 @@ export default class Roads {
    * chunk they actually sit in fixes both. Runs overlap by one station and
    * share identical vertex positions, so the split cannot open a crack.
    */
+  /**
+   * Where the verge's outer edge sits at one station, relative to the road.
+   *
+   * A verge is a SHEET with no riser, so its outer edge is a naked trimesh
+   * boundary. Buried, that is invisible and harmless -- which is what the flat
+   * `-VERGE_DROP` buys on the 96% of the network the road stamp levels. On fill
+   * it is neither: measured on Huntington Avenue at Northeastern the campus
+   * ground is 0.76 m below the carriageway, so the toe floated 0.30 m clear of
+   * it, and a walking capsule jammed against that edge and stopped. Not because
+   * 0.30 m is tall -- autostep clears 0.45 m -- but because an edge is not a
+   * step: the contact normal came back at ny = 0.001, a vertical wall at exactly
+   * the height of the capsule's lower sphere, with nothing above it to step onto.
+   * Reproduced from the campus side: 12 s of walking straight at the kerb moved
+   * the player from 22.0 m out to 16.09 m and no further, grounded the whole way.
+   *
+   * So the toe lands ON the ground instead, `VERGE_BURY` under it, and the two
+   * surfaces cross instead of one ending in mid-air. Three things keep that safe:
+   *
+   *   - it only ever goes DOWN. `min` against `-VERGE_DROP` means a street the
+   *     stamp already handles, or one cut into a hill, is untouched.
+   *   - it takes the LOWEST ground within half a far-LOD station either way, so
+   *     the toe cannot surface between two stations and make a new edge. The
+   *     collider is the far mesh, at 36 m spacing; the drawn near mesh is finer.
+   *   - it stops at `VERGE_GRADE`. Past that the bank is no longer walkable and
+   *     a deeper cut would only trade a step for a cliff, so the toe stays put
+   *     and the seam stays open -- as it is today, no worse.
+   */
+  _vergeToe(f, oToe) {
+    const T = this.terrain;
+    if (!T) return -VERGE_DROP;
+    let g = Infinity;
+    for (const along of [-STEP * 1.5, 0, STEP * 1.5]) {
+      const x = f.x + f.dx * along + f.rx * oToe;
+      const z = f.z + f.dz * along + f.rz * oToe;
+      const h = T.groundHeight(x, z);
+      if (h < g) g = h;
+    }
+    const floor = KERB_H - VERGE * Math.tan(VERGE_GRADE);
+    return Math.max(Math.min(-VERGE_DROP, g - f.y - VERGE_BURY), floor);
+  }
+
   _stripChunked(frames, band, sec, dashPhase, far) {
     let start = 0;
     let key = this._key(frames[0]);
@@ -1501,8 +1562,12 @@ export default class Roads {
     for (let i = 0; i < frames.length; i++) {
       const f = frames[i];
       const o0 = band.o0, o1 = band.o1;
-      const y0 = (band.y0 !== undefined ? band.y0 : vy(o0, f));
-      const y1 = (band.y1 !== undefined ? band.y1 : vy(o1, f));
+      let y0 = (band.y0 !== undefined ? band.y0 : vy(o0, f));
+      let y1 = (band.y1 !== undefined ? band.y1 : vy(o1, f));
+      if (band.toe !== undefined) {
+        if (band.toe === 1) y1 = this._vergeToe(f, o1);
+        else y0 = this._vergeToe(f, o0);
+      }
       const x0 = f.x + f.rx * o0, z0 = f.z + f.rz * o0;
       const x1 = f.x + f.rx * o1, z1 = f.z + f.rz * o1;
       // surface normal from the across-vector tilt and the along-slope
@@ -1936,7 +2001,7 @@ export default class Roads {
     const e = this.net.edges[ne.edgeId];
     const sec = e._sec || (e._sec = this.section(e));
     const walk = e.walk > 0.3 ? 0.16 + e.walk : 0;
-    if (ne.distance > sec.half + walk) return null;
+    if (ne.distance > sec.half + walk + (walk ? VERGE : 0)) return null;
 
     const f = this._at(e, ne.t * e.length);
     // A flyover is only your surface if you are actually up on it.
@@ -1950,10 +2015,41 @@ export default class Roads {
       _r.y = f.y - CROWN * t * t;
       _r.kind = 'road';
     } else {
-      // pavement: kerb height plus the same slight fall back towards the kerb
       const over = Math.abs(off) - Math.max(-sec.L, sec.R);
-      _r.y = f.y + KERB_H + Math.max(0, 1 - over / (e.walk || 1)) * 0.05;
-      _r.kind = 'pavement';
+      // `over` is measured from the CARRIAGEWAY edge, so the span it has to
+      // cover is the kerb plus the walk -- `walk`, not `e.walk`. Reading
+      // `e.walk` here made the pavement 0.16 m short and started the verge
+      // that far inboard, which put a phantom 48 mm step at the join.
+      const wk = walk || 1;
+      if (over <= wk) {
+        // pavement: kerb height plus the slight fall back towards the kerb, so
+        // the OUTER edge is the high one. The band is built that way; this used
+        // to read `1 - over/walk`, which is the same 50 mm the other way up, and
+        // it made the query disagree with the geometry -- and with its own
+        // comment -- along every pavement in the city.
+        _r.y = f.y + KERB_H + Math.min(1, over / wk) * WALK_FALL;
+        _r.kind = 'pavement';
+      } else {
+        // The verge. It is drawn, it is in the collider, and until now this
+        // said `null` out here and the caller fell back to the raster -- so the
+        // surface contract denied 2.2 m of graded ground that physics had all
+        // along. That is what made the Huntington frontage look like a 0.95 m
+        // wall when it is a 0.96 m bank, and it is what stopped the player on
+        // it: `Player._stepUpAhead` asks THIS function whether the thing ahead
+        // is a step or a wall, got a flat answer, and let the anti-wall bleed
+        // take 3.40 m/s to zero in five ticks, 0.17 m up a climbable slope.
+        //
+        // `max` against the raster because on a road CUT into a hill the verge
+        // is buried and the ground is the surface; this promises whatever is
+        // drawn on top, not whichever system drew it.
+        const t = Math.min(1, (over - wk) / VERGE);
+        const oToe = Math.sign(off || 1) * (Math.max(-sec.L, sec.R) + wk + VERGE);
+        const top = KERB_H + WALK_FALL;
+        const vy = f.y + top + t * (this._vergeToe(f, oToe) - top);
+        const g = this.terrain ? this.terrain.groundHeight(x, z) : -Infinity;
+        _r.y = vy > g ? vy : g;
+        _r.kind = 'ground';
+      }
     }
     return _r;
   }
