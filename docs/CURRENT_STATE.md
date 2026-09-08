@@ -111,8 +111,8 @@ after. It moves vertices that already existed.
 | physical lip at the verge toe | 0.321 m | **0.000 m** |
 | the bank | a floating sheet | **0.956 m over 2.19 m = 23.6°** |
 | smoothness along 90 m of frontage | — | 27 mm total, **3 mm** worst station jump |
-| campus → footway, real KCC, 9 stations | 0/18 | **15/18** |
-| footway → campus | 9/9 | **9/9** |
+| campus → footway, real KCC | stopped at 16.09 m, 9 s, no progress | **15/18** over 9 stations |
+| footway → campus | not measured on the unpatched build | **9/9** over 9 stations |
 
 The 3 inward misses walk into a hero building wall (ny = 0) — not a grade defect.
 
