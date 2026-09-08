@@ -5,6 +5,10 @@ import {
 } from './BuildingKit.js';
 import { frontStorey, edgeFrame } from './Facades.js';
 import { NEU_HERO_PARTS, NEU_HERO_BUILDINGS, NEU_HERO_SOURCE } from '../data/neu-hero.js';
+import { NEU_WALK_ARRIVAL, NEU_WALK_CONTINUATION, NEU_WALK_SOURCE } from '../data/neu-walks.js';
+import { DISTRICTS, PARKS, STREETS } from '../data/boston-geo.js';
+import { corridorHalf } from './RoadNetwork.js';
+import { geo } from '../core/Geo.js';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 /**
@@ -220,6 +224,101 @@ function orientRing(ring) {
   return THREE.ShapeUtils.area(v2) > 0 ? ring.slice().reverse() : ring;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Campus ground                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Local surface ownership around the opening cluster.
+ *
+ * Wave 3A left the Krentzman lawn stopping dead at the reservation octagon, with
+ * bare terrain beyond it — so the octagon, which is an APPROXIMATION (recorded
+ * area about a recorded centre, not a surveyed boundary), had become the visible
+ * edge of campus. This surface exists to take that job away from it. The octagon
+ * keeps its lawn; it just stops being the edge of anything.
+ *
+ * The shape is not authored. A generous contour is derived from the factual
+ * footprints and then CONSTRAINED, so the boundary is decided by evidence rather
+ * than by taste:
+ *
+ *   contour  convex hull of the opening cluster's footprints, dilated radially
+ *            (radial dilation of a convex hull cannot self-intersect)
+ *   holes    the Krentzman octagon and every footprint inside the contour, so
+ *            building-to-ground edges are exact rather than jagged
+ *   rejected any triangle whose centroid falls outside the `northeastern`
+ *            district, inside the Huntington corridor, or inside a procedural
+ *            building — the last is essential: procedural fabric still stands on
+ *            this ground and lawn under a brownstone is worse than bare dirt
+ *
+ * Terrain is untouched. This is a surface laid ON it, with the same
+ * `polygonOffset` the park surfaces use, and NO collider — the player keeps
+ * walking on the terrain heightfield, which is what kept Wave 3A's max vertical
+ * snap inside the quad at 12 mm.
+ */
+const GROUND = {
+  near: 110,        // m from the quad centre: which footprints define the contour
+  dilate: 24,       // m of ground beyond the hull
+  maxEdge: 7,       // m — subdivision, so the surface follows the ground
+  // Road keep-out is taken from the ROAD, not guessed: `corridorHalf` is
+  // `halfRoad + KERB + walk`, which for Huntington (arterial, 4 lanes) is
+  // 7.0 + 0.16 + 3.6 = 10.76 m — and the PDDL sidewalk centreline there measures
+  // 10.8 m, so the city's own footway sits exactly on that edge. A fixed 11 m
+  // keep-out would therefore have laid campus ground ON the Huntington pavement:
+  // two coplanar surfaces z-fighting along the most important frontage in the
+  // district. `verge` is the strip left between the two.
+  verge: 1.2,       // m of terrain left between the city footway and campus ground
+  roadKeepFallback: 12,   // m, used only if the road network is unavailable
+  walkHalf: 2.2,    // m — paved corridor either side of a factual centreline
+  // The ground is mostly a BAND between buildings, so a generous apron eats it:
+  // at 3.5 m the surface came out 50% paved, which reads as a service yard rather
+  // than a campus. 2.2 m is a walk against a wall, and lawn stays dominant.
+  apron: 2.2,       // m of paved ground against a building face
+};
+
+const _cross = (o, a, b) => (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
+function convexHull(pts) {
+  const p = pts.slice().sort((a, b) => a.x - b.x || a.z - b.z);
+  const lo = [], up = [];
+  for (const q of p) {
+    while (lo.length >= 2 && _cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop();
+    lo.push(q);
+  }
+  for (let i = p.length - 1; i >= 0; i--) {
+    const q = p[i];
+    while (up.length >= 2 && _cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop();
+    up.push(q);
+  }
+  lo.pop(); up.pop();
+  return lo.concat(up);
+}
+function pointInRing(x, z, ring) {
+  let c = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i], b = ring[j];
+    if ((a.z > z) !== (b.z > z) && x < ((b.x - a.x) * (z - a.z)) / (b.z - a.z) + a.x) c = !c;
+  }
+  return c;
+}
+function distToPolyline(x, z, line) {
+  let best = Infinity;
+  for (let i = 1; i < line.length; i++) {
+    const a = line[i - 1], b = line[i];
+    const dx = b.x - a.x, dz = b.z - a.z, L2 = dx * dx + dz * dz;
+    let t = L2 ? ((x - a.x) * dx + (z - a.z) * dz) / L2 : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    const d = Math.hypot(x - (a.x + t * dx), z - (a.z + t * dz));
+    if (d < best) best = d;
+  }
+  return best;
+}
+/** Strip a closed ring's duplicated last vertex. */
+function openRing(ring) {
+  const out = ring.slice();
+  const f = out[0], l = out[out.length - 1];
+  if (out.length > 1 && Math.abs(f.x - l.x) < 1e-6 && Math.abs(f.z - l.z) < 1e-6) out.pop();
+  return out;
+}
+
 export default class NeuHero {
   static id = 'neuHero';
   static label = 'Northeastern hero cluster';
@@ -406,6 +505,8 @@ export default class NeuHero {
     const cgeom = cb.build();
     if (cgeom) { this._addColliders(ctx, cgeom); cgeom.dispose(); }
 
+    this.ground = this._buildGround(ctx, groundAt);
+
     this.stats = {
       parts: this.parts.length, tris, glassTris, capTris,
       draws: this.meshes.length,
@@ -414,11 +515,220 @@ export default class NeuHero {
       colliders: this._colliderCount | 0,
       colliderTris: this._colliderTris | 0,
       source: NEU_HERO_SOURCE.dataset,
+      ground: this.ground,
     };
     console.info(`[neuHero] ${this.parts.length} parts, ${tris | 0} opaque + ` +
       `${glassTris | 0} glass tris, ${bays} bays, ${this.meshes.length} draws, ` +
       `${this._colliderCount | 0} colliders (${this._colliderTris | 0} tris), ` +
       `${(performance.now() - t0) | 0}ms`);
+  }
+
+  /**
+   * Build the campus ground surface. See the `GROUND` note above for why the
+   * shape is constrained rather than authored.
+   *
+   * Three zones, all decided per triangle from evidence: a paved corridor along
+   * the factual PDDL walk centrelines, a paved apron against building faces, and
+   * maintained lawn everywhere else. Two materials, both registry variants of
+   * surfaces the city already builds, so this adds no new material system.
+   */
+  _buildGround(ctx, groundAt) {
+    const K = NEU_WALK_SOURCE.krentzman;
+    // -- contour: the dilated hull of the opening cluster's footprints ---------
+    const near = NEU_HERO_PARTS.filter((p) => {
+      const n = p.outline.length;
+      let cx = 0, cz = 0;
+      for (const [x, z] of p.outline) { cx += x / n; cz += z / n; }
+      return Math.hypot(cx - K.x, cz - K.z) < GROUND.near;
+    });
+    if (!near.length) return null;
+    const pts = [];
+    for (const p of near) for (const [x, z] of p.outline) pts.push({ x, z });
+    const hull = convexHull(pts);
+    if (hull.length < 3) return null;
+    let hx = 0, hz = 0;
+    for (const p of hull) { hx += p.x / hull.length; hz += p.z / hull.length; }
+    const contour = hull.map((p) => {
+      const dx = p.x - hx, dz = p.z - hz, L = Math.hypot(dx, dz) || 1;
+      return { x: p.x + (dx / L) * GROUND.dilate, z: p.z + (dz / L) * GROUND.dilate };
+    });
+
+    // -- holes: the octagon, and every footprint that lies inside the contour --
+    const octPark = PARKS.find((q) => q.name === 'Krentzman Quadrangle');
+    const cand = [];
+    if (octPark) cand.push(openRing(octPark.ring.map(([la, lo]) => geo(la, lo))));
+    for (const p of NEU_HERO_PARTS) cand.push(openRing(p.outline.map(([x, z]) => ({ x, z }))));
+    const holes = cand.filter((r) => r.length >= 3 && r.every((q) => pointInRing(q.x, q.z, contour)));
+
+    // -- triangulate, with the holes cut out -----------------------------------
+    const C = contour.map((p) => new THREE.Vector2(p.x, p.z));
+    if (THREE.ShapeUtils.area(C) < 0) C.reverse();
+    const H = holes.map((r) => {
+      const v = r.map((p) => new THREE.Vector2(p.x, p.z));
+      if (THREE.ShapeUtils.area(v) > 0) v.reverse();
+      return v;
+    });
+    let faces;
+    try { faces = THREE.ShapeUtils.triangulateShape(C, H); } catch (e) {
+      console.warn('[neuHero] ground triangulation failed:', e.message);
+      return null;
+    }
+    if (!faces?.length) return null;
+    const verts = [...C, ...H.flat()].map((v) => ({ x: v.x, z: v.y }));
+    let tris = faces.map((f) => [f[0], f[1], f[2]]);
+
+    // -- subdivide so the surface follows the ground and rejection is fine ------
+    const mid = new Map();
+    for (let pass = 0; pass < 7; pass++) {
+      const next = []; let split = false;
+      for (const t of tris) {
+        const e = [0, 1, 2].map((i) => {
+          const a = verts[t[i]], b = verts[t[(i + 1) % 3]];
+          return Math.hypot(b.x - a.x, b.z - a.z);
+        });
+        const L = e[0] > e[1] ? (e[0] > e[2] ? 0 : 2) : (e[1] > e[2] ? 1 : 2);
+        if (e[L] < GROUND.maxEdge) { next.push(t); continue; }
+        split = true;
+        const i0 = t[L], i1 = t[(L + 1) % 3], i2 = t[(L + 2) % 3];
+        const k = i0 < i1 ? `${i0}_${i1}` : `${i1}_${i0}`;
+        let m = mid.get(k);
+        if (m === undefined) {
+          m = verts.length;
+          verts.push({ x: (verts[i0].x + verts[i1].x) / 2, z: (verts[i0].z + verts[i1].z) / 2 });
+          mid.set(k, m);
+        }
+        next.push([i0, m, i2], [m, i1, i2]);
+      }
+      tris = next;
+      if (!split) break;
+    }
+
+    // -- constraints -----------------------------------------------------------
+    const neuRing = (DISTRICTS.find((d) => d.id === 'northeastern')?.ring || [])
+      .map(([la, lo]) => geo(la, lo));
+    // Every road edge whose corridor could reach the contour, with its own width.
+    const cityNet = ctx.get('city')?.net;
+    const roads = [];
+    for (const e of (cityNet?.edges || [])) {
+      if (!e?.pts?.length || e.pts.length < 2) continue;
+      const half = corridorHalf(e) + GROUND.verge;
+      let touches = false;
+      for (const q of e.pts) {
+        if (Math.hypot(q.x - K.x, q.z - K.z) < GROUND.near + GROUND.dilate + half + 60) {
+          touches = true; break;
+        }
+      }
+      if (touches) roads.push({ pts: e.pts, keep: half });
+    }
+    const huntFallback = roads.length ? null
+      : (STREETS.find((r) => r.name === 'Huntington Avenue')?.path || [])
+        .map(([la, lo]) => geo(la, lo));
+    // Procedural fabric still stands on this ground. `Buildings` already dropped
+    // the parcels that overlap a hero footprint, but the rest are real buildings
+    // and lawn must not run under them.
+    const proc = (ctx.get('buildings')?.plots || [])
+      .filter((q) => q?.polygon?.length >= 3)
+      .map((q) => q.polygon)
+      .filter((poly) => poly.some((v) => Math.hypot(v.x - K.x, v.z - K.z) < 260));
+    const walks = [...NEU_WALK_ARRIVAL, ...NEU_WALK_CONTINUATION]
+      .map((w) => w.pts.map(([x, z]) => ({ x, z })));
+    const footEdges = NEU_HERO_PARTS.map((p) => openRing(p.outline.map(([x, z]) => ({ x, z }))));
+
+    const zones = { lawn: [], paved: [] };
+    let dropped = { district: 0, road: 0, procedural: 0, footprint: 0 };
+    for (const t of tris) {
+      const a = verts[t[0]], b = verts[t[1]], c = verts[t[2]];
+      const cx2 = (a.x + b.x + c.x) / 3, cz2 = (a.z + b.z + c.z) / 3;
+      if (neuRing.length && !pointInRing(cx2, cz2, neuRing)) { dropped.district++; continue; }
+      if (roads.length
+        ? roads.some((r) => distToPolyline(cx2, cz2, r.pts) < r.keep)
+        : (huntFallback && distToPolyline(cx2, cz2, huntFallback) < GROUND.roadKeepFallback)) {
+        dropped.road++; continue;
+      }
+      if (proc.some((poly) => pointInRing(cx2, cz2, poly))) { dropped.procedural++; continue; }
+      // Belt and braces over the holes. `holes` only punches footprints that lie
+      // ENTIRELY inside the contour, so a part straddling the boundary — Cabot
+      // and the Richards/Hayden link both do — leaves its overlap triangulated,
+      // and lawn under a hero building is the same defect as lawn under a
+      // brownstone. Measured before this test: 58 such triangles.
+      if (footEdges.some((r) => pointInRing(cx2, cz2, r))) { dropped.footprint++; continue; }
+      const onWalk = walks.some((w) => distToPolyline(cx2, cz2, w) < GROUND.walkHalf);
+      const onApron = !onWalk
+        && footEdges.some((r) => distToPolyline(cx2, cz2, [...r, r[0]]) < GROUND.apron);
+      zones[(onWalk || onApron) ? 'paved' : 'lawn'].push(t);
+    }
+
+    // -- emit ------------------------------------------------------------------
+    const materials = ctx.get('materials');
+    const made = [];
+    for (const [zone, list] of Object.entries(zones)) {
+      if (!list.length) continue;
+      const pos = [], nrm = [], uv = [], col = [], idx = [];
+      const remap = new Map();
+      const tile = zone === 'paved' ? 4 : 6;
+      for (const t of list) {
+        const tri = [];
+        for (const vi of t) {
+          let m = remap.get(vi);
+          if (m === undefined) {
+            const v = verts[vi];
+            m = pos.length / 3;
+            remap.set(vi, m);
+            pos.push(v.x, groundAt(v.x, v.z) + 0.02, v.z);
+            nrm.push(0, 1, 0);
+            uv.push(v.x / tile, v.z / tile);
+            // A flat tint break per 9 m keeps a big surface from reading as one
+            // painted sheet; the park lawns do the same thing.
+            const s = 0.92 + 0.08 * ((hash2(Math.floor(v.x / 9), Math.floor(v.z / 9)) * 2) % 1);
+            col.push(s, s, s);
+          }
+          tri.push(m);
+        }
+        idx.push(tri[0], tri[1], tri[2]);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      g.setIndex(idx);
+      g.computeBoundingSphere();
+
+      const src = materials?.get?.(zone === 'paved' ? 'concrete' : 'grass');
+      let mat;
+      if (src) {
+        // Registry variant, not a clone: a clone never reaches `Assets.setWetness`
+        // and would stay dry in rain while the park beside it wets. Same trap
+        // `Districts` documents for its own park surfaces.
+        mat = materials.assets.variant(`neu_ground_${zone}`, src, (x) => {
+          x.vertexColors = true;
+          x.color.setRGB(1, 1, 1);
+        });
+      } else {
+        mat = new THREE.MeshStandardMaterial({
+          vertexColors: true, roughness: zone === 'paved' ? 0.9 : 0.98, metalness: 0,
+        });
+      }
+      mat.polygonOffset = true;
+      mat.polygonOffsetFactor = -3;
+      mat.polygonOffsetUnits = -6;
+      const mesh = new THREE.Mesh(g, mat);
+      mesh.receiveShadow = true;
+      mesh.castShadow = false;
+      mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+      mesh.name = `neu_ground_${zone}`;
+      this.root.add(mesh);
+      this.meshes.push(mesh);
+      made.push({ zone, tris: list.length, material: `neu_ground_${zone}` });
+    }
+    return {
+      contourVertices: contour.length, holes: holes.length,
+      trianglesAfterSubdivision: tris.length,
+      lawnTris: zones.lawn.length, pavedTris: zones.paved.length,
+      dropped, zones: made, roadEdgesConsidered: roads.length,
+      walkMetres: NEU_WALK_SOURCE.shippedM, walkWays: NEU_WALK_SOURCE.shippedWays,
+      colliders: 0,
+    };
   }
 
   /**
