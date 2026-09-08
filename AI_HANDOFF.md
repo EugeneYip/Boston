@@ -264,7 +264,28 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
-**The migration was attempted on 2026-09-08 and REVERTED. Boston Common is still
+**The blocker is CLOSED (`35d56ae`) and the migration is UNBLOCKED AGAIN. Boston
+Common is still the production opening, because the closeout mission was not the
+migration — a fresh boot is unchanged. The next mission may re-run the atomic
+migration.**
+
+The obstacle was never the 0.94 m wall: it was a **0.32 m naked trimesh edge** at
+the toe of the graded verge `Roads.section()` has always drawn, floating because
+the terrain stamp only ever cuts down and this frontage is on fill. It beat the
+0.45 m autostep because an edge with air under it is not a step — contact normal
+`ny = 0.001`. Fixing it exposed two older citywide faults: a 50 mm lip where the
+verge met the pavement, and `surfaceAt` returning `null` past the pavement, so the
+**surface contract denied 2.2 m of graded ground physics had all along**. That last
+one is why the frontage measured as a wall, and why `Player._stepUpAhead` saw
+`rise = 0.000` on a climbable slope and the anti-wall bleed took 3.40 m/s to zero
+in five ticks. Three edits in `Roads.js`, **zero geometry added**. Query error
+−0.792 m → 0.007 m; physical lip 0.321 m → 0.000 m; the bank is 0.956 m over
+2.19 m at 23.6°. The full locked flow — walk, enter, drive, exit — passes.
+
+**If you add a band outboard of the walk, extend `surfaceAt` with it.** See
+CONTRACTS.md, "The surface contract reaches past the pavement".
+
+Superseded: **the migration was attempted on 2026-09-08 and REVERTED. Boston Common was still
 the production opening.** The four source edits all worked — spawn landed exactly
 at (−1883, 3.12, 1677) grounded, rig yaw −2.007 gave bearing 65.0°, and the starter
 SUV came out derived (not pasted) in the parking lane at tangent dot 1.000, 8.9 m

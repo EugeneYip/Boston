@@ -278,7 +278,7 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
 | 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
-| 7 | vehicle access passes | **BLOCKED at the opening** — the vehicle itself is fine (4 wheels, 0.000 m drift, F-entry, clean drive-off, F-exit), but from the LOCKED player spawn the car cannot be reached on foot. See the reachability blocker below. |
+| 7 | vehicle access passes | **READY** (grade-transition mission, `35d56ae`) — the blocker is closed. From the LOCKED spawn, on a real KCC with no teleport: 38.62 m in 11.57 s, 0 ungrounded frames, 42 mm max snap, a continuous 3.11 → 4.11 m climb, ending 3.56 m from the car on the footway; then F-enter, sit, 14.02 m at 20.6 km/h with 0 damage and 0 off-road frames, F-exit back onto the footway. Exactly one #f07318 throughout. |
 | 8 | SUV placement passes | **READY** — placement is correct and derived, not pasted: PARKING LANE at 8.55 m from the centreline, tangent dot 1.000, 8.9 m clear of the "NO PARKING / TOW ZONE" plate, 4 wheels, 0 damage, exactly one #f07318. Nothing migrated. |
 | 9 | opening camera composition passes | **READY** — rig yaw −2.007 rad gives forward (0.906, 0.423), bearing 65.0°. First frame carries six hero buildings, the quadrangle, the factual walk and two entrance cues; the SUV is 71° off and one turn puts it at frame centre. Verified on a real boot, no `capture()` override. |
 
@@ -305,8 +305,86 @@ PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the roa
 keep-out was leaking ground onto the Huntington footway, and the ground contour
 overshot at its elongated extremes.
 
-**Eight of nine gates PASS or READY. Gate 7 is BLOCKED, and the canonical
+**All nine gates PASS or READY.** Gate 7 was BLOCKED and is now closed; the
+prerequisite it named has been built. See "THE REACHABILITY BLOCKER — CLOSED"
+below for what the obstacle actually was, which was not what it looked like.
+
+Superseded text follows. **Eight of nine gates PASS or READY. Gate 7 is BLOCKED, and the canonical
 migration was attempted and REVERTED on 2026-09-08.**
+
+### THE REACHABILITY BLOCKER — CLOSED (2026-09-08, `35d56ae`)
+
+**Boston Common is still the production opening, because this mission was not the
+migration.** But the reason to hold it is gone.
+
+**What the obstacle actually was.** Not a 0.94 m wall. That number is
+`surfaceHeight(footway) − groundHeight(campus)`, and the footway really is 0.94 m
+up, but nothing about it was the obstacle. The obstacle was **0.32 m**, and it beat
+a 0.45 m autostep because it is not a step.
+
+`Roads.section()` has always drawn a **graded verge** behind every pavement — a
+2.2 m sheet falling from kerb height to `roadY − 0.46`, in the far mesh and so in
+the collider, whose documented job is to close the terrain-stamp seam. It works on
+the ~96% of the network the stamp levels, where the toe lands 0.06 m *under* the
+ground. On fill it does nothing: the stamp only ever cuts down, so on this frontage
+(campus raster 0.76 m below the carriageway) the toe hung 0.32 m in mid-air as a
+**naked trimesh boundary**. Measured contact normals at the jam: **ny = 0.001** — a
+vertical wall — at 3.42 m, exactly the capsule's lower-sphere centre. An edge with
+air under it offers nothing to step onto. Walking straight at it from 22.0 m out:
+stopped at **16.09 m**, grounded, and no further in 9 s. The earlier mission's
+16.11 m is the same measurement.
+
+**Two older faults it exposed, both citywide:**
+
+1. The verge's inner edge read `KERB_H`; the pavement's outer edge — the one it
+   joins — is `KERB_H + WALK_FALL`. A **50 mm lip** at every verge join in Boston.
+   Trivial on the flat; at the top of a 24° bank it presented at **52–55°**, the
+   controller's own climb limit, and stopped him 0.26 m short after he had already
+   climbed 0.86 m of 0.96 m.
+2. `surfaceAt` returned `null` past the pavement, so callers fell back to the
+   raster and **the surface contract denied 2.2 m of graded ground physics had all
+   along.** That is why the frontage measured as a wall. It is also what stopped
+   him *on* the bank: `Player._stepUpAhead` asks that function whether what is
+   ahead is a step or a wall, got **rise = 0.000** on a climbable slope, and the
+   anti-wall bleed took **3.40 m/s to 0.00 in five ticks** — the exact failure its
+   own comment warns about for kerbs.
+
+**The fix**, all in `Roads.js`, **zero triangles / draws / colliders added** (386,377
+road tris, 47,093 collider tris, 62,147 collider verts, 47 bodies — identical before
+and after; it moves vertices that already existed):
+
+- `_vergeToe` finds the real ground per station and lands the toe on it, buried
+  `VERGE_BURY`. It only ever goes DOWN, takes the lowest ground within half a
+  far-LOD station either side (so the toe cannot surface between the 36 m collider
+  stations and make a new edge), and stops at `VERGE_GRADE`.
+- the verge's inner edge is `KERB_H + WALK_FALL`, so it meets the pavement it joins.
+- `surfaceAt` reports the verge, `kind: 'ground'`, `max`-ed against the raster so a
+  road cut into a hill still answers with the hillside. Also fixed in passing: the
+  pavement cross-fall was inverted, and its span was short by the kerb width.
+
+**Measured, station 200 of edge 486:**
+
+| | before | after |
+|---|---|---|
+| `surfaceAt` vs downward raycast, offsets 10–17 m | −0.792 m | **0.007 m** |
+| physical lip at the verge toe | 0.321 m | **0.000 m** |
+| bank | a floating sheet | 0.956 m over 2.19 m = 43.7%, **23.6°** |
+| bank smoothness along 90 m of road | — | 27 mm total, **3 mm** worst station jump |
+
+**Traversal, real KCC, no teleport, 9 stations over 80 m:** campus→footway
+**15/18** (the 3 misses walk into a hero building wall, ny = 0 — not a grade
+defect); footway→campus **9/9**. Crossing 1.12–1.20 s in, 0.73–0.75 s out; minimum
+speed in the zone 2.98 m/s. Day, night and rain all clean over it — it reads as the
+earth bank it is, not a ramp. Traffic unaffected: 58 cars near the frontage, 19 of
+20 sampled at 36–53 km/h.
+
+**Residual:** on a perpendicular attack, 5 of 15 inward runs show 1–5 ungrounded
+frames and up to a **0.379 m** single-tick rise. That is `Player._stepOver` doing
+its documented kerb lift on a continuous slope; it is bounded by `AUTOSTEP` and it
+never stops him (min speed 2.98 m/s). A diagonal approach — which is what the
+arrival route actually is — shows 42 mm and zero ungrounded frames.
+
+Superseded text follows.
 
 ### THE REACHABILITY BLOCKER — why Boston Common is still the production opening
 
@@ -378,11 +456,11 @@ SUV (169.09, 3.44, 128.9) untouched.
 ### The LOCKED migration target (candidate-lock mission, 2026-09-08)
 
 **CANONICAL NORTHEASTERN OPENING MIGRATION IS JUSTIFIED, THE TARGET IS LOCKED, AND
-IT IS BLOCKED ON ONE PREREQUISITE.** It was attempted on 2026-09-08 and reverted:
-the player cannot walk from the locked spawn to the starter SUV, because the
-Huntington footway stands 0.90-1.03 m above the campus ground against a 0.45 m
-autostep. See "THE REACHABILITY BLOCKER" above. Everything else about the
-migration verified.
+IT IS UNBLOCKED AGAIN** (`35d56ae`). It was attempted on 2026-09-08 and reverted
+because the player could not reach the car; the grade transition that stopped him
+has been built and the whole flow now passes end to end. The targets below are
+unchanged — this mission produced no contrary evidence about any of them. The
+migration itself has still NOT been performed: a fresh boot is Boston Common.
 Neither Wave 4A nor the candidate-lock mission performed it — that is a separate
 owner-authorised mission, and its scope is exactly these four values plus a smoke
 test and docs. Nothing else.

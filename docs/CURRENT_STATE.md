@@ -68,6 +68,78 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Huntington pedestrian grade transition — BLOCKER CLOSED (2026-09-08, `35d56ae`)
+
+> ### THE CANONICAL NORTHEASTERN OPENING MIGRATION IS UNBLOCKED AGAIN.
+>
+> Boston Common is still the production opening — this mission was not the
+> migration and did not perform it. A fresh boot puts the player at
+> (166.01, 3.73, 127.98) with the starter at (169.09, 128.9), unchanged.
+> But the reason to hold the migration back is gone.
+
+**The obstacle was not the 0.94 m wall the last mission measured.** That figure is
+`surfaceHeight(footway) − groundHeight(campus)` and the footway really is 0.94 m
+up, but nothing about it was the obstacle. **The obstacle was 0.32 m**, and it beat
+a 0.45 m autostep because it is not a step.
+
+`Roads.section()` has always drawn a **graded verge** behind every pavement: a
+2.2 m sheet falling from kerb height to `roadY − 0.46`, in the far mesh and so in
+the collider, whose documented job is exactly this seam. It works on the ~96% of
+the network the road stamp levels, where its toe lands 0.06 m *under* the ground
+and is invisible. On fill it does nothing — the stamp only ever cuts down — so on
+this frontage the toe hung **0.32 m in mid-air as a naked trimesh boundary**.
+Contact normals at the jam: **ny = 0.001**, a vertical wall, at 3.42 m — exactly
+the capsule's lower-sphere centre. An edge with air under it has no upward-facing
+surface to step onto, so autostep has nothing to do.
+
+**Two older, citywide faults it exposed.** The verge's inner edge read `KERB_H`
+while the pavement's outer edge — the one it joins — is `KERB_H + WALK_FALL`: a
+50 mm lip at every verge join in Boston, trivial on the flat, but at the top of a
+24° bank it presented at 52–55°, the controller's own climb limit. And `surfaceAt`
+returned `null` past the pavement, so **the surface contract denied 2.2 m of graded
+ground that physics had all along** — which is why the frontage measured as a wall,
+and why `Player._stepUpAhead` saw `rise = 0.000` on a climbable slope and let the
+anti-wall bleed take 3.40 m/s to 0.00 in five ticks.
+
+**The fix is three edits in `Roads.js` and adds no geometry at all** — 386,377 road
+tris, 47,093 collider tris, 62,147 collider verts, 47 bodies, identical before and
+after. It moves vertices that already existed.
+
+| | before | after |
+|---|---|---|
+| `surfaceAt` vs downward raycast, offsets 10–17 m | −0.792 m | **0.007 m** |
+| physical lip at the verge toe | 0.321 m | **0.000 m** |
+| the bank | a floating sheet | **0.956 m over 2.19 m = 23.6°** |
+| smoothness along 90 m of frontage | — | 27 mm total, **3 mm** worst station jump |
+| campus → footway, real KCC, 9 stations | 0/18 | **15/18** |
+| footway → campus | 9/9 | **9/9** |
+
+The 3 inward misses walk into a hero building wall (ny = 0) — not a grade defect.
+
+**The full locked flow now passes, on a real boot with no teleport:** player at
+(−1883, 3.12, 1677) facing 65.0°, SUV derived (not pasted) at (−1856.16, 1649.22)
+2.8 m from the locked anchor with tangent dot 1.000 — then 38.62 m walked in
+11.57 s with **0 ungrounded frames and 42 mm max snap**, a continuous 3.11 → 4.11 m
+climb, F-enter, sit, 14.02 m at 20.6 km/h with 0 damage and 0 off-road frames, and
+F-exit back onto the footway. Exactly one `#f07318` throughout.
+
+Day, night and rain render clean over the bank — no z-fighting, no floating patch,
+no separate "game ramp". Traffic unaffected: 58 cars near the frontage, 19 of 20
+sampled at 36–53 km/h. `surfaceAt` on the verge costs 1.47 µs against 1.24 µs for
+the raster read it replaced.
+
+**Residual.** On a *perpendicular* attack, 5 of 15 inward runs show 1–5 ungrounded
+frames and up to a **0.379 m single-tick rise**: `Player._stepOver` performing its
+documented kerb lift on a continuous slope. Bounded by `AUTOSTEP`, never stops him
+(min speed 2.98 m/s), and absent on the diagonal approach the arrival route
+actually uses. Also: the verge tint is bare earth, so on this frontage the bank
+reads as an unplanted bank rather than grass — correct for an arterial verge,
+but it is now 2.2 m of visible slope where it used to be a buried sliver.
+
+Nothing in the frozen road ownership moved: travel lanes, parking lane, kerb line,
+footway corridor and the Green Line reservation are untouched, the campus ground is
+not redesigned, and player autostep is unchanged at 0.45 m.
+
 ## Northeastern opening — MIGRATION ATTEMPTED AND REVERTED (2026-09-08, docs only)
 
 > ### BOSTON COMMON IS STILL THE PRODUCTION OPENING.

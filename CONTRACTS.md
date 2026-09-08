@@ -1726,6 +1726,26 @@ pavement-sample metric (15 -> 17 of 3,024 more than 25 cm below the drawn
 surface) toward zero — no penetration accompanies it and the worst case in the
 city is pre-existing.
 
+### The surface contract reaches past the pavement (2026-09-08)
+
+`surfaceAt` / `surfaceHeight` used to return `null` — and therefore the bare
+terrain raster — anywhere outboard of the kerb-plus-walk. The road has always
+DRAWN 2.2 m more than that: the graded verge, which is in the far mesh and so in
+the collider. The contract denied it, and two things followed.
+
+- **A frontage on fill measured as a wall.** `surfaceHeight(footway)` minus
+  `groundHeight(campus)` on Huntington at Northeastern is 0.94 m and the answer
+  is honest, but nothing between them was reported, so the profile looked like a
+  cliff when it is a 23.6 degree bank. A whole mission was spent on that reading.
+- **The player stopped on climbable ground.** `Player._stepUpAhead` asks this
+  function whether what is ahead is a step or a wall. It got `rise = 0.000` on a
+  slope and the anti-wall bleed took 3.40 m/s to 0.00 in five ticks.
+
+So the verge is reported now, `kind: 'ground'` (no caller's decision changes) and
+`max`-ed against the raster, so a road CUT into a hill still answers with the
+hillside. **If you add a band outboard of the walk, extend `surfaceAt` with it.**
+Anything that stands on the world, or asks what is underfoot, reads this.
+
 ### Testing notes that cost time to learn
 
 - `surfaceAt(x, z)` returns the hillside **beside** a road cutting as the
