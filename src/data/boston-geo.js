@@ -11,6 +11,21 @@
  * grid with alphabetical cross streets. Those are authored differently on
  * purpose: Back Bay is generated from an exact rotated frame (because that is
  * literally how it was surveyed), everything else is traced by hand.
+ *
+ * Sources. Most of this file is hand-traced, and measured against authoritative
+ * footprints it sits a median ~25 m from reality (docs/neu/ANCHORS.json). The
+ * Northeastern hero district is held to a tighter standard, so the geometry
+ * there comes from a survey source instead:
+ *
+ *   MassGIS-MassDOT Roads and Massachusetts Property Tax Parcels, both from
+ *   MassGIS (Bureau of Geographic Information), Commonwealth of Massachusetts
+ *   EOTSS. Retrieved 2026-09-07. Licence: "This GIS web service is a public
+ *   resource and may be used by anyone for their purposes."
+ *
+ * That licence is why these are the runtime source. OpenStreetMap is more
+ * detailed here and was used to cross-check every line below to within 7 m, but
+ * it is ODbL and share-alike would attach to this file if its geometry were
+ * copied in. Facts corroborated from OSM are fine; its geometry is not imported.
  */
 import { unGeo } from '../core/Geo.js';
 
@@ -418,10 +433,18 @@ export const STREETS = [
   ]),
 
   // === SOUTH END ============================================================
+  // Columbus Avenue, same source and same seam policy: the first segment holds
+  // the Berkeley and Clarendon crossings, the rest follows MassGIS. It also now
+  // runs the extra ~540 m south-west to the Ruggles frontage; it used to stop
+  // dead at the campus's eastern corner, which is why the whole south-east edge
+  // of the district had no street to face.
   S('Columbus Avenue', 'arterial', 3, [
-    [42.34980, -71.07100], [42.34800, -71.07340], [42.34620, -71.07580],
-    [42.34440, -71.07820], [42.34260, -71.08050], [42.34090, -71.08280],
-    [42.33920, -71.08510],
+    [42.34980, -71.07100], [42.34788, -71.07356], [42.34712, -71.07429],
+    [42.34621, -71.07492], [42.34543, -71.07574], [42.34413, -71.07741],
+    [42.34064, -71.08168], [42.34050, -71.08191], [42.34018, -71.08224],
+    [42.34009, -71.08241], [42.33889, -71.08387], [42.33665, -71.08731],
+    [42.33646, -71.08750], [42.33622, -71.08787], [42.33601, -71.08799],
+    [42.33578, -71.08823], [42.33508, -71.08843],
   ]),
   S('Shawmut Avenue', 'street', 2, [
     [42.34940, -71.06540], [42.34740, -71.06760], [42.34540, -71.06980],
@@ -446,6 +469,35 @@ export const STREETS = [
     [42.34230, -71.06400],
   ]),
 
+  // === NORTHEASTERN ========================================================
+  // The two campus-edge streets Wave 0 needs. Forsyth is the spine from
+  // Huntington down to the Ruggles arrival — without it the campus interior has
+  // no street at all and cannot generate frontage. Gainsborough closes the
+  // north-east edge. Both are MassGIS: two lanes, two-way, 8 ft footways.
+  //
+  // Ruggles Street is deliberately NOT here. It is the next most valuable
+  // (+4.1% campus road coverage against Forsyth's +7.0%) but it curves enough
+  // that the Wave-0 extractor could not order its carriageways to better than
+  // 46 m, and a street that wrong is worse than a street absent. It wants
+  // per-carriageway handling in Wave 1.
+  S('Forsyth Street', 'street', 2, [
+    [42.34092, -71.09121], [42.33844, -71.09004], [42.33751, -71.08971],
+    [42.33697, -71.08964],
+  ]),
+  S('Gainsborough Street', 'street', 2, [
+    [42.34261, -71.09033], [42.34223, -71.08782], [42.34216, -71.08757],
+    [42.34207, -71.08741], [42.34120, -71.08620], [42.34043, -71.08497],
+  ]),
+  // Hemenway closes the loop. Without it Forsyth and Gainsborough both ended in
+  // the air: their western ends are 1 m off this line, and END_SNAP is 21 m, so
+  // adding it turns four dangling stubs into junctions and gives the campus edge
+  // a route back to Boylston Street, which it meets within 1 m.
+  S('Hemenway Street', 'street', 2, [
+    [42.33955, -71.09259], [42.33982, -71.09199], [42.34005, -71.09176],
+    [42.34163, -71.09077], [42.34217, -71.09048], [42.34633, -71.08926],
+    [42.34667, -71.08918], [42.34688, -71.08918],
+  ]),
+
   // === FENWAY / KENMORE =====================================================
   S('Massachusetts Avenue', 'arterial', 4, [
     [42.36140, -71.09380], [42.35760, -71.09300], [42.35400, -71.09228],
@@ -454,10 +506,28 @@ export const STREETS = [
     [42.34270, -71.08512], [42.34090, -71.08430], [42.33900, -71.08320],
     [42.33700, -71.08200],
   ], { bridge: [1, 1, 1, 0.6, 0, 0, 0, 0, 0, 0, 0, 0, 0], bridgeHeight: 8 }),
+  // Huntington Avenue, from the MassGIS-MassDOT Roads centreline (public domain;
+  // see the source note at the top of this file). MassGIS models it as two
+  // directional carriageways either side of a median that widens to 48 ft across
+  // the Northeastern campus, so this is the CORRIDOR CENTRE — the average of the
+  // pair — which is what a single-centreline street wants.
+  //
+  // The first segment is held exactly where it was. It carries the Dartmouth,
+  // Blagden and Ring Road crossings at Copley, and moving it would drop three
+  // real junctions to buy accuracy on a stretch nobody is auditing. The
+  // correction eases in over the next ~280 m and is complete ~230 m before the
+  // hero-district envelope, so the campus frontage is pure survey geometry and
+  // the seam is spent on the Copley approach instead.
+  //
+  // The old 9-vertex line ran a median 108 m from the real centreline and 152 m
+  // out at the campus itself, bowed north-west — a chord cutting the corner of a
+  // curve. Corrected, the hero core sits 0.8 m from the MassGIS centreline.
   S('Huntington Avenue', 'arterial', 4, [
-    [42.34980, -71.07660], [42.34840, -71.07880], [42.34700, -71.08110],
-    [42.34560, -71.08330], [42.34400, -71.08560], [42.34220, -71.08840],
-    [42.34040, -71.09140], [42.33900, -71.09420], [42.33760, -71.09720],
+    [42.34980, -71.07660], [42.34857, -71.07853], [42.34819, -71.07906],
+    [42.34775, -71.07952], [42.34672, -71.08025], [42.34626, -71.08066],
+    [42.34509, -71.08215], [42.34337, -71.08418], [42.34135, -71.08672],
+    [42.34109, -71.08717], [42.34087, -71.08767], [42.33797, -71.09491],
+    [42.33755, -71.09607], [42.33732, -71.09695],
   ]),
   S('Beacon Street West', 'arterial', 3, [
     [42.34866, -71.09540], [42.34840, -71.09800], [42.34820, -71.10080],
@@ -733,6 +803,30 @@ export const PARKS = [
       [42.37580, -71.06150],
     ],
   },
+  // Northeastern's two principal open spaces, as no-build reservations rather
+  // than as grass. `reserveOnly` keeps parcels off them without rendering a
+  // park, which is right: these are a quadrangle and a common, and Wave 4 builds
+  // them properly with their real edges, steps and paths.
+  //
+  // Each is an octagon of the recorded area about the recorded centre
+  // (docs/neu/PUBLIC_REALM.json), not a traced outline — a reservation is a
+  // claim about where not to build, and inventing a precise shape here would be
+  // fabricating geometry to look authoritative. Both radii are additionally
+  // capped to stay clear of the Wave-0 carriageways.
+  {
+    name: 'Krentzman Quadrangle reservation', kind: 'lawn', reserveOnly: true, ring: [
+      [42.34001, -71.08796], [42.33985, -71.08817], [42.33985, -71.08847],
+      [42.34001, -71.08868], [42.34023, -71.08868], [42.34039, -71.08847],
+      [42.34039, -71.08817], [42.34023, -71.08796],
+    ],
+  },
+  {
+    name: 'Centennial Common reservation', kind: 'lawn', reserveOnly: true, ring: [
+      [42.33693, -71.08989], [42.33673, -71.09016], [42.33673, -71.09054],
+      [42.33693, -71.09081], [42.33721, -71.09081], [42.33741, -71.09054],
+      [42.33741, -71.09016], [42.33721, -71.08989],
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -785,6 +879,36 @@ export const DISTRICTS = [
   { id: 'backBay', ring: [
     bb(-167, 400), bb(1560, 400), bb(1560, -300), bb(600, -330),
     bb(0, -300), bb(-167, -230),
+  ] },
+  // Northeastern's academic campus. Listed BEFORE fenway and southEnd because
+  // `Districts.bake` takes the first polygon that contains a point, and both of
+  // those overlap this ground.
+  //
+  // The ring is the outline of the university's own COLLEGE-use tax parcels
+  // (MassGIS), closed across the internal service streets and reduced to its
+  // largest connected component. Ownership, not a drawn boundary: it excludes
+  // Ruggles station (MBTA) and Carter Playground (city), which is correct, and
+  // 96.3% of it falls inside the campus polygon OSM publishes independently.
+  //
+  // University-owned rowhouses and shops on the surrounding streets are left in
+  // their own neighbourhoods on purpose. A brownstone the university happens to
+  // own should still generate as a brownstone; making its block "campus" would
+  // be a zoning error wearing an ownership record as a disguise.
+  { id: 'northeastern', ring: [
+    [42.34223, -71.08808], [42.34202, -71.08750], [42.34151, -71.08740],
+    [42.34144, -71.08779], [42.34036, -71.08759], [42.34043, -71.08623],
+    [42.34079, -71.08536], [42.34180, -71.08438], [42.34137, -71.08341],
+    [42.34137, -71.08390], [42.34079, -71.08467], [42.34007, -71.08467],
+    [42.33993, -71.08438], [42.33892, -71.08574], [42.33813, -71.08565],
+    [42.33813, -71.08458], [42.33835, -71.08399], [42.33763, -71.08419],
+    [42.33734, -71.08565], [42.33677, -71.08584], [42.33663, -71.08740],
+    [42.33569, -71.08740], [42.33533, -71.08818], [42.33497, -71.08818],
+    [42.33583, -71.08847], [42.33605, -71.08886], [42.33641, -71.08856],
+    [42.33720, -71.08866], [42.33720, -71.08983], [42.33670, -71.08993],
+    [42.33655, -71.09109], [42.33612, -71.09119], [42.33713, -71.09343],
+    [42.33813, -71.09323], [42.33835, -71.09352], [42.33857, -71.09255],
+    [42.33914, -71.09158], [42.34007, -71.09158], [42.34130, -71.08837],
+    [42.34216, -71.08808],
   ] },
   { id: 'fenway', ring: [
     [42.35060, -71.09000], [42.34900, -71.10800], [42.33400, -71.10800],

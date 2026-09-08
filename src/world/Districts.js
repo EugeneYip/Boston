@@ -25,8 +25,12 @@ const SPAN = (WORLD.maxX - WORLD.minX) + PAD * 2;
 const N = Math.round(SPAN / RES) + 1;
 
 /** Contract order. Index 0 is "nothing in particular". */
+// Every id a district polygon can carry. `bake` stores `IDS.indexOf(id) + 1`, so
+// an id missing from this list rasterises as 0 — which reads back as `null`, the
+// same answer as unclaimed ground. A new district that forgets to register here
+// therefore fails silently and looks exactly like the bug it was added to fix.
 const IDS = ['financial', 'backBay', 'beaconHill', 'northEnd', 'fenway', 'seaport',
-             'southEnd', 'charlestown', 'cambridge', 'park', 'water'];
+             'southEnd', 'charlestown', 'cambridge', 'northeastern', 'park', 'water'];
 
 /** 2-D integer hash. A 1-D hash fed `x*31 + z*17` aliases into visible diagonal
  *  streaks across a lawn the size of Boston Common; mixing the axes separately
@@ -176,7 +180,8 @@ export default class Districts {
    *
    * @param {number} x @param {number} z
    * @returns {'backBay'|'beaconHill'|'northEnd'|'financial'|'fenway'|'seaport'
-   *           |'southEnd'|'charlestown'|'cambridge'|'water'|'park'|null}
+   *           |'southEnd'|'charlestown'|'cambridge'|'northeastern'|'water'
+   *           |'park'|null}
    */
   districtAt(x, z) {
     const i = Math.round((x - MINX) / RES), j = Math.round((z - MINZ) / RES);

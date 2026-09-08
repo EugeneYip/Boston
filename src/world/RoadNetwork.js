@@ -795,6 +795,18 @@ export default class RoadNetwork {
     fenway:     { w: 18, depth: 40, zoning: 'midrise',     maxHeight: 45 },
     charlestown:{ w: 8.0, depth: 24, zoning: 'rowhouse',   maxHeight: 16 },
     cambridge:  { w: 24, depth: 46, zoning: 'midrise',     maxHeight: 60 },
+    // Northeastern's campus. Deep institutional lots, not the 7.8 m rowhouse
+    // frontage this ground used to fall through to: `districtAt` answered null
+    // over most of the campus, and the `Z.southEnd` fallback below then built a
+    // university out of South End brownstones.
+    //
+    // Wide frontage on purpose. The real campus is ~104 buildings on 29 ha, so
+    // a 46 m lot yields tens of parcels rather than hundreds, and what does
+    // generate reads as institutional mass instead of a terrace. The height cap
+    // is a credible ceiling for the block, NOT a claim about any real building:
+    // no authoritative height exists for this campus yet
+    // (docs/neu/BUILDING_INVENTORY.json), and Hero-A massing waits on it.
+    northeastern: { w: 46, depth: 54, zoning: 'midrise', maxHeight: 40 },
     park:       null, water: null,
   };
 
