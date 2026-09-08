@@ -68,6 +68,53 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern opening — MIGRATION ATTEMPTED AND REVERTED (2026-09-08, docs only)
+
+> ### BOSTON COMMON IS STILL THE PRODUCTION OPENING.
+>
+> The canonical migration was implemented in full, verified in four of five
+> respects, and then **reverted**, because the opening it produced was
+> functionally broken: **the player cannot walk to the starter SUV.**
+
+**The blocker.** The Huntington footway is built **0.90–1.03 m above the adjacent
+campus ground**. The player's autostep is **0.45 m** — deliberately sized so that
+"a 45 cm autostep clears any kerb or stair in the city". Measured across **81
+crossing stations over ±160 m** of the arrival frontage, **80 are impassable**; the
+single passable station has no campus ground on it, so it is not a campus→footway
+crossing at all. Empirically: walking straight at the kerb for 12 s, the player
+**never got closer than lat 16.11 m** and was deflected along the wall out to
+lat 54 m.
+
+**It is pre-existing, not introduced here.** Campus ground sits on the terrain
+raster at ~3.11 m; the pavement trimesh is at ~4.05 m. `Player._pickSpawn` already
+documents that `groundHeight` runs "0.4-0.6 m too low near a street" — this gap is
+about double that. It never surfaced because the retired Boston Common opening
+spawns the player ON a sidewalk spawn point, 3.2 m from the car, so nothing ever
+had to climb. Wave 4A's walk stalled at 7.9 m and I attributed it to "the kerb"
+without measuring; this is the same wall, now quantified.
+
+**What DID verify, on a real boot with no teleport:**
+
+| | result |
+|---|---|
+| Player spawn | exactly **(−1883, 3.12, 1677)**, grounded, Y from `city.surfaceHeight + 0.06` |
+| Opening facing | rig yaw **−2.007 rad** → forward **(0.906, 0.423)**, bearing **65.0°** |
+| First frame | six hero buildings, the quadrangle, the factual walk, two entrance cues — campus identity immediate |
+| SUV, derived not pasted | **(−1856.16, 1649.22)**, 2.8 m from the locked anchor, PARKING LANE at 8.55 m, tangent dot **1.000**, heading 2.068, **8.9 m** clear of the tow-zone plate, 4 wheels, 0 damage, exactly one #f07318 |
+| One-turn reveal | a **71°** turn puts the SUV at frame centre, 38.6 m away |
+| Walk toward it | 30 m in 16.7 s, 2 ungrounded frames, 70 mm max snap — then the wall |
+
+**The yaw units are the trap, and the migration patch is recorded in full** in
+`docs/neu/CURRENT_VS_REAL.md` §6, including why the rig value is `bearing − π` and
+why the SUV position must stay derived rather than hard-coded.
+
+**Prerequisite:** a graded transition — kerb ramp or regraded verge — between the
+campus ground and the Huntington footway along the arrival frontage. That is a
+world-geometry change, explicitly out of scope for an atomic migration, and was not
+attempted. An alternative the owner may prefer: spawn on the footway side instead,
+from which the player can both reach the car and drop down onto campus (only the
+climb is blocked) — at the cost of the locked composition.
+
 ## Northeastern opening — FINAL CANDIDATE LOCK (2026-09-08, docs only)
 
 **The migration target is locked. Nothing migrated.** A clean reboot after the

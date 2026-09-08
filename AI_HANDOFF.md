@@ -264,8 +264,23 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
-The next mission is the migration itself: four values, a smoke test, docs, nothing
-bundled. Details in `docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
+**The migration was attempted on 2026-09-08 and REVERTED. Boston Common is still
+the production opening.** The four source edits all worked — spawn landed exactly
+at (−1883, 3.12, 1677) grounded, rig yaw −2.007 gave bearing 65.0°, and the starter
+SUV came out derived (not pasted) in the parking lane at tangent dot 1.000, 8.9 m
+clear of the tow-zone plate. But **the player cannot walk to the car**: the
+Huntington footway stands 0.90-1.03 m above the campus ground against a 0.45 m
+autostep, and 80 of 81 crossing stations over ±160 m are impassable. Empirically he
+is deflected along the wall without ever getting closer.
+
+That defect is pre-existing — it never showed because the retired opening spawns on
+a sidewalk 3.2 m from the car. **The prerequisite is a graded campus-ground →
+footway transition on the arrival frontage**; it is world geometry and was out of
+scope for an atomic migration.
+
+The full migration patch, the yaw-convention trap (`rig yaw = bearing − π`) and the
+reason the SUV must stay derived are all recorded in `docs/CURRENT_STATE.md` and
+`docs/neu/CURRENT_VS_REAL.md` §6, ready to re-apply once the transition exists.
 
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest

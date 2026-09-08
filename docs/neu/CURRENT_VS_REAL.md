@@ -278,9 +278,9 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
 | 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
-| 7 | vehicle access passes | **READY** (4A, live-validated) — the unique #f07318 SUV was temporarily repositioned to the candidate at runtime and driven. At rest: 4 wheels loaded, **0.000 m drift over 4 s**, 0 damage. Driving away on gentle throttle: stayed inside the 13.56 m corridor (8.7 → 10.0 m), **0.70 m ground clearance, 0 damage, no high-centring, 0 frames below 3 wheels**. Restored to canonical with 0.00 m offset. |
-| 8 | SUV placement passes | **READY** (4A) — 8.63 m off the centreline = **PARKING LANE** (7.00–9.80), heading aligned with the road to a dot of **0.999**, not on the travel lane, not on the footway, not in a hero footprint, not in Krentzman, 11.1 m from Dodge's face, line of sight to the player clear. Caveat: nearest street furniture is a **No Parking sign at 1.8 m**. Nothing migrated. |
-| 9 | opening camera composition passes | **READY** (4A) — measured at the real chase rig (3.35 m, fov 62, pitch −0.16) at three facings. Recommended **yaw ≈ 65°**: 6 hero buildings in frame, the quadrangle on screen, 2 arrival-walk points, 2 entrance cues, and the Huntington frontage for urban context. The SUV is NOT in frame at any facing — it sits 92° from the quad bearing, so no 62° fov holds both; it is discoverable with one ~67° turn. |
+| 7 | vehicle access passes | **BLOCKED at the opening** — the vehicle itself is fine (4 wheels, 0.000 m drift, F-entry, clean drive-off, F-exit), but from the LOCKED player spawn the car cannot be reached on foot. See the reachability blocker below. |
+| 8 | SUV placement passes | **READY** — placement is correct and derived, not pasted: PARKING LANE at 8.55 m from the centreline, tangent dot 1.000, 8.9 m clear of the "NO PARKING / TOW ZONE" plate, 4 wheels, 0 damage, exactly one #f07318. Nothing migrated. |
+| 9 | opening camera composition passes | **READY** — rig yaw −2.007 rad gives forward (0.906, 0.423), bearing 65.0°. First frame carries six hero buildings, the quadrangle, the factual walk and two entrance cues; the SUV is 71° off and one turn puts it at frame centre. Verified on a real boot, no `capture()` override. |
 
 Wave 2C moved **3 and 6 to PASS** and **5 to PARTIAL**, and left 4 untouched
 because a factual path on bare ground has to be distorted to read as anything.
@@ -305,7 +305,70 @@ PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the roa
 keep-out was leaking ground onto the Huntington footway, and the ground contour
 overshot at its elongated extremes.
 
-**All nine gates are now PASS or READY** (Wave 4A, `1434346`). Gates 7, 8 and 9
+**Eight of nine gates PASS or READY. Gate 7 is BLOCKED, and the canonical
+migration was attempted and REVERTED on 2026-09-08.**
+
+### THE REACHABILITY BLOCKER — why Boston Common is still the production opening
+
+The migration was implemented in full (four source edits, all four verified live)
+and then reverted, because the opening it produced was functionally broken: **the
+player cannot walk to the starter SUV.**
+
+The Huntington footway is built **0.90–1.03 m above the adjacent campus ground**.
+The player's autostep is **0.45 m** — deliberately sized so that "a 45 cm autostep
+clears any kerb or stair in the city". Measured across **81 crossing stations
+spanning ±160 m** of the arrival frontage, **80 are impassable**; the one that
+passes has no campus ground on it at all, so it is not a campus→footway crossing.
+Empirically, walking straight at the kerb for 12 s the player never got closer than
+lat 16.11 m and was deflected along the wall out to lat 54 m.
+
+So the locked opening gives a correct spawn, an excellent first frame and a
+one-turn reveal of the orange SUV — and no way to reach it. Driving is
+unreachable, not merely inconvenient.
+
+**This is a pre-existing world defect, not one the migration introduced.** The
+campus ground sits on the terrain raster at ~3.11 m; the pavement trimesh is at
+~4.05 m. `Player._pickSpawn` already documents that `groundHeight` runs "0.4-0.6 m
+too low near a street" — here the gap is roughly double that. It never surfaced
+because the retired Boston Common opening spawns the player ON a sidewalk spawn
+point, 3.2 m from the car, so nothing ever had to climb.
+
+**Prerequisite for migration:** a graded transition — kerb ramp or regraded verge —
+between the campus ground and the Huntington footway along the arrival frontage.
+That is a world-geometry change and was explicitly out of scope for an atomic
+migration, so it was not attempted.
+
+An alternative the owner may prefer instead: spawn on the footway side rather than
+on campus ground. From the pavement the player can walk to the car AND drop down
+onto the campus ground (a 0.94 m fall is fine; only the climb is blocked). It costs
+the locked composition, which is why it was not taken unilaterally.
+
+### The migration patch, ready to re-apply
+
+Four edits, all verified working before revert:
+
+1. **`src/data/opening.js`** (new) — `OPENING_PLAYER {x:-1883, z:1677}`,
+   `OPENING_YAW -2.007`, `OPENING_SNAP_R 6`, `OPENING_SUV_ANCHOR {x:-1858.6, z:1650.6}`.
+2. **`Player._pickSpawn`** — anchor on `OPENING_PLAYER`, and bound the
+   sidewalk snap to `OPENING_SNAP_R`; the retired opening snapped to the nearest
+   sidewalk point at ANY distance, which would silently undo the lock.
+3. **`Player`** — initial `this._yaw = OPENING_YAW`; **`CameraRig.init`** — initial
+   `this.yaw = OPENING_YAW`. `Player._lookYaw()` prefers `rig.yaw`, so the rig is
+   the authoritative facing owner.
+4. **`Player.init`** — pass `OPENING_SUV_ANCHOR` to `spawnStarter` instead of the
+   spawn, so the network still solves the slot and the heading.
+
+**The yaw units are the trap.** `CameraRig._apply` builds forward as `(0,0,-1)`
+rotated about +Y, i.e. `(-sin yaw, -cos yaw)`. A compass bearing measured as
+`atan2(dx, dz)` is **π out**: the composition was authored at bearing 65° (1.134
+rad) and the rig value that produces it is **1.134 − π = −2.007**. Verified live:
+forward came out (0.906, 0.423), bearing 65.0°.
+
+**Do not hard-code the SUV position or heading.** `Vehicles.spawnStarter` already
+solves for a parking slot on the player's side of the street, over road surface,
+clear of parked-car props, preferring a gap, and takes the heading from the road
+tangent. Anchored at the locked coordinate it landed 2.8 m away at
+(−1856.16, 1649.22), heading 2.068, tangent dot 1.000. Gates 7, 8 and 9
 were live-validated rather than inferred: the SUV was temporarily repositioned at
 runtime, entered with F, driven off inside the corridor, exited onto the footway,
 and restored to canonical with 0.00 m offset — exactly one #f07318 identity
@@ -314,7 +377,12 @@ SUV (169.09, 3.44, 128.9) untouched.
 
 ### The LOCKED migration target (candidate-lock mission, 2026-09-08)
 
-**CANONICAL NORTHEASTERN OPENING MIGRATION IS JUSTIFIED AND THE TARGET IS LOCKED.**
+**CANONICAL NORTHEASTERN OPENING MIGRATION IS JUSTIFIED, THE TARGET IS LOCKED, AND
+IT IS BLOCKED ON ONE PREREQUISITE.** It was attempted on 2026-09-08 and reverted:
+the player cannot walk from the locked spawn to the starter SUV, because the
+Huntington footway stands 0.90-1.03 m above the campus ground against a 0.45 m
+autostep. See "THE REACHABILITY BLOCKER" above. Everything else about the
+migration verified.
 Neither Wave 4A nor the candidate-lock mission performed it — that is a separate
 owner-authorised mission, and its scope is exactly these four values plus a smoke
 test and docs. Nothing else.
