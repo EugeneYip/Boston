@@ -270,25 +270,42 @@ work, because both are cheap and everything downstream inherits them.
 
 The canonical spawn and the `#f07318` starting SUV move **together**, and only when:
 
-1. real geography established in the envelope;
-2. major roads correct — Huntington median offset under ~10 m;
-3. key campus building massing credible;
-4. key campus public realm credible;
-5. eye-level visual audit passes;
-6. player pedestrian access passes;
-7. starting SUV physical placement passes;
-8. vehicle exit/entry access passes;
-9. opening camera composition passes.
+| # | gate | status after Wave 2C (`641f8cc`) |
+|---|---|---|
+| 1 | real geography established in the envelope | **PASS** — Wave 0/1A |
+| 2 | major roads correct, Huntington offset under ~10 m | **PASS** — 0.8 m from the MassGIS centreline |
+| 3 | key campus building massing credible | **PASS** — 18 survey-derived volumes, heights validated sub-metre against two known towers |
+| 4 | key campus public realm credible | **NOT STARTED** — deliberately deferred, see below |
+| 5 | eye-level visual audit passes | **PARTIAL** — enclosure, scale and horizontality pass; no fenestration and a bare ground plane do not |
+| 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear |
+| 7 | starting SUV physical placement passes | **EVIDENCE ONLY** — candidate measured at (−1848, 1645), 9.2 m off the centreline, 2.2 m clear of the carriageway. Nothing placed. |
+| 8 | vehicle exit/entry access passes | **EVIDENCE ONLY** — 47.2 m from the player candidate, 33.7 s walk, line of sight clear. The enter/exit flow itself was verified elsewhere, not here. |
+| 9 | opening camera composition passes | **PARTIAL** — the framing works from the player candidate; the ground plane and blank walls do not carry it yet |
 
-Until then the spawn stays at world (166, 128) on the Boston Common edge, 2,684 m
-from the campus centroid.
+Wave 2C was asked to move 3, 4, 5 and 6 toward PASS. It moved **3 and 6 to PASS**,
+**5 to PARTIAL**, and left **4 untouched on purpose**: the quadrangle ground is
+still bare terrain, and a factual path laid on bare ground with no kerb or surface
+treatment has to be distorted to read as anything. The standing rule is to defer
+rather than distort. Public realm is the next wave's first job, and it should come
+with a ground plane.
+
+**Do not migrate on the strength of one good-looking cluster.** Gate 5 fails at
+arm's length: the masses are blank brick with no windows, which is obvious
+standing beside Hastings on Huntington.
+
+Until every row passes, the spawn stays at world (166, 128) on the Boston Common
+edge, 2,684 m from the campus centroid.
 
 ## 7. Open factual questions
 
-1. **No authoritative building heights exist.** Neither the university layer nor
-   OSM supplies them at coverage. Options: derive from gross area over footprint
-   (upper bound, confidence D), survey by hand from elevation photographs, or find
-   a BPDA/Assessing height field. **This is the biggest blocker to Wave 2.**
+1. ~~**No authoritative building heights exist.**~~ **RESOLVED** — City of Boston
+   *Buildings with Roof Breaks* (PDDL, 2010 snapshot) carries `GRND_ELEV_2010`,
+   `ROOF_ELEV_2010` and `BLDG_HGT_2010`, and validates sub-metre against two
+   towers whose heights are independently known (Prudential 228 m against 228,
+   111 Clarendon 240.2 against 241). It also SUPERSEDES the Boston 3D figures,
+   which run a median +6.6 m high here. The opening cluster's heights are in
+   `HERO_FOOTPRINTS.json` and shipped in `src/data/neu-hero.js`. Coverage beyond
+   the opening cluster is not yet extracted.
 2. **Licensing.** ODbL share-alike on anything OSM-derived that ships, and the
    university ArcGIS terms are unverified. An owner decision, not a technical one.
 3. **The Ruggles rail cut is unmeasured.** USGS point sampling did not resolve it.

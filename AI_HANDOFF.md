@@ -187,6 +187,29 @@ is the player's own mesh; `CrowdMesh` dispatches on the exported `HERO` lod id a
 system — it records what the crowd mesh gets wrong at third-person range and why,
 with the measurements.
 
+**Northeastern's opening cluster is real geometry as of `641f8cc`.** Eighteen
+volumes across the Krentzman quadrangle and the Huntington frontage, each a City
+of Boston PDDL roof-break polygon extruded to its own recorded height — 2,984
+triangles, ONE draw call, 18 trimesh colliders, no new material. The quadrangle
+reads as a quadrangle at eye level: low and horizontal at 16-19 m, which is what
+the corrected heights say and NOT the 24-25 m wall the superseded Boston 3D
+figures implied.
+
+Three things to know before touching it. **The unit of geometry is the source
+part, not the named building** — 661061 is the dominant mass of BOTH Ell and
+Curry, and two more parts are shared, so iterating buildings extrudes them twice.
+**Procedural suppression happens at plot generation**, in
+`Districts.inHeroFootprint` and `Buildings.heroOverlap`, so a wrong building is
+never built rather than built and hidden; both gates are needed because
+`buildPlots` tests one point against a 46 x 54 m lot. And **`src/data/neu-hero.js`
+is generated** by `tools/neu-hero/build.mjs` — regenerate, never hand-edit.
+
+The honest gap: there is **no fenestration**. The masses are blank brick, obvious
+standing beside Hastings on Huntington, and the quadrangle ground is still bare
+terrain. Public realm was deferred rather than laid on bare ground. Details and
+the migration-gate status are in `docs/CURRENT_STATE.md` and
+`docs/neu/CURRENT_VS_REAL.md` §6.
+
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest
 pose, same animation texture, same clips, same `ped_body` material. A rung that

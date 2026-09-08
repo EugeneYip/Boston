@@ -68,6 +68,95 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern hero district — Wave 2C, Krentzman / Huntington massing (2026-09-08, `641f8cc`)
+
+The opening cluster is survey geometry now. Eighteen volumes across the Krentzman
+quadrangle and the Huntington frontage, each a PDDL roof-break polygon from the
+City of Boston extruded to its own recorded height. `src/data/neu-hero.js` is
+GENERATED from `docs/neu/HERO_FOOTPRINTS.json` by `tools/neu-hero/build.mjs` —
+regenerate it, do not hand-edit it.
+
+**The unit of geometry is the SOURCE PART, not the named building.** Three parts
+are shared between two buildings each: 661061 is the dominant mass of BOTH Ell and
+Curry, 666437 is a tier of both Richards and Hayden, 676669 of both Dodge and
+Hastings. Emitting per building extrudes those twice — coincident surfaces and
+doubled colliders. 12 buildings x 22 tiers de-duplicates to 22 parts: 11 PRIMARY,
+7 SECONDARY, 4 MICRO withheld under 100 m2.
+
+| | measured |
+|---|---|
+| parts rendered | 18 of 22 |
+| triangles | **2,984** (568 of them roof caps) |
+| draw calls | **1** — plus 2 shadow-cascade draws, so +3 in `stats()` |
+| colliders | 18 trimesh, 2,984 collision triangles |
+| materials | **0 new** — shares `buildings.matOpaque` |
+| frame cost | 2.1 ms at 1920x1080 `high`, 424 draws / 1.01M tris at the quad |
+
+**Suppression is at plot generation, which is what makes it durable.** A wrong
+building is never built rather than built and hidden, so no collider, façade or
+frontage prop can survive behind it, and no chunk refresh or LOD change can undo
+it. Two gates, and both are needed:
+
+- `Districts.inHeroFootprint` — exact point-in-footprint, consulted by
+  `Districts.isReserved`, which `RoadNetwork.buildPlots` uses as its block test.
+  The footprints live in `Districts.heroPolys`, NOT in `parkPolys`: they must not
+  raster as `park`, grow grass, or attract park paths and planting.
+- `Buildings.heroOverlap` — the exact polygon test, run on `city.plots` BEFORE
+  `_superblocks` merges anything. Necessary because `buildPlots` tests exactly ONE
+  point, the parcel mid-point, and the `northeastern` lot template is 46 x 54 m: a
+  parcel centred in the gap between two halls can still reach 27 m into one. Run
+  after merging it would delete legitimate surrounding campus with the offender.
+
+Measured by re-running `buildPlots` with the hero test stubbed out: **10
+procedural parcels would have stood on the factual footprints, 6 of them inside
+Cabot's 7,926 m2 arena outline** — up to 40 m tall, since the district template is
+midrise. Note `buildPlots` is not bit-reproducible across calls (re-running it
+moved the total by 5 of ~10,950), so treat the parcel counts as +/-5.
+
+**The two reservation octagons were capped a second time**, for the reason
+`boston-geo.js` already establishes: survey footprints outrank an area-derived
+octagon. Krentzman's 32.3 m radius reached 1.3 m into Richards and Centennial's
+40.9 m reached 5.0 m into Ryder's lower wing and 2.1 m into Shillman. Same
+octagons, same recorded centres, scaled to 30.1 m and 35.0 m. Krentzman keeps
+2,565 m2 open — still the quadrangle. The freed annuli are 1-5 m wide against a
+`MIN_DEPTH` of 8, so no parcel can appear in them.
+
+**Material family is chosen by DOCUMENTED CONSTRUCTION YEAR**, from the
+university's own inventory: pre-1960 brick over granite, 1960-79 concrete, 1980+
+brick over limestone, and a shared part takes the earlier year. It is a broad era
+cue, not a claim about any wall — `yearBuilt` cannot tell an original fabric from
+a re-clad one, and Mugar reads later than its 1941 date. Being consistently wrong
+from a stated rule beats being unevenly right from memory. One line to change in
+`NeuHero.ERA` when façade evidence arrives.
+
+**What the composition does.** Krentzman reads as a genuine three-sided
+quadrangle: Ell/Curry closes the south-east end, Mugar and Hayden flank it,
+Richards and Dodge frame the Huntington mouth, and the whole ensemble is low and
+horizontal at 16-19 m — which is what the corrected heights say, and NOT the
+24-25 m wall the superseded Boston 3D figures implied. Cabot reads wide and low at
+11.61 m. Hastings at 27.83 m is the tallest thing there and sits off the
+ceremonial axis, so it does not dominate the quad. The granite base course is what
+makes the masses read as buildings at eye level; it is massing, not ornament.
+
+**Before/after was done in ONE session by toggling the hero mesh**, at identical
+cameras and identical atmosphere, because that isolates the hero contribution
+exactly and sidesteps the capture-drift trap. Hero off at the quad centre is the
+empty dirt plain `docs/neu/README.md` describes; hero on is an enclosed
+quadrangle. A true procedural before — the 40 m midrise blocks that would have
+stood there — was NOT rendered: the only routes to it were a destructive tree
+operation or test-only code in a production path, so it is quantified above
+instead.
+
+**Gaps, and none of them are hidden.** There is **no fenestration** — the masses
+are blank brick, which is very apparent standing next to Hastings on Huntington,
+and it is the single biggest remaining gap. There are **no parapets**, so walls end
+abruptly at the roof line. The Krentzman ground plane is **bare terrain** — no
+paving, no lawn, no paths — so the quad is an enclosed dirt yard. Phase 5's
+minimum public realm was **deliberately deferred**: a factual path laid on bare
+ground with no kerb or surface treatment would have to be distorted to look like
+anything, and the brief's own rule is to defer rather than distort. The campus
+interior beyond the cluster is still empty ground.
+
 ## Player hero mesh — rung 3, clothing volume (2026-09-08, `835fd48` + cuff fix)
 
 Clothing was purely a per-vertex colour zone: `aZoneShade` selects `aTop`/`aBot`/

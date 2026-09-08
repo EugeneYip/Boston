@@ -1798,3 +1798,58 @@ one car and a key that takes another is worse than no prompt.
   far worse failure than occasionally preferring one through a railing.
 - `Traffic.carsWithin` and `VehicleFactory.within` exist to feed this ranking.
   `nearestCar` and `nearest` are unchanged and still answer their own question.
+
+## Factual hero footprints own their ground (2026-09-08)
+
+`NeuHero` (`static id = 'neuHero'`) builds the Northeastern opening cluster from
+survey outlines. Two rules bind anything that touches that ground.
+
+**1. The unit is the SOURCE PART, not the named building.** Three PDDL roof-break
+parts are shared between two named buildings each — 661061 is the dominant mass of
+BOTH Ell Hall and Curry Student Center, 666437 is a tier of both Richards and
+Hayden, 676669 of both Dodge and Hastings. Iterating `NEU_HERO_BUILDINGS` and
+extruding each building's `parts` renders those three twice: coincident surfaces,
+z-fighting, and two colliders on one wall. **Iterate `NEU_HERO_PARTS`**, which is
+already de-duplicated, and use `NEU_HERO_BUILDINGS` only as evidence — names,
+status, headline heights, and which parts each building claims.
+
+**2. Suppression belongs at plot generation, never at `mesh.visible`.** A
+procedural building overlapping a hero footprint must never be *created*, because
+a created one leaves a collider, a façade and frontage-driven props that outlive
+any visibility flag — the same failure mode as the snow banks in `Props.hidden`.
+The two gates are:
+
+- `Districts.inHeroFootprint(x, z)` — exact point-in-footprint over
+  `Districts.heroPolys`, consulted by `Districts.isReserved`, which
+  `RoadNetwork.buildPlots` takes as its block predicate.
+- `Buildings.heroOverlap(polygon)` — exact polygon overlap, applied to
+  `city.plots` in `_collectPlots` BEFORE `_superblocks` merges anything.
+
+Both are required. `buildPlots` tests exactly ONE point — the parcel mid-point —
+and the `northeastern` lot template is 46 x 54 m, so a parcel centred in the gap
+between two halls still reaches 27 m into one of them. Measured: the point test
+alone leaves 5 overlapping parcels standing. And the polygon test must run
+*before* merging, because rejecting a merged superblock deletes legitimate
+surrounding campus along with the offender.
+
+**`heroPolys` is deliberately NOT `parkPolys`.** A footprint is no-build, but it is
+not open space: pushing it in as another `reserveOnly` ring would make every
+consumer of `parkPolys` — the district raster, grass meshes, `ParkPaths`,
+`Props.parkAreas` — learn a new exception, and one of them would forget.
+
+**`src/data/neu-hero.js` is GENERATED.** `node tools/neu-hero/build.mjs` from
+`docs/neu/HERO_FOOTPRINTS.json`. Do not hand-edit it, and do not re-derive GIS
+geometry unless a concrete package defect is found. Outlines are closed `[x, z]`
+rings already projected to world metres; `heightM` is the part's own height
+(`ROOF_ELEV - GRND_ELEV`), NOT a height above the game terrain.
+
+**Heights: the Roof Breaks layer supersedes Boston 3D.** Boston 3D runs a median
++6.6 m high on this quadrangle and implies 4.9-5.9 m per storey against this
+layer's 3.7-4.3. **Never reintroduce the ~24-25 m Krentzman values.** Ell/Curry is
+16.00 m, Cabot 11.61 m, Hastings 27.83 m.
+
+**Roof caps need real triangulation.** `MeshBuf.cap` fans from vertex 0, which is
+correct for the convex-ish plans `Landmarks` feeds it and wrong for a survey
+outline — Ell's is 95 vertices of courtyard and wing, and a fan across a concave
+ring lays triangles outside the building. `NeuHero.capPoly` triangulates with
+`THREE.ShapeUtils` and emits one 3-vertex `cap` per triangle.
