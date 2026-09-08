@@ -69,7 +69,71 @@ Shillman, Dana. That is the arrival sequence. The buildings the player would
 stand in front of are precisely the ones whose heights are least supported, and
 gross-area inference is an upper bound, not a measurement.
 
-## Recommendation
+## RESOLVED 2026-09-08 — the 3D spike ran, and it works
+
+The lead below was taken. `HEIGHT_SOURCE.md` and `HEIGHT_MEASUREMENTS.json` are
+the result; this section supersedes the recommendation that follows it.
+
+**Heights did not require decoding meshes.** Boston's I3S scene layer publishes a
+per-feature attribute table carrying `Height_Ft`, and
+`Height_Ft === Z_Max_Ft − Gnd_El_Ft` holds with **zero deviation across all 4,616
+objects** in the envelope. Height is a difference, so it is datum-independent —
+which matters, because absolute Z could *not* be reconciled with USGS 3DEP and is
+left unresolved on purpose.
+
+| | Hero-A (31) | Hero-B (9) |
+|---|---|---|
+| **MEASURED** — unique object | **12** | **5** |
+| **COMPLEX** — one object covers several buildings | **15** | 2 |
+| CONFLICT — rival object of very different height | 4 | 2 |
+| UNRESOLVED | **0** | 0 |
+
+**27 of 31 Hero-A now carry an authoritative measured height**, per building or
+per complex. That was 0 before.
+
+### The eleven that blocked the gate
+
+The Krentzman quadrangle — the eleven Hero-A buildings that previously had
+gross-area inference and nothing else — now reads:
+
+- **measured outright:** Cabot 17.6 m, Mugar 25.6 m, Ryder 23.7 m, Egan 28.1 m,
+  Shillman 22.8 m
+- **measured as a pair:** Ell + Curry 24.8 m, Richards + Hayden 24.4 m, Dodge +
+  Hastings 25.1 m
+- **conflict:** Dana Research Center (26.7 m, with a 10.4 m rival nearby)
+
+Every value in the quadrangle lands between **24.4 and 25.1 m** — which is what a
+1930s quadrangle designed as one composition should measure, and is the strongest
+internal evidence that the extraction is sound. `COMPLEX` here is a statement
+about *resolution*, not reliability: the group height is the architecturally
+correct unit for massing that quadrangle anyway.
+
+### Validation
+
+Against evidence that had no part in producing the measurement: EXP reads 56.3 m
+against an independently tagged 56.6928 m (0.7%); Lightview 3.94 m per storey
+over 21, International Village 3.41 over 22, East Village 4.19 over 17, West
+Village H 4.36 over 16. The Prudential, outside the campus, reads 233.6 m against
+a real roof near 228 m.
+
+### Wave-2 gate — OPEN for Hero-A massing
+
+The front-door cluster is measured, which was the whole blocker. Conditions:
+
+1. **`COMPLEX` heights mass the group, not the building.** Ell and Curry get one
+   height because the model gives one; do not invent a difference between them.
+2. **The four conflicts stay out** until resolved — Dana, Hastings, 452
+   Huntington, East Village. Three of the four are the matcher being cautious
+   beside a tall neighbour rather than the data being wrong, so they are likely
+   cheap to settle.
+3. **Storeys are still storeys.** No storey-to-metre conversion is authorised or
+   needed now — real heights exist.
+4. **Absolute elevation is still unresolved.** Use height above ground; do not
+   take `Gnd_El_Ft` as an elevation in the game's vertical frame.
+
+---
+
+## Recommendation (superseded — kept for the reasoning)
 
 **Wave 2 may open for Hero-B, not for Hero-A.**
 

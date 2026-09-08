@@ -92,11 +92,13 @@ transit context, and the surrounding urban fabric.
 6. vehicle and pedestrian access passes.
 
 **Gate items 1 and 2 are done** (factual geography; major roads correct).
-**Item 3 — key building massing — is blocked, and `docs/neu/HEIGHT_GATE.md` says
-exactly how far.** Hero-B may proceed (6 of 9 corroborated); Hero-A may not (11 of
-31 rest on gross-area inference, and those eleven are the Krentzman arrival
-quadrangle). The unblock is Boston 3D Buildings (Existing) — PDDL, authoritative,
-an I3S SceneServer needing a reader.
+**Item 3 — key building massing — is now UNBLOCKED.** The Boston 3D spike ran and
+worked: 27 of 31 Hero-A buildings carry an authoritative measured height, and the
+Krentzman quadrangle that blocked the gate reads 24.4–25.1 m throughout. See
+`docs/neu/HEIGHT_GATE.md` (verdict) and `docs/neu/HEIGHT_SOURCE.md` (method).
+Two things to carry forward: heights come from an attribute table, **not** from
+decoding meshes, and **absolute Z is deliberately unresolved** — use height above
+ground and never treat `Gnd_El_Ft` as an elevation in the game's vertical frame.
 
 **Licensing is settled for this district.** MassGIS (roads, parcels) is
 public-domain with credit requested; **City of Boston open data is PDDL**, a
