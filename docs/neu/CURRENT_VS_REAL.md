@@ -83,6 +83,70 @@ the binding height constraint in any district); Wave 0's new frontage is what
 made instances of it visible. Fixing it means teaching Props about built heights,
 which is a Props change and not Wave 0's to make.
 
+## 0b. Wave 1A — Ruggles, the public-realm licence gate, and the height gate
+
+### Ruggles Street
+
+| | before (Wave 0, rejected) | after |
+|---|---|---|
+| vs MassGIS raw | max **46 m** | median **0.5 m**, p90 1.2, max 1.5 |
+| vs OSM (independent) | — | median 1.2 m, p90 3.3, max 3.8 |
+| vertices | — | 5, max turn 15.6° |
+
+Wave 0 blamed the street; the fault was the extractor. MassGIS publishes Ruggles
+as 19 segments that chain end-to-end exactly, so an endpoint walk reproduces it —
+no fitting, no principal axis, no carriageway pairing. It is **not divided**:
+`OPP_LANES` and `MED_WIDTH` are 0 throughout.
+
+The 94 m "gap" between its two runs is **Tremont Street**. Ruggles meets Tremont,
+and its continuation leaves Tremont 94 m further along — a staggered crossing.
+Only the Huntington-to-Tremont run is committed; it crosses the corrected
+Huntington at (−2468, 1968), taking Huntington from 9 junctions to 10. The 642 m
+east of Tremont is held back because its real junction is missing from the game
+and it would instead snap to Columbus Avenue 20.2 m away, inventing a junction.
+
+Campus road coverage within 40 m: **35.7% → 39.5%**; within 200 m now **100%**.
+Named streets in the envelope 10 → 11.
+
+### Public-realm source — gate cleared, import deferred
+
+**Northeastern's ArcGIS is settled and the answer is no.** Every licence field is
+empty at item and service level, and the university's published copyright policy
+is permission-required. Absence of a stated restriction is not a grant.
+
+**The City of Boston publishes what is needed, under PDDL** — a public-domain
+dedication. Sidewalk Centerline carries `PWALK-CL` private walks: **4,914 m of
+campus interior path inside the district, plus 5,928 m of sidewalk**, all public
+domain. The licence question is therefore answered, and answered well.
+
+**The import is still deferred, for a reason the brief could not have known.**
+The campus currently holds ~70 *procedurally generated* buildings that do not
+correspond to real ones. Importing real 2011 path geometry now would route real
+paths through fake buildings, and every path that landed correctly would do so by
+accident. **Paths and real footprints have to arrive together** — the constraint
+is sequencing, not licensing. That is a Wave 2/3 job, and the source is now
+banked for it.
+
+Krentzman and Centennial therefore **stay reserve-only**, which is what the brief
+asks for when precise geometry is blocked. Nothing was replaced by a guess.
+
+### Height gate
+
+See **HEIGHT_GATE.md**. In short: Hero-A is 14 corroborated / 11 inferred-only /
+6 contradicted, and the eleven inferred are the Krentzman arrival quadrangle —
+the evidence is inversely distributed against need. **Wave 2 may open for Hero-B
+and not for Hero-A.**
+
+### Ruggles rail cut — measured, still not modelled
+
+An 18-point USGS 3DEP transect at 18 m spacing across the Southwest Corridor at
+Ruggles resolves the cut that Wave 0's sparser sampling missed: a local minimum
+of **0.58 m** against a surrounding grade of 3.0–4.6 m, i.e. a cut roughly
+**2.5–4.0 m below adjacent grade**, with a 6.79 m reading 35 m away that is
+structure rather than ground. Confidence **D** — one transect, one 1 m DEM, no
+datum reconciliation. Enough to say the cut is real and roughly how deep;
+**not** enough to model terrain from, and terrain stays closed.
+
 ## 1. Georeference — sound
 
 The world is **genuinely georeferenced**, category A. `src/core/Geo.js` is an

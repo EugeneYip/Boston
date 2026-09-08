@@ -91,7 +91,19 @@ transit context, and the surrounding urban fabric.
 5. eye-level QA passes;
 6. vehicle and pedestrian access passes.
 
-**Gate items 1 and 2 are done** (factual geography; major roads correct). `docs/neu/` holds the factual source package — official
+**Gate items 1 and 2 are done** (factual geography; major roads correct).
+**Item 3 — key building massing — is blocked, and `docs/neu/HEIGHT_GATE.md` says
+exactly how far.** Hero-B may proceed (6 of 9 corroborated); Hero-A may not (11 of
+31 rest on gross-area inference, and those eleven are the Krentzman arrival
+quadrangle). The unblock is Boston 3D Buildings (Existing) — PDDL, authoritative,
+an I3S SceneServer needing a reader.
+
+**Licensing is settled for this district.** MassGIS (roads, parcels) is
+public-domain with credit requested; **City of Boston open data is PDDL**, a
+public-domain dedication, and carries the campus footpaths. **Northeastern's own
+ArcGIS publishes no terms at all and its copyright policy is permission-required
+— its geometry does not enter `src/`, and hand-copying its coordinates would be
+the same act with worse provenance.** OSM stays the independent cross-check. `docs/neu/` holds the factual source package — official
 Northeastern footprints, MBTA transit, OSM connective geometry, a measured gap
 matrix and four evidenced arrival candidates. Read `docs/neu/README.md` before
 proposing any Northeastern work; regenerate with `node tools/neu-audit/fetch.mjs

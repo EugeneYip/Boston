@@ -273,24 +273,25 @@
     "distanceM": {
       "n": 4232,
       "min": 0,
-      "median": 58.8,
-      "p90": 144,
-      "max": 236.2,
-      "mean": 68.7
+      "median": 51.7,
+      "p90": 121.3,
+      "max": 199.3,
+      "mean": 59.6
     },
     "percentOfCampusWithinBandOfAnyGameRoad": {
-      "within40m": 35.7,
-      "within60m": 50.7,
-      "within100m": 74.8,
-      "within150m": 91.6,
-      "within200m": 99.2,
+      "within40m": 39.5,
+      "within60m": 56.8,
+      "within100m": 82.7,
+      "within150m": 95.9,
+      "within200m": 100,
       "within300m": 100
     },
     "nearestGameRoadShare": {
-      "Columbus Avenue": 27.6,
-      "Forsyth Street": 27.1,
-      "Huntington Avenue": 24.6,
+      "Columbus Avenue": 25.8,
+      "Forsyth Street": 21.6,
+      "Huntington Avenue": 21.3,
       "Gainsborough Street": 10.7,
+      "Ruggles Street": 10.6,
       "Hemenway Street": 7.2,
       "Massachusetts Avenue": 2.8
     },
@@ -298,7 +299,7 @@
   },
   "namedStreets": {
     "realInEnvelope": 247,
-    "gameInEnvelope": 10,
+    "gameInEnvelope": 11,
     "gameNames": [
       "Boylston Street",
       "Columbus Avenue",
@@ -308,6 +309,7 @@
       "Hemenway Street",
       "Huntington Avenue",
       "Massachusetts Avenue",
+      "Ruggles Street",
       "Tremont Street",
       "West Newton Street"
     ]

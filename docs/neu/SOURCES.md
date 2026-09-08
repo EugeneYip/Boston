@@ -64,9 +64,16 @@ screenshots are stored in the repository, and the raw extracts are cached under
   so storeys derived from it are an **upper bound**, not a measurement. A handful of
   rows imply under one storey, which means the footprint covers more than the
   enclosed area (Ruggles station is the clearest case).
-- **Licence** Public REST endpoint reached from the university's own published campus
-  map. **Terms of use were not separately verified.** Treat as *readable for
-  reference*; confirm redistribution rights before shipping this geometry in a build.
+- **Licence — RESOLVED 2026-09-07, and the answer is no.** The service publishes
+  **no terms at all**: `licenseInfo`, `copyrightText`, `serviceDescription` and
+  `documentInfo` are every one empty at both item and service level, and the items
+  are not discoverable under a Northeastern owner. The university's own published
+  policy runs the other way — its copyright policy is permission-required, with no
+  open-data statement and no reuse grant anywhere on the estate.
+  **Absence of a stated restriction is not a grant.** This layer therefore stays
+  what it already is: factual and naming evidence, and a non-runtime audit
+  reference. Its geometry is not imported into `src/`, and hand-copying its
+  coordinates to disguise the source would be the same act with worse provenance.
   This is an open item — see CURRENT_VS_REAL.md.
 - **How it was found** The published campus map at `campusmap.northeastern.edu`
   301-redirects to an ArcGIS Experience app; its item config names the org.
@@ -98,6 +105,32 @@ screenshots are stored in the repository, and the raw extracts are cached under
   reconciled** with the game's sea-level-zero convention. It did not resolve the
   Ruggles rail cut, so treat local grade structure as unmeasured here.
 - **Licence** U.S. Government work, public domain.
+
+### City of Boston Open Data — the licence-clean public-realm source
+- **Provider** City of Boston (Analyze Boston, `data.boston.gov`; ArcGIS at
+  `gisportal.boston.gov` and `services.arcgis.com/sFnw0xNflSi8J0uh`).
+- **Licence** **Open Data Commons Public Domain Dedication and Licence (PDDL)** —
+  a public-domain dedication. No attribution condition, no share-alike. This is
+  the cleanest licence encountered in the programme, cleaner than MassGIS's
+  "credit requested" and far cleaner than OSM's ODbL.
+- **Sidewalk Centerline** (`Infrastructure/OpenData/MapServer/5`) — the answer to
+  the campus pedestrian-network question. Three classes: `SWALK-CL` public
+  sidewalk, **`PWALK-CL` private walk**, `CWALK-CL` crosswalk. Inside the
+  `northeastern` district: **11,439 m total — 5,928 m sidewalk, 4,914 m private
+  walk, 597 m crosswalk**, across 570 ways. The private walks are the campus
+  interior paths, and they are public domain.
+  **Limitation: created 2011, last updated 2011.** It predates ISEC (2017) and
+  EXP (2024), so the newest campus is missing and some of what it shows has been
+  rebuilt.
+- **Boston 3D Buildings (Existing)** — PDDL, "the authoritative layer representing
+  the existing conditions of the City of Boston in 3D", last updated June 2026.
+  An I3S **SceneServer**, so heights live in binary mesh node pages rather than
+  attributes. Not yet mined; see HEIGHT_GATE.md, where it is the recommended
+  unblock for Hero-A.
+- **Approved Building Permits** — PDDL. Checked for height evidence and it has
+  none: `sq_feet`, `occupancytype` and free text, no storey or height field.
+  Recorded so nobody spends the search twice.
+- **Building_Footprints** (BostonGIS) — name and address only, no height fields.
 
 ---
 
