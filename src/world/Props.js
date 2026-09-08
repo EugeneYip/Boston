@@ -463,7 +463,7 @@ function synthGrid(ctx, city) {
       { dx: 0, dz: -1, hw: arterial(vx) ? 9.0 : 6.4 }],
     });
   }
-  return finishLayout({ source: 'grid', segments, junctions, parks, gh, districtFor });
+  return finishLayout({ source: 'grid', segments, junctions, parks, gh, districtFor }, ctx);
 }
 
 /** Real street graph from the city agent. */
@@ -569,11 +569,92 @@ function fromCityGraph(ctx, city) {
       major: deg >= 4, district: districtFor(n.x, n.z), legs,
     });
   }
-  return finishLayout({ source: 'city', segments, junctions, parks, gh, districtFor, city });
+  return finishLayout({ source: 'city', segments, junctions, parks, gh, districtFor, city }, ctx);
 }
 
+/**
+ * How tall the wall behind a frontage actually is — 0 where the parcel produced
+ * no building at all.
+ *
+ * The frontage list carries `maxHeight`, and everything that hangs on a wall used
+ * to place itself against that. It is the district's ZONING CAP, not a building:
+ * in the Financial District it is 240 m, so a 26 m building could be handed a
+ * water stain 107 m up. Measured before this existed, over the streamed set at
+ * spawn: **16 of 26 `waterWall` instances and 1 of 2 `satDish` instances stood
+ * above their own roof, the worst by 142.9 m**. `grimeWall` escaped only because
+ * its own `floors` term is clamped to 7 storeys, which is a bound on the symptom
+ * rather than a fix for it.
+ *
+ * Resolved against `buildings.specs`, which publish the realised footprint
+ * (`poly`), ground (`base`) and height (`h`). Probed rather than joined by id:
+ * `_superblocks` merges several plots into one building, and `_clipParcel` insets
+ * the footprint from the parcel, so a frontage and its building do not share a
+ * key and the building does not reach the parcel edge. Stepping inward at several
+ * depths and three points along the run finds the owner for 95.1% of frontages;
+ * the rest genuinely have no building, and callers skip them.
+ *
+ * Lazy, because `Props.deps` does not include `buildings` and `getLayout` can be
+ * called by whichever consumer runs first. Memoised per frontage on `_wallH`.
+ */
+function makeWallHeight(ctx) {
+  const CELL = 60;
+  let grid = null;
+  const key = (x, z) => `${Math.floor(x / CELL)},${Math.floor(z / CELL)}`;
+  const build = () => {
+    const specs = ctx.get('buildings')?.specs;
+    if (!specs || !specs.length) return null;          // not ready: caller falls back
+    const g = new Map();
+    for (const sp of specs) {
+      const poly = sp.poly; if (!poly || poly.length < 3) continue;
+      let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+      for (const q of poly) {
+        if (q.x < minx) minx = q.x; if (q.x > maxx) maxx = q.x;
+        if (q.z < minz) minz = q.z; if (q.z > maxz) maxz = q.z;
+      }
+      for (let cx = Math.floor(minx / CELL); cx <= Math.floor(maxx / CELL); cx++)
+        for (let cz = Math.floor(minz / CELL); cz <= Math.floor(maxz / CELL); cz++) {
+          const k = `${cx},${cz}`;
+          let arr = g.get(k); if (!arr) g.set(k, arr = []);
+          arr.push(sp);
+        }
+    }
+    return g;
+  };
+  const hit = (x, z) => {
+    const arr = grid.get(key(x, z)); if (!arr) return null;
+    for (const sp of arr) {
+      const poly = sp.poly; let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i].x, zi = poly[i].z, xj = poly[j].x, zj = poly[j].z;
+        if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) inside = !inside;
+      }
+      if (inside) return sp;
+    }
+    return null;
+  };
+  return (f) => {
+    if (f._wallH !== undefined) return f._wallH;
+    if (grid === null) grid = build();
+    if (!grid) return (f._wallH = null);               // no building data yet
+    // Inward is -n: the frontage normal points out at the street.
+    let owner = null;
+    for (const d of WALL_PROBE_DEPTHS) {
+      for (const t of [0.5, 0.25, 0.75]) {
+        owner = hit(f.ax + f.dx * f.len * t - f.nx * d, f.az + f.dz * f.len * t - f.nz * d);
+        if (owner) break;
+      }
+      if (owner) break;
+    }
+    if (!owner) return (f._wallH = 0);
+    const y0 = f.y != null ? f.y : owner.base;
+    return (f._wallH = Math.max(0, owner.base + owner.h - y0));
+  };
+}
+/** Inset depths tried when looking for the building behind a frontage. */
+const WALL_PROBE_DEPTHS = [1.5, 4, 8, 14];
+
 /** Shared tail: derive tree sites, park areas and the frontage list. */
-function finishLayout(L) {
+function finishLayout(L, ctx) {
   /**
    * Height of the DRAWN road surface at a point on (or beside) a segment.
    *
@@ -939,6 +1020,9 @@ function finishLayout(L) {
     }
   }
   L.frontage = front;
+  // `maxHeight` on a frontage is the zoning cap. Anything that mounts ON the wall
+  // must ask this instead — see `makeWallHeight`.
+  L.wallHeight = makeWallHeight(ctx);
   return L;
 }
 
@@ -2114,6 +2198,14 @@ function runPlacement(sys, L, counting, take) {
     // Boston row parcels are 7-8 m wide, so an 8 m floor excluded most of Beacon
     // Hill, the North End and the South End from ever getting a shopfront.
     if (f.len < 5) continue;
+    // The wall actually standing here, not the district's zoning cap. `satDish`
+    // below hung off the cap and put one dish 83.4 m above its own roof; the
+    // storey count did the same thing more quietly. `null` means the building
+    // data was not ready when the layout was built, so keep the old behaviour
+    // rather than strip every attachment off the city.
+    const wallHf = L.wallHeight ? L.wallHeight(f) : null;
+    const wallF = wallHf === null ? f.maxHeight : wallHf;
+    if (wallF < 4) continue;                  // no building on this parcel
     const commercial = f.district === 'financial' || f.district === 'downtown'
       || f.district === 'northEnd' || f.district === 'backBay' || rng.chance(0.4);
 
@@ -2140,7 +2232,7 @@ function runPlacement(sys, L, counting, take) {
       // Upper floors. Capped at four: window A/C and fire escapes are a
       // low-rise signature, and letting a 240 m Financial District tower emit
       // six per bay per storey made A/C units half the whole attachment budget.
-      const floors = Math.max(1, Math.min(4, Math.floor((f.maxHeight - 4) / 3.4)));
+      const floors = Math.max(1, Math.min(4, Math.floor((wallF - 4) / 3.4)));
       for (let fl = 1; fl <= floors; fl++) {
         const y = y0 + 3.6 + (fl - 1) * 3.35;
         if (rng.chance(0.17) && take('attach')) {
@@ -2150,8 +2242,10 @@ function runPlacement(sys, L, counting, take) {
           b('fireEscape').add(x + f.nx * 0.04, y + 0.6, z + f.nz * 0.04, ry, rng.range(0.95, 1.08));
         }
       }
-      if (rng.chance(0.05) && take('attach')) {
-        b('satDish').add(x + f.nx * 0.03, y0 + rng.range(6, Math.max(7, f.maxHeight - 2)), z + f.nz * 0.03,
+      // A dish needs a parapet to bolt to, so only where the wall is tall enough
+      // to have one above the ground floor.
+      if (wallF >= 8 && rng.chance(0.05) && take('attach')) {
+        b('satDish').add(x + f.nx * 0.03, y0 + rng.range(6, Math.max(7, wallF - 2)), z + f.nz * 0.03,
           ry + rng.range(-0.5, 0.5), rng.range(0.8, 1.1));
       }
       if (rng.chance(0.055) && take('attach')) {

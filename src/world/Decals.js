@@ -839,6 +839,13 @@ function placeDecals(bat, L, density) {
   });
 }
 
+/**
+ * Shortest wall that can carry a wall-mounted decal. Below this the frontage
+ * either has no building on it or has something too small to read as a facade,
+ * and a stain starting 4 m up would be hanging in the air above it.
+ */
+const MIN_WALL = 6;
+
 function runDecals(bat, L, take) {
   const road = (x, z) => L.gh(x, z) + 0.012;
   const walk = (x, z) => L.gh(x, z) + L.kerb + 0.010;
@@ -980,10 +987,20 @@ function runDecals(bat, L, take) {
     // Same datum Buildings.js bases the building on; `L.gh` at the kerb drifts
     // off the facade on any slope.
     const y0 = f.y != null ? f.y : L.gh(f.ax, f.az);
+    // The wall this frontage actually has. NOT `f.maxHeight`, which is the
+    // district's zoning cap: in the Financial District that is 240 m, so a 26 m
+    // building was being handed a water stain 107 m up. Measured over the
+    // streamed set at spawn before this line existed, 16 of 26 `waterWall`
+    // instances stood above their own roof, the worst by 142.9 m.
+    // `null` means the building data was not ready when the layout was built;
+    // fall back to the old behaviour rather than silently drop every wall decal.
+    const wallH = L.wallHeight ? L.wallHeight(f) : null;
+    const wall = wallH === null ? f.maxHeight : wallH;
+    if (wall < MIN_WALL) continue;          // no wall here: nothing to stain
     for (let t = rng.range(0.5, 3); t < f.len - 1; t += rng.range(2.4, 5.6)) {
       const x = f.ax + f.dx * t + f.nx * 0.02;
       const z = f.az + f.dz * t + f.nz * 0.02;
-      const floors = Math.max(1, Math.min(7, Math.floor((f.maxHeight - 3) / 3.4)));
+      const floors = Math.max(1, Math.min(7, Math.floor((wall - 3) / 3.4)));
       // Streaks below each window band.
       const fl = 1 + rng.int(floors);
       const y = y0 + 3.4 + (fl - 1) * 3.35;
@@ -991,10 +1008,12 @@ function runDecals(bat, L, take) {
         bat.grimeWall.add(x, y, z, ry, rng.range(0.8, 1.4), rng.range(0.85, 1.1));
       }
       if (rng.chance(0.22) && take('rustWall')) {
-        bat.rustWall.add(x, y + rng.range(-0.6, 0.9), z, ry, rng.range(0.7, 1.3), 1);
+        // Kept under the parapet: the streak hangs BELOW the band it rusts from,
+        // and the +0.9 jitter used to push a top-floor one just over the roof.
+        bat.rustWall.add(x, Math.min(y + rng.range(-0.6, 0.9), y0 + wall - 0.5), z, ry, rng.range(0.7, 1.3), 1);
       }
       if (rng.chance(0.18) && take('waterWall')) {
-        bat.waterWall.add(x, y0 + rng.range(4, Math.max(5, f.maxHeight - 2)), z, ry, rng.range(0.8, 1.5), 1);
+        bat.waterWall.add(x, y0 + rng.range(4, Math.max(5, wall - 2)), z, ry, rng.range(0.8, 1.5), 1);
       }
       // Street level: posters, flyers, tags, stickers.
       if (rng.chance(0.30) && take('poster')) {
