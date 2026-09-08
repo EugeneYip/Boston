@@ -844,8 +844,33 @@ export const PARKS = [
   // earlier wave's and only the claim shrinks. Krentzman keeps 2,565 m2 open,
   // which is the quadrangle; the freed annuli are 1-5 m wide against a
   // `MIN_DEPTH` of 8, so no parcel can appear in them.
+  // Wave 3A renders Krentzman as an actual lawn rather than holding it as a bare
+  // no-build claim: with the surrounding masses fenestrated, a maintained
+  // quadrangle floor is the remaining thing that stops the composition reading as
+  // buildings standing on dirt. Dropping `reserveOnly` hands it to the production
+  // park pipeline — `Districts` grass, `ParkPaths` circulation, `Props` planting —
+  // so it costs no new code, no new material and no new draw call, and it stays
+  // no-build because `isReserved` goes through `inPark` either way.
+  //
+  // `formal` is the right character and needs no new table entries anywhere: it
+  // already means stone walks on a regular geometry in `ParkPaths`, and rates in
+  // `Vegetation` and `Props`. `understorey` is new, and it is the one thing a
+  // quadrangle needs that no existing park did — the understorey loops in
+  // `Vegetation` draw a FLAT 340 shrubs and 260 flowers per park regardless of
+  // size, so a 0.26 ha quadrangle came out at ~1,100 shrubs/ha against the
+  // Common's ~9 and the quad vanished into a thicket. Scaling those loops by
+  // area would be the real fix, but it would also thin the Public Garden and the
+  // Common, so the blast radius is kept at zero: a quadrangle is MOWN, which is
+  // a fact about quadrangles, not a tuning knob.
+  //
+  // The caveat the reservation always carried still applies and is now VISIBLE:
+  // this octagon is the recorded area about the recorded centre, not a surveyed
+  // boundary. Rendering it asserts its shape. That is the trade the brief asks
+  // for — a conservative project-authored zone constrained by the factual
+  // footprints and the reservation — and the honest alternative was to leave the
+  // quadrangle as dirt.
   {
-    name: 'Krentzman Quadrangle reservation', kind: 'lawn', reserveOnly: true, ring: [
+    name: 'Krentzman Quadrangle', kind: 'formal', understorey: 0.06, ring: [
       [42.34002, -71.08798], [42.33987, -71.08818], [42.33987, -71.08846],
       [42.34002, -71.08866], [42.34022, -71.08866], [42.34037, -71.08846],
       [42.34037, -71.08818], [42.34022, -71.08798],

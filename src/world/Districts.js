@@ -107,6 +107,7 @@ export default class Districts {
     for (const p of PARKS) {
       const pts = toWorld(p.ring);
       this.parkPolys.push({ name: p.name, kind: p.kind, reserveOnly: !!p.reserveOnly,
+                            understorey: p.understorey,
                             polygon: pts, points: pts, ...bounds(pts) });
     }
     // Northeastern's factual footprints are held out of the parcel generator the

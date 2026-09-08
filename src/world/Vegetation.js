@@ -1313,14 +1313,20 @@ function placeVegetation(o) {
       grassB.add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.7, 1.5),
         rng.range(0.74, 1.14));
     }
-    for (let i = 0; i < Math.round(340 * density); i++) {
+    // Optional per-park understorey scale. The two loops below are FLAT counts,
+    // not area-derived like the trees, furniture and hedges above — so a small
+    // park gets the same 340 shrubs as Boston Common and reads as scrub. Rather
+    // than re-rate every park in the city, a park that is genuinely mown says so
+    // on its own record.
+    const us = p.understorey ?? 1;
+    for (let i = 0; i < Math.round(340 * density * us); i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
       if (L.onPath && L.onPath(x, z, 0.4)) continue;
       (rng.chance(0.6) ? shrubB : shrubB2)
         .add(x, g(x, z), z, rng.range(0, 6.2832), rng.range(0.7, 1.6), rng.range(0.8, 1.1));
     }
-    for (let i = 0; i < Math.round(260 * density); i++) {
+    for (let i = 0; i < Math.round(260 * density * us); i++) {
       const x = rng.range(x0, x1), z = rng.range(z0, z1);
       if (!pointInPoly(x, z, p.poly)) continue;
       if (L.onPath && L.onPath(x, z, 0.4)) continue;
@@ -1334,7 +1340,8 @@ function placeVegetation(o) {
     // Post Office Square (0.41 ha) the same amount of hedge as Boston Common
     // (25.8 ha) -- the third instance of the constant-per-polygon bug this
     // codebase has had, after park furniture and park trees.
-    const nHedge = Math.max(4, Math.min(34, Math.round(3 + (p.area / 10000) * 1.1)));
+    const nHedge = Math.max(us < 0.5 ? 0 : 4,
+      Math.min(34, Math.round((3 + (p.area / 10000) * 1.1) * us)));
     for (let k = 0; k < nHedge; k++) {
       let ax = rng.range(x0, x1), az = rng.range(z0, z1);
       let a = rng.range(0, 6.2832);

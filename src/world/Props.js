@@ -488,7 +488,8 @@ function fromCityGraph(ctx, city) {
   // `parkPolys()` stays for the synthetic grid fallback, which has no city.
   const parks = (Array.isArray(city?.parks) && city.parks.length)
     ? city.parks.map((p) => ({ name: p.name, kind: p.kind,
-                               reserveOnly: !!p.reserveOnly, poly: p.polygon }))
+                               reserveOnly: !!p.reserveOnly,
+                               understorey: p.understorey, poly: p.polygon }))
     : parkPolys();
   const gh = (x, z) => city.groundHeight(x, z) || 0;
   const districtFor = (x, z) => city.districtAt?.(x, z) || 'downtown';
