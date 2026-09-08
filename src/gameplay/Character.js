@@ -777,13 +777,21 @@ export function buildHeroGeometry() {
     // it runs to the ankle. A single tapered tube gives a chicken leg.
     const cy = sy + (oy - sy) * 0.28;
     tube(B, lx, -0.004, sy, cy, 0.062, 0.070, S, shin, Z_BOT, { flat: 0.92 });
-    tube(B, lx, -0.004, cy, oy + 0.075, 0.070, 0.050, S, shin, Z_BOT, { flat: 0.9 });
+    tube(B, lx, -0.004, cy, oy + 0.150, 0.070, 0.050, S, shin, Z_BOT, { flat: 0.9 });
     // Trouser cuff. Without it the leg tapers straight into the shoe and reads as
     // a sock: a real hem stands off the ankle and breaks over the upper. Same
-    // stepped-loft trick as the jacket hem, and it lands 12 mm proud of the shoe
-    // so the break is a silhouette event rather than a colour change.
-    tube(B, lx, -0.004, oy + 0.075, oy + 0.055, 0.050, 0.060, S, shin, Z_BOT, { flat: 0.92 });
-    tube(B, lx, -0.004, oy + 0.055, oy + 0.012, 0.060, 0.056, S, shin, Z_BOT, { flat: 0.92 });
+    // stepped-loft trick as the jacket hem.
+    //
+    // The band has to clear the SHOE TOP, not the foot bone origin. The first
+    // attempt ran oy + 0.012 -> oy + 0.075; the shoe box is centred at 0.042 with
+    // a half-height of 0.042, so its top is oy + 0.084 and the whole cuff sat
+    // inside it. Measured side-on at 277 px/m it moved the silhouette by 0 px and
+    // the shin luminance gradient stayed flat (+-1) through the band -- it read as
+    // nothing at all. The lip now starts at oy + 0.150 and flares at oy + 0.126,
+    // 42 mm clear of the shoe top, and the last tube carries the hem down into the
+    // shoe so no notch can open at the ankle. Tube count is unchanged.
+    tube(B, lx, -0.004, oy + 0.150, oy + 0.126, 0.050, 0.062, S, shin, Z_BOT, { flat: 0.92 });
+    tube(B, lx, -0.004, oy + 0.126, oy + 0.012, 0.062, 0.048, S, shin, Z_BOT, { flat: 0.92 });
     // Shoe. Longer, with the toe tapered and lifted and a separate heel block —
     // this is the profile cue the crowd mesh has none of.
     box(B, lx, 0.042, -0.062, 0.048, 0.042, 0.132, foot, Z_SHOE,

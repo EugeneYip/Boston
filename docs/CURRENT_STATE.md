@@ -68,7 +68,7 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
-## Player hero mesh — rung 3, clothing volume (2026-09-08, `835fd48`)
+## Player hero mesh — rung 3, clothing volume (2026-09-08, `835fd48` + cuff fix)
 
 Clothing was purely a per-vertex colour zone: `aZoneShade` selects `aTop`/`aBot`/
 `aSkin` in the shader and no geometry knew a garment existed, so every clothing
@@ -81,8 +81,11 @@ cuff and sleeve cuff use the same trick. A shell was rejected on the rung-1
 evidence: overlapping surfaces meet in a hard shading seam, which is why the head
 still has no jaw.
 
-**22 mm is a chase-distance number.** The player subtends roughly 150 px/m at
-chase range, so a 10 mm feature is 1.5 px and invisible.
+**22 mm is a chase-distance number.** ~~150 px/m~~ — **superseded, do not reuse.**
+The real chase camera (`CameraRig._dist` 3.35 m, `_fov` 62, pitch −0.16) measures
+**252.3 px/m** at 1920x1080, so a 10 mm feature is 2.5 px and 22 mm is 5.6 px.
+The features were sized against the low estimate and still pass, but any future
+sizing decision must use 252 px/m.
 
 | | before | after |
 |---|---|---|
@@ -102,18 +105,62 @@ from the shoe while breaking 21 mm over it at rest. **This technique is worth
 reusing** for any future rig-compatible change: it answers animation questions
 without a WebGL context.
 
-**OPEN: the chase-distance visual gate has NOT been run.** Rung 3's acceptance
-question is whether the clothing reads at normal third-person range, and the
-answer is not yet known — the mission was resource-blocked before a browser could
-be opened (another agent holding port 5290, load above 60, memory under 30% free).
+**CLOSED: the chase-distance visual gate passed, after one cuff correction
+(2026-09-08).** Both revisions were loaded in one page session — the committed
+`Character.js` and the rung-1 revision from `70dadfe` as a second module — so
+before and after share one boot, one lighting state and one camera. Four
+orientations were captured at the real chase camera: back (the gameplay view),
+front, 3/4 and side.
 
-The geometry is committed because it is safe on every measure that can be taken
-without a browser, but the brief's own test still stands: *if the improvement only
-exists in close-up, simplify or remove it*. What is needed is one short session —
-matched before/after at chase distance, front, side and 3/4 — with `git show
-HEAD~1:src/gameplay/Character.js` supplying the "before". If the 22 mm hem and
-20 mm cuff do not read at 150 px/m, the honest response is to enlarge them or drop
-them, not to keep them because they are already committed.
+**The jacket hem passed as committed.** The hip band 0.80–1.10 m changes 3.1–3.8%
+of its pixels between revisions against a 0.5–1.4% capture-noise floor — 2.8x to
+6.3x — in every orientation. At native chase pixels it reads as a hem lip and a
+jacket/trouser break, not as an applied ring.
+
+**The trouser cuff failed as committed, and the cause was arithmetic.** The band
+ran `oy + 0.012` -> `oy + 0.075`: 12 mm above the *foot bone origin*, not above the
+shoe. The shoe box is centred at 0.042 with a half-height of 0.042, so its top is
+`oy + 0.084` — the whole cuff sat **inside the shoe**, spanning 0.071–0.133 m
+against a shoe top of 0.142 m. Measured side-on it moved the silhouette by 0 px
+and left the shin luminance gradient flat (±1) straight through the band. The
+comment claiming it landed "12 mm proud of the shoe" was wrong, and so was the CPU
+tooling's "breaking 21 mm over it": a surface-to-surface distance does not say
+which surface is in front of which.
+
+**One narrow adjustment, then a re-test.** The lip was lifted to `oy + 0.150` ->
+`oy + 0.126`, 42 mm clear of the shoe top, and the last tube carries the hem down
+to `oy + 0.012` inside the shoe so no notch opens at the ankle. Tube count — and
+so triangle count — is unchanged at **1474**. After the lift the cuff zone
+0.05–0.28 m changes 1.1–3.7% of its pixels against a **0.00%** noise floor in all
+four orientations, and the lip shows a +13.9/−14.5 luminance ridge where the flat
+reference band holds ±2.9. Nothing else was touched: no shell, no new material,
+no accessory, no face, hair, finger or animation work.
+
+Controls that make those numbers mean something: the untouched thigh and torso
+zones measure signal ≈ noise (1.0x–1.9x) in the same frame pairs, and crowd
+LOD0/LOD1 stay 676/287 with the attribute set and zone set identical to rung 1.
+Clearance was re-run on the CPU after the lift — leg-to-leg identical across all
+six clips, arm-to-torso within 3 mm. Integrated check with the real player: idle,
+walk, jog, run, crouch, crouch-walk, and `sit` through an actual vehicle entry and
+exit — `bootReport.failed` `[]`, `errors` `[]`, `glFaults` `[]`, `validate().ok`
+true.
+
+**Three measurement traps, each of which cost time here.**
+`FX[LensFinal+FilmGrain]` is the only pass carrying `renderToScreen`. Disabling it
+to remove grain silently blanks the default framebuffer, and `readPixels` then
+returns identical black frames — which reads as a *perfect* determinism result and
+as "the character does not render". Zero the `grainParams` uniform instead of
+disabling the pass. Second: separate captures are **not** frame-deterministic even
+with grain off and auto-exposure held, because clouds, water and AO drift — about
+12% of the figure's own pixels differ between two identical renders, so an
+absolute before/after difference proves nothing on its own; compare a changed zone
+against an unchanged control zone instead. Third: `requestAnimationFrame` is
+throttled to roughly 1 Hz while the preview pane is hidden, so a settle loop has
+to drive `__boston.step()` synchronously or it will time out.
+
+`__boston.groundedY` gives the walkable surface height directly. The plaza at
+(168, 120) sits 0.61 m above `terrain.groundHeight`, so a figure placed at the
+terrain height is buried to mid-thigh and its legs simply are not in frame.
 
 ## Player hero mesh — rung 1 (2026-09-07, `2197fef`)
 

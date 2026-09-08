@@ -202,15 +202,31 @@ the SAME loft. Trouser and sleeve cuffs use the same trick. **No shell was added
 deliberately** — the rung-1 jaw failure is the same physics, and a jacket that
 z-fights the torso would be worse than painted cloth.
 
-Sizes are chosen for chase range, not close-ups: the player stands about 150 px/m
-there, so a 10 mm feature is 1.5 px and invisible. 22 mm reads.
+Sizes are chosen for chase range, not close-ups. The real chase camera
+(`CameraRig._dist` 3.35 m, `_fov` 62, pitch -0.16) measures **252.3 px/m** at
+1920x1080 — the earlier "about 150 px/m" was an estimate, is superseded, and must
+not be reused for sizing. 22 mm is 5.6 px there and reads; it was verified, not
+assumed (below).
 
 Verified on the CPU, not in a browser — the rig is deterministic, so a replica of
 the vertex shader poses every vertex through all six clips and measures clearance.
 Worth reusing: it answers animation-compatibility questions with no WebGL context
 at all. Limb clearances moved by at most 3 mm; hem-to-hand stays 38 mm at its
-closest, cuff-to-shoe 18 mm; the envelope (1.721 m tall, 0.492 wide, 0.294 deep)
-is unchanged, so nothing moved that a car cabin cares about.
+closest; the envelope (1.721 m tall, 0.492 wide, 0.294 deep) is unchanged, so
+nothing moved that a car cabin cares about.
+
+**But CPU clearance did not catch a visibility bug, and cannot.** The committed
+trouser cuff ran `oy + 0.012` -> `oy + 0.075`, which is 12 mm above the foot bone
+origin — while the shoe top is `oy + 0.084`. The entire cuff was inside the shoe.
+Clearance tooling reported a healthy 18 mm cuff-to-shoe distance because a
+surface-to-surface distance says nothing about which surface occludes the other.
+The chase-distance visual gate caught it: 0 px of silhouette change and a flat
+(±1) shin luminance gradient through the band. Fixed by lifting the lip to
+`oy + 0.150` -> `oy + 0.126`, 42 mm clear of the shoe, with the last tube carrying
+the hem down into the shoe so no ankle notch opens — same tube count, so still
+1474 triangles. The hem passed as committed; only the cuff moved. Full evidence,
+including the three measurement traps that make this test easy to get wrong, is in
+`docs/CURRENT_STATE.md`.
 
 Still NOT done, and each for a stated reason. There is **no jaw or chin** — three
 sizes were tried and every one read as a cracked egg or a muzzle, because two
