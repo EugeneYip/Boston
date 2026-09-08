@@ -663,18 +663,30 @@ export function buildHeroGeometry() {
   // profile: the seat sits back, the chest sits forward, and the waist passes
   // through. Without it no amount of radius makes a silhouette that reads as a
   // person from the side.
+  // The jacket is not a shell. Rung 1 learned that two overlapping surfaces meet
+  // in a hard shading seam and cannot blend — that is why the head has no jaw.
+  // So the garment is the SAME loft, stepped: the trouser rings end at 0.925, a
+  // near-horizontal annulus steps the radius out 22 mm, and the jacket continues
+  // from there. One surface, no coincident faces, nothing to z-fight.
+  //
+  // 22 mm is chosen to be seen. At chase distance the player stands about
+  // 150 px/m, so a 10 mm feature is 1.5 px and invisible; 22 mm reads as a break
+  // in the silhouette, and it is also roughly what outerwear really stands off a
+  // hip. The pad over the body above the hem is 3-7 mm — a jacket, not bulk.
   //  y,     rx,    rz,    cz,     bone,        zone
   const TORSO = [
     [0.840, 0.132, 0.104, 0.012, BONE.pelvis, Z_BOT],
     [0.895, 0.151, 0.120, 0.016, BONE.pelvis, Z_BOT],
-    [0.960, 0.147, 0.112, 0.007, BONE.pelvis, Z_TOP],
-    [1.030, 0.135, 0.100, 0.000, BONE.spine, Z_TOP],
-    [1.105, 0.141, 0.107, -0.006, BONE.spine, Z_TOP],
-    [1.185, 0.159, 0.119, -0.012, BONE.chest, Z_TOP],
-    [1.265, 0.177, 0.125, -0.013, BONE.chest, Z_TOP],
-    [1.335, 0.187, 0.118, -0.009, BONE.chest, Z_TOP],
-    [1.392, 0.166, 0.100, -0.002, BONE.chest, Z_TOP],
-    [1.418, 0.107, 0.079, 0.000, BONE.chest, Z_TOP],
+    [0.925, 0.150, 0.118, 0.014, BONE.pelvis, Z_BOT],   // last trouser ring
+    [0.929, 0.172, 0.136, 0.014, BONE.pelvis, Z_TOP],   // hem underside
+    [0.985, 0.163, 0.126, 0.006, BONE.pelvis, Z_TOP],   // jacket over the hip
+    [1.030, 0.142, 0.106, 0.000, BONE.spine, Z_TOP],
+    [1.105, 0.148, 0.112, -0.006, BONE.spine, Z_TOP],
+    [1.185, 0.164, 0.123, -0.012, BONE.chest, Z_TOP],
+    [1.265, 0.180, 0.128, -0.013, BONE.chest, Z_TOP],
+    [1.335, 0.189, 0.120, -0.009, BONE.chest, Z_TOP],
+    [1.392, 0.168, 0.101, -0.002, BONE.chest, Z_TOP],
+    [1.418, 0.110, 0.081, 0.000, BONE.chest, Z_TOP],    // collar
   ];
   const ringsT = [];
   for (let i = 0; i < TORSO.length; i++) {
@@ -744,7 +756,10 @@ export function buildHeroGeometry() {
     blob(B, ax, fy, 0, 0.044, 0.044, 0.042, 7, 4, fore, Z_SLEEVE, { girth: 1 });
     const fmid = fy + (hy - fy) * 0.4;
     tube(B, ax, 0, fy, fmid, 0.045, 0.040, S, fore, Z_SLEEVE, { flat: 0.9 });
-    tube(B, ax, 0, fmid, hy + 0.01, 0.040, 0.031, S, fore, Z_SLEEVE, { flat: 0.88 });
+    tube(B, ax, 0, fmid, hy + 0.035, 0.040, 0.034, S, fore, Z_SLEEVE, { flat: 0.88 });
+    // Sleeve cuff, ending over the back of the hand. Keeps Z_SLEEVE so it still
+    // follows the sleeved/bare-arm variation the shader picks per instance.
+    tube(B, ax, 0, hy + 0.035, hy + 0.012, 0.042, 0.038, S, fore, Z_SLEEVE, { flat: 0.9 });
     // Hand as a mitten: longer and thinner than the crowd's cube, tapered to the
     // knuckles, with a thumb pad. No fingers — that is Rung 2.
     box(B, ax, hy - 0.042, -0.004, 0.032, 0.058, 0.024, hand, Z_SKIN,
@@ -762,7 +777,13 @@ export function buildHeroGeometry() {
     // it runs to the ankle. A single tapered tube gives a chicken leg.
     const cy = sy + (oy - sy) * 0.28;
     tube(B, lx, -0.004, sy, cy, 0.062, 0.070, S, shin, Z_BOT, { flat: 0.92 });
-    tube(B, lx, -0.004, cy, oy + 0.015, 0.070, 0.042, S, shin, Z_BOT, { flat: 0.9 });
+    tube(B, lx, -0.004, cy, oy + 0.075, 0.070, 0.050, S, shin, Z_BOT, { flat: 0.9 });
+    // Trouser cuff. Without it the leg tapers straight into the shoe and reads as
+    // a sock: a real hem stands off the ankle and breaks over the upper. Same
+    // stepped-loft trick as the jacket hem, and it lands 12 mm proud of the shoe
+    // so the break is a silhouette event rather than a colour change.
+    tube(B, lx, -0.004, oy + 0.075, oy + 0.055, 0.050, 0.060, S, shin, Z_BOT, { flat: 0.92 });
+    tube(B, lx, -0.004, oy + 0.055, oy + 0.012, 0.060, 0.056, S, shin, Z_BOT, { flat: 0.92 });
     // Shoe. Longer, with the toe tapered and lifted and a separate heel block —
     // this is the profile cue the crowd mesh has none of.
     box(B, lx, 0.042, -0.062, 0.048, 0.042, 0.132, foot, Z_SHOE,
