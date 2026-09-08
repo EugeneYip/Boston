@@ -273,6 +273,21 @@ const GROUND = {
   // at 3.5 m the surface came out 50% paved, which reads as a service yard rather
   // than a campus. 2.2 m is a walk against a wall, and lawn stays dominant.
   apron: 2.2,       // m of paved ground against a building face
+  /**
+   * How far maintained ground reaches from the built form.
+   *
+   * The contour is a hull dilated RADIALLY from its own centroid, and the hull of
+   * this cluster is elongated — so the dilation overshoots at the extremes. It put
+   * lawn 150 m east of the nearest hero building, ending in a hard straight line
+   * against bare terrain: exactly the visible "game zone" edge the brief forbids.
+   * Measured from directly overhead, that edge was unmistakable.
+   *
+   * Rejecting by distance to the nearest building FACE instead makes the boundary
+   * follow the built form, so it reads as a campus verge rather than a zone edge,
+   * and it costs one test rather than a new envelope.
+   */
+  reach: 30,        // m from the nearest hero footprint edge
+  walkReach: 8,     // m either side of a shipped walk, so paths keep their ground
 };
 
 const _cross = (o, a, b) => (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
@@ -635,16 +650,21 @@ export default class NeuHero {
     const footEdges = NEU_HERO_PARTS.map((p) => openRing(p.outline.map(([x, z]) => ({ x, z }))));
 
     const zones = { lawn: [], paved: [] };
-    let dropped = { district: 0, road: 0, procedural: 0, footprint: 0 };
+    let dropped = { district: 0, road: 0, procedural: 0, footprint: 0, reach: 0 };
     for (const t of tris) {
       const a = verts[t[0]], b = verts[t[1]], c = verts[t[2]];
       const cx2 = (a.x + b.x + c.x) / 3, cz2 = (a.z + b.z + c.z) / 3;
       if (neuRing.length && !pointInRing(cx2, cz2, neuRing)) { dropped.district++; continue; }
-      if (roads.length
-        ? roads.some((r) => distToPolyline(cx2, cz2, r.pts) < r.keep)
-        : (huntFallback && distToPolyline(cx2, cz2, huntFallback) < GROUND.roadKeepFallback)) {
-        dropped.road++; continue;
-      }
+      // The road test is on EVERY VERTEX, not the centroid. A centroid test leaks:
+      // with a 7 m max edge a vertex sits up to ~4 m inboard of the centroid, and
+      // measured that put the nearest ground vertex 10.23 m from the Huntington
+      // centreline against a 13.56 m corridor — 3.3 m onto the city footway, which
+      // is the coplanar z-fight this keep-out exists to prevent. Corners are what
+      // touch the road, so corners are what get tested.
+      const nearRoad = roads.length
+        ? roads.some((r) => [a, b, c].some((v) => distToPolyline(v.x, v.z, r.pts) < r.keep))
+        : (huntFallback && [a, b, c].some((v) => distToPolyline(v.x, v.z, huntFallback) < GROUND.roadKeepFallback));
+      if (nearRoad) { dropped.road++; continue; }
       if (proc.some((poly) => pointInRing(cx2, cz2, poly))) { dropped.procedural++; continue; }
       // Belt and braces over the holes. `holes` only punches footprints that lie
       // ENTIRELY inside the contour, so a part straddling the boundary — Cabot
@@ -652,9 +672,20 @@ export default class NeuHero {
       // and lawn under a hero building is the same defect as lawn under a
       // brownstone. Measured before this test: 58 such triangles.
       if (footEdges.some((r) => pointInRing(cx2, cz2, r))) { dropped.footprint++; continue; }
-      const onWalk = walks.some((w) => distToPolyline(cx2, cz2, w) < GROUND.walkHalf);
-      const onApron = !onWalk
-        && footEdges.some((r) => distToPolyline(cx2, cz2, [...r, r[0]]) < GROUND.apron);
+      // Distance to the built form and to the shipped paths, computed once.
+      let dFoot = Infinity;
+      for (const r of footEdges) {
+        const d = distToPolyline(cx2, cz2, [...r, r[0]]);
+        if (d < dFoot) dFoot = d;
+      }
+      let dWalk = Infinity;
+      for (const w of walks) {
+        const d = distToPolyline(cx2, cz2, w);
+        if (d < dWalk) dWalk = d;
+      }
+      if (dFoot > GROUND.reach && dWalk > GROUND.walkReach) { dropped.reach++; continue; }
+      const onWalk = dWalk < GROUND.walkHalf;
+      const onApron = !onWalk && dFoot < GROUND.apron;
       zones[(onWalk || onApron) ? 'paved' : 'lawn'].push(t);
     }
 
