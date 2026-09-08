@@ -68,6 +68,53 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Player hero mesh — rung 3, clothing volume (2026-09-08, `835fd48`)
+
+Clothing was purely a per-vertex colour zone: `aZoneShade` selects `aTop`/`aBot`/
+`aSkin` in the shader and no geometry knew a garment existed, so every clothing
+boundary was a sharp colour change on a smooth surface.
+
+**Solved with steps in the existing loft, not a shell.** The trouser rings end at
+y=0.925, a near-horizontal annulus steps the radius out 22 mm, and the jacket
+continues on the same surface — no coincident faces, nothing to z-fight. Trouser
+cuff and sleeve cuff use the same trick. A shell was rejected on the rung-1
+evidence: overlapping surfaces meet in a hard shading seam, which is why the head
+still has no jaw.
+
+**22 mm is a chase-distance number.** The player subtends roughly 150 px/m at
+chase range, so a 10 mm feature is 1.5 px and invisible.
+
+| | before | after |
+|---|---|---|
+| triangles (one instance) | 1310 | **1474** |
+| front silhouette | 0.290 m² | **0.311 m²** |
+| side silhouette | 0.129 m² | **0.140 m²** |
+| height / max width / max depth | 1.721 / 0.492 / 0.294 | **unchanged** |
+| crowd LOD0 / LOD1 | 676 / 287 | **unchanged** |
+
+**Verified on the CPU, with no browser.** The rig is deterministic, so
+`scratchpad` tooling replicated the vertex shader — `p = position + girth *
+(build-1)`, then a single rigid bone matrix decoded from the animation texture —
+and posed every vertex through all six clips. Limb clearances moved by at most
+3 mm and leg-to-leg was identical to three decimals; hem-to-hand holds 38 mm at
+its closest (jog), hem-to-sleeve 29 mm, and the trouser cuff keeps an 18-20 mm gap
+from the shoe while breaking 21 mm over it at rest. **This technique is worth
+reusing** for any future rig-compatible change: it answers animation questions
+without a WebGL context.
+
+**OPEN: the chase-distance visual gate has NOT been run.** Rung 3's acceptance
+question is whether the clothing reads at normal third-person range, and the
+answer is not yet known — the mission was resource-blocked before a browser could
+be opened (another agent holding port 5290, load above 60, memory under 30% free).
+
+The geometry is committed because it is safe on every measure that can be taken
+without a browser, but the brief's own test still stands: *if the improvement only
+exists in close-up, simplify or remove it*. What is needed is one short session —
+matched before/after at chase distance, front, side and 3/4 — with `git show
+HEAD~1:src/gameplay/Character.js` supplying the "before". If the 22 mm hem and
+20 mm cuff do not read at 150 px/m, the honest response is to enlarge them or drop
+them, not to keep them because they are already committed.
+
 ## Player hero mesh — rung 1 (2026-09-07, `2197fef`)
 
 The player was one instance of the pedestrian mesh. It now has its own geometry,

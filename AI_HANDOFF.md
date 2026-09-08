@@ -181,7 +181,7 @@ Do not start with a facial rig. Do not rewrite the character system
 speculatively. The first rung that is worth doing on its own is silhouette and
 proportion, because it is what the player sees in every third-person frame.
 
-**Rung 1 is done** (`2197fef`). `buildHeroGeometry` in `src/gameplay/Character.js`
+**Rungs 1 and 3 are done** (`2197fef`, `835fd48`). `buildHeroGeometry` in `src/gameplay/Character.js`
 is the player's own mesh; `CrowdMesh` dispatches on the exported `HERO` lod id and
 `Player` asks for it. Read that function's comment before touching the character
 system — it records what the crowd mesh gets wrong at third-person range and why,
@@ -194,12 +194,29 @@ needs a new bone or a new clip is a change to both; a rung that needs a better
 shape is a change to `buildHeroGeometry` alone. Verified after rung 1: peds_near
 still 676 triangles, peds_far still 287, one material across all three meshes.
 
-Two things rung 1 deliberately did NOT do. There is **no jaw or chin** — three
+**Rung 3 — clothing volume — is done, and the technique is the point.** Clothing
+is still coloured by `aZoneShade` picking `aTop`/`aBot`/`aSkin` in the shader, but
+the garment boundaries are now steps in the geometry: the trouser rings end, a
+near-horizontal annulus steps the radius out 22 mm, and the jacket continues on
+the SAME loft. Trouser and sleeve cuffs use the same trick. **No shell was added,
+deliberately** — the rung-1 jaw failure is the same physics, and a jacket that
+z-fights the torso would be worse than painted cloth.
+
+Sizes are chosen for chase range, not close-ups: the player stands about 150 px/m
+there, so a 10 mm feature is 1.5 px and invisible. 22 mm reads.
+
+Verified on the CPU, not in a browser — the rig is deterministic, so a replica of
+the vertex shader poses every vertex through all six clips and measures clearance.
+Worth reusing: it answers animation-compatibility questions with no WebGL context
+at all. Limb clearances moved by at most 3 mm; hem-to-hand stays 38 mm at its
+closest, cuff-to-shoe 18 mm; the envelope (1.721 m tall, 0.492 wide, 0.294 deep)
+is unchanged, so nothing moved that a car cabin cares about.
+
+Still NOT done, and each for a stated reason. There is **no jaw or chin** — three
 sizes were tried and every one read as a cracked egg or a muzzle, because two
-overlapping ellipsoids meet in a hard shading seam and cannot blend. A chin wants
-the head built as a single surface, which belongs with rung 8. And **clothing is
-still painted, not modelled**: there is no jacket shell or trouser volume, only
-zone colours on one skin. That is rung 3, and it is the next cheap silhouette win.
+overlapping ellipsoids cannot blend; a chin wants the head as a single surface,
+which belongs with rung 8. Hands are still mittens, hair is still one cap, and
+`build` still scales the head with the body.
 
 ## 1. Orient yourself (10 minutes)
 Read in this order:
