@@ -69,7 +69,55 @@ Shillman, Dana. That is the arrival sequence. The buildings the player would
 stand in front of are precisely the ones whose heights are least supported, and
 gross-area inference is an upper bound, not a measurement.
 
-## RESOLVED 2026-09-08 — the 3D spike ran, and it works
+## CORRECTED 2026-09-08 (Wave 2A) — the 3D heights are systematically high
+
+**Read this before using any number in `HEIGHT_MEASUREMENTS.json`.**
+Wave 2A set out to mass the opening cluster from those heights and found them
+biased. They are superseded by `HERO_FOOTPRINTS.json`.
+
+Checked against buildings whose heights are independently known:
+
+| | Boston 3D | Boston Buildings | truth |
+|---|---|---|---|
+| Prudential Tower | 233.6 m | **228.0 m** | 228 m |
+| 200 Clarendon | — | **240.2 m** | 241 m |
+
+Boston Buildings is accurate to under a metre on both. Boston 3D is **+5.6 m** on
+the Prudential, and on the Krentzman quadrangle its figures imply **4.9–5.9 m per
+storey** against Boston Buildings' **3.69–4.33** — and 3.7 m is what a 1938
+institutional building actually measures. Measured excess of Boston 3D over
+Boston Buildings across the cluster: **+3.2 m to +8.8 m**.
+
+The likely cause: `Height_Ft` takes the top of the whole modelled mass. That is
+defensible on a merged object and wrong for a named building, which also explains
+why the `COMPLEX` rows were the worst.
+
+### What the opening cluster actually measures
+
+Krentzman quadrangle, from Boston Buildings (PDDL, roof-break parts, tallest part
+within the building's own radius):
+
+Richards **18.65 m**, Hayden **18.54**, Dodge **18.47**, Mugar **18.92**, Dana
+**18.74**, Ryder **17.30**, Egan **21.39**, Shillman **19.60**, Ell/Curry
+**16.00**, Cabot **11.61**, Hastings **27.83**. Not the 24.4–25.1 m this file
+previously certified — the quadrangle is **~18.5 m**, about 25% lower.
+
+### Consequence for Wave 2
+
+**Wave 2A did not mass anything, deliberately.** Building the front door 6 m too
+tall would have put a systematic error in the most-looked-at place in the
+district, which is the exact failure this gate exists to prevent. Massing is
+unblocked again, from `HERO_FOOTPRINTS.json`, which carries footprint polygons
+**and** per-tier heights from one public-domain source.
+
+The section below is kept because its method and validation still stand — the I3S
+reader works and the storey controls were real. What it got wrong was treating a
+merged-mass maximum as a building height, and not testing against a landmark of
+known height. That test is now part of the record.
+
+---
+
+## SUPERSEDED — 2026-09-08 — the 3D spike ran, and it works
 
 The lead below was taken. `HEIGHT_SOURCE.md` and `HEIGHT_MEASUREMENTS.json` are
 the result; this section supersedes the recommendation that follows it.

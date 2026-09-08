@@ -92,13 +92,21 @@ transit context, and the surrounding urban fabric.
 6. vehicle and pedestrian access passes.
 
 **Gate items 1 and 2 are done** (factual geography; major roads correct).
-**Item 3 — key building massing — is now UNBLOCKED.** The Boston 3D spike ran and
-worked: 27 of 31 Hero-A buildings carry an authoritative measured height, and the
-Krentzman quadrangle that blocked the gate reads 24.4–25.1 m throughout. See
-`docs/neu/HEIGHT_GATE.md` (verdict) and `docs/neu/HEIGHT_SOURCE.md` (method).
-Two things to carry forward: heights come from an attribute table, **not** from
-decoding meshes, and **absolute Z is deliberately unresolved** — use height above
-ground and never treat `Gnd_El_Ft` as an elevation in the game's vertical frame.
+**Item 3 — key building massing — is unblocked, but use the RIGHT source.**
+`docs/neu/HERO_FOOTPRINTS.json` (Boston Buildings with Roof Breaks, PDDL) is the
+height and footprint source: polygons split by roof break, each with its own
+height, validated to under a metre against the Prudential (228.0 vs 228) and 200
+Clarendon (240.2 vs 241).
+
+**`HEIGHT_MEASUREMENTS.json` is superseded and biased high.** Boston's 3D scene
+layer reads +5.6 m on the Prudential and +3.2 to +8.8 m across the campus cluster,
+because its `Height_Ft` takes the top of the whole modelled mass rather than of a
+named building. The Krentzman quadrangle is **~18.5 m, not the ~24.8 m** that file
+certifies. Wave 2A caught this before massing; do not un-catch it.
+
+Carry forward from the 3D work regardless: heights came from an attribute table,
+**not** from decoding meshes, and **absolute Z is unresolved in both layers** —
+use height above ground, never `Gnd_El_Ft` as an elevation in the game's frame.
 
 **Licensing is settled for this district.** MassGIS (roads, parcels) is
 public-domain with credit requested; **City of Boston open data is PDDL**, a
