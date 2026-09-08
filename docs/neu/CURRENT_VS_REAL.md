@@ -312,19 +312,47 @@ and restored to canonical with 0.00 m offset — exactly one #f07318 identity
 throughout, and a clean reboot from source confirmed spawn (166, 3.73, 128) and
 SUV (169.09, 3.44, 128.9) untouched.
 
-**CANONICAL NORTHEASTERN OPENING MIGRATION IS NOW JUSTIFIED.** Wave 4A did NOT
-perform it, deliberately — it is a separate owner-authorised mission. Its scope
-should be exactly four things and nothing else: move the Player spawn to
-(−1883, 1677), move the existing unique #f07318 SUV to (−1848, 1645) with its
-heading aligned to the Huntington tangent, set the initial Player yaw to ≈65°, and
-smoke-test plus document. No Hero features should be bundled in.
+### The LOCKED migration target (candidate-lock mission, 2026-09-08)
 
-Two things the migration should decide with open eyes. The SUV cannot be in the
-opening frame at the recommended yaw — the two candidates are 92° apart as seen
-from the player — so either accept one-turn discoverability, or nudge the player
-candidate south-east along the factual walk / the SUV south-west to narrow the
-angle. And the SUV's candidate sits 1.8 m from a No Parking sign, which is
-geometrically fine but reads oddly if anyone looks.
+**CANONICAL NORTHEASTERN OPENING MIGRATION IS JUSTIFIED AND THE TARGET IS LOCKED.**
+Neither Wave 4A nor the candidate-lock mission performed it — that is a separate
+owner-authorised mission, and its scope is exactly these four values plus a smoke
+test and docs. Nothing else.
+
+| | LOCKED value |
+|---|---|
+| **Player** | **(−1883, 1677)** |
+| **Player initial yaw** | **65°** (1.134 rad) |
+| **SUV** | **(−1858.6, 1650.6)** |
+| **SUV heading** | **2.068 rad** — derive from the Huntington tangent at the final position rather than hard-coding; measured tangent dot **1.000** |
+
+Player → SUV **35.9 m**; road band **PARKING LANE at 8.6 m** from the centreline
+(travel lanes to 7.00, parking to 9.80, kerb to 9.96, footway to 13.56); nearest
+regulatory sign **11.7 m**; nearest parked prop car 6.7 m; angular separation from
+the opening facing **72°**; SUV **not** in the initial 62° frame, discoverable with
+one ~72° turn.
+
+**The SUV moved +12 m north-east along the same kerb from Wave 4A's candidate, and
+it is strictly better.** Wave 4A's (−1848, 1645) sat **1.8 m** from a plate reading
+"NO PARKING / ANY TIME / TOW ZONE" — semantically inert (nothing in `src/` reads
+regulatory signs; the type is a 42% branch of a die roll at a random 22-46 m kerb
+interval with a coin-flip 180° facing) but it legibly says the hero starter is
+about to be towed. The locked position improves sign clearance to 11.7 m, shortens
+the walk from 47.4 m, raises tangent alignment from 0.999 to 1.000, and departs on
+straighter kerb (peak roll 0.023 rad against 0.211, never leaving the parking lane
+over 14 m). The campus opening is **identical** at both — same 6 hero buildings,
+same 2 arrival-walk points, same 2 entrance cues, quadrangle at the same pixel —
+because the SUV is off-screen either way. Neither position is occluded from the
+player's sight line.
+
+**The Player candidate was NOT moved.** It is on maintained campus ground, 3.7 m
+from the factual arrival walk, with the strongest available Krentzman composition;
+no modest move improved the opening without weakening one of those.
+
+The one thing the migration still inherits: the SUV cannot share the opening frame
+with the quadrangle. From the player candidate they are ~72° apart, and a 62° fov
+holds neither pair. One-turn discoverability is the accepted model — the campus is
+the primary identity cue and was not sacrificed to force the car into frame.
 
 Until every row passes, the spawn stays at world (166, 128) on the Boston Common
 edge, 2,684 m from the campus centroid.

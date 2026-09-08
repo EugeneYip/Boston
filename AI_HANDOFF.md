@@ -254,8 +254,18 @@ and restored to canonical with 0.00 m offset. Recommended initial Player yaw is
 ≈65°. The SUV cannot share the opening frame with the quadrangle — they are 92°
 apart from the player candidate.
 
-Details and the exact recommended migration scope are in `docs/CURRENT_STATE.md`
-and `docs/neu/CURRENT_VS_REAL.md` §6.
+**The migration target is now LOCKED** (candidate-lock mission, docs only):
+Player **(−1883, 1677)** at yaw **65°**, SUV **(−1858.6, 1650.6)** heading **2.068
+rad**, 35.9 m apart. The SUV moved +12 m north-east along the same kerb from Wave
+4A's candidate because that one sat 1.8 m from a plate reading "NO PARKING / ANY
+TIME / TOW ZONE" — inert in code (nothing reads regulatory signs; the type is a
+42% die-roll branch with a coin-flip facing) but awkward on screen. The locked
+position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, and
+an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
+SUV are still canonical with exactly one #f07318.
+
+The next mission is the migration itself: four values, a smoke test, docs, nothing
+bundled. Details in `docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
 
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest

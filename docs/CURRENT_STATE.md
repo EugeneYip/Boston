@@ -68,6 +68,66 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern opening — FINAL CANDIDATE LOCK (2026-09-08, docs only)
+
+**The migration target is locked. Nothing migrated.** A clean reboot after the
+session confirmed spawn (166, 3.73, 128) and SUV (169.09, 3.44, 128.9) heading
+−0.292, with exactly one #f07318 starter. All repositioning was runtime-only.
+
+| | LOCKED |
+|---|---|
+| Player | **(−1883, 1677)** — unchanged from Wave 4A |
+| Player yaw | **65°** |
+| SUV | **(−1858.6, 1650.6)** — moved +12 m NE along the same kerb |
+| SUV heading | **2.068 rad**, tangent dot **1.000** |
+
+**Question 1 — the No Parking sign is procedural set dressing with no
+semantics.** `Props.js` places a regulatory sign every `rng.range(22, 46)` m along
+every kerb and picks the type by die roll — `signNoParking` is simply the 42%
+branch — then randomises its facing with a **coin-flip 180°**, so its orientation
+cannot express which kerb it governs. `StreetFurniture` only draws the plate;
+**nothing in `src/` reads regulatory signs**, and there is no enforcement,
+ticketing or tow logic anywhere. It is not factual — no PDDL or MassGIS source
+feeds it.
+
+But the plate legibly reads **"NO PARKING / ANY TIME / TOW ZONE"** at 1.8 m from
+Wave 4A's candidate, which for an opening says the hero starter is about to be
+towed. Meaningless in code, awkward on screen — worth 12 m of kerb to avoid.
+
+**Question 2 — a bounded search of ±46 m along the same parking band** (47 samples
+at 2 m, rejecting anything outside the parking lane, inside a hero footprint or
+Krentzman, or crowded by furniture) produced one clearly better position:
+
+| | Wave 4A (−1848, 1645) | LOCKED (−1858.6, 1650.6) |
+|---|---|---|
+| band / lat | PARKING LANE 8.73 m | PARKING LANE **8.6 m** |
+| tangent dot | 0.999 | **1.000** |
+| nearest regulatory sign | **1.8 m** | **11.7 m** |
+| nearest parked prop car | 8.3 m | 6.7 m |
+| Player distance | 47.4 m | **35.9 m** |
+| separation from 65° facing | 67° | 72° |
+| drive-off | lat 8.7→10.0, roll 0.211 | **never left 8.6, roll 0.023** |
+| wheels / 4 s drift / damage | 4 / 0.000 m / 0 | 4 / 0.000 m / 0 |
+| F-entry, drive, F-exit | works | works, exits to footway at 10.35 m |
+| prop cars on the player sight line | 0 | 0 |
+
+**The campus opening is identical at both** — 6 hero buildings, 2 arrival-walk
+points, 2 entrance cues, quadrangle at the same pixel — because the SUV is
+off-screen either way. So the move costs the opening nothing and buys sign
+credibility plus 11.5 m of walk. The 5° of extra angular separation is
+imperceptible when both need a ~70° turn.
+
+**The Player candidate was not moved**, and no broad search was run: it is on
+maintained campus ground 3.7 m from the factual walk with the strongest Krentzman
+composition available.
+
+**One instrument note.** A screenshot aimed along the kerb showed a blue prop car
+filling the frame and no orange SUV, which looked like an occlusion defect. It was
+not: the camera was standing *behind* the parked row rather than on the player's
+sight line, and a proper ray test found **0 prop cars within 2.2 m of the
+player→SUV line for either candidate**. Third time this district has produced a
+phantom defect from camera placement — measure the geometry, then look.
+
 ## Northeastern hero district — Wave 4A, entrance cues + opening readiness (2026-09-08, `1434346`)
 
 **All nine migration gates are now PASS or READY. The migration itself was NOT
