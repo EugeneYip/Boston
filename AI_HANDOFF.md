@@ -221,10 +221,22 @@ collider (so no collision discontinuity) for free.
 Cost: 102k opaque + 11k glass triangles in 2 draws, 0 new materials, 3.2 ms at the
 quad. Colliders got *simpler* — 1,776 triangles against Wave 2C's 2,984.
 
-The honest gaps now: the lawn stops at the reservation octagon so there is a hard
-mown/dirt line beyond it, there is **no arrival path** from the Huntington pavement
-into the quadrangle, and there are **no entrance cues**. Details and migration-gate
-status are in `docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
+**Wave 3B built the campus ground and the arrival path, and NONE OF IT HAS BEEN
+RENDERED** (`b01ba90`, `f864aea`). Two sibling agents held the WebGL lane all
+session and swap ran 5-6 GB, so a third browser context was not opened. The PDDL
+Sidewalk Centerline source is now actually in the repo (`tools/neu-walks/` ->
+`src/data/neu-walks.js`, 163 m of 11,439 m, PDDL so committable — do NOT substitute
+the ODbL OSM extract), and `NeuHero._buildGround` lays 20,086 m2 of constrained
+campus ground whose boundary is decided by the district ring, road corridors and
+procedural buildings rather than by taste. Headless verification found and fixed a
+real defect (58 triangles of lawn under straddling footprints) and corrected a
+keep-out that would have z-fought the Huntington pavement.
+
+**If you have a free WebGL lane, run Wave 3B's Phases 8-11 before starting
+anything new.** Nothing about it is visually confirmed.
+
+Still absent: **entrance cues**. Details and migration-gate status are in
+`docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
 
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest

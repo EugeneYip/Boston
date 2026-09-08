@@ -1914,3 +1914,55 @@ do not name — `understorey` was silently lost in both until each was updated.
 regular geometry in `ParkPaths` and carries rates in `Vegetation` and `Props`, so
 a quadrangle needs no new `kind`. Note it is shared with the Public Garden and
 Post Office Square: do not re-tune `formal` rates for a campus reason.
+
+## Public-realm geometry is PDDL, and keep-outs come from the road (2026-09-08)
+
+**The path source is City of Boston Sidewalk Centerline, via `tools/neu-walks/`.**
+`src/data/neu-walks.js` is GENERATED — `node tools/neu-walks/fetch.mjs && node
+tools/neu-walks/build.mjs`. PDDL is a public-domain dedication: no attribution
+condition, no share-alike, so the derived geometry can be committed. **Do not
+substitute the OSM footway extract in `docs/neu/PUBLIC_REALM.json`.** It is ODbL
+and confidence C; committing it as runtime geometry attaches share-alike
+obligations to the game. That is the entire reason two pedestrian-network sources
+exist in this programme.
+
+**It is a SELECTION.** 11,439 m of centreline lies inside the `northeastern`
+district and 163 m ships. Adding ways means adding OBJECTIDs to `SELECTED` in
+`tools/neu-walks/config.mjs` and regenerating — not hand-editing the data module.
+`build.mjs` validates every way and DROPS failures with a reason into
+`NEU_WALK_REJECTED` rather than adjusting geometry to fit: moving survey geometry
+to make it work is how a factual path stops being one.
+
+**Way 97257 is an anchor, not content.** It is the Huntington pavement, `Roads`
+already builds it, and drawing a second surface on top of it is a z-fighting seam
+along the most important frontage in the district. It stays in `ANCHOR_ONLY`.
+
+**A road keep-out must be read from the road, never guessed.** `corridorHalf(e)`
+from `RoadNetwork` is `halfRoad + KERB + walk`, and `halfRoad` already includes the
+shoulder and the parking lane. For Huntington (arterial, 4 lanes) that is
+9.8 + 0.16 + 3.6 = **13.56 m**, not the 7.0 m of travel lanes:
+
+| | from centreline |
+|---|---|
+| travel lanes | 0.00 – 7.00 m |
+| shoulder | 7.00 – 7.30 m |
+| parking lane | 7.30 – 9.80 m |
+| kerb | 9.80 – 9.96 m |
+| footway | 9.96 – 13.56 m |
+
+Two things follow, and both have already been got wrong once. A surface laid at a
+fixed 11 m from the centreline sits ON the city footway — coplanar z-fighting.
+And a kerbside vehicle belongs in the **parking lane**, 7.30–9.80 m; Wave 2C
+called the starter-SUV candidate clear because it compared against 7.0 m, which
+happened to give the right answer for the wrong reason.
+
+**`NeuHero`'s campus ground has no collider, by design.** The player walks on the
+terrain heightfield underneath, which is what holds the in-quad vertical snap at
+12 mm. Do not add one to "fix" a seam — a collider on a decorative surface is how
+you get a step the player can trip on.
+
+**Holes are not enough on their own.** `_buildGround` punches the octagon and
+every footprint lying ENTIRELY inside the contour, but a part straddling the
+boundary keeps its overlap triangulated. Measured: 58 triangles of lawn under hero
+buildings. Keep the unconditional per-triangle footprint rejection behind the
+holes.

@@ -68,6 +68,92 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern hero district — Wave 3B, campus ground + PDDL arrival (2026-09-08, `b01ba90`, `f864aea`)
+
+> ### THE RUNTIME GATE IS OPEN. NONE OF WAVE 3B HAS BEEN RENDERED.
+>
+> Both sibling agents (the park-understorey and foliage-sliver tasks) held the
+> WebGL lane for this entire session — port 5290 and 5292 — and swap ran
+> 5.0-6.1 GB of a swapfile that grew from 3 GB to 7 GB. Opening a third WebGL
+> context would have broken the one-browser-agent rule that this repository
+> already has a corrupted git object to show for, so it was not opened.
+>
+> Everything verifiable without a browser WAS verified, and it found a real defect
+> (below). **Not verified: z-fighting, surface seams, the eye-level result,
+> pedestrian traversal of the new ground, traffic, and frame cost.** The first
+> session with a free lane should run Wave 3B's Phases 8-11 before anything else.
+
+**The PDDL public-realm source is finally in the repo rather than described in
+it.** `docs/neu/SOURCES.md` has recorded the City of Boston Sidewalk Centerline
+layer since the audit, but only its statistics were committed — the geometry was
+measured once by an ad-hoc session and thrown away, which is why every wave since
+has deferred paths. `tools/neu-walks/` now fetches it and emits
+`src/data/neu-walks.js`.
+
+**163 m ships of 11,439 m available.** Five ways from the Huntington public
+sidewalk to the Krentzman octagon boundary, two more as the single westward
+continuation, chosen by tracing endpoint connectivity outward from the Huntington
+sidewalk (97257) so the route is genuinely connected — consecutive ways share
+endpoints. Every way is validated against existing geometry and a failure is
+dropped with a reason rather than nudged to fit: no hero footprint crossed, no
+carriageway entered, nothing running through the octagon where `ParkPaths` already
+owns the circulation. All seven passed. 97257 itself is NOT drawn — `Roads`
+already builds that pavement and a second surface on it is a z-fighting seam.
+
+**Campus ground: the shape is constrained, not authored.** Contour = convex hull
+of the nine footprints within 110 m of the quad, dilated 24 m radially (safe on a
+convex hull). Holes = the octagon plus every enclosed footprint, so
+building-to-ground edges are exact. Then evidence decides the rest: a triangle is
+dropped if its centroid is outside the `northeastern` district, inside a road
+corridor, or inside a procedural building. Measured headlessly: 302 faces
+subdividing to 5,776 at a 7 m max edge, **4,612 kept — 2,863 lawn (16,643 m2) and
+1,749 paved (3,443 m2)**, 691 dropped outside the district, 415 in road corridors,
+zero degenerate triangles.
+
+**Road keep-out must come from the road.** The first pass used a fixed 11 m from
+the Huntington centreline and was wrong in a way only arithmetic catches:
+
+| Huntington (arterial, 4 lanes) | from centreline |
+|---|---|
+| travel lanes | 0.00 – 7.00 m |
+| shoulder | 7.00 – 7.30 m |
+| **parking lane** | **7.30 – 9.80 m** |
+| kerb | 9.80 – 9.96 m |
+| footway (`corridorHalf` = 13.56 m) | 9.96 – 13.56 m |
+| campus ground (corridor + 1.2 m verge) | from 14.76 m |
+
+`halfRoad` is 9.8 m, not 7.0 — it already includes the shoulder and a 2.5 m
+parking lane. An 11 m keep-out would have laid campus ground ON the footway. It
+now reads `corridorHalf(e)` off every nearby edge, so it adapts per street.
+
+**One defect the headless pass caught.** `holes` only punches footprints lying
+ENTIRELY inside the contour, so a part straddling the boundary — Cabot and the
+Richards/Hayden link both do — left its overlap triangulated: **58 triangles of
+lawn under hero buildings.** There is now an unconditional per-triangle footprint
+rejection behind the holes. This is the kind of thing the browser would have shown
+immediately and arithmetic found anyway.
+
+**Zone balance was tuned once.** The apron started at 3.5 m and the surface came
+out 50% paved, reading as a service yard rather than a campus — the ground is
+mostly a *band* between buildings, so a generous apron eats it. At 2.2 m it is 83%
+lawn.
+
+**Opening candidates re-measured (Phase 7), and Wave 2C's reasoning corrected.**
+
+| | Wave 2C said | Wave 3B measures |
+|---|---|---|
+| player (−1883, 1677) | 20.1 m off centreline | 20.2 m, on campus ground, **3.7 m from factual walk 96013** |
+| SUV (−1848, 1645) | "9.2 m lateral, 2.2 m clear of the 7.0 m half-carriageway" | 8.7 m — **inside the parking lane (7.30–9.80 m)**, which is where a parked car belongs |
+
+Wave 2C reached the right answer by the wrong route: it compared against the
+travel-lane edge, not the corridor. The candidate is correct kerbside parking, and
+now it is correct for a stated reason. Line of sight player→SUV is clear, 47.4 m
+apart, 34 s at 1.4 m/s. Looking into the quad the player sees Ell/Curry at 112 m
+(−10°) and Mugar at 116 m (+27°).
+
+**Not done in 3B:** entrance cues (Phase 4) and all browser QA. Nothing was
+faked in their place.
+
 ## Northeastern hero district — Wave 3A, fenestration + Krentzman ground (2026-09-08, `c50810b`, `8fc0798`)
 
 Wave 2C's two named defects are closed: the masses were blank and the quadrangle
