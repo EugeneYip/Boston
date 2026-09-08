@@ -91,24 +91,28 @@ transit context, and the surrounding urban fabric.
 5. eye-level QA passes;
 6. vehicle and pedestrian access passes.
 
-**Gate item 1 is done.** `docs/neu/` holds the factual source package — official
+**Gate items 1 and 2 are done** (factual geography; major roads correct). `docs/neu/` holds the factual source package — official
 Northeastern footprints, MBTA transit, OSM connective geometry, a measured gap
 matrix and four evidenced arrival candidates. Read `docs/neu/README.md` before
 proposing any Northeastern work; regenerate with `node tools/neu-audit/fetch.mjs
 && node tools/neu-audit/build.mjs`. Three findings change what the modelling
 waves should do, so they are repeated here rather than left to be rediscovered:
 
-- **The campus is empty because the roads are.** Parcels are cut from road
-  frontage, so ground far from a street produces no city. Only 10.9% of the real
-  campus lies within 40 m of any game road. Fix the streets and the fabric
-  follows; model buildings first and they will stand in a void.
-- **Huntington Avenue is a 9-vertex polyline a median 107.6 m from its real
-  centreline, worst — 152 m — exactly at the campus.** It does not enter the
-  campus bounding box at all. Re-tracing it is cheap and blocks everything else.
-- **`districtAt` returns null over most of the campus**, and `buildPlots` falls
-  back to `Z.southEnd`, so the university currently generates as South End
-  brownstones. A data fix with no geometry attached, and the highest leverage
-  per unit of work in the whole district.
+**Wave 0 landed at `659691a` and closed all three of the findings that used to
+be listed here** — the displaced Huntington, the empty campus and the null
+district. Post-Wave-0: Huntington sits 6.0 m from the real centreline against
+OSM (0.8 m against MassGIS through the hero core), campus road coverage within
+40 m went 10.9% → 35.7% and within 300 m is now 100%, and district nulls on the
+audit probes went 6/8 → 1/8 with exactly one brownstone left inside the campus.
+
+**The runtime source for anything in this district is MassGIS, not OSM.** MassGIS
+is public domain ("may be used by anyone for their purposes"); OSM is ODbL and
+share-alike would attach to `src/data/boston-geo.js`. OSM remains the
+cross-check, which is what makes the post-Wave-0 numbers above meaningful — they
+are measured against a source that had no hand in the geometry. Do not "improve"
+this district by copying OSM geometry into `src/`.
+
+Still open, and the reason Wave 2 has not started:
 
 Two things the package deliberately does **not** settle. There is **no
 authoritative building height anywhere** — the university's own layer publishes

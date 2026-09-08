@@ -9,6 +9,47 @@ screenshots are stored in the repository, and the raw extracts are cached under
 
 ## Tier 1 — official / government
 
+### MassGIS — the Wave 0 runtime source
+- **Provider** MassGIS (Bureau of Geographic Information), Commonwealth of
+  Massachusetts EOTSS; roads jointly with MassDOT.
+- **Layers**
+  - `MassDOTRoads_gdb/FeatureServer/0` — MassGIS-MassDOT Roads, item
+    `b06138b158694703a97d038be9a89610`, last modified 2026-02-04.
+  - `Massachusetts_Property_Tax_Parcels/FeatureServer/0` — assessor parcels,
+    item `73d4c766167848b795f1048cad3919c7`.
+  - Host: `https://services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services`
+- **Licence — the reason this is the runtime source.** Verbatim: *"This GIS web
+  service is a public resource and may be used by anyone for their purposes. The
+  data are public records… When using MassGIS data on maps or in digital
+  applications, source credit should be stated as 'MassGIS (Bureau of Geographic
+  Information), Commonwealth of Massachusetts EOTSS'."* No share-alike, no
+  redistribution restriction; credit requested and given in
+  `src/data/boston-geo.js`.
+- **Supports** Huntington Avenue, Columbus Avenue, Forsyth Street, Gainsborough
+  Street and Hemenway Street centrelines, plus lane counts, one-way operation,
+  surface and right-of-way widths, footway widths, speed limits and AADT. And
+  the campus district ring: 85 Northeastern-owned parcels, of which the 53
+  COLLEGE-use rings form the committed boundary.
+- **Notable facts it establishes.** Huntington carries a median that widens to
+  **48 ft across the campus** — that is the Green Line E reservation, and it is
+  the reason a future surface trolley has somewhere to go. Huntington is 2+2
+  lanes, 30 mph, 99 ft right of way, AADT 22,184.
+- **Limitations** Roads are modelled as two directional carriageways where
+  divided, so a single centreline has to be derived by averaging the pair, and
+  measuring the result against either carriageway leaves a half-median residual
+  of ~6–8 m that is geometry, not error. The parcels layer carries its own
+  disclaimer: *"Assessor's parcel mapping is a representation of property
+  boundaries, not an authoritative source."* Fine for a 20 m district raster;
+  not a survey.
+- **Unexpected finding, recorded but NOT acted on.** The parcels layer has a
+  `STORIES` field, populated for **49 of the 85** Northeastern parcels, plus
+  `YEAR_BUILT` (49) and `BLD_AREA` (52). This is the first public-domain lead on
+  the building-height gate, which the university's own layer does not answer.
+  Wave 0 did not use it: the brief defers Hero-A massing, and 49/85 coverage in a
+  source that disclaims its own authority is a starting point for that wave's
+  research, not a licence to infer 31 hero heights.
+
+
 ### Northeastern University ArcGIS Online
 - **Provider** Northeastern University
 - **URL** `https://services5.arcgis.com/S8KZ4xiwVgqpYP63/arcgis/rest/services`

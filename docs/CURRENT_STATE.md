@@ -68,6 +68,60 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern Wave 0 — road geography + campus district (2026-09-07, `659691a`)
+
+The first hero-district wave that changes the world. Geography only: no building
+massing, no transit, no public realm, no spawn move, terrain untouched.
+
+**Source and licence.** Roads from MassGIS-MassDOT Roads; the campus ring from
+MassGIS Massachusetts Property Tax Parcels. Both public domain — *"a public
+resource and may be used by anyone for their purposes"*. OpenStreetMap is more
+detailed here but is ODbL, and share-alike would attach to `boston-geo.js`, so it
+was used only to cross-check. Every "after" figure below is measured against OSM,
+i.e. against a source that had no part in producing the geometry.
+
+| | before | after |
+|---|---|---|
+| Huntington centreline error (vs OSM) | median 107.6 m, max 157.3 | median **6.0 m**, max 11.1 |
+| Huntington through the hero core (vs MassGIS) | — | median **0.8 m**, max 5.7 |
+| Columbus centreline error | median 89.5 m | median **2.4 m** |
+| campus within 40 m of a road | 10.9 % | **35.7 %** |
+| campus within 300 m of a road | 77.2 % | **100 %** |
+| named streets in the envelope | 7 | **10** |
+| `districtAt` null on the audit probes | 6/8 | **1/8** |
+| buildings under campus rules | 0 | **67/71** |
+| brownstones inside the campus | most | **1** |
+| Huntington junctions | 4 | **9** (all four originals preserved) |
+
+**Seam policy, which is the part worth reusing.** The hero core gets pure survey
+geometry; the seam is spent outside it. Huntington's first segment is held
+exactly where it was because it carries the Dartmouth, Blagden and Ring Road
+crossings at Copley; the correction eases in over the next 280 m and completes
+230 m before the envelope. Columbus gets the same at Berkeley and Clarendon. The
+Massachusetts Avenue crossing moved to within 7 m of the real Symphony junction,
+which is a repair rather than a side effect.
+
+**Two things that cost time and are worth knowing.** `Districts.IDS` must list a
+new district id — `bake` stores `IDS.indexOf(id) + 1`, so an unregistered id
+rasterises to 0 and reads back as `null`, which is indistinguishable from the bug
+it was added to fix. And smoothing a short street can quietly cost a junction:
+Gainsborough's smoothed line sat 22 m from Huntington against an `END_SNAP` of
+21, so it is committed as stitched raw geometry instead.
+
+**QA.** 545 downward ray samples along the five streets: 0 misses. 12 pedestrian
+drop tests along the corridor and across the campus: all grounded, none fell. 7
+vehicle seam tests: none sank, none launched. Traffic populates the corrected
+corridor — 59 cars within 300 m of the campus frontage. All five streets sit in
+the main 385-node component. `st_beaconhill` 5.2 ms, unchanged.
+
+**Known defect made visible, NOT fixed here.** Seven `waterWall` decals hang
+31–46 m in the air over the campus with no wall behind them. `Props.js:921`
+builds decal frontages from PARCELS carrying the zoning height cap, and
+`Decals.js:997` hangs the stain from that cap; 666 of 10,897 parcels have no
+building at all. Latent everywhere — the cap is not the binding height constraint
+in any district — and Wave 0's new frontage is what surfaced it. The fix belongs
+to Props.
+
 ## Northeastern hero district — factual audit done, no geometry built (2026-09-07)
 
 `docs/neu/` is the evidence package for the owner's Northeastern hero district;

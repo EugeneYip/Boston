@@ -1,7 +1,87 @@
 # Current vs real — Northeastern hero district
 
 Measurements from `tools/neu-audit/build.mjs`; the machine-readable form is in
-`GAPS.json`. Nothing in `src/` changed to produce this document.
+`GAPS.json`.
+
+> **Wave 0 landed 2026-09-07** (`659691a`). The numbers below are LIVE — re-running
+> the audit measures the corrected world, so the street-deviation and coverage
+> figures are post-Wave-0. The before/after is recorded in §0; the original audit
+> baseline is preserved there and nowhere else.
+
+## 0. Wave 0 — what changed, measured
+
+Roads from **MassGIS-MassDOT Roads**, the campus district from **MassGIS
+Massachusetts Property Tax Parcels**. Both are public domain: *"This GIS web
+service is a public resource and may be used by anyone for their purposes."*
+That licence is the reason they, and not OpenStreetMap, are the runtime source —
+OSM is ODbL and share-alike would attach to `src/data/boston-geo.js` if its
+geometry were copied in. OSM stayed a cross-check, and every figure in the
+"after" column below is measured against **OSM**, i.e. against a source that had
+no part in producing the geometry.
+
+### Street centreline error, against OSM
+
+| street | before | after | note |
+|---|---|---|---|
+| Huntington Avenue | median **107.6 m**, p90 149.1, max 157.3 | median **6.0 m**, p90 9.8, max 11.1 | the 6 m residual is the half-median offset to the nearest carriageway, not error |
+| Columbus Avenue | median **89.5 m**, p90 96.6, max 97.3 | median **2.4 m**, p90 14.8, max 19.9 | also extended 540 m to the Ruggles frontage |
+| Massachusetts Avenue | median 95.3 m | unchanged | not in scope |
+| Tremont Street | median 37.5 m | unchanged | not in scope |
+
+Measured against the MassGIS centreline the corrected Huntington sits **0.8 m**
+median through the hero core (p90 2.9, max 5.7).
+
+### Campus road coverage, over the OSM campus polygon
+
+| | before | after |
+|---|---|---|
+| median distance to any game road | 182 m | **58.8 m** |
+| within 40 m | 10.9 % | **35.7 %** |
+| within 100 m | 27.3 % | **74.8 %** |
+| within 200 m | 55.2 % | **99.2 %** |
+| within 300 m | 77.2 % | **100 %** |
+
+Named streets in the envelope: **7 → 10** of the 247 that really exist. The point
+was never to import all 247; it was to stop the campus being unreachable.
+
+### District identity
+
+| | before | after |
+|---|---|---|
+| audit probe points returning `district: null` | **6 / 8** | **1 / 8** |
+| that one | — | Ruggles station, correctly outside the campus (MBTA land) |
+| buildings resolving under campus rules | 0 | **67 / 71** |
+| brownstones inside the campus | most of them | **1** |
+| parcels inside the two reservations | — | **0** |
+
+The ring is the outline of the university's own COLLEGE-use tax parcels, closed
+across internal service streets and reduced to its largest connected component:
+29.2 ha, **96.3 % of it inside the campus polygon OSM publishes independently**.
+It excludes Ruggles station and Carter Playground, which is right — those are
+MBTA and city land, and the exclusions are a good sign the boundary is following
+ownership rather than a drawn guess.
+
+### Topology
+
+Huntington now carries **9 junctions** where it carried 4, and every one of the
+four it had is preserved. The Massachusetts Avenue crossing moved to within 7 m
+of the real Symphony junction. All five Wave-0 streets sit entirely inside the
+main 385-node component; the campus routes to downtown in 9 hops. The remaining
+dead ends are genuine street termini.
+
+### What Wave 0 did NOT do
+
+No building massing — the height gate is unchanged and unresolved. No transit.
+No public realm. No spawn move. Terrain untouched.
+
+**One defect was made visible and is not fixed here.** Seven `waterWall` decals
+hang 31–46 m in the air over the campus with no wall behind them. The cause is
+that `Props.js:921` builds decal frontages from PARCELS using the zoning height
+cap, and `Decals.js:997` hangs the stain from that cap — but 666 of 10,897
+parcels carry no building at all. The bug is latent everywhere (the cap is not
+the binding height constraint in any district); Wave 0's new frontage is what
+made instances of it visible. Fixing it means teaching Props about built heights,
+which is a Props change and not Wave 0's to make.
 
 ## 1. Georeference — sound
 
@@ -83,11 +163,11 @@ resulting product, and the reasoning is stated so it can be argued with.
 
 | system | state | prom | recog | freq | lever | risk | rank | note |
 |---|---|---|---|---|---|---|---|---|
-| Street & path geography | **MISSING** | 5 | 5 | 5 | 5 | 2 | **313** | Everything else is derived from it. 247 real named streets in the envelope; the game has 7. |
+| Street geography | **PARTIAL** (was MISSING) | 5 | 5 | 5 | 5 | 2 | **313** | Wave 0: 7 → 10 named streets, campus coverage within 40 m 10.9 % → 35.7 %. The campus-edge and spine streets exist; the interior service network does not. |
 | Campus public realm | **MISSING** | 5 | 5 | 5 | 3 | 2 | **188** | 16.1 km of footway, 39 stair runs, 9 named greens. This *is* the campus at eye level. |
-| Huntington Ave alignment | **WRONG** | 5 | 5 | 4 | 4 | 2 | **200** | 107.6 m median, 152 m at the campus. Cheap to fix, blocks everything downstream. |
+| Huntington Ave alignment | **CORRECT ENOUGH** (was WRONG) | 5 | 5 | 4 | 4 | 2 | — | Wave 0: median 107.6 m → 6.0 m against OSM, 0.8 m against MassGIS through the hero core. |
 | Building footprints | **MISSING** | 5 | 4 | 4 | 4 | 2 | **160** | 104 official footprints available at confidence A. |
-| District identity | **WRONG** | 3 | 3 | 5 | 5 | 1 | **225** | `district: null` over most of campus → South End brownstone fallback. One data fix, very high leverage. |
+| District identity | **CORRECT ENOUGH** (was WRONG) | 3 | 3 | 5 | 5 | 1 | — | Wave 0: probe nulls 6/8 → 1/8, brownstones inside the campus → 1. |
 | Building height / massing | **PARTIAL** | 4 | 4 | 4 | 2 | 4 | **32** | No authoritative heights exist. Needs survey or explicit inference. |
 | Building identity | **MISSING** | 4 | 5 | 3 | 2 | 4 | **30** | Names are known; bespoke modelling is expensive. Hero-A only. |
 | Transit | **MISSING** | 4 | 5 | 3 | 2 | 4 | **30** | No rail transit anywhere in the game. Ruggles is a 7,339 m² structure (OSM footprint; the university's own layer records only its 2,427 m² share) over a rail cut. |

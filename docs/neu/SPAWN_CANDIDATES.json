@@ -29,7 +29,7 @@
       "realRoadDistanceM": 38,
       "todayNearestGameRoad": {
         "name": "Huntington Avenue",
-        "distanceM": 184
+        "distanceM": 48
       },
       "nearestBuildings": [
         {
@@ -79,8 +79,8 @@
       ],
       "realRoadDistanceM": 9,
       "todayNearestGameRoad": {
-        "name": "Huntington Avenue",
-        "distanceM": 404
+        "name": "Forsyth Street",
+        "distanceM": 19
       },
       "nearestBuildings": [
         {
@@ -130,8 +130,8 @@
       ],
       "realRoadDistanceM": 43,
       "todayNearestGameRoad": {
-        "name": "Huntington Avenue",
-        "distanceM": 355
+        "name": "Forsyth Street",
+        "distanceM": 57
       },
       "nearestBuildings": [
         {
@@ -182,7 +182,7 @@
       "realRoadDistanceM": 65,
       "todayNearestGameRoad": {
         "name": "Columbus Avenue",
-        "distanceM": 226
+        "distanceM": 65
       },
       "nearestBuildings": [
         {
