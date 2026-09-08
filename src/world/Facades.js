@@ -775,7 +775,14 @@ function polyAreaOf(poly) {
 /* Edge helpers                                                               */
 /* -------------------------------------------------------------------------- */
 
-function edgeFrame(A, B) {
+/**
+ * Exported for `NeuHero`, which has factual polygon outlines rather than
+ * generated plots and so cannot go through `makeSpec`/`buildBuilding`: it needs
+ * the frontage primitives without the procedural roof clutter, chimneys and fire
+ * escapes that a generated spec brings with it. Additive export only — nothing
+ * about the generated path changed.
+ */
+export function edgeFrame(A, B) {
   const dx = B.x - A.x, dz = B.z - A.z;
   const L = Math.hypot(dx, dz) || 1e-6;
   return { ax: A.x, az: A.z, L, dx: dx / L, dz: dz / L, nx: dz / L, nz: -dx / L };
@@ -894,7 +901,7 @@ function archTop(mb, e, u0, u1, yHead, rise, spec, dep) {
  * A single storey of the street facade across [uS,uE]: piers, spandrels,
  * headers and one window per bay.
  */
-function frontStorey(mb, gb, e, uS, uE, y0, y1, spec, sIdx, lod) {
+export function frontStorey(mb, gb, e, uS, uE, y0, y1, spec, sIdx, lod) {
   const St = spec.S;
   const L = uE - uS;
   const bays = Math.max(1, Math.round(L / St.bayW));

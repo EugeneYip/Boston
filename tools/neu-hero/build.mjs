@@ -25,12 +25,48 @@ import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SRC = join(ROOT, 'docs', 'neu', 'HERO_FOOTPRINTS.json');
+const INV = join(ROOT, 'docs', 'neu', 'BUILDING_INVENTORY.json');
 const OUT = join(ROOT, 'src', 'data', 'neu-hero.js');
 
 /** Below this a roof-break part is mechanical clutter, not silhouette. */
 const MICRO_M2 = 100;
 
 const hf = JSON.parse(readFileSync(SRC, 'utf8'));
+const inv = JSON.parse(readFileSync(INV, 'utf8'));
+const invByName = new Map(inv.buildings.map(b => [b.name, b]));
+
+/**
+ * Storey evidence, graded, because facade rhythm must not invent floors.
+ *
+ * `storeysCrossCheck` in HERO_FOOTPRINTS is the OSM level count that the factual
+ * height corroborates — dividing one by the other lands at 3.69-4.33 m per
+ * storey every time, which is why it is trusted (confidence C). Where it is null
+ * the inventory's `impliedFromGrossArea` is all there is (confidence D), and for
+ * Hastings the package's own targeted validation records 7 assessor storeys at
+ * 3.98 m each. Anything still unresolved gets a conservative 3.8 m course and is
+ * marked DERIVED — a rhythm consistent with the measured mass, NOT a claim about
+ * how many floors the building has.
+ */
+const ASSESSOR_STOREYS = { 'Hastings Hall': 7 };
+const DEFAULT_COURSE_M = 3.8;
+
+function storeyEvidence(b) {
+  const iv = invByName.get(b.name);
+  const dom = b.dominantMass.heightM;
+  if (b.storeysCrossCheck) {
+    return { storeys: b.storeysCrossCheck, courseM: +(dom / b.storeysCrossCheck).toFixed(2),
+             confidence: 'C', basis: 'OSM levels, corroborated by the factual height' };
+  }
+  const a = ASSESSOR_STOREYS[b.name];
+  if (a) {
+    return { storeys: a, courseM: +(dom / a).toFixed(2),
+             confidence: 'D', basis: 'assessor storey count in HERO_FOOTPRINTS.targetedValidation' };
+  }
+  const n = Math.max(1, Math.round(dom / DEFAULT_COURSE_M));
+  return { storeys: n, courseM: +(dom / n).toFixed(2), confidence: 'DERIVED',
+           basis: `dominant mass / ${DEFAULT_COURSE_M} m; gross-area implication was ` +
+                  `${iv?.storeys?.impliedFromGrossArea ?? 'absent'}` };
+}
 
 // -- de-duplicate to parts, remembering every building that claims each one ---
 const parts = new Map();
@@ -70,13 +106,21 @@ const partSrc = (p) => `  {
     outline: ${outline(p)},
   },`;
 
-const buildings = hf.buildings.map(b => `  {
+const buildings = hf.buildings.map(b => {
+  const ev = storeyEvidence(b);
+  const iv = invByName.get(b.name);
+  return `  {
     name: ${JSON.stringify(b.name)}, status: '${b.status}',
     headlineHeightM: ${b.heightM}, dominantPart: ${b.dominantMass.objectId},
+    dominantHeightM: ${b.dominantMass.heightM},
     parts: [${b.tiers.map(t => t.objectId).join(', ')}],
     sourceFootprintM2: ${b.totalFootprintM2}, officialFootprintM2: ${b.officialFootprintM2 ?? 'null'},
+    yearBuilt: ${iv?.yearBuilt ?? 'null'},
+    storeys: ${ev.storeys}, courseM: ${ev.courseM}, storeyConfidence: '${ev.confidence}',
+    storeyBasis: ${JSON.stringify(ev.basis)},
     statusWhy: ${JSON.stringify(b.statusWhy ?? null)},
-  },`).join('\n');
+  },`;
+}).join('\n');
 
 const totalVerts = render.reduce((s, p) => s + p.outlineWorld.length, 0);
 
