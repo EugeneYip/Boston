@@ -5,7 +5,8 @@ import {
 } from './BuildingKit.js';
 import { frontStorey, edgeFrame } from './Facades.js';
 import { NEU_HERO_PARTS, NEU_HERO_BUILDINGS, NEU_HERO_SOURCE } from '../data/neu-hero.js';
-import { NEU_WALK_ARRIVAL, NEU_WALK_CONTINUATION, NEU_WALK_SOURCE } from '../data/neu-walks.js';
+import { NEU_WALK_ARRIVAL, NEU_WALK_CONTINUATION, NEU_WALK_SOURCE,
+         NEU_ENTRANCE_CUES } from '../data/neu-walks.js';
 import { DISTRICTS, PARKS, STREETS } from '../data/boston-geo.js';
 import { corridorHalf } from './RoadNetwork.js';
 import { geo } from '../core/Geo.js';
@@ -334,6 +335,85 @@ function openRing(ring) {
   return out;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Entrance cues                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One doorway per building, where a PDDL private walk dead-ends against its face.
+ *
+ * The claim is "people enter along here", not "this is the main entrance" — the
+ * audit established an urban campus with several gateway conditions and no single
+ * authoritative principal door, and the university's own accessible-entrance layer
+ * places NONE of its 82 points on the Krentzman quadrangle frontage or the
+ * Huntington-facing frontage of the arrival composition. So this is deliberately
+ * modest: a recess, a darker opening, a threshold, and a slightly taller head.
+ * No signage, no canopy that evidence does not support, no ceremonial gate.
+ *
+ * It is emitted into the SAME buffers as the facade, so it adds no material and no
+ * draw call, and collision is unaffected because that comes from a separate plain
+ * -prism buffer — a doorway cannot add per-door collision here even by accident.
+ */
+const ENTRANCE = {
+  width: 2.6,       // m — a pair of doors
+  height: 2.75,     // m to the head
+  reveal: 0.40,     // m of recess; deep enough to shadow, shallow enough not to clip
+  threshold: 0.12,  // m step proud of the ground
+  surround: 0.34,   // m of stone reveal either side
+};
+
+/**
+ * Emit one entrance cue on an edge, at `u` along it.
+ *
+ * `spec` is the part's facade spec, so the surround takes the building's own trim
+ * surface and the recess its wall surface — an entrance that belongs to the
+ * building rather than being applied to it.
+ */
+function entranceCue(mb, gb, e, u, y0, spec) {
+  const E = ENTRANCE;
+  const half = E.width / 2;
+  const u0 = Math.max(0.2, u - half), u1 = Math.min(e.L - 0.2, u + half);
+  if (u1 - u0 < 1.4) return 0;                    // no room on this edge
+  const top = y0 + E.height;
+  const before = mb.ni;
+
+  // Jambs and head soffit, cut back into the wall.
+  const dep = E.reveal;
+  const uvJ = [0, 0, dep, 0, dep, E.height, 0, E.height];
+  mb.quadAuto(P2(e, u0, y0, 0), P2(e, u0, y0, -dep), P2(e, u0, top, -dep), P2(e, u0, top, 0),
+    e.dx, 0, e.dz, uvJ, spec.trimCol, spec.trimSurf);
+  mb.quadAuto(P2(e, u1, y0, 0), P2(e, u1, y0, -dep), P2(e, u1, top, -dep), P2(e, u1, top, 0),
+    -e.dx, 0, -e.dz, uvJ, spec.trimCol, spec.trimSurf);
+  const uvH = [0, 0, u1 - u0, 0, u1 - u0, dep, 0, dep];
+  mb.quadAuto(P2(e, u0, top, 0), P2(e, u1, top, 0), P2(e, u1, top, -dep), P2(e, u0, top, -dep),
+    0, -1, 0, uvH, spec.trimCol, spec.trimSurf);
+
+  // The opening itself: a dark glazed leaf set at the back of the reveal. Uses the
+  // same pane path as every window, so it lights at night with the rest.
+  const a = P2(e, u0 + 0.06, y0 + E.threshold, -dep);
+  const b = P2(e, u1 - 0.06, y0 + E.threshold, -dep);
+  const c = P2(e, u1 - 0.06, top - 0.06, -dep);
+  const d = P2(e, u0 + 0.06, top - 0.06, -dep);
+  gb.pane(a, b, c, d, [e.nx, 0, e.nz], [e.dx, 0, e.dz],
+    Math.max(0.6, u1 - u0), Math.max(0.6, E.height), 3.4,
+    hash2(spec.seed, 4241), spec.lit, spec.S.winKind, [0.22, 0.23, 0.25]);
+
+  // Threshold, and a stone surround that reads as a slightly stronger bay.
+  const mu = (u0 + u1) * 0.5;
+  const mp = P2(e, mu, 0, 0);
+  const rot = Math.atan2(e.nx, e.nz);
+  mb.box(mp[0] + e.nx * 0.16, y0 + E.threshold * 0.5, mp[2] + e.nz * 0.16,
+    (u1 - u0) + 0.5, E.threshold, 0.34, rot, spec.trimSurf, spec.trimCol);
+  mb.box(mp[0] + e.nx * 0.07, top + 0.14, mp[2] + e.nz * 0.07,
+    (u1 - u0) + E.surround * 2, 0.28, 0.20, rot, spec.trimSurf, spec.trimCol);
+  return mb.ni - before;
+}
+
+/** `Facades.P` is module-private, so the frame maths is repeated here. */
+function P2(e, u, y, off) {
+  return [e.ax + e.dx * u + e.nx * (off || 0), y, e.az + e.dz * u + e.nz * (off || 0)];
+}
+
 export default class NeuHero {
   static id = 'neuHero';
   static label = 'Northeastern hero cluster';
@@ -384,7 +464,7 @@ export default class NeuHero {
     // the player can never touch. This buffer is disposed the moment Rapier has
     // copied it.
     const cb = new MeshBuf(8192);
-    let capTris = 0, bays = 0, storeysEmitted = 0;
+    let capTris = 0, bays = 0, storeysEmitted = 0, entranceTris = 0, entranceCount = 0;
     for (const part of NEU_HERO_PARTS) {
       // Outlines are closed rings; the duplicated last vertex would emit a
       // zero-length wall and a degenerate cap triangle.
@@ -442,6 +522,24 @@ export default class NeuHero {
       };
       const stoneSpec = { ...spec, wallSurf: era.base, wallCol: baseCol };
 
+      // Resolve this part's entrance cue against the ORIENTED ring by position,
+      // not by the stored edge index: `orientRing` reverses a ring whose signed
+      // area comes out positive, which would renumber every edge.
+      const cueSrc = NEU_ENTRANCE_CUES.find((q) => q.part === part.id);
+      let cue = null;
+      if (cueSrc) {
+        let best = { d: Infinity };
+        for (let i = 0; i < ring.length; i++) {
+          const a = ring[i], b2 = ring[(i + 1) % ring.length];
+          const dx = b2.x - a.x, dz = b2.z - a.z, L2 = dx * dx + dz * dz;
+          let t = L2 ? ((cueSrc.x - a.x) * dx + (cueSrc.z - a.z) * dz) / L2 : 0;
+          t = Math.max(0, Math.min(1, t));
+          const d = Math.hypot(cueSrc.x - (a.x + t * dx), cueSrc.z - (a.z + t * dz));
+          if (d < best.d) best = { d, edge: i, u: t * Math.sqrt(L2) };
+        }
+        if (best.d < 2.5) cue = best;
+      }
+
       const i0 = mb.ni;
       for (let i = 0; i < ring.length; i++) {
         const a = ring[i], d = ring[(i + 1) % ring.length];
@@ -474,6 +572,13 @@ export default class NeuHero {
             bays += Math.max(1, Math.round(e.L / bayW));
           }
           if (i === 0) storeysEmitted += n;
+        }
+        // The entrance cue sits in the ground storey of its own edge, after the
+        // bays are laid, so it overrides the window rhythm locally rather than
+        // fighting it.
+        if (cue && cue.edge === i && fenestrate) {
+          entranceTris += entranceCue(mb, gb, e, cue.u, plinthTop, spec);
+          entranceCount++;
         }
         // Cornice: a projecting course per edge. Boxes rather than an offset
         // ring — offsetting a 95-vertex concave outline self-intersects, and a
@@ -526,6 +631,7 @@ export default class NeuHero {
       parts: this.parts.length, tris, glassTris, capTris,
       draws: this.meshes.length,
       bays, storeysEmitted,
+      entrances: entranceCount, entranceTris,
       fenestrated: this.parts.filter(p => p.fenestrated).length,
       colliders: this._colliderCount | 0,
       colliderTris: this._colliderTris | 0,

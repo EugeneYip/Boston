@@ -44,6 +44,31 @@ const segDist = (px, pz, line) => {
 };
 
 const raw = JSON.parse(readFileSync(FILE, 'utf8'));
+
+/**
+ * Entrance evidence, from a public-domain source.
+ *
+ * A `PWALK-CL` private walk that DEAD-ENDS at a building face is prima facie
+ * evidence of a door: paths lead to doors. That inference is worth making because
+ * the alternative sources are both unusable. The university's own ArcGIS layer
+ * publishes 82 accessible entrances at confidence A, but its terms are not
+ * separately verified, so it stays REFERENCE ONLY and none of its coordinates may
+ * enter runtime. And an authored guess is worse: tested against that reference, a
+ * rule placing the door on the part edge nearest a shipped walk agreed on only
+ * 1 of 5 buildings.
+ *
+ * Measured agreement of THIS rule against the same reference: 24 of 91
+ * terminations (26%) fall within 15 m of an accessible entrance, and the
+ * best-agreeing termination per building lands 1-22 m away on nine of twelve. 26%
+ * is weak as a predictor of THE accessible door and that is expected — the
+ * reference is accessible entrances only, roughly one per building, while a real
+ * building has many doors. It is strong enough for "a door is somewhere along this
+ * face", which is all a cue claims.
+ *
+ * One cue per part, at the termination closest to the face. NOT all 91: ninety-one
+ * doorways would be the signage scene the brief forbids.
+ */
+const ENTRANCE_MAX_FACE_M = 2.0;   // a genuine dead-end at the wall, not a passer-by
 const footprints = NEU_HERO_PARTS.map(p => p.outline.map(([x, z]) => ({ x, z })));
 const octagon = PARKS.find(p => p.name === 'Krentzman Quadrangle').ring.map(([la, lo]) => geo(la, lo));
 const huntington = STREETS.find(s => s.name === 'Huntington Avenue').path.map(([la, lo]) => geo(la, lo));
@@ -91,6 +116,69 @@ for (const [role, ids] of Object.entries(SELECTED)) {
 }
 
 const num = (n) => Number(n.toFixed(2));
+
+/** Nearest point on a closed ring, with the edge index. */
+function nearestOnRing(x, z, ring) {
+  let best = { d: Infinity };
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    const dx = b.x - a.x, dz = b.z - a.z, L2 = dx * dx + dz * dz;
+    let t = L2 ? ((x - a.x) * dx + (z - a.z) * dz) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const qx = a.x + t * dx, qz = a.z + t * dz;
+    const d = Math.hypot(x - qx, z - qz);
+    if (d < best.d) best = { d, x: qx, z: qz, edge: i, t, edgeLen: Math.hypot(dx, dz) };
+  }
+  return best;
+}
+
+const openRing = (ring) => {
+  const o = ring.slice();
+  const f = o[0], l = o[o.length - 1];
+  if (o.length > 1 && Math.abs(f.x - l.x) < 1e-6 && Math.abs(f.z - l.z) < 1e-6) o.pop();
+  return o;
+};
+
+/** One entrance cue per massed part, from PWALK-CL dead-ends. */
+function entranceCues() {
+  const parts = NEU_HERO_PARTS.map((p) => ({
+    id: p.id, buildings: p.buildings, tier: p.tier,
+    ring: openRing(p.outline.map(([x, z]) => ({ x, z }))),
+  }));
+  const best = new Map();
+  for (const f of raw.features) {
+    if (f.attributes.TYPE !== 'PWALK-CL') continue;
+    for (const path of (f.geometry?.paths || [])) {
+      if (path.length < 2) continue;
+      for (const idx of [0, path.length - 1]) {
+        const [lon, lat] = path[idx];
+        const w = geo(lat, lon);
+        for (const part of parts) {
+          const n = nearestOnRing(w.x, w.z, part.ring);
+          if (n.d > ENTRANCE_MAX_FACE_M || n.edgeLen < 5) continue;
+          const prev = best.get(part.id);
+          if (!prev || n.d < prev.faceDistM) {
+            // Clamp off the corners HERE, and emit the clamped POSITION. A walk
+            // commonly meets a building at a quoin, so half the raw terminations
+            // land at t = 0 or 1; storing the clamped t but the raw x/z put the
+            // point on the corner, and the runtime — which resolves from x/z —
+            // then found an edge END and rejected the cue for want of width.
+            // Measured: 6 of 8 cues silently emitted nothing.
+            const t = Math.max(0.18, Math.min(0.82, n.t));
+            const a = part.ring[n.edge], b = part.ring[(n.edge + 1) % part.ring.length];
+            best.set(part.id, {
+              part: part.id, buildings: part.buildings, tier: part.tier,
+              x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t,
+              edge: n.edge, t, edgeLenM: n.edgeLen,
+              faceDistM: n.d, fromWay: f.attributes.OBJECTID,
+            });
+          }
+        }
+      }
+    }
+  }
+  return [...best.values()].sort((a, b) => a.part - b.part);
+}
 const wsrc = (w) => `    { id: ${w.id}, cls: '${w.type}', lengthM: ${num(w.len)},
       pts: [${w.pts.map(p => `[${num(p.x)},${num(p.z)}]`).join(', ')}] },`;
 
@@ -138,6 +226,18 @@ ${groups.continuation.map(wsrc).join('\n')}
  * connector is anchored TO.
  */
 export const NEU_WALK_ANCHOR_IDS = ${JSON.stringify(ANCHOR_ONLY)};
+
+/**
+ * One entrance cue per massed part, positioned ON that part's own outline at the
+ * point where a PDDL private walk dead-ends against it. \`edge\` and \`t\` locate it
+ * along the outline, so the runtime places geometry on its own footprint rather
+ * than at an imported coordinate.
+ */
+export const NEU_ENTRANCE_CUES = ${JSON.stringify(entranceCues().map((c) => ({
+  part: c.part, buildings: c.buildings, edge: c.edge, t: num(c.t),
+  x: num(c.x), z: num(c.z), edgeLenM: num(c.edgeLenM), faceDistM: num(c.faceDistM),
+  fromWay: c.fromWay,
+})), null, 2)};
 
 export const NEU_WALK_SOURCE = {
   dataset: 'Sidewalk Centerline',

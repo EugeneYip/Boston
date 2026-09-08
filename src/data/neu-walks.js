@@ -55,6 +55,120 @@ export const NEU_WALK_CONTINUATION = [
  */
 export const NEU_WALK_ANCHOR_IDS = [97257];
 
+/**
+ * One entrance cue per massed part, positioned ON that part's own outline at the
+ * point where a PDDL private walk dead-ends against it. `edge` and `t` locate it
+ * along the outline, so the runtime places geometry on its own footprint rather
+ * than at an imported coordinate.
+ */
+export const NEU_ENTRANCE_CUES = [
+  {
+    "part": 660840,
+    "buildings": [
+      "Dana Research Center"
+    ],
+    "edge": 6,
+    "t": 0.46,
+    "x": -1882.34,
+    "z": 1900.77,
+    "edgeLenM": 5.44,
+    "faceDistM": 0,
+    "fromWay": 56406
+  },
+  {
+    "part": 661061,
+    "buildings": [
+      "Ell Hall",
+      "Curry Student Center"
+    ],
+    "edge": 80,
+    "t": 0.82,
+    "x": -1856.83,
+    "z": 1731.23,
+    "edgeLenM": 14,
+    "faceDistM": 0.71,
+    "fromWay": 56328
+  },
+  {
+    "part": 661113,
+    "buildings": [
+      "Mugar Life Sciences Building"
+    ],
+    "edge": 18,
+    "t": 0.82,
+    "x": -1806.69,
+    "z": 1720.68,
+    "edgeLenM": 7.33,
+    "faceDistM": 0.95,
+    "fromWay": 56331
+  },
+  {
+    "part": 665218,
+    "buildings": [
+      "Ryder Hall"
+    ],
+    "edge": 21,
+    "t": 0.82,
+    "x": -2088.37,
+    "z": 2106.83,
+    "edgeLenM": 34.14,
+    "faceDistM": 0.9,
+    "fromWay": 32370
+  },
+  {
+    "part": 665219,
+    "buildings": [
+      "Ryder Hall"
+    ],
+    "edge": 1,
+    "t": 0.82,
+    "x": -2060.04,
+    "z": 2069.4,
+    "edgeLenM": 35.64,
+    "faceDistM": 1.46,
+    "fromWay": 29859
+  },
+  {
+    "part": 666435,
+    "buildings": [
+      "Hayden Hall"
+    ],
+    "edge": 10,
+    "t": 0.82,
+    "x": -1903.22,
+    "z": 1777.52,
+    "edgeLenM": 21.8,
+    "faceDistM": 0.79,
+    "fromWay": 56325
+  },
+  {
+    "part": 666436,
+    "buildings": [
+      "Richards Hall"
+    ],
+    "edge": 8,
+    "t": 0.18,
+    "x": -1885.07,
+    "z": 1726.19,
+    "edgeLenM": 22.6,
+    "faceDistM": 0.83,
+    "fromWay": 56327
+  },
+  {
+    "part": 676668,
+    "buildings": [
+      "Dodge Hall"
+    ],
+    "edge": 20,
+    "t": 0.82,
+    "x": -1830.82,
+    "z": 1648.32,
+    "edgeLenM": 22.52,
+    "faceDistM": 0.91,
+    "fromWay": 56330
+  }
+];
+
 export const NEU_WALK_SOURCE = {
   dataset: 'Sidewalk Centerline',
   publisher: 'City of Boston (Analyze Boston / gisportal.boston.gov)',
