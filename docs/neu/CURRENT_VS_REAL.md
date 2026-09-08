@@ -275,12 +275,12 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 1 | real geography established in the envelope | **PASS** — Wave 0/1A |
 | 2 | major roads correct, Huntington offset under ~10 m | **PASS** — 0.8 m from the MassGIS centreline |
 | 3 | key campus building massing credible | **PASS** — 18 survey-derived volumes, heights validated sub-metre against two known towers |
-| 4 | key campus public realm credible | **PARTIAL, UNVERIFIED** (3B) — Krentzman is a mown quadrangle (3A), and 3B adds 163 m of PDDL survey path from the Huntington sidewalk to the octagon boundary plus one continuation, on 20,086 m2 of constrained campus ground. **None of 3B has been rendered** — the WebGL lane was held by two sibling agents all session. Cannot advance to PASS on unrendered geometry. |
+| 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
 | 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
 | 7 | starting SUV physical placement passes | **EVIDENCE ONLY, now correctly reasoned** (3B) — the candidate at (−1848, 1645) is 8.7 m off the centreline, which puts it **inside the parking lane (7.30–9.80 m)**, where a parked car belongs. Wave 2C called it clear by comparing against the 7.0 m travel-lane edge rather than the 13.56 m corridor — right answer, wrong reason. Nothing placed. |
 | 8 | vehicle exit/entry access passes | **EVIDENCE ONLY** — 47.4 m from the player candidate, 34 s at 1.4 m/s, line of sight clear against all hero footprints. The enter/exit flow itself was verified elsewhere, not here. |
-| 9 | opening camera composition passes | **PARTIAL** (3A) — the framing works and now has a lawn, walks and fenestrated halls to frame. What still shows is the hard mown/dirt boundary at the reservation octagon and the absence of an arrival path across it. |
+| 9 | opening camera composition passes | **PARTIAL, improved** (3B) — from the player candidate the composition now reads as arrival at a campus: lawn underfoot, a factual stone walk crossing 3.7 m away, and the quadrangle framed by fenestrated halls. Not forced to PASS: there are no entrance cues, the SUV is not placed, and the outer ground boundary is visible from some angles. |
 
 Wave 2C moved **3 and 6 to PASS** and **5 to PARTIAL**, and left 4 untouched
 because a factual path on bare ground has to be distorted to read as anything.
@@ -300,9 +300,16 @@ was not opened. Gate 4 therefore stays PARTIAL.
 and the missing arrival path have been ADDRESSED IN CODE but never rendered. A
 reviewer would be looking at unverified geometry. Entrance cues still do not exist.
 
-**The single highest-value next action is not new work — it is running Wave 3B's
-Phases 8-11 on a free lane.** If the campus ground and arrival path render
-correctly, gate 4 goes to PASS and 9 becomes arguable in one short session.
+Wave 3B's acceptance session ran on a free lane and **PASSED**, moving gate 4 to
+PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the road
+keep-out was leaking ground onto the Huntington footway, and the ground contour
+overshot at its elongated extremes.
+
+**Five of nine gates now PASS** (1, 2, 3, 5, 6, and 4). Gate 9 is PARTIAL; gates 7
+and 8 remain evidence-only with nothing placed. **The remaining blockers are all
+about the OPENING, not the district**: no entrance cues on any building, no SUV
+placed, no opening camera authored. That is a coherent next mission, and it is the
+last one before a migration could be argued.
 
 Until every row passes, the spawn stays at world (166, 128) on the Boston Common
 edge, 2,684 m from the campus centroid.

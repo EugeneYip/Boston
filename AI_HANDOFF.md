@@ -232,8 +232,14 @@ procedural buildings rather than by taste. Headless verification found and fixed
 real defect (58 triangles of lawn under straddling footprints) and corrected a
 keep-out that would have z-fought the Huntington pavement.
 
-**If you have a free WebGL lane, run Wave 3B's Phases 8-11 before starting
-anything new.** Nothing about it is visually confirmed.
+**Wave 3B's runtime gate is now CLOSED — it PASSED** (`c9bf5b0`). Rendered and
+traversed: the octagon seam is gone (campus ground abuts it on all eight bearings),
+0 ungrounded frames and 14 mm max vertical snap across the arrival route, traffic
+healthy, 4.0 ms at 1920x1080 high. Two narrow fixes were needed, both the same
+mistake — a centroid test doing a corner's job — and both are recorded in
+CONTRACTS.md along with the harder-won lesson: **verify a horizontal surface by
+AREA and a TOP-DOWN diff before believing an oblique view.** Most of that session
+went into a bug that did not exist.
 
 Still absent: **entrance cues**. Details and migration-gate status are in
 `docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.

@@ -70,18 +70,12 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 
 ## Northeastern hero district — Wave 3B, campus ground + PDDL arrival (2026-09-08, `b01ba90`, `f864aea`)
 
-> ### THE RUNTIME GATE IS OPEN. NONE OF WAVE 3B HAS BEEN RENDERED.
+> ### RUNTIME GATE CLOSED — Wave 3B PASSED on 2026-09-08 (`c9bf5b0`).
 >
-> Both sibling agents (the park-understorey and foliage-sliver tasks) held the
-> WebGL lane for this entire session — port 5290 and 5292 — and swap ran
-> 5.0-6.1 GB of a swapfile that grew from 3 GB to 7 GB. Opening a third WebGL
-> context would have broken the one-browser-agent rule that this repository
-> already has a corrupted git object to show for, so it was not opened.
->
-> Everything verifiable without a browser WAS verified, and it found a real defect
-> (below). **Not verified: z-fighting, surface seams, the eye-level result,
-> pedestrian traversal of the new ground, traffic, and frame cost.** The first
-> session with a free lane should run Wave 3B's Phases 8-11 before anything else.
+> The implementation shipped unrendered because sibling agents held the WebGL lane.
+> It has now been run on a free lane and it PASSES, after two narrow corrections
+> that the browser found and one that it disproved. Details at the end of this
+> section.
 
 **The PDDL public-realm source is finally in the repo rather than described in
 it.** `docs/neu/SOURCES.md` has recorded the City of Boston Sidewalk Centerline
@@ -151,8 +145,48 @@ now it is correct for a stated reason. Line of sight player→SUV is clear, 47.4
 apart, 34 s at 1.4 m/s. Looking into the quad the player sees Ell/Curry at 112 m
 (−10°) and Mugar at 116 m (+27°).
 
-**Not done in 3B:** entrance cues (Phase 4) and all browser QA. Nothing was
-faked in their place.
+**Runtime acceptance (2026-09-08, `c9bf5b0`). PASS.**
+
+| check | result |
+|---|---|
+| boot | 27 systems, 23 optional, `failed []` `errors []` `glFaults []` `validate().ok true`, Rapier live |
+| octagon seam gone | **yes** — campus ground abuts the octagon on all 8 bearings (145 triangles in the abutting annulus), and lawn runs continuously from outside into the quad |
+| ground renders | 45.1% of frame from directly overhead against 4.2% temporal noise; area 16,643 + 3,443 m2 exactly as predicted |
+| road intrusion | **found and fixed** — nearest vertex was 10.23 m from the Huntington centreline against a 13.56 m corridor; now 14.77 m, 1.21 m clear, verified across every road edge |
+| player KCC | 3 legs, **0 ungrounded**, max vertical snap **14 mm**, no blockage |
+| traffic | 99 distinct cars within 250 m, 68 moving at 0.53–14.21 m/s |
+| ground | lawn 2,748 + paved 1,730 = **4,478 tris**, **0 colliders**, programs still **77** (no new shader), NeuHero 2 -> 4 draws |
+| frame | **4.0 ms** at 1920x1080 high, 412 draws, 1.334M tris |
+| night / rain | lawn and walk legible at 20:30 with lit windows; both surfaces wet correctly (registry variants reach `Assets.setWetness`) |
+
+**Two defects, both the same mistake: a centroid test doing a corner's job.** The
+road keep-out tested the triangle centroid, and with a 7 m max edge a vertex sits
+up to 4 m inboard — so ground reached 3.3 m onto the city footway. Now tested on
+all three vertices. Separately the radially-dilated hull overshot at the elongated
+extremes and ended in a hard straight lawn/terrain line from overhead; rejecting by
+distance to the nearest building FACE makes the boundary follow the built form. It
+removed only 100 triangles, which also corrected my own earlier claim: I had called
+that ground "150 m east of the nearest hero building" by measuring to CENTROIDS,
+when the easternmost footprint vertex is at x -1734 and the ground reached -1711 —
+19 m, not 150.
+
+**A caution worth more than the fixes.** Most of this session went into a bug that
+did not exist. The campus ground paints 0% of the frame from inside a building,
+from inside the octagon, and from an elevated angle where a narrow band between
+18 m buildings is occluded — and all three happened in a row before anyone tried
+looking straight down, where it paints 45%. Verify a surface by AREA and a TOP-DOWN
+diff before concluding anything from an oblique view. Also: the brown surface
+inside the quadrangle is the stone-dust walk that `kind: 'formal'` asks
+`ParkPaths` for, not bare dirt — it was mistaken for a defect twice.
+
+**Remaining gaps.** The ground has a finite outer boundary, so at pedestrian height
+near it there is still a lawn-to-terrain transition; it follows the built form
+rather than being rectangular or octagonal, but it exists. The Ryder / Centennial
+direction (400 m south-west) is outside the opening-cluster envelope and remains
+bare between procedural buildings. **Entrance cues (Phase 4) were not done** in
+either 3B session.
+
+
 
 ## Northeastern hero district — Wave 3A, fenestration + Krentzman ground (2026-09-08, `c50810b`, `8fc0798`)
 

@@ -1966,3 +1966,42 @@ every footprint lying ENTIRELY inside the contour, but a part straddling the
 boundary keeps its overlap triangulated. Measured: 58 triangles of lawn under hero
 buildings. Keep the unconditional per-triangle footprint rejection behind the
 holes.
+
+## Verifying a ground surface exists (2026-09-08)
+
+A large, thin, horizontal surface is the easiest thing in this project to
+misdiagnose, and Wave 3B's acceptance session lost most of its time to a defect
+that was not there. `NeuHero`'s campus ground paints **0% of the frame** from
+inside a building, from inside the Krentzman octagon, and from an elevated 3/4
+where a narrow band between 18 m buildings is occluded — and all three were hit in
+a row. From directly overhead the same surface paints **45%**.
+
+**Establish existence before interpreting a view.** In order:
+
+1. **Area from the geometry.** Sum the triangle areas out of the built buffer and
+   compare with what the builder predicted. Real geometry that renders nowhere is
+   a different bug from geometry that was never built.
+2. **A top-down toggle diff.** Camera directly above a known triangle centroid,
+   looking straight down; grab, hide the meshes, grab, show, grab again. Report the
+   signal AND the A-vs-A noise — captures drift, and a 0%/0% pair is trustworthy
+   while a 0%/4% pair is not.
+3. **Only then** judge oblique or eye-level views.
+
+Cheap disambiguations that each took a round trip: lift the mesh several metres —
+if it stays invisible it is not depth; swap in a plain `MeshStandardMaterial` — if
+it stays invisible it is not the registry variant; set `side = DoubleSide` — if it
+stays invisible it is not winding.
+
+**Two things inside the quadrangle that look like defects and are not.** The brown
+surface crossing the lawn is the STONE-DUST WALK that `kind: 'formal'` asks
+`ParkPaths` for; it was mistaken for bare dirt twice. And a camera placed by eye
+near the quad lands inside Richards Hall's footprint surprisingly often — its
+outline is 29 edges and reaches (−1880, 1740) and (−1893, 1712). Probe a camera
+position against the footprints before trusting what it shows.
+
+**Centroid tests do corners' work badly.** Both defects Wave 3B's acceptance found
+were the same mistake. A triangle with a 7 m max edge has vertices up to ~4 m from
+its centroid, so a centroid-based keep-out leaked ground 3.3 m onto the Huntington
+footway, and a centroid-based footprint rejection had already leaked 58 triangles
+of lawn under buildings. If the constraint is "must not touch X", test the
+vertices.
