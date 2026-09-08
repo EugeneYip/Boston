@@ -1,5 +1,19 @@
 # Boston 3D Buildings — how the heights were obtained
 
+> **SUPERSEDED for individual named-building heights.** The method below works and
+> the reader is sound, but the numbers it produces are **systematically high**:
+> 233.6 m for the Prudential against a known 228, and +3.2 to +8.8 m across the
+> Northeastern opening cluster. `Height_Ft` takes the top of the whole modelled
+> mass — fine for a merged object, wrong for a named building.
+>
+> **Use `HERO_FOOTPRINTS.json`** (Boston Buildings with Roof Breaks, PDDL) for the
+> opening cluster. This layer remains useful for post-2010 buildings that the 2010
+> Roof Breaks snapshot does not contain, and as an upper-bound cross-check.
+>
+> Note that the Prudential figure quoted below as validation is, with hindsight,
+> the clearest evidence of the bias. A landmark of independently known height is
+> the test that finds this, and it was the test this document did not run.
+
 Companion to `HEIGHT_MEASUREMENTS.json`. Reproduce with:
 
 ```bash

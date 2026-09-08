@@ -129,6 +129,38 @@ District, the North End and Back Bay. Two survivors the audit flagged were the
 audit's own error — at a party wall between a 57 m and a 93 m tower it credited
 the shorter neighbour.
 
+## Northeastern building heights — the gate, and the correction (2026-09-08)
+
+`docs/CURRENT_STATE.md` had no record of this at all until now, which is itself
+worth fixing: the height question is what gates all Hero building massing.
+
+**Use `docs/neu/HERO_FOOTPRINTS.json`.** Boston Buildings with Roof Breaks, City
+of Boston, **PDDL**, a 2010 snapshot. It carries footprint polygons split by roof
+break, each part with `GRND_ELEV_2010` / `ROOF_ELEV_2010` / `BLDG_HGT_2010` — so
+footprints and tiered heights come from one public-domain source.
+
+**Do NOT use `docs/neu/HEIGHT_MEASUREMENTS.json` as individual building heights.**
+It is Boston's 3D scene layer, and it reads systematically high — 233.6 m for the
+Prudential against a known 228, and +3.2 to +8.8 m across the Northeastern opening
+cluster. Its `Height_Ft` takes the top of the whole modelled mass, which is
+defensible on a merged object and wrong for a named building. The file now carries
+a `_SUPERSEDED` block saying so, emitted by its own generator so a rebuild cannot
+quietly drop it.
+
+**The Krentzman quadrangle measures ~18.5 m, not ~24.8 m.** An earlier mission
+certified the higher figure and opened the massing gate on it; the next mission
+caught it before anything was built, by checking against landmarks of known
+height. Richards 18.65, Hayden 18.54, Dodge 18.47, Mugar 18.92, Dana 18.74, Ryder
+17.30, Egan 21.39, Shillman 19.60, Ell/Curry 16.00 — storey ratios 3.69–4.33,
+which is what a 1938 institutional building measures.
+
+The lesson worth keeping: storey-ratio sanity checks and a modern-tower control
+both passed on the bad data. **What found it was a landmark whose height is
+independently known.** Validate a height source against something you can look up.
+
+Boston 3D remains useful where the 2010 snapshot has nothing — ISEC (2017), EXP
+(2024), East Village — and as an upper bound.
+
 ## Northeastern Wave 0 — road geography + campus district (2026-09-07, `659691a`)
 
 The first hero-district wave that changes the world. Geography only: no building
