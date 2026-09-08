@@ -484,6 +484,27 @@ export const STREETS = [
     [42.34092, -71.09121], [42.33844, -71.09004], [42.33751, -71.08971],
     [42.33697, -71.08964],
   ]),
+  // Ruggles Street, from Huntington Avenue to Tremont Street. MassGIS again, and
+  // this time read rather than fitted: the 12 segments chain end-to-end exactly,
+  // so walking their endpoints reproduces the street to a 0.5 m median and 1.5 m
+  // worst case. Wave 0 left this out because a generic principal-axis extractor
+  // scored 46 m on it — the street was never ambiguous, the tool was wrong for it.
+  //
+  // It stops where it really stops. MassGIS puts the Tremont Street junction at
+  // this last vertex, 0.3 m away; the game's Tremont ENDS at (-1401, 1901) and
+  // never reaches here, so the junction has nothing to meet and the east end is
+  // a stub 701 m short of it. That is a truthful dead end at a real terminus,
+  // not a road to nowhere — extending Tremont is Wave 1B's first job.
+  //
+  // Ruggles continues east of Tremont for another 642 m and is deliberately NOT
+  // here. Its real junction is Tremont, which is absent; committed as-is its west
+  // end would land 20.2 m from Columbus Avenue, inside END_SNAP, and the graph
+  // would invent a Ruggles/Columbus junction that does not exist. A missing
+  // street is better than a false junction.
+  S('Ruggles Street', 'street', 2, [
+    [42.33774, -71.09575], [42.33721, -71.09426], [42.33585, -71.09081],
+    [42.33556, -71.09037], [42.33455, -71.08953],
+  ]),
   S('Gainsborough Street', 'street', 2, [
     [42.34261, -71.09033], [42.34223, -71.08782], [42.34216, -71.08757],
     [42.34207, -71.08741], [42.34120, -71.08620], [42.34043, -71.08497],
