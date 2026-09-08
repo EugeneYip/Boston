@@ -834,18 +834,28 @@ export const PARKS = [
   // claim about where not to build, and inventing a precise shape here would be
   // fabricating geometry to look authoritative. Both radii are additionally
   // capped to stay clear of the Wave-0 carriageways.
+  //
+  // Wave 2C capped them a second time, for the same kind of reason: survey
+  // footprints outrank an area-derived octagon. Measured against the PDDL roof
+  // -break outlines in `neu-hero.js`, Krentzman's 32.3 m radius reached 1.3 m
+  // into Richards Hall and Centennial's 40.9 m reached 5.0 m into Ryder's lower
+  // wing and 2.1 m into Shillman. Each ring is now the SAME octagon scaled about
+  // the SAME centre — 32.3 -> 30.1 m and 40.9 -> 35.0 m — so the shape stays the
+  // earlier wave's and only the claim shrinks. Krentzman keeps 2,565 m2 open,
+  // which is the quadrangle; the freed annuli are 1-5 m wide against a
+  // `MIN_DEPTH` of 8, so no parcel can appear in them.
   {
     name: 'Krentzman Quadrangle reservation', kind: 'lawn', reserveOnly: true, ring: [
-      [42.34001, -71.08796], [42.33985, -71.08817], [42.33985, -71.08847],
-      [42.34001, -71.08868], [42.34023, -71.08868], [42.34039, -71.08847],
-      [42.34039, -71.08817], [42.34023, -71.08796],
+      [42.34002, -71.08798], [42.33987, -71.08818], [42.33987, -71.08846],
+      [42.34002, -71.08866], [42.34022, -71.08866], [42.34037, -71.08846],
+      [42.34037, -71.08818], [42.34022, -71.08798],
     ],
   },
   {
     name: 'Centennial Common reservation', kind: 'lawn', reserveOnly: true, ring: [
-      [42.33693, -71.08989], [42.33673, -71.09016], [42.33673, -71.09054],
-      [42.33693, -71.09081], [42.33721, -71.09081], [42.33741, -71.09054],
-      [42.33741, -71.09016], [42.33721, -71.08989],
+      [42.33695, -71.08996], [42.33678, -71.09018], [42.33678, -71.09052],
+      [42.33695, -71.09074], [42.33719, -71.09074], [42.33736, -71.09052],
+      [42.33736, -71.09018], [42.33719, -71.08996],
     ],
   },
 ];

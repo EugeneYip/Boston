@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { geo, WORLD } from '../core/Geo.js';
 import { DISTRICTS, PARKS } from '../data/boston-geo.js';
+import { NEU_HERO_PARTS } from '../data/neu-hero.js';
 
 /**
  * Neighbourhood lookup and the big central parks.
@@ -94,6 +95,8 @@ export default class Districts {
     this.meshes = [];
     this.polys = [];        // districts, world space, for the minimap
     this.parkPolys = [];
+    /** Factual Northeastern footprints. No-build, and not open space either. */
+    this.heroPolys = [];
   }
 
   bake() {
@@ -105,6 +108,16 @@ export default class Districts {
       const pts = toWorld(p.ring);
       this.parkPolys.push({ name: p.name, kind: p.kind, reserveOnly: !!p.reserveOnly,
                             polygon: pts, points: pts, ...bounds(pts) });
+    }
+    // Northeastern's factual footprints are held out of the parcel generator the
+    // same way a park is, but they are NOT parks: they must not raster as
+    // `park`, must not grow grass, and must not attract park paths or planting.
+    // Keeping them in their own list rather than pushing them into `parkPolys`
+    // as another `reserveOnly` ring is what buys that — every consumer of
+    // `parkPolys` would otherwise have to learn a new exception.
+    for (const part of NEU_HERO_PARTS) {
+      const pts = part.outline.map(([x, z]) => ({ x, z }));
+      this.heroPolys.push({ id: part.id, polygon: pts, ...bounds(pts) });
     }
 
     const T = this.terrain;
@@ -204,9 +217,28 @@ export default class Districts {
     return false;
   }
 
+  /**
+   * Exact point-in-footprint test for the Northeastern hero cluster.
+   *
+   * `NeuHero` builds these masses itself from PDDL survey outlines, so the
+   * procedural generator must not also claim the ground. Suppressing here — at
+   * plot generation — is what makes it durable: the parcel is never created, so
+   * there is no spec, no mesh, no collider, no frontage and no frontage-driven
+   * prop to go stale later. A `mesh.visible = false` would survive neither a
+   * chunk refresh nor an LOD change.
+   */
+  inHeroFootprint(x, z) {
+    for (const p of this.heroPolys) {
+      if (x < p.minx || x > p.maxx || z < p.minz || z > p.maxz) continue;
+      if (inPoly(p.polygon, x, z)) return true;
+    }
+    return false;
+  }
+
   /** True where a building must not be placed. */
   isReserved(x, z) {
     if (this.inPark(x, z)) return true;
+    if (this.inHeroFootprint(x, z)) return true;
     const w = this.terrain.waterAt(x, z);
     if (w !== null && this.terrain.groundHeight(x, z) < w + 0.6) return true;
     return this.districtAt(x, z) === 'water';

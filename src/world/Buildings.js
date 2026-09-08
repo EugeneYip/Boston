@@ -8,6 +8,7 @@ import {
 import { makeSpec, buildBuilding, towerCoreAt } from './Facades.js';
 import { corridorHalf } from './RoadNetwork.js';
 import { isReserved } from '../data/landmarks.js';
+import { NEU_HERO_PARTS } from '../data/neu-hero.js';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 const CHUNK = 170;        // metres — LOD 0/1 streaming granularity
@@ -423,6 +424,64 @@ function fallbackPlots() {
   return plots;
 }
 
+/**
+ * Does a parcel touch a factual Northeastern footprint?
+ *
+ * `Districts.isReserved` already keeps parcels off those footprints, but
+ * `RoadNetwork.buildPlots` tests exactly one point — the parcel mid-point — and
+ * the `northeastern` lot template is 46 x 54 m. A parcel whose centre sits in
+ * the gap between two halls can still reach 27 m into one of them, and that
+ * parcel would build a procedural block THROUGH a hero building: two surfaces
+ * fighting, two colliders, and a façade generated for a wall that is not there.
+ *
+ * So this is the exact test, and it runs before `_superblocks` merges anything:
+ * once parcels are merged, rejecting the merged block would delete legitimate
+ * surrounding campus with it. Separating-axis is overkill for two convex-ish
+ * rings — a footprint that overlaps a parcel either contains one of its corners,
+ * or has a corner inside it, or crosses an edge.
+ */
+function heroOverlap(poly) {
+  if (!poly || poly.length < 3) return false;
+  let pminx = Infinity, pmaxx = -Infinity, pminz = Infinity, pmaxz = -Infinity;
+  for (const q of poly) {
+    if (q.x < pminx) pminx = q.x; if (q.x > pmaxx) pmaxx = q.x;
+    if (q.z < pminz) pminz = q.z; if (q.z > pmaxz) pmaxz = q.z;
+  }
+  for (const part of HERO_RINGS) {
+    if (pmaxx < part.minx || pminx > part.maxx ||
+        pmaxz < part.minz || pminz > part.maxz) continue;
+    const r = part.ring;
+    for (const q of poly) if (inPoly(q.x, q.z, r)) return true;
+    for (const q of r) if (inPoly(q.x, q.z, poly)) return true;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      for (let k = 0; k < r.length; k++) {
+        const c = r[k], d2 = r[(k + 1) % r.length];
+        if (segCross(a, b, c, d2)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+const HERO_RINGS = NEU_HERO_PARTS.map((part) => {
+  const ring = part.outline.map(([x, z]) => ({ x, z }));
+  let minx = Infinity, maxx = -Infinity, minz = Infinity, maxz = -Infinity;
+  for (const q of ring) {
+    if (q.x < minx) minx = q.x; if (q.x > maxx) maxx = q.x;
+    if (q.z < minz) minz = q.z; if (q.z > maxz) maxz = q.z;
+  }
+  return { id: part.id, ring, minx, maxx, minz, maxz };
+});
+
+
+const side = (a, b, c) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
+function segCross(a, b, c, d) {
+  const d1 = side(a, b, c), d2 = side(a, b, d);
+  const d3 = side(c, d, a), d4 = side(c, d, b);
+  return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+}
+
 function pushPlot(out, id, poly, d, core, frontDirs, r) {
   const c = polyCentroid(poly);
   if (c.x < WORLD.minX + 40 || c.x > WORLD.maxX - 40 ||
@@ -641,10 +700,11 @@ export default class Buildings {
     this.groundAt = (city && typeof city.groundHeight === 'function')
       ? (x, z) => city.groundHeight(x, z) : () => 0;
     if (Array.isArray(city?.plots) && city.plots.length > 8) {
-      this.plots = city.plots;
+      this.plots = city.plots.filter(p => !heroOverlap(p.polygon));
+      this._heroSuppressed = city.plots.length - this.plots.length;
       this._usedFallback = false;
     } else {
-      this.plots = fallbackPlots();
+      this.plots = fallbackPlots().filter(p => !heroOverlap(p.polygon));
       this._usedFallback = true;
     }
     this._indexRoads(city);
