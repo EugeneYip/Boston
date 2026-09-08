@@ -2005,3 +2005,36 @@ its centroid, so a centroid-based keep-out leaked ground 3.3 m onto the Huntingt
 footway, and a centroid-based footprint rejection had already leaked 58 triangles
 of lawn under buildings. If the constraint is "must not touch X", test the
 vertices.
+
+## Validating a vehicle candidate, and the traps in it (2026-09-08)
+
+**Reposition the starter SUV at RUNTIME ONLY.** `Vehicle.setTransform(pos, heading)`
+— the second argument is a SCALAR heading, not a quaternion; passing a quaternion
+silently leaves the rotation unchanged. Save the original position and heading
+first, restore them after, and confirm with a clean reboot that source still owns
+the canonical placement. There must remain exactly ONE `#f07318` identity: check
+`vehicles.list.length === 1` and the colour, never spawn a second.
+
+**A vehicle will not settle while the player is far away.** Vehicles LOD out, so
+`setTransform` followed by stepping leaves `wheelsOnGround: 0` and the body
+floating. Put the player nearby first, then step; wheels load and it drops onto its
+suspension.
+
+**`city.net.edges.find(e => e.name === 'X')` is a bug in a distance measurement.**
+The network splits a street into many edges — Huntington is TEN — and `.find()`
+returns whichever comes first, which for Huntington is near Copley. That reported a
+Northeastern kerbside candidate as 1,344 m from the centreline. Iterate every edge
+and take the minimum.
+
+**A synthetic driver is not evidence about the world.** Full throttle in a straight
+line left the carriageway with 60% damage, and a proportional steering controller
+at gain 1.6 on `moveAxis().x` oscillated into the kerb with 45% — neither was a
+world defect. Huntington curves, so a straight line leaves it. Demonstrate
+drivability with gentle throttle on a straight stretch, and read the result as
+"the candidate is drivable", not "the road is fine at speed".
+
+**Road-band ownership is the acceptance test for a parked vehicle**, using
+`corridorHalf` and the cross-section in the road-corridor note above: travel lanes
+0–7.00 m, shoulder to 7.30, **parking lane to 9.80**, kerb to 9.96, footway to
+13.56. A kerbside candidate belongs in the parking lane. Check the heading against
+the road tangent too — a dot product near 1.0, not merely "close to the road".

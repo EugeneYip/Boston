@@ -278,9 +278,9 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
 | 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
-| 7 | starting SUV physical placement passes | **EVIDENCE ONLY, now correctly reasoned** (3B) — the candidate at (−1848, 1645) is 8.7 m off the centreline, which puts it **inside the parking lane (7.30–9.80 m)**, where a parked car belongs. Wave 2C called it clear by comparing against the 7.0 m travel-lane edge rather than the 13.56 m corridor — right answer, wrong reason. Nothing placed. |
-| 8 | vehicle exit/entry access passes | **EVIDENCE ONLY** — 47.4 m from the player candidate, 34 s at 1.4 m/s, line of sight clear against all hero footprints. The enter/exit flow itself was verified elsewhere, not here. |
-| 9 | opening camera composition passes | **PARTIAL, improved** (3B) — from the player candidate the composition now reads as arrival at a campus: lawn underfoot, a factual stone walk crossing 3.7 m away, and the quadrangle framed by fenestrated halls. Not forced to PASS: there are no entrance cues, the SUV is not placed, and the outer ground boundary is visible from some angles. |
+| 7 | vehicle access passes | **READY** (4A, live-validated) — the unique #f07318 SUV was temporarily repositioned to the candidate at runtime and driven. At rest: 4 wheels loaded, **0.000 m drift over 4 s**, 0 damage. Driving away on gentle throttle: stayed inside the 13.56 m corridor (8.7 → 10.0 m), **0.70 m ground clearance, 0 damage, no high-centring, 0 frames below 3 wheels**. Restored to canonical with 0.00 m offset. |
+| 8 | SUV placement passes | **READY** (4A) — 8.63 m off the centreline = **PARKING LANE** (7.00–9.80), heading aligned with the road to a dot of **0.999**, not on the travel lane, not on the footway, not in a hero footprint, not in Krentzman, 11.1 m from Dodge's face, line of sight to the player clear. Caveat: nearest street furniture is a **No Parking sign at 1.8 m**. Nothing migrated. |
+| 9 | opening camera composition passes | **READY** (4A) — measured at the real chase rig (3.35 m, fov 62, pitch −0.16) at three facings. Recommended **yaw ≈ 65°**: 6 hero buildings in frame, the quadrangle on screen, 2 arrival-walk points, 2 entrance cues, and the Huntington frontage for urban context. The SUV is NOT in frame at any facing — it sits 92° from the quad bearing, so no 62° fov holds both; it is discoverable with one ~67° turn. |
 
 Wave 2C moved **3 and 6 to PASS** and **5 to PARTIAL**, and left 4 untouched
 because a factual path on bare ground has to be distorted to read as anything.
@@ -305,11 +305,26 @@ PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the roa
 keep-out was leaking ground onto the Huntington footway, and the ground contour
 overshot at its elongated extremes.
 
-**Five of nine gates now PASS** (1, 2, 3, 5, 6, and 4). Gate 9 is PARTIAL; gates 7
-and 8 remain evidence-only with nothing placed. **The remaining blockers are all
-about the OPENING, not the district**: no entrance cues on any building, no SUV
-placed, no opening camera authored. That is a coherent next mission, and it is the
-last one before a migration could be argued.
+**All nine gates are now PASS or READY** (Wave 4A, `1434346`). Gates 7, 8 and 9
+were live-validated rather than inferred: the SUV was temporarily repositioned at
+runtime, entered with F, driven off inside the corridor, exited onto the footway,
+and restored to canonical with 0.00 m offset — exactly one #f07318 identity
+throughout, and a clean reboot from source confirmed spawn (166, 3.73, 128) and
+SUV (169.09, 3.44, 128.9) untouched.
+
+**CANONICAL NORTHEASTERN OPENING MIGRATION IS NOW JUSTIFIED.** Wave 4A did NOT
+perform it, deliberately — it is a separate owner-authorised mission. Its scope
+should be exactly four things and nothing else: move the Player spawn to
+(−1883, 1677), move the existing unique #f07318 SUV to (−1848, 1645) with its
+heading aligned to the Huntington tangent, set the initial Player yaw to ≈65°, and
+smoke-test plus document. No Hero features should be bundled in.
+
+Two things the migration should decide with open eyes. The SUV cannot be in the
+opening frame at the recommended yaw — the two candidates are 92° apart as seen
+from the player — so either accept one-turn discoverability, or nudge the player
+candidate south-east along the factual walk / the SUV south-west to narrow the
+angle. And the SUV's candidate sits 1.8 m from a No Parking sign, which is
+geometrically fine but reads oddly if anyone looks.
 
 Until every row passes, the spawn stays at world (166, 128) on the Boston Common
 edge, 2,684 m from the campus centroid.

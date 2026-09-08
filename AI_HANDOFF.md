@@ -241,8 +241,21 @@ CONTRACTS.md along with the harder-won lesson: **verify a horizontal surface by
 AREA and a TOP-DOWN diff before believing an oblique view.** Most of that session
 went into a bug that did not exist.
 
-Still absent: **entrance cues**. Details and migration-gate status are in
-`docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
+**Wave 4A added entrance cues and validated the opening. ALL NINE MIGRATION GATES
+ARE NOW PASS OR READY, and the migration was deliberately NOT performed** — it is
+a separate owner-authorised mission (`1434346`). Eight doorways, positioned where a
+PDDL private walk dead-ends against a face, for +208 triangles and no new draw.
+The university's ArcGIS entrance layer stays REFERENCE ONLY; its useful
+contribution was negative — none of its 82 points faces the arrival composition.
+
+Gates 7-9 were live-validated: the unique #f07318 SUV was repositioned AT RUNTIME
+ONLY, entered with F, driven off inside the road corridor, exited onto the footway,
+and restored to canonical with 0.00 m offset. Recommended initial Player yaw is
+≈65°. The SUV cannot share the opening frame with the quadrangle — they are 92°
+apart from the player candidate.
+
+Details and the exact recommended migration scope are in `docs/CURRENT_STATE.md`
+and `docs/neu/CURRENT_VS_REAL.md` §6.
 
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest

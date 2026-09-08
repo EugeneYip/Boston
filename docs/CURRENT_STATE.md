@@ -68,6 +68,70 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern hero district — Wave 4A, entrance cues + opening readiness (2026-09-08, `1434346`)
+
+**All nine migration gates are now PASS or READY. The migration itself was NOT
+performed** — it is a separate owner-authorised mission, and its scope is in
+`docs/neu/CURRENT_VS_REAL.md` §6.
+
+**Entrance cues: the third source tried is the one that shipped.** The
+university's ArcGIS layer has 82 accessible entrances at confidence A and 13 sit
+within 2 m of a massed footprint, but its terms are unverified so it stays
+REFERENCE ONLY. Its most useful contribution is a negative: **not one of those 82
+points lies on the Krentzman quadrangle frontage or the Huntington-facing frontage
+of the arrival composition**, and Richards Hall has no entrance record at all — so
+an arrival-facing door could not be justified from it. An authored proxy (door on
+the part edge nearest a shipped walk) agreed with the reference on **1 of 5**
+buildings and was discarded. What shipped is a `PWALK-CL` private walk that
+DEAD-ENDS against a face: public domain, and paths lead to doors. Agreement: 24 of
+91 terminations (26%) within 15 m of an accessible entrance, best-per-building
+1–22 m on nine of twelve. Weak for "THE accessible door", strong enough for "a
+door is along this face" — which is all a cue claims. One per part, eight total.
+
+Cost: **+208 opaque, +16 glass triangles, +0 draws, +0 materials, +0 colliders.**
+They read as doors at 10 m, appear in the opening frame at 49–88 m, and light at
+dusk through the same pane path as every window.
+
+**Two bugs found placing them.** The clamp that keeps a doorway off a quoin was
+applied to the stored `t` but not the stored `x`/`z`, and the runtime resolves from
+`x`/`z` — six of eight cues silently emitted nothing, rejected for want of width
+at an edge END. And the runtime must not trust the stored edge index: `orientRing`
+reverses a ring whose signed area is positive and renumbers every edge, so the cue
+is resolved by position.
+
+**Gates 7–9 were live-validated, not inferred.** The unique #f07318 SUV was
+temporarily repositioned at runtime — never in source — and the whole first-minute
+flow exercised:
+
+| step | result |
+|---|---|
+| SUV at rest in the candidate | 4 wheels loaded, **0.000 m drift over 4 s**, 0 damage |
+| road band | **8.63 m off the centreline = PARKING LANE** (7.00–9.80); heading aligned to the road, dot **0.999** |
+| player walk to it | 47.7 m, 0 ungrounded, 36 mm max snap; approach slows at the kerb |
+| F-entry | works at 2.5 m — mode `driving`, clip `sit`, playerVehicle = the orange SUV |
+| drive off, gentle throttle | stayed in the 13.56 m corridor (8.7 → 10.0 m), **0.70 m clearance, 0 damage, no high-centring** |
+| F-exit | mode `onFoot`, grounded, alighted at **12.5 m — on the footway** |
+| restore | canonical with **0.00 m offset**, heading −0.292, one #f07318, 0 damage |
+
+A clean reboot from source afterwards confirmed spawn (166, 3.73, 128) and SUV
+(169.09, 3.44, 128.9) untouched.
+
+**One instrument trap worth keeping.** Driving with full throttle, and again with
+an aggressive proportional steering controller, put the SUV off the carriageway
+with 45–60% damage — and neither was a world defect. Huntington curves here, so
+a straight line leaves it, and a gain of 1.6 on `moveAxis().x` oscillates into the
+kerb. Gentle throttle and no steering on the straight stretch demonstrated
+drivability cleanly. **`city.net.edges.find(e => e.name === 'Huntington Avenue')`
+returns ONE of ten Huntington edges** — using it for a distance measurement
+reported the SUV 1,344 m from the centreline. Iterate all edges.
+
+**Opening camera.** Measured at the real chase rig at three facings. Recommended
+**yaw ≈ 65°**: 6 hero buildings, the quadrangle on screen, 2 arrival-walk points,
+2 entrance cues, and the Huntington frontage. The SUV is in none of them — it sits
+92° from the quad bearing, so no 62° fov holds both, and it is discoverable with
+one ~67° turn. Frame **5.1 ms** at 1920×1080 high from four agreeing bursts, 715
+draws, 1.995 M triangles.
+
 ## Northeastern hero district — Wave 3B, campus ground + PDDL arrival (2026-09-08, `b01ba90`, `f864aea`)
 
 > ### RUNTIME GATE CLOSED — Wave 3B PASSED on 2026-09-08 (`c9bf5b0`).
