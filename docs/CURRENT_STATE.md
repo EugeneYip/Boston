@@ -68,6 +68,108 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern hero district — Wave 3A, fenestration + Krentzman ground (2026-09-08, `c50810b`, `8fc0798`)
+
+Wave 2C's two named defects are closed: the masses were blank and the quadrangle
+was dirt. The district now reads as an institutional campus at pedestrian
+distance, which was the whole success criterion.
+
+**Windows come from `Facades.frontStorey`, not from anything new.** It and
+`edgeFrame` are now exported; that is the entire change to `Facades.js` and the
+generated path is untouched. `NeuHero` cannot go through
+`makeSpec`/`buildBuilding` — those bring procedural roof clutter, chimneys and
+fire escapes, and its footprints and heights are factual — so it builds a minimal
+spec per part and calls the frontage primitive per edge per storey. Same shader,
+same reveals, same two buffers, and the night-light path came free: `spec.lit`
+makes individual windows glow at dusk with no lighting work at all.
+
+**Floors come from evidence.** The generator emits graded storey evidence and
+`NeuHero` reads it:
+
+| basis | buildings | course |
+|---|---|---|
+| **C** — OSM levels corroborated by the factual height | Richards, Hayden, Dodge, Mugar, Dana (5); Ryder (4) | 3.69-4.33 m |
+| **D** — assessor count in the package's own targeted validation | Hastings (7) | 3.98 m |
+| **DERIVED** — conservative 3.8 m course, gross-area implication recorded | Ell/Curry (4), Cabot (3), Egan (6), Shillman (5) | 3.51-4.00 m |
+
+A wing steps in its PARENT's course, so Ryder's 12.36 m lower wing is 3 storeys at
+Ryder's 4.33 m rather than the 3.25 a nominal course would give. Two parts under
+4.2 m of wall — a 2.21 m link and a 4.58 m canopy — are left plain: fenestrating
+them would put a storey of windows into 2 m of wall.
+
+**Three typologies, because one rhythm would be a lie.** The pre-1960 collegiate
+core is deliberately ONE composition — same window kind, same reveal, stone ground
+storey under a masonry body, modest cornice — with bay width varying only from
+each part's own seed, so the quadrangle halls relate without matching. 1960+
+research buildings take wider bays and a shallower reveal. Cabot takes neither: a
+field house is not five storeys of windows, so it gets one high clerestory band on
+9 m piers over a mostly solid wall, which keeps it reading wide and low. A shared
+part takes its earliest claimant's typology, so 661061 is collegiate on Ell's 1947
+rather than research on Curry's 1964 — the same rule the material family uses.
+
+**Collision is built from its own plain prisms.** A trimesh cut from the visible
+buffer would now include every jamb, sill and lintel: per-window collision by
+accident, for surfaces the player can never touch. The collision buffer is
+extruded separately and disposed once Rapier has copied it, which made colliders
+*simpler* than Wave 2C — 1,776 triangles against 2,984, one wall per edge instead
+of two stacked bands.
+
+**Krentzman is a mown quadrangle, and it cost one data change.** It was already a
+`reserveOnly` park ring, so dropping that and setting `kind: 'formal'` hands the
+ground plane to production code — `Districts` grass, `ParkPaths` circulation,
+`Props` furniture, `Vegetation` planting. `formal` needed no new table entries
+anywhere: it already means stone walks on a regular geometry, which is what a
+collegiate quadrangle is. Result: a 4.0 m stone loop, two 2.6 m minors, seven
+specimen trees, benches. It stays no-build because `isReserved` reaches it through
+`inPark` either way.
+
+Three things came free, and they are the reason not to have written a bespoke
+ground system: park surfaces already carry `polygonOffset -3/-6` so nothing
+z-fights the terrain; `Districts._mesh` subdivides to a 26 m max edge so the
+surface follows the ground; and parks have no collider, so the player keeps
+walking on the terrain heightfield and a collision discontinuity is impossible.
+Measured max vertical snap inside the quad: **12 mm**.
+
+**`understorey`, and the defect behind it.** `Vegetation`'s understorey loops draw
+a FLAT 340 shrubs and 260 flowers per park while the trees, furniture and hedges
+around them are all area-derived — and the comment above them claims they are area
+-derived too. They are not. A 0.26 ha quadrangle came out at ~1,100 shrubs/ha
+against the Common's ~9 and vanished into a thicket. Re-rating by area is the real
+fix and would thin the Public Garden and the Common by ~3x, so the blast radius
+was kept at zero instead: an optional `understorey` multiplier on the park record,
+Krentzman at 0.06. It had to be threaded through `Districts.parkPolys` and
+`Props.parks`, both of which map park records field by field and dropped it
+silently. This is the **fourth** instance of the constant-per-polygon bug this
+codebase has had.
+
+| | Wave 2C | Wave 3A |
+|---|---|---|
+| hero triangles | 2,984 | **102,098 opaque + 10,906 glass** |
+| hero draw calls | 1 | **2** (+2 shadow cascades in `stats()`) |
+| new materials | 0 | **0** — shares `matOpaque` and `matGlass` |
+| colliders | 18 / 2,984 tris | **18 / 1,776 tris** |
+| bays / storeys | — | 5,453 / 67, 16 of 18 parts fenestrated |
+| frame at the quad | 2.1 ms | **3.2 ms** (agreeing bursts 3.7/3.2) |
+
+Night and rain were sanity-checked only, with no exposure or lighting change:
+windows light individually at 20:30, and the lawn and stone walks wet correctly
+because the park surface is a registry variant that reaches `Assets.setWetness`.
+
+**Remaining visual gaps.** The lawn stops at the reservation octagon and the
+campus ground beyond it is still bare, so there is a hard mown/dirt boundary
+visible from the quad's west side and from the chase camera. Phase 7's PDDL
+sidewalk connector (Huntington -> Krentzman) and Phase 8's entrance cues were NOT
+done — the quadrangle has circulation from `ParkPaths`, but the link across the
+bare ground to the Huntington pavement does not exist. No parapets. The octagon's
+shape is now visible and therefore asserted, and it is the recorded area about the
+recorded centre, not a surveyed boundary.
+
+**One pre-existing defect found and NOT fixed** (out of scope, spawned as a
+separate task): thin dark slivers stick out of tree canopies wherever foliage
+meets sky. Ruled out as wires (hiding all 44 `prop:wires` groups changes nothing)
+and as hero geometry (hiding `neu_hero` changes nothing), so it is in
+`Vegetation`'s foliage cards.
+
 ## Northeastern hero district — Wave 2C, Krentzman / Huntington massing (2026-09-08, `641f8cc`)
 
 The opening cluster is survey geometry now. Eighteen volumes across the Krentzman

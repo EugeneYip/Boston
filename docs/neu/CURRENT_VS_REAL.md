@@ -275,23 +275,26 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 1 | real geography established in the envelope | **PASS** — Wave 0/1A |
 | 2 | major roads correct, Huntington offset under ~10 m | **PASS** — 0.8 m from the MassGIS centreline |
 | 3 | key campus building massing credible | **PASS** — 18 survey-derived volumes, heights validated sub-metre against two known towers |
-| 4 | key campus public realm credible | **NOT STARTED** — deliberately deferred, see below |
-| 5 | eye-level visual audit passes | **PARTIAL** — enclosure, scale and horizontality pass; no fenestration and a bare ground plane do not |
-| 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear |
+| 4 | key campus public realm credible | **PARTIAL** (3A) — Krentzman is a mown quadrangle with a 4.0 m stone loop, two 2.6 m minors, seven specimen trees and benches. The PDDL sidewalk connector from Huntington and the campus continuation are still absent. |
+| 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
+| 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
 | 7 | starting SUV physical placement passes | **EVIDENCE ONLY** — candidate measured at (−1848, 1645), 9.2 m off the centreline, 2.2 m clear of the carriageway. Nothing placed. |
 | 8 | vehicle exit/entry access passes | **EVIDENCE ONLY** — 47.2 m from the player candidate, 33.7 s walk, line of sight clear. The enter/exit flow itself was verified elsewhere, not here. |
-| 9 | opening camera composition passes | **PARTIAL** — the framing works from the player candidate; the ground plane and blank walls do not carry it yet |
+| 9 | opening camera composition passes | **PARTIAL** (3A) — the framing works and now has a lawn, walks and fenestrated halls to frame. What still shows is the hard mown/dirt boundary at the reservation octagon and the absence of an arrival path across it. |
 
-Wave 2C was asked to move 3, 4, 5 and 6 toward PASS. It moved **3 and 6 to PASS**,
-**5 to PARTIAL**, and left **4 untouched on purpose**: the quadrangle ground is
-still bare terrain, and a factual path laid on bare ground with no kerb or surface
-treatment has to be distorted to read as anything. The standing rule is to defer
-rather than distort. Public realm is the next wave's first job, and it should come
-with a ground plane.
+Wave 2C moved **3 and 6 to PASS** and **5 to PARTIAL**, and left 4 untouched
+because a factual path on bare ground has to be distorted to read as anything.
 
-**Do not migrate on the strength of one good-looking cluster.** Gate 5 fails at
-arm's length: the masses are blank brick with no windows, which is obvious
-standing beside Hastings on Huntington.
+Wave 3A was asked to advance **4, 5, 6 and 9**. It moved **5 to PASS** (fenestration
+and a quadrangle floor), confirmed **6 at PASS** on the new ground plane, moved
+**4 from NOT STARTED to PARTIAL** (Krentzman has lawn, stone circulation, trees
+and furniture), and improved **9 within PARTIAL** without closing it.
+
+**Still do not migrate.** Two gates are PARTIAL and two are evidence-only. The
+specific things a reviewer will see: the lawn stops at the reservation octagon and
+the campus ground beyond it is bare, so there is a hard mown/dirt line; there is
+no arrival path from the Huntington pavement into the quadrangle; and no entrance
+cues exist on any building.
 
 Until every row passes, the spawn stays at world (166, 128) on the Boston Common
 edge, 2,684 m from the campus centroid.

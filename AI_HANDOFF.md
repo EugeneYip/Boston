@@ -204,11 +204,27 @@ never built rather than built and hidden; both gates are needed because
 `buildPlots` tests one point against a 46 x 54 m lot. And **`src/data/neu-hero.js`
 is generated** by `tools/neu-hero/build.mjs` — regenerate, never hand-edit.
 
-The honest gap: there is **no fenestration**. The masses are blank brick, obvious
-standing beside Hastings on Huntington, and the quadrangle ground is still bare
-terrain. Public realm was deferred rather than laid on bare ground. Details and
-the migration-gate status are in `docs/CURRENT_STATE.md` and
-`docs/neu/CURRENT_VS_REAL.md` §6.
+**Wave 3A gave it windows and a quadrangle floor** (`c50810b`, `8fc0798`). Window
+bays come from `Facades.frontStorey`, the same primitive the generated city uses —
+exported for this, with the generated path untouched. Floor counts come from
+graded storey evidence in `NEU_HERO_BUILDINGS` (`C` for the OSM levels the factual
+height corroborates, `DERIVED` for a conservative 3.8 m course), never from
+dividing height, and a wing steps in its parent's course. Three typologies, so
+Cabot gets a clerestory band rather than five storeys of windows. Collision is cut
+from a SEPARATE plain-prism buffer — a trimesh from the visible geometry would be
+per-window collision by accident. Krentzman became a mown quadrangle by one data
+change: it was already a `reserveOnly` park ring, so dropping that and setting
+`kind: 'formal'` handed the ground plane to the production park pipeline, which
+brought polygon-offset (no z-fighting), terrain-following subdivision and no
+collider (so no collision discontinuity) for free.
+
+Cost: 102k opaque + 11k glass triangles in 2 draws, 0 new materials, 3.2 ms at the
+quad. Colliders got *simpler* — 1,776 triangles against Wave 2C's 2,984.
+
+The honest gaps now: the lawn stops at the reservation octagon so there is a hard
+mown/dirt line beyond it, there is **no arrival path** from the Huntington pavement
+into the quadrangle, and there are **no entrance cues**. Details and migration-gate
+status are in `docs/CURRENT_STATE.md` and `docs/neu/CURRENT_VS_REAL.md` §6.
 
 The contract it establishes, and the one to keep: **the player and the crowd share
 gameplay and animation, and differ only in surface.** Same 16 bones, same rest

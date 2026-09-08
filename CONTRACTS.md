@@ -1853,3 +1853,64 @@ correct for the convex-ish plans `Landmarks` feeds it and wrong for a survey
 outline — Ell's is 95 vertices of courtyard and wing, and a fan across a concave
 ring lays triangles outside the building. `NeuHero.capPoly` triangulates with
 `THREE.ShapeUtils` and emits one 3-vertex `cap` per triangle.
+
+## Hero facades reuse the generated city's frontage primitive (2026-09-08)
+
+`NeuHero` gets its window bays from **`Facades.frontStorey`**, with `edgeFrame` to
+turn a footprint edge into the `(u, y, off)` frame it wants. Both are exported for
+exactly this. The rules around it:
+
+**Do NOT route `NeuHero` through `makeSpec`/`buildBuilding`.** A generated spec
+brings a district style roll, procedural roof clutter, chimneys, fire escapes and
+a `storeys` range — all of which would overwrite factual footprints and recorded
+heights. `NeuHero` builds a minimal spec per part instead: `S` (the typology),
+`wallSurf`/`wallCol`, `trimSurf`/`trimCol`, `uOff`, `seed`, `base`, `lit`, and
+`arched`/`purpleGlass`/`shutters` all false.
+
+**`spec.lit` is not decoration.** It feeds `GlassBuf.pane`, which is what makes
+individual windows light at dusk. Leave it set, or the cluster goes dark at night
+while the city around it does not.
+
+**Floor counts come from `NEU_HERO_BUILDINGS`, never from dividing height.** The
+generated data carries `storeys`, `courseM`, `storeyConfidence` (`C` / `D` /
+`DERIVED`) and `storeyBasis`. A part takes its PARENT building's `courseM` and
+derives its own floor count from its own height, so a wing steps in the same
+courses as the mass it belongs to. Anything under 4.2 m of wall is left plain.
+
+**Collision must NOT be cut from the visible buffer.** Once a wall has reveals,
+sills and lintels, a trimesh cut from the rendered geometry is per-window
+collision by accident — an order more collider triangles, for surfaces a player
+can never reach. `NeuHero` extrudes a separate plain-prism buffer, hands it to
+Rapier and disposes it. Building-volume collision, and it is cheaper than the
+facade-free version was.
+
+**Roof caps still need real triangulation** — see the Wave 2C note above;
+`MeshBuf.cap` fans from vertex 0 and these outlines are concave.
+
+## Park records: `understorey`, and a flat constant that is not (2026-09-08)
+
+`PARKS` entries may carry an optional **`understorey`** multiplier (default 1)
+scaling `Vegetation`'s shrub, flower and hedge counts for that park only.
+Krentzman Quadrangle sets `0.06` because a quadrangle is mown.
+
+It exists because `Vegetation`'s understorey loops use **flat per-park constants**
+— 340 shrubs and 260 flowers — while the park trees above them, the hedge runs
+below them and `Props` park furniture are all area-derived. The comment directly
+above those loops asserts they are area-derived. **It is wrong.** Only the
+rejection rate varies with polygon fill, which is not the same thing. Measured:
+Krentzman at 0.26 ha accepted ~1,100 shrubs/ha against Boston Common's ~9 at
+25.8 ha. This is the FOURTH instance of the constant-per-polygon bug in this
+codebase, after park furniture, park trees and hedge runs.
+
+Re-rating by area is the correct fix and was deliberately NOT done in Wave 3A: it
+would thin the Public Garden and the Common by roughly 3x, which is a city-wide
+visual change and was not that wave's business.
+
+**If you add a field to a park record, thread it.** `Districts.parkPolys` and
+`Props.parks` both rebuild park records field by field and will drop anything they
+do not name — `understorey` was silently lost in both until each was updated.
+
+**`kind: 'formal'` is the quadrangle kind.** It already means stone walks on a
+regular geometry in `ParkPaths` and carries rates in `Vegetation` and `Props`, so
+a quadrangle needs no new `kind`. Note it is shared with the Public Garden and
+Post Office Square: do not re-tune `formal` rates for a campus reason.
