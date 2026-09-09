@@ -489,6 +489,38 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE C-2C — THE CAMPUS GROUND WAS NEVER DRAWN (2026-09-09, `26cbbb7`)
+
+**This supersedes the conclusion in `dbf9299`.** C-2B decided that C-2's downward
+raycast was simply a bad probe and that the world was fine. It was not. The probe
+was misleading *because* the geometry was malformed, and the malformation is a
+rendering defect.
+
+`NeuHero._buildGround` triangulates with `ShapeUtils`, which works in 2-D with +y
+up the page; mapping that y to world z flips the handedness, so a CCW 2-D triangle
+comes out **downward-facing** in XZ and is back-face culled. It emitted
+`tri[0], tri[1], tri[2]` and pushed a `+Y` normal attribute — which fixes the
+lighting and does nothing about the winding, which is exactly why it survived
+every check that looked at normals. **`Water.js` and `Districts.js` both already
+reverse for this precise reason and both say so in comments.**
+
+Measured, ignoring the stored normal and using `cross(p1−p0, p2−p0)` on actual
+indexed positions: **`neu_ground_lawn` 0 up / 25 down**, `neu_ground_paved` 1/23,
+against **`park_lawn` 24 up / 1 down**. Proved at raster level with an emissive
+magenta tint at a locked camera and clock: ROI mean log-luminance **−4.085 at
+FrontSide, −1.539 at DoubleSide**, a 2.55 log-unit jump. A material flag cannot
+add geometry.
+
+So the whole campus ground surface — 4,929 triangles across the hero district —
+**has never been drawn since Wave 3A added it**, and the "dark mottled ground" I
+flagged honestly at the canonical spawn in C-2B was the base terrain 0.02 m below
+it. The fix is one line, `tri[0], tri[2], tri[1]`, at zero structural cost.
+
+After: 25/25 faces up, downward ray hits, upward ray correctly misses, hiding the
+mesh now moves the ROI by **1.967 log units** where the same test previously sat
+below the frame's noise floor, and the canonical first frame shows maintained
+campus lawn under the player.
+
 ### WAVE C-2B — KRENTZMAN FORM SHIPPED (2026-09-09, `e1fa294`)
 
 The 24-vertex three-sided ring is in production. Krentzman is enclosed by

@@ -382,7 +382,8 @@
         "whatIsActuallyTrue": "neu_ground_lawn owns the spawn, at terrain +0.0200 m exactly — the emit offset in _buildGround.",
         "theBug": "C-2 probed with a DOWNWARD raycast. These ground triangles are wound front-face-DOWN and every one of the seven ground materials is FrontSide, so a downward ray hits the back face and Raycaster rejects it. Proven three ways: an upward ray finds the mesh; forcing DoubleSide makes the downward ray find it; and a geometric point-in-triangle test over the emitted vertices finds it regardless of ray direction.",
         "whyItLookedLocalisedAndReal": "The park_ meshes are wound the other way, so downward rays DID find park_lawn. Park surfaces answered and campus surfaces did not, which reads exactly like a hole in one place rather than a broken instrument.",
-        "lesson": "Probe emitted geometry, not rays, when asking who owns a surface — or at minimum verify the prober against a point the classifier says is covered."
+        "lesson": "Probe emitted geometry, not rays, when asking who owns a surface — or at minimum verify the prober against a point the classifier says is covered.",
+        "SUPERSEDED": "WRONG, and corrected by Wave C-2C. See waveC2cCorrection. The downward ray was not merely a bad probe: it was correctly detecting a real FrontSide winding defect that also made the surface invisible. The probe was unreliable BECAUSE the geometry was malformed."
       },
       "phase1_ruleTable": {
         "method": "_buildGround temporarily instrumented to record every rule verdict, unshort-circuited, for the triangle covering each probe. Instrumentation removed afterwards; NeuHero.js is byte-identical to origin/main.",
@@ -526,6 +527,60 @@
         "practicalLesson": "Cold boots are expensive on this machine because each one recompiles shaders. Batch runtime probes into as few boots as possible.",
         "structuralCostsStand": "triangle, draw, material and collider figures above are deterministic and unaffected."
       }
+    },
+    "waveC2cCorrection": {
+      "date": "2026-09-09",
+      "supersedes": "commit dbf9299, \"docs: Risk B was a raycast pointing the wrong way\"",
+      "verdict": "dbf9299 was HALF RIGHT AND WRONG WHERE IT MATTERED. C-2 was right that something was broken at the canonical spawn. I attributed it to the probe and stopped there. The probe was misleading because the geometry was genuinely front-face-down, and that is a RENDERING defect, not only a raycasting one.",
+      "whatWasActuallyWrong": {
+        "defect": "NeuHero._buildGround emitted idx.push(tri[0], tri[1], tri[2]) from THREE.ShapeUtils.triangulateShape.",
+        "mechanism": "ShapeUtils works in 2-D with +y up the page. Mapping that y to world z flips the handedness, so a CCW 2-D triangle becomes a DOWNWARD-facing triangle in XZ and is back-face culled by a FrontSide material. The +Y normal attribute pushed alongside it corrects the lighting and does nothing to the winding, which is why the defect survived every check that looked at normals.",
+        "precedentAlreadyInTheCodebase": [
+          "src/world/Water.js: \"mapping that y to world z flips the handedness, so a CCW 2-D triangle becomes a downward-facing one in the XZ plane and gets back-face culled. Reverse the winding.\"",
+          "src/world/Districts.js: \"Same 2-D -> XZ handedness flip as the water: reverse the winding or the lawn faces the ground and is culled.\" — and it emits t[0], t[2], t[1]."
+        ],
+        "consequence": "The entire NeuHero campus ground surface — neu_ground_lawn and neu_ground_paved, 4,929 triangles across the hero district — has never been drawn since it was added in Wave 3A. What looked like campus ground was the base terrain 0.02 m below it."
+      },
+      "geometricProof": {
+        "method": "face normal from cross(p1-p0, p2-p0) on ACTUAL indexed world positions; the stored normal attribute was deliberately ignored",
+        "before": {
+          "neu_ground_lawn": "0 up / 25 down",
+          "neu_ground_paved": "1 up / 23 down",
+          "park_lawn": "24 up / 1 down"
+        },
+        "after": {
+          "neu_ground_lawn": "25 up / 0 down",
+          "neu_ground_paved": "23 up / 1 down",
+          "park_lawn": "24 up / 1 down"
+        },
+        "note": "the single stray face on paved and on park_lawn is a near-degenerate sliver where the sign is numerically fragile; |normalY| there is 0.001-0.013",
+        "storedNormalAttribute": "(0,1,0) on all three meshes, before and after — it never told the truth about facing"
+      },
+      "rasterProof": {
+        "method": "emissive magenta debug tint on neu_ground_lawn only (1 mesh uses that material), locked camera looking straight down at the canonical spawn, locked clock 12.00 and clear weather, fixed 60x60 ROI of the 128x128 luminance grid",
+        "frontSide_roiMeanLogLum": -4.0851,
+        "doubleSide_roiMeanLogLum": -1.539,
+        "deltaLogUnits": 2.55,
+        "reading": "the surface was absent at FrontSide and filled the frame at DoubleSide. A material flag cannot add geometry, so the geometry was being culled."
+      },
+      "fix": {
+        "commit": "26cbbb7",
+        "change": "one line in NeuHero._buildGround: idx.push(tri[0], tri[2], tri[1])",
+        "rejected": "DoubleSide as a permanent workaround — it wastes raster work and hides malformed winding on what are ordinary upward-facing ground surfaces",
+        "normalsKept": "+Y, which was already correct",
+        "structuralCost": "zero. Reversing an index order changes no triangle, draw, material or collider count."
+      },
+      "afterVerification": {
+        "downwardRayAtSpawn": "hits neu_ground_lawn at y 3.115 (previously missed)",
+        "upwardRayAtSpawn": "misses (previously hit) — correct for a FrontSide upward surface",
+        "hideTestRoiDelta": 1.9671,
+        "hideTestBefore": "below the frame noise floor — the C-2B measurement that was ambiguous and that I read the wrong way",
+        "visual": "the canonical first frame now shows maintained campus lawn under the player where C-2B showed dark mottled terrain. The park-lawn / campus-lawn boundary shows no seam at close range.",
+        "kcc": "spawn to quad centre: 400 frames, 400 grounded, 0 ungrounded, 5.1 mm peak snap, Y flat at 3.115",
+        "nightRain": "lawn lit and readable at night, wetness continuous in rain — the corrected surface can receive wetness at all now, which it could not while it was unrendered. Hot-pixel fraction 0.0005 night, 0.0000 rain.",
+        "unchanged": "Krentzman 24-vertex ring, spawn height 3.0953, districtAt northeastern, starter SUV at (-1856.164, 1649.222), Green Line 2 platforms / 6,680 tris / 1 draw / 6 colliders, road triangles 388,729"
+      },
+      "lesson": "A null result has more than one cause. \"Hiding the mesh changed nothing\" is equally consistent with \"the thing underneath looks the same\" and with \"the mesh was never drawn\", and I picked the first without separating them. The separating test was cheap — an unmistakable debug tint — and I should have reached for it the moment I found the front face pointing down."
     }
   },
   "entrances": {
