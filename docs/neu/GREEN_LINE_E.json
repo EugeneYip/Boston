@@ -1,0 +1,117 @@
+{
+  "_authored": "tools-free, authored by the Wave B mission 2026-09-09 from the MBTA V3 API. Not generated; edit deliberately.",
+  "what": "Green Line E infrastructure adjacent to Northeastern, as FACTS. No runtime geometry is built from this yet - see blocker.",
+  "attribution": [
+    "MBTA V3 API - https://api-v3.mbta.com (MBTA open data)"
+  ],
+  "route": {
+    "id": "Green-E",
+    "longName": "Green Line E",
+    "gtfsRouteType": 0,
+    "colour": "#00843D",
+    "textColour": "#FFFFFF",
+    "note": "route_type 0 = tram / street-running light rail"
+  },
+  "station": {
+    "id": "place-nuniv",
+    "name": "Northeastern University",
+    "locationType": 1,
+    "latLon": [
+      42.340401,
+      -71.088806
+    ],
+    "worldXZ": [
+      -1904.9,
+      1667.5
+    ],
+    "wheelchairBoarding": 1,
+    "confidence": "A",
+    "distanceFromCanonicalSpawnM": 23.9
+  },
+  "platforms": [
+    {
+      "id": "70243",
+      "name": "Northeastern University",
+      "platformName": "Heath Street",
+      "direction": "outbound",
+      "latLon": [
+        42.339897,
+        -71.09021
+      ],
+      "worldXZ": [
+        -2020.4,
+        1723.6
+      ],
+      "confidence": "A"
+    },
+    {
+      "id": "70244",
+      "name": "Northeastern University",
+      "platformName": "Park Street & North",
+      "direction": "inbound",
+      "latLon": [
+        42.340222,
+        -71.0892
+      ],
+      "worldXZ": [
+        -1937.3,
+        1687.4
+      ],
+      "confidence": "A"
+    }
+  ],
+  "platformArrangement": {
+    "type": "two side platforms, staggered",
+    "separationM": 90.6,
+    "bearingOutboundToInboundDeg": 113.5,
+    "note": "GTFS gives one stop point per direction, not platform extents. Extents must be surveyed or inferred at modelling time."
+  },
+  "crossSection": {
+    "realWorld": {
+      "source": "MassGIS/MassDOT Roads via docs/neu/SOURCES.md - public domain, already vetted by this project",
+      "rightOfWayFt": 99,
+      "rightOfWayM": 30.2,
+      "medianFt": 48,
+      "medianM": 14.6,
+      "medianNote": "the median widens to 48 ft across the campus and IS the Green Line E reservation",
+      "lanes": "2+2",
+      "speedMph": 30,
+      "aadt": 22184
+    },
+    "asBuiltInGame": {
+      "edge": "Huntington Avenue, arterial, lanes 4",
+      "laneWidthM": 3.5,
+      "shoulderM": 0.3,
+      "parkingM": 2.5,
+      "walkM": 3.6,
+      "kerbM": 0.16,
+      "halfRoadM": 9.8,
+      "carriagewayM": 19.6,
+      "corridorM": 27.12,
+      "laneCentresM": [
+        -5.25,
+        -1.75,
+        1.75,
+        5.25
+      ],
+      "medianM": 0,
+      "note": "the game centreline is the CORRIDOR CENTRE - the average of the two directional carriageways - so the modelled carriageway is drawn ON TOP of the real reservation"
+    }
+  },
+  "blocker": {
+    "summary": "A factual Green Line reservation cannot be built without first making Huntington a divided road, and that moves every locked artefact of the canonical opening.",
+    "why": [
+      "There is no median or reservation concept anywhere in the road system: no field, no band, no section support.",
+      "halfRoad is DERIVED from lane count: halfRoad = (lanes/2)*laneW + shoulder + park. Dropping Huntington from 4 lanes to 2 to free ~7 m of median takes halfRoad from 9.80 m to 6.30 m.",
+      "That moves the kerb line inward 3.5 m, and with it the footway, the graded W_VERGE crossing accepted in 35d56ae, and the parking lane whose offset (8.55 m) the starter SUV solver resolves against.",
+      "Holding halfRoad by overriding street width sets `lw`, which disables lane markings entirely (`marks = ... && !lw`) and replaces real lane centres with a naive division.",
+      "So a median needs NEW section capability in Roads.js - a reserved band that lane layout, parking and the kerb line all respect."
+    ],
+    "notATasteJudgement": "The rails would otherwise sit under live traffic lanes at o = -3.5..+3.5, because the four travelled lanes are centred at -5.25, -1.75, +1.75 and +5.25."
+  },
+  "waveCPrerequisite": [
+    "Add a median/reservation band to the Roads section model, with lane layout and parking derived AROUND it rather than across it.",
+    "Keep halfRoad and the kerb line fixed at 9.80 m so the footway, the graded crossing and the parking lane do not move.",
+    "Then lay two tracks on the corridor centre - which is already the real reservation centre - and the two staggered side platforms above."
+  ]
+}
