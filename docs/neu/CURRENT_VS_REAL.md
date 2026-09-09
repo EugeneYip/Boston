@@ -278,9 +278,9 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 | 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
 | 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
-| 7 | vehicle access passes | **READY** (grade-transition mission, `35d56ae`) — the blocker is closed. From the LOCKED spawn, on a real KCC with no teleport: 38.62 m in 11.57 s, 0 ungrounded frames, 42 mm max snap, a continuous 3.11 → 4.11 m climb, ending 3.56 m from the car on the footway; then F-enter, sit, 14.02 m at 20.6 km/h with 0 damage and 0 off-road frames, F-exit back onto the footway. Exactly one #f07318 throughout. |
-| 8 | SUV placement passes | **READY** — placement is correct and derived, not pasted: PARKING LANE at 8.55 m from the centreline, tangent dot 1.000, 8.9 m clear of the "NO PARKING / TOW ZONE" plate, 4 wheels, 0 damage, exactly one #f07318. Nothing migrated. |
-| 9 | opening camera composition passes | **READY** — rig yaw −2.007 rad gives forward (0.906, 0.423), bearing 65.0°. First frame carries six hero buildings, the quadrangle, the factual walk and two entrance cues; the SUV is 71° off and one turn puts it at frame centre. Verified on a real boot, no `capture()` override. |
+| 7 | vehicle access passes | **PASS / MIGRATED** (`5c5e349`) — from a cold production boot, no teleport: hold forward, 35.89 m of path in 11.47 s, 688 grounded frames and **zero ungrounded**, 18 mm max snap, a continuous 0.996 m climb up the corrected verge, `ground` → `pavement` at t=10.0 s, ending 3.49 m from the car. Then F-enter, 0.000 m drift while seated, 18.86 m at 23.1 km/h with zero off-road frames, four wheels throughout, 1.4° peak pitch, no high-centring, no damage, F-exit back onto the pavement. |
+| 8 | SUV placement passes | **PASS / MIGRATED** (`5c5e349`) — derived by the production solver from `OPENING_SUV_ANCHOR`, not pasted. Lands 2.80 m off the anchor at (−1856.164, 3.808, 1649.222) on edge 486 segment 9; lateral 8.55 m against a parking offset of exactly 8.55, surface `road`, heading 2.0675 against tangent 2.0675 (error 0.00°, dot 1.0000), four wheels, zero damage, 0.000 m drift over 3 s, 8.93 m clear of the nearest No Parking plate. Exactly one #f07318. |
+| 9 | opening camera composition passes | **PASS / MIGRATED** (`5c5e349`) — rig yaw −2.007 gives forward (0.9064, 0.4225), bearing **65.01°**. The production first frame — no `setCamera` override — carries the quadrangle, its stone walks, benches, specimen trees and the hero brick range. One 71.0° turn puts the SUV at NDC **(−0.010, +0.242)**, dead centre, all four footprint corners on screen, and the only thing the sight line hits is the car's own collider. |
 
 Wave 2C moved **3 and 6 to PASS** and **5 to PARTIAL**, and left 4 untouched
 because a factual path on bare ground has to be distorted to read as anything.
@@ -305,17 +305,26 @@ PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the roa
 keep-out was leaking ground onto the Huntington footway, and the ground contour
 overshot at its elongated extremes.
 
-**All nine gates PASS or READY.** Gate 7 was BLOCKED and is now closed; the
-prerequisite it named has been built. See "THE REACHABILITY BLOCKER — CLOSED"
-below for what the obstacle actually was, which was not what it looked like.
+## CANONICAL NORTHEASTERN OPENING IS LIVE (2026-09-08, `5c5e349`)
+
+**All nine gates PASS. Gates 7, 8 and 9 are MIGRATED.** The game now opens at
+Northeastern: player (−1883, 3.115, 1677) grounded on the campus side facing
+65.01°, with the single #f07318 starter solved onto the Huntington kerbside.
+**Boston Common is RETIRED as the normal production start.**
+
+Gate 7 was BLOCKED and was closed by `35d56ae`; the prerequisite it named — a
+walkable campus→footway transition — exists, and the opening did not have to
+change to accommodate it. See "THE REACHABILITY BLOCKER — CLOSED" below for what
+the obstacle actually was, which was not what it looked like.
 
 Superseded text follows. **Eight of nine gates PASS or READY. Gate 7 is BLOCKED, and the canonical
 migration was attempted and REVERTED on 2026-09-08.**
 
 ### THE REACHABILITY BLOCKER — CLOSED (2026-09-08, `35d56ae`)
 
-**Boston Common is still the production opening, because this mission was not the
-migration.** But the reason to hold it is gone.
+**Superseded by `5c5e349`: Northeastern is now the production opening.** At the
+time of writing, Boston Common still was, because that mission was not the
+migration. What follows is the diagnosis, which stands.
 
 **What the obstacle actually was.** Not a 0.94 m wall. That number is
 `surfaceHeight(footway) − groundHeight(campus)`, and the footway really is 0.94 m
@@ -455,15 +464,12 @@ SUV (169.09, 3.44, 128.9) untouched.
 
 ### The LOCKED migration target (candidate-lock mission, 2026-09-08)
 
-**CANONICAL NORTHEASTERN OPENING MIGRATION IS JUSTIFIED, THE TARGET IS LOCKED, AND
-IT IS UNBLOCKED AGAIN** (`35d56ae`). It was attempted on 2026-09-08 and reverted
-because the player could not reach the car; the grade transition that stopped him
-has been built and the whole flow now passes end to end. The targets below are
-unchanged — this mission produced no contrary evidence about any of them. The
-migration itself has still NOT been performed: a fresh boot is Boston Common.
-Neither Wave 4A nor the candidate-lock mission performed it — that is a separate
-owner-authorised mission, and its scope is exactly these four values plus a smoke
-test and docs. Nothing else.
+**CANONICAL NORTHEASTERN OPENING MIGRATION IS DONE** (`5c5e349`). The targets
+below were locked by the candidate-lock mission, survived the first attempt and
+its revert, survived the blocker fix, and shipped unchanged — no value in this
+section was altered to make the migration work. They now live in
+`src/data/opening.js`, which is the authoritative source; this section is the
+record of how they were chosen.
 
 | | LOCKED value |
 |---|---|

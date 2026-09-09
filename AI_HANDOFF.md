@@ -264,10 +264,26 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
-**The blocker is CLOSED (`35d56ae`) and the migration is UNBLOCKED AGAIN. Boston
-Common is still the production opening, because the closeout mission was not the
-migration — a fresh boot is unchanged. The next mission may re-run the atomic
-migration.**
+**THE GAME OPENS AT NORTHEASTERN (`5c5e349`). Boston Common is RETIRED as the
+normal production start.** A cold boot puts the player at (−1883, 3.115, 1677),
+grounded on the campus side, facing 65.01°, with the single #f07318 starter solved
+onto the Huntington kerbside at (−1856.164, 1649.222).
+
+`src/data/opening.js` is the source of truth. **Two things there will bite you if
+you skim them.** `OPENING_YAW` is a CameraRig value, not a bearing —
+`rig yaw = bearing − π`, because `_apply` rotates (0,0,−1) about +Y; 65° is −2.007.
+And `OPENING_SNAP_R` is not decoration: the nearest sidewalk spawn point to the
+campus anchor is **28.49 m away**, so the retired unbounded snap would relocate the
+opening and leave no trace of it. `OPENING_SUV_ANCHOR` is a search target for
+`spawnStarter`, not a transform — do not paste the solved position back.
+
+The natural first minute, cold boot, no teleport: 71.0° turn puts the car at frame
+centre unoccluded; hold forward for 35.89 m / 11.47 s with **zero ungrounded
+frames**, 18 mm max snap and a continuous 0.996 m climb up the corrected verge;
+F-enter, 18.86 m at 23.1 km/h with no high-centring, F-exit onto the pavement.
+
+Superseded: **the blocker is CLOSED (`35d56ae`) and the migration is UNBLOCKED
+AGAIN; Boston Common is still the production opening.**
 
 The obstacle was never the 0.94 m wall: it was a **0.32 m naked trimesh edge** at
 the toe of the graded verge `Roads.section()` has always drawn, floating because

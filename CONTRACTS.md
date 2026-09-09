@@ -91,6 +91,28 @@ player.health, player.wanted
 ctx.bus.emit('player:enterVehicle', v) / ('player:exitVehicle', v)
 ```
 
+### Where the game opens — `src/data/opening.js` (2026-09-08)
+
+One module owns the opening: `OPENING_PLAYER`, `OPENING_BEARING_DEG`,
+`OPENING_YAW`, `OPENING_SNAP_R`, `OPENING_SUV_ANCHOR`. `Player._pickSpawn`,
+`Player._yaw`, `Player._starterAnchor` and `CameraRig.init` read it; nothing else
+should. **If you want to move the opening, change that file — not a system.**
+
+Three things there are easy to get wrong:
+
+- **`OPENING_YAW` is a rig value, not a bearing.** `CameraRig._apply` builds
+  forward as `(0,0,-1)` rotated about +Y, so `rig yaw = bearing - PI`. 65 degrees
+  is `-2.007`. `Player._lookYaw` prefers `rig.yaw`, so the rig owns facing.
+- **`OPENING_SNAP_R` is load-bearing.** The spawn snaps to the nearest `sidewalk`
+  spawn point, which used to happen at ANY distance. The nearest such point to the
+  campus anchor is **28.49 m** away on another frontage; unbounded, the snap
+  relocates the opening and leaves nothing in the diff to say so.
+- **`OPENING_SUV_ANCHOR` is a search target, not a transform.** `spawnStarter`
+  derives the slot, the side of the street, the parked-car clearance and the
+  heading from the road tangent, and lands ~2.8 m off the anchor. Do not paste a
+  solved position or heading back into the file. `Vehicle.setTransform` takes a
+  SCALAR heading; a quaternion is silently ignored.
+
 ---
 ## Cars are three different things, and each owns its collision separately
 

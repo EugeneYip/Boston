@@ -68,14 +68,66 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## THE GAME OPENS AT NORTHEASTERN (2026-09-08, `5c5e349`)
+
+> ### Boston Common is RETIRED as the normal production start.
+>
+> A cold boot puts the player at **(−1883, 3.115, 1677)**, grounded on the campus
+> side of Huntington, facing **65.01°**, with the single `#f07318` starter solved
+> onto the Huntington kerbside at (−1856.164, 3.808, 1649.222).
+
+**Where it lives.** `src/data/opening.js` is the one source of truth —
+`OPENING_PLAYER`, `OPENING_BEARING_DEG`, `OPENING_YAW`, `OPENING_SNAP_R`,
+`OPENING_SUV_ANCHOR`. `Player._pickSpawn` anchors on it, `Player._yaw` and
+`CameraRig.init` take the yaw from it, and `Player._starterAnchor` hands the SUV
+anchor to `spawnStarter`. **No teleport, no post-boot fixup, no cinematic** — the
+lowest authoritative source says where the game starts and everything downstream
+already knew how to read it.
+
+**The bounded snap is the load-bearing part.** The retired opening snapped to the
+nearest `sidewalk` spawn point at *any* distance, which was right when the anchor
+already stood on a sidewalk three metres from the car. Measured from the campus
+anchor, the nearest sidewalk point is **28.49 m away** at (−1910.9, 1682.6), on a
+different frontage — an unbounded snap would have silently relocated the opening
+there. `OPENING_SNAP_R = 6` keeps the snap's original job and removes its ability
+to move the opening.
+
+**The yaw is a units trap, not a geometry one.** `CameraRig._apply` builds forward
+as (0,0,−1) rotated about +Y, so a compass bearing is π out from the rig value:
+**rig yaw = bearing − π**. 65° → −2.007. Boot measures forward (0.9064, 0.4225),
+bearing 65.01°.
+
+**The SUV is derived, not pasted.** `spawnStarter` gets the anchor and still solves
+the slot, the side of the street, the parked-car clearance and the heading from the
+road tangent. From (−1858.6, 1650.6) it lands **2.80 m** away, reproducing the
+previously validated placement to the millimetre.
+
+| measured on a cold boot, no manual placement | |
+|---|---|
+| player | (−1883, 3.115, 1677), grounded, kind `ground`, Y from `city.surfaceHeight` |
+| first frame | quadrangle, stone walks, benches, specimen trees, hero brick range — campus first, SUV out of frame by design |
+| one-turn reveal | **71.0°** → SUV at NDC **(−0.010, +0.242)**, four corners on screen, **no occluder** |
+| walk | 35.89 m of path in 11.47 s, 688 grounded frames, **0 ungrounded**, 18 mm max snap, continuous **0.996 m** climb, `ground`→`pavement` at t=10.0 s, ends 3.49 m from the car |
+| SUV | edge 486 seg 9, lateral 8.55 m vs parking offset 8.55, surface `road`, heading 2.0675 vs tangent 2.0675 (dot **1.0000**), 4 wheels, 0 damage, 0.000 m drift, 8.93 m clear of the nearest No Parking plate |
+| drive | 18.86 m at 23.1 km/h, 0 off-road frames, 4 wheels throughout, 1.4° peak pitch, no high-centring, no damage |
+| exit | onFoot, grounded, on `pavement`, 3.85 m from the car |
+| durability | two consecutive fresh boots **bit-identical** in player and SUV |
+| perf at the opening | 16.86 ms median, 59.3 fps, 532 draws, 1.91M tris at 1920×1080 `high` |
+
+**There is no in-game restart path** — a page reload is the only reset, and it was
+verified twice.
+
+**Residual.** The opening is a park district by `districtAt` (Krentzman is an
+authored park polygon), so HUD district text reads `PARKLAND`. The minimap street
+label reads "Huntington Avenue". Neither is wrong; neither was touched.
+
 ## Huntington pedestrian grade transition — BLOCKER CLOSED (2026-09-08, `35d56ae`)
 
 > ### THE CANONICAL NORTHEASTERN OPENING MIGRATION IS UNBLOCKED AGAIN.
 >
-> Boston Common is still the production opening — this mission was not the
-> migration and did not perform it. A fresh boot puts the player at
-> (166.01, 3.73, 127.98) with the starter at (169.09, 128.9), unchanged.
-> But the reason to hold the migration back is gone.
+> **Superseded by `5c5e349`, which performed it.** At the time of writing Boston
+> Common was still the production opening, because that mission was not the
+> migration. The diagnosis below stands.
 
 **The obstacle was not the 0.94 m wall the last mission measured.** That figure is
 `surfaceHeight(footway) − groundHeight(campus)` and the footway really is 0.94 m
