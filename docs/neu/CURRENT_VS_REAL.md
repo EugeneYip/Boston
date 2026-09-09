@@ -489,6 +489,47 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D1 — THE RANGE IS NOT FLAT, AND D0 WAS WRONG ABOUT IT (2026-09-09)
+
+D0 reported from screenshots that the historic range "reads as one continuous flat
+slab" with "no skyline event anywhere". D1 measured it and **both claims are
+wrong**. No runtime source was changed; full data in `docs/neu/MASSING_AUDIT.json`.
+
+**The masses are not continuous.** No two PRIMARY hero masses come within 3 m of
+each other. The gaps are 8.4–19.6 m: Ell to Richards 8.4, Ell to Dodge 8.6, Hayden
+to Richards 11.7, Mugar to Hurtig 19.6. Every sub-3 m adjacency in the data is
+primary-to-low-connector, and those already carry 11.2–21.2 m steps.
+
+**The roofline is not flat.** Projected analytically to a 1920×1080 frame at fov
+55, the roof steps between screen-adjacent masses at the canonical opening are
+**167 px (Ell→Mugar), 581 (Mugar→Dodge), 683 (Dodge→Hurtig), 489 (Hurtig→
+Hastings)**. They overlap in screen x rather than showing sky between them because
+they sit at 23–175 m depth and *stack* — stacking is not flatness.
+
+**And the decisive one: the two masses that fill the canonical frame have no
+visible roofline.** Dodge occupies **54% of the frame width with its roof 247 px
+above the top edge**; Hastings occupies 36% with its roof 53 px above. Roofline or
+parapet work on them is literally out of shot at the opening.
+
+**The one real flatness is factual.** Richards 21.09, Hayden 21.59, Dodge 21.82 —
+a 0.73 m spread, because these are the 1934 Coolidge, Shepley, Bulfinch & Abbott
+range built to a common cornice line, which this file already records as "grey
+brick, courtyards, gathering spaces, and axial symmetry". Richards and Hayden are
+not even in the canonical view. Varying those heights would be changing recorded
+heights to look better, and would make the range *less* like Northeastern.
+
+There is also a skyline event, contrary to D0: **Hastings at 29.96 m, 8.1–8.3 m
+above its neighbours, on screen at the opening.**
+
+`NeuHero._buildShell` was reviewed and is faithful — `top = gRef + part.heightM`
+per part — so "runtime collapses separate source parts" is ruled out.
+
+**What actually reads generic at the opening is one building at close range.**
+Dodge fills 54% of the frame at 23 m, nearly face-on, with a uniform grey-brick
+wall, repetitive fenestration and no ground-floor articulation. The remedy is
+facade relief and ground-floor treatment on the two or three masses that fill the
+frame — which needs entrance evidence, not roof evidence.
+
 ### WAVE D0 — COVERAGE IS NOT WHAT IS WRONG WITH THE OPENING (2026-09-09)
 
 A rebaseline on the corrected world, and it overturns the coverage plan. Full

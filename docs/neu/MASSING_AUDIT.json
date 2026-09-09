@@ -1,0 +1,105 @@
+{
+  "_authored": "authored by Wave D1, 2026-09-09. A massing audit that CONTRADICTS its own brief's premise and therefore changed no runtime source. Source-only: no WebGL boot was taken, because the host's swap was actively climbing and the conclusion did not need one.",
+  "what": "Whether the Northeastern historic range really reads as 'a near-continuous field of flat, similar-height slabs', and whether roofline articulation would fix the canonical opening.",
+  "verdict": "THE PREMISE IS NOT SUPPORTED. No runtime change is justified.",
+  "whatD0GotWrong": "Wave D0 reported, from screenshots, that 'the historic range reads as one continuous flat slab' and that the skyline had 'no event anywhere'. That was an impression, not a measurement, and it is wrong on both counts. D1 measured it.",
+  "finding1_theMassesAreNotContinuous": {
+    "claim": "the quad-enclosing primaries are separate masses with large real gaps",
+    "gapsM": {
+      "Ell to Richards": 8.4,
+      "Ell to Dodge": 8.6,
+      "Ell to Hayden": 9.2,
+      "Hayden to Richards": 11.7,
+      "Mugar to Dodge": 10.7,
+      "Hastings to Dodge": 8.6,
+      "Mugar to Hastings": 12.2,
+      "Mugar to Hurtig": 19.6
+    },
+    "adjacencyTest": "no two PRIMARY masses come within 3 m of each other. Every sub-3 m adjacency in the data is primary-to-low-connector, and those already produce 11.2 to 21.2 m steps."
+  },
+  "finding2_theRooflineIsNotFlat": {
+    "method": "hero part rooflines projected analytically to a 1920x1080 frame at fov 55 from the production cameras, rejecting any mass with a vertex closer than 2 m to the camera plane",
+    "V1_canonicalOpening_roofStepsBetweenScreenAdjacentMasses": {
+      "Ell -> Mugar": "167 px",
+      "Mugar -> Dodge": "581 px",
+      "Dodge -> Hurtig": "683 px",
+      "Hurtig -> Hastings": "489 px"
+    },
+    "V3_KrentzmanToRange_roofSteps": {
+      "Hayden -> Dana": "277 px",
+      "Dana -> Egan": "15 px",
+      "Egan -> Ell": "327 px",
+      "Ell -> Mugar": "55 px",
+      "Mugar -> Hurtig": "211 px"
+    },
+    "reading": "steps of 167 to 683 px on a 1080 px frame are not a flat roofline. The masses do overlap in screen x rather than showing sky between them, because they sit at different depths - 23 m to 175 m at V1 - so they STACK. Stacking is not flatness."
+  },
+  "finding3_theDominantMassesHaveNoVisibleRoofline": {
+    "measurement": [
+      {
+        "mass": "Dodge Hall",
+        "frameWidthPct": 54,
+        "roofYpx": -247,
+        "visible": "NO - 247 px above the top edge"
+      },
+      {
+        "mass": "Hastings Hall",
+        "frameWidthPct": 36,
+        "roofYpx": -53,
+        "visible": "NO - above the top edge"
+      },
+      {
+        "mass": "Ell/Curry",
+        "frameWidthPct": 40,
+        "roofYpx": 167,
+        "visible": "yes"
+      },
+      {
+        "mass": "Mugar",
+        "frameWidthPct": 33,
+        "roofYpx": 334,
+        "visible": "yes"
+      },
+      {
+        "mass": "Hurtig",
+        "frameWidthPct": 15,
+        "roofYpx": 436,
+        "visible": "yes"
+      }
+    ],
+    "consequence": "THIS IS THE DECISIVE ONE. The two masses that fill the canonical frame have their rooflines above the top edge. Any roofline or parapet articulation on them is literally out of shot at the opening. Spending a wave on roofline work could not change the first frame at all."
+  },
+  "finding4_theOneFlatnessThatIsRealIsFactual": {
+    "roofElevations": {
+      "Richards": 21.09,
+      "Hayden": 21.59,
+      "Dodge": 21.82
+    },
+    "spreadM": 0.73,
+    "whyItIsCorrect": "These three are the 1934 competition range by Coolidge, Shepley, Bulfinch and Abbott, built as one composition to a common cornice line. CURRENT_VS_REAL.md already records that the campus \"became a campus of grey brick, courtyards, gathering spaces, and axial symmetry\". A near-uniform cornice across the front quadrangle range is the architecture, not a defect.",
+    "andTheyAreNotEvenInTheOpeningView": "Richards and Hayden do not appear in the canonical frame at all.",
+    "rejected": "Varying these heights to break the line would mean changing recorded building heights to look better, which the brief itself lists as not valid, and would make the range less like Northeastern."
+  },
+  "finding5_realStepsThatDoExist": {
+    "Ell below the range": "2.65 m below Richards, 3.15 below Hayden, 3.38 below Dodge - a real, source-derived step, already expressed",
+    "Hastings above the range": "8.14 m above Dodge and 8.30 above Mugar, roof at 29.96 m - a real skyline event that already exists and is already in the canonical frame at 36 per cent of its width",
+    "soTheSkylineHasAnEvent": "D0 said there was no skyline event anywhere. There is one, it is Hastings, and it is on screen at the opening."
+  },
+  "runtimeContractReview": {
+    "checked": "NeuHero._buildShell",
+    "perPartHeight": "top = gRef + part.heightM - faithful, per part, no collapsing or simplification",
+    "cornice": "emitted per edge from top - T.cornice to top, as a projecting box",
+    "conclusion": "category B (runtime collapsing separate source parts) is RULED OUT. The runtime expresses every height difference the source records."
+  },
+  "whatActuallyReadsGenericAtTheOpening": {
+    "diagnosis": "ONE building fills the frame. Dodge Hall occupies 54 per cent of the frame width at 23 m, seen nearly face-on, with a uniform grey-brick wall, repetitive fenestration and no ground-floor articulation. What reads as \"a flat slab\" is a large facade at close range, not a flat range.",
+    "category": "facade relief and ground-floor articulation, at close range - NOT massing, NOT skyline, NOT coverage",
+    "whyThisMatters": "It means the remedy is bay relief, plinth, threshold and entrance treatment on the two or three masses that actually fill the frame, and it needs entrance evidence rather than roof evidence."
+  },
+  "implementedThisWave": "NOTHING. No runtime source was changed.",
+  "recommendedNext": [
+    "1. FACADE RELIEF AND GROUND FLOOR on Dodge and Ell, the two masses that fill the canonical frame. This is where the generic read actually lives. It needs the building-specific entrance audit Wave C recommended and D0 reaffirmed - ordinary entrances, not porticoes, and the accessible-entrance layer cannot answer it.",
+    "2. 337 HUNTINGTON AVENUE remains the only missing building with measured screen presence (6.48 per cent from V3). Still worth one CLUSTER entry when a coverage pass happens; still not urgent.",
+    "3. DO NOT spend a wave on rooflines or skyline. The dominant masses have no visible roofline at the opening, the steps that are visible are already 167 to 683 px, and the one near-uniform cornice line is factual."
+  ]
+}
