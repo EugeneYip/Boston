@@ -1,0 +1,322 @@
+{
+  "_authored": "authored by Wave D0, 2026-09-09. A decision-quality audit on the CORRECTED world (Krentzman 24-vertex ring + NeuHero ground winding fix). No runtime source was changed.",
+  "what": "Which un-modelled buildings a player can actually SEE, measured by real occlusion from gameplay viewpoints rather than by distance, bearing, footprint or solid-angle upper bounds.",
+  "whyThisSupersedesTheOldList": "The pre-rank in FRONT_QUAD.json ranked by unoccluded solid angle and said so. This tests line of sight. The result overturns the list: from every gameplay viewpoint, essentially nothing is visible.",
+  "method": {
+    "candidateBox": "centroid from BUILDING_INVENTORY worldXZ, plan side = sqrt(official footprint), height from OSM tag where present, else OSM levels x 3.9, else implied-from-gross-area x 3.9, else 18 m",
+    "samplesPerCandidate": 13,
+    "sampleLayout": "8 box corners at ground+0.5 and roof, the roof centre, and 4 mid-height face centres",
+    "occluders": "all 815 visible scene meshes, including instanced vegetation",
+    "test": "frustum containment, then a ray from the eye toward each in-frustum sample, occluded if anything is hit before the sample (0.75 m epsilon)",
+    "screenPct": "NDC bounding box of the UNOCCLUDED samples only, as a percentage of the viewport",
+    "caveat": "Heights are mostly confidence-D estimates, so the skyline term is weaker than the visibility term. Visibility is dominated by whether the SITE is in line of sight, which the box position settles."
+  },
+  "viewpoints": {
+    "V1": "canonical opening, (-1883,1677) bearing 65, fov 55",
+    "V2": "Huntington turn near the starter SUV, (-1858,1652) bearing 300",
+    "V3": "Krentzman centre looking out to Huntington, (-1864.9,1698.7) bearing 205",
+    "V4": "Huntington sidewalk near the station looking at campus, (-1893,1651) bearing 25",
+    "V5": "short natural walk into the interior campus, (-1858,1712) bearing 30",
+    "V6": "raised diagnostic at 60 m, SKYLINE CONTRIBUTION ONLY - not evidence a player sees anything"
+  },
+  "headline": "From all five GAMEPLAY viewpoints, 337 Huntington Avenue is the only candidate with meaningful unoccluded screen presence: 7 of 13 samples and 6.48 per cent of the viewport, from V3 only. Every other candidate is a sliver or is 100 per cent occluded. At the canonical opening V1 specifically, EVERY candidate tested is zero per cent unoccluded, including Gainsborough Garage and Robinson Hall at 13 of 13 samples in frustum. Adding buildings will not change the first frame.",
+  "occlusionByViewpoint": {
+    "V1": {
+      "visible": [],
+      "inFrustumButFullyOccluded": [
+        "Gainsborough Garage (13/13 in frustum)",
+        "Snell Library (2/13)",
+        "Robinson Hall (13/13)",
+        "Cullinane Hall (13/13)",
+        "East Village (10/13)"
+      ]
+    },
+    "V2": {
+      "visible": [
+        {
+          "name": "337 Huntington Avenue",
+          "inFrustum": 4,
+          "unoccluded": 1,
+          "frac": 0.25,
+          "screenPct": 0.0,
+          "distM": 52
+        }
+      ],
+      "inFrustumButFullyOccluded": [
+        "Forsyth Building",
+        "Snell Engineering Center",
+        "Stetson West",
+        "Dockser Hall",
+        "Churchill Hall",
+        "Marino Recreation Center",
+        "Speare Hall",
+        "Knowles Centre"
+      ]
+    },
+    "V3": {
+      "visible": [
+        {
+          "name": "337 Huntington Avenue",
+          "inFrustum": 13,
+          "unoccluded": 7,
+          "frac": 0.54,
+          "screenPct": 6.48,
+          "distM": 79
+        },
+        {
+          "name": "335A Huntington Avenue",
+          "inFrustum": 13,
+          "unoccluded": 5,
+          "frac": 0.38,
+          "screenPct": 0.97,
+          "distM": 82
+        },
+        {
+          "name": "110 St. Stephen Street",
+          "inFrustum": 13,
+          "unoccluded": 2,
+          "frac": 0.15,
+          "screenPct": 0.0,
+          "distM": 118
+        },
+        {
+          "name": "116 St. Stephen Street",
+          "inFrustum": 13,
+          "unoccluded": 1,
+          "frac": 0.08,
+          "screenPct": 0.0,
+          "distM": 116
+        },
+        {
+          "name": "122 St. Stephen Street",
+          "inFrustum": 13,
+          "unoccluded": 1,
+          "frac": 0.08,
+          "screenPct": 0.0,
+          "distM": 116
+        },
+        {
+          "name": "106 SSS (Levine Hall)",
+          "inFrustum": 13,
+          "unoccluded": 1,
+          "frac": 0.08,
+          "screenPct": 0.0,
+          "distM": 123
+        }
+      ],
+      "inFrustumButFullyOccluded": [
+        "Stetson East",
+        "Stetson West",
+        "Fenway Center",
+        "Speare Hall"
+      ]
+    },
+    "V4": {
+      "visible": [],
+      "inFrustumButFullyOccluded": [
+        "Snell Library",
+        "Forsyth Building",
+        "Snell Engineering Center",
+        "Churchill Hall",
+        "Robinson Hall",
+        "Cullinane Hall"
+      ]
+    },
+    "V5": {
+      "visible": [
+        {
+          "name": "Robinson Hall",
+          "inFrustum": 13,
+          "unoccluded": 1,
+          "frac": 0.08,
+          "screenPct": 0.0,
+          "distM": 149
+        }
+      ],
+      "inFrustumButFullyOccluded": [
+        "2 others"
+      ]
+    },
+    "V6_skylineOnly": {
+      "visible": [
+        {
+          "name": "Snell Library",
+          "frac": 0.85,
+          "screenPct": 2.31,
+          "distM": 260
+        },
+        {
+          "name": "East Village",
+          "frac": 0.6,
+          "screenPct": 1.22,
+          "distM": 155
+        },
+        {
+          "name": "Robinson Hall",
+          "frac": 0.69,
+          "screenPct": 1.1,
+          "distM": 226
+        },
+        {
+          "name": "Gainsborough Garage",
+          "frac": 0.8,
+          "screenPct": 0.38,
+          "distM": 250
+        },
+        {
+          "name": "Snell Engineering Center",
+          "frac": 0.6,
+          "screenPct": 0.22,
+          "distM": 262
+        },
+        {
+          "name": "Churchill Hall",
+          "frac": 0.8,
+          "screenPct": 0.11,
+          "distM": 208
+        },
+        {
+          "name": "Cullinane Hall",
+          "frac": 0.15,
+          "screenPct": 0.0,
+          "distM": 192
+        }
+      ],
+      "note": "60 m above ground. Recorded for skyline reasoning only; a player never stands here."
+    }
+  },
+  "combinedRanking": [
+    {
+      "rank": 1,
+      "name": "337 Huntington Avenue",
+      "bestScreenPct": 6.48,
+      "bestFrac": 0.54,
+      "gameplayViewsVisible": 2,
+      "recognition": "B",
+      "why": "the ONLY candidate with real unoccluded screen presence from a gameplay viewpoint. 1923, owned, HERO_A, 783 m2, ~5.9 storeys implied. It closes the Huntington frontage that the quadrangle opens onto, so it is enclosure value rather than landmark value."
+    },
+    {
+      "rank": 2,
+      "name": "335A Huntington Avenue",
+      "bestScreenPct": 0.97,
+      "bestFrac": 0.38,
+      "gameplayViewsVisible": 1,
+      "recognition": "C",
+      "why": "adjacent to and largely behind 337. Worth doing only in the same pass as 337, if at all."
+    },
+    {
+      "rank": 3,
+      "name": "St. Stephen Street row (110/116/122/106)",
+      "bestScreenPct": 0.0,
+      "bestFrac": 0.15,
+      "gameplayViewsVisible": 1,
+      "recognition": "C",
+      "why": "1-2 samples each from V3, zero screen area. Four HERO_A 1923 houses that would read as a continuous frontage if built together, but currently contribute nothing measurable."
+    },
+    {
+      "rank": 4,
+      "name": "East Village",
+      "bestScreenPct": 0.0,
+      "bestFrac": 0.0,
+      "gameplayViewsVisible": 0,
+      "recognition": "A",
+      "why": "signature modern Northeastern and the only tall thing anywhere near - 60 m, 17 storeys, confidence-A height. ZERO per cent unoccluded from every gameplay viewpoint, and 60 per cent from a 60 m diagnostic. It is a skyline asset with no viewpoint that currently sees it. Build it when a view exists, not before."
+    },
+    {
+      "rank": 5,
+      "name": "Snell Library",
+      "bestScreenPct": 0.0,
+      "bestFrac": 0.0,
+      "gameplayViewsVisible": 0,
+      "recognition": "A",
+      "why": "the standing list called it the largest missing footprint nearby, and it is - 4,589 m2. It is also 100 per cent occluded from all five gameplay viewpoints and only appears from 60 m up. The old ranking was wrong about it."
+    },
+    {
+      "rank": "-",
+      "name": "Robinson, Cullinane, Churchill, Speare, Marino, Stetson E/W, Forsyth, Knowles, Gainsborough, Dockser, Fenway, Snell Engineering",
+      "bestScreenPct": 0.0,
+      "gameplayViewsVisible": "0 or 1 sliver",
+      "recognition": "D from the current opening",
+      "why": "all fully occluded from gameplay viewpoints. Several are in frustum at 13 of 13 samples and still invisible, which is the whole point of doing this test."
+    }
+  ],
+  "feasibilityForTopCandidates": {
+    "pipeline": "tools/neu-height/footprints.mjs. Adding a building means adding its name to CLUSTER and re-running; it matches against the PDDL Boston Buildings with Roof Breaks layer by FOOTPRINT AREA AGREEMENT, which is the decisive test the tool already documents.",
+    "337 Huntington Avenue": {
+      "officialFootprintM2": 783,
+      "confidence": "B",
+      "grossSqFt": 50022.99,
+      "impliedStoreys": 5.9,
+      "impliedHeightM": 23.0,
+      "year": 1923,
+      "ownership": "Owned",
+      "priority": "HERO_A",
+      "pddlCoverage": "expected - it is a City of Boston building like every other in the layer, and the area test will confirm or refuse it",
+      "batching": "reuses NeuHero opaque/glass buffers, so no new material and no new draw call",
+      "expectedTriangleCost": "roughly 3-8k by comparison with Hurtig at 1,505 m2, which cost the hero mesh nothing net because Wave A REDUCED hero triangles from 102,306 to 92,742 while adding it",
+      "colliderCost": "one prism, as every other hero part",
+      "proceduralConflict": "must check whether a generated parcel currently stands on the footprint; Buildings already drops parcels overlapping a hero footprint, so this resolves itself once the part exists"
+    },
+    "East Village": {
+      "officialFootprintM2": 1383,
+      "confidence": "B",
+      "heightM": 60,
+      "heightConfidence": "A (OSM tagged, corroborated by 221,754 sq ft over 1,383 m2 = 14.9 storeys)",
+      "year": 2014,
+      "ownership": "Leased",
+      "priority": "HERO_A",
+      "note": "cheapest possible skyline win IF a viewpoint that sees it is ever established"
+    },
+    "Snell Library": {
+      "officialFootprintM2": 4589,
+      "confidence": "B",
+      "impliedStoreys": 5.0,
+      "heightM": 19.5,
+      "year": 1988,
+      "priority": "CONTEXT_C",
+      "note": "do not build on the strength of footprint size alone"
+    }
+  },
+  "entranceAndSignageReassessment": {
+    "entrances": "IMPORTANCE WENT UP. With the campus ground finally rendering, buildings now meet a clean maintained lawn with no plinth, no threshold and no entrance articulation - visible directly in the V5 interior view. The defect is more conspicuous than it was against bare terrain. Wave C established there is no evidence for ceremonial portals on the quad frontage of Richards, Ell or Dodge, and that stands; what is wanted is ORDINARY ground-floor articulation, which needs a building-specific entrance audit rather than the accessible-entrance layer. Note again that the 82-point source is an ACCESSIBLE-entrance dataset and absence from it does not prove absence of a door.",
+    "bestCandidatesForThatAudit": "Richards, Dodge and Ell - the three that enclose the quadrangle and fill the canonical frame",
+    "stationLettering": "NOT WORTH IT. From V2 and V3 the platforms, rails and catenary read clearly as light rail. The name blade is a 1.9 m panel at 79 m or more and never resolves. Keep deferred; do not spend a draw call and a second material on it."
+  },
+  "trolleyReassessment": {
+    "question": "Does the current station/rail/catenary already provide enough Huntington identity?",
+    "answer": "YES. Keep the trolley deferred.",
+    "evidence": "From V2 (Huntington turn) and V3 (quad looking out) the reserved median, four rail heads, centre-pole catenary and the two platforms all read at a glance as a street-running light rail corridor. Nothing about the corridor reads as missing a vehicle; it reads as a corridor between services."
+  },
+  "structuralBaseline": {
+    "neuHeroOpaqueTris": 96996,
+    "neuHeroGlassTris": 10934,
+    "neuGroundLawnTris": 2937,
+    "neuGroundPavedTris": 1992,
+    "neuGroundTotal": 4929,
+    "parkRealmTris": {
+      "lawn": 3995,
+      "plaza": 179,
+      "pathPaved": 5592,
+      "pathStone": 3162,
+      "pathEdge": 7216,
+      "total": 20144
+    },
+    "publicRealmTotal": 25073,
+    "greenLineTris": 6680,
+    "roadTris": 388729,
+    "sceneMeshes": 502,
+    "sceneMaterials": 53,
+    "physicsBodies": 63,
+    "frameAtOpening": {
+      "draws": 482,
+      "triangles": 1727324
+    },
+    "note": "first baseline taken with the campus ground actually rendering"
+  },
+  "performance": {
+    "verdict": "UNMEASURABLE",
+    "attempt": "canonical opening V1, GPU-synced measureFrame, 5 bursts: 49.05, 52.41, 49.48, 56.52, 55.86 ms; median 52.41, spread 7.47 ms = 14.3 per cent",
+    "whyRejected": "the same camera measured 17.30 ms with a 0.78 ms spread on a quiet host in C-2B. A 3x change with 14 per cent variance is the machine, not the code.",
+    "resourceEvent": "load rose from 4.4 at mission start to 35.3 on the 1-minute average and macOS grew swap from a 3 GB total to 5 GB. MTLCompilerService was idle at 0.0 per cent this time, so shader recompilation is not the cause on this occasion."
+  }
+}

@@ -489,6 +489,48 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D0 — COVERAGE IS NOT WHAT IS WRONG WITH THE OPENING (2026-09-09)
+
+A rebaseline on the corrected world, and it overturns the coverage plan. Full
+data in `docs/neu/COVERAGE_RANKING.json`; no runtime source changed.
+
+**Nothing a player can see is missing.** Twenty-one un-modelled candidates were
+tested for real line of sight — 13 sample points each on a box at the recorded
+centroid, against all 815 visible scene meshes — from five gameplay viewpoints.
+**At the canonical opening every single candidate is 0% unoccluded**, including
+Gainsborough Garage and Robinson Hall at 13 of 13 samples *inside the frustum*.
+The historic range encloses the view completely. Adding buildings will not change
+the first frame.
+
+Across all five gameplay viewpoints only one candidate has real screen presence:
+**337 Huntington Avenue, 7 of 13 samples unoccluded and 6.48% of the viewport,
+and only from inside the quadrangle looking out.** 335A Huntington manages 0.97%;
+the four St. Stephen houses and Robinson are one- or two-sample slivers at 0.00%.
+Everything else — Snell Library, East Village, Speare, Marino, Churchill,
+Cullinane, Stetson East and West, Forsyth, Knowles, Dockser, Fenway, Snell
+Engineering — is **100% occluded from every gameplay viewpoint**.
+
+**The standing list was wrong about its own top pick.** Snell Library was named
+as the largest missing footprint nearby, and it is; it is also invisible from all
+five viewpoints and only appears from a 60 m diagnostic camera. Footprint size was
+never evidence of visibility. This is the Hurtig lesson a second time, and it is
+now measured rather than assumed.
+
+**What IS visible and generic**, from the corrected baseline:
+
+- **Skyline.** From a raised view the campus is a field of near-identical
+  flat-roofed slabs at 16–21 m with no event anywhere. East Village at 60 m is the
+  only tall thing in the inventory and no gameplay viewpoint sees it.
+- **Enclosure articulation.** The historic range reads as one continuous flat slab
+  — no wing depth, no roofline break, no bay rhythm at massing scale.
+- **Ground-floor articulation.** Buildings now meet a correct maintained lawn with
+  no plinth, threshold or entrance. The ground fix made this *more* conspicuous,
+  not less.
+
+So the next wave should not be a coverage wave. The cheapest real gains are
+articulation of what already stands, plus the single building that is actually
+visible.
+
 ### WAVE C-2C — THE CAMPUS GROUND WAS NEVER DRAWN (2026-09-09, `26cbbb7`)
 
 **This supersedes the conclusion in `dbf9299`.** C-2B decided that C-2's downward
