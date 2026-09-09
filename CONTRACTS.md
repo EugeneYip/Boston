@@ -1800,6 +1800,96 @@ proves nothing about where cars go. Ask a car for its own lane key instead.
 If you add any cross-section band, add it to `laneLayout` and let all three read
 it. Do not patch a call site with a constant.
 
+### A local section overrides part of one edge (2026-09-09)
+
+A street may carry `sections`, alongside `median`: world-space spans that
+override the reserved median width and the kerbside bay along **part** of an
+edge, each with its own `taper`. The Northeastern station needs it because the
+Huntington frontage is one 389 m edge that also carries the bay the starter SUV
+resolves against — widening the edge to seat a platform would suspend parking
+over 389 m to serve a 100 m stop.
+
+**World space, not lat/lon, and not an index.** The road graph cuts streets into
+edges at junctions and an author cannot know where the cuts land, so a section is
+declared where it physically is and projected onto whichever edge it lands on,
+then clipped there. Writing the endpoints as coordinates would also claim a
+survey position for numbers that inherit the corridor's own fit error.
+
+Three things keep this a narrow capability rather than a road DSL:
+
+- **`laneLayout(e, s)` takes the distance as an OPTIONAL argument.** Omit it — as
+  every caller did before sections existed — and the answer is the edge's own
+  cross-section. This is what makes the zero-override claim checkable rather than
+  hopeful.
+- **A section may not change the lane count.** `e.lanes` is read once to assign a
+  car to a lane index, and an index that exists at one end of an edge and not the
+  other is a car with nowhere to drive. A section that would change it is refused
+  with a warning.
+- **The taper is a smoothstep**, so the lane has zero lateral gradient at both
+  ends of the shift. A linear ramp leaves a slope discontinuity that reads as a
+  kink in the paint and in the path traffic drives.
+
+**The sectioned edge's own polyline is densified to 4 m** across the override and
+its tapers. Streets resample at 20 m, which gives a 28 m taper one point;
+densifying at the source means the ribbon frames, the lane path and the rails all
+get the smooth taper from one change instead of three sites solving it separately.
+
+**Suspension has to be real, not paint.** `city.roads.parkingAllowed(edgeId, s)`
+is the question, and everything that puts a car at the kerb must ask it. The
+surface inside a suspended bay is still `road`, so nothing else notices. Note the
+two forms are not interchangeable: `parkingAllowedNear(x, z)` exists because a
+caller walking its own strand parameterisation is **not** walking the edge's, and
+asking the by-edge form with a strand distance left six parked cars standing in
+the station taper. Near a node the world form can bind to the neighbouring edge.
+
+**Measured, and this is the bar for changing any of it:** against `origin/main`
+with no section declared, all 540 edges are bit-identical across the
+cross-section, the edge polylines and the lane path geometry — including every
+float of `Path.p`. With the station declared, exactly one edge differs. A path
+digest that reads `p.pts` measures nothing: `Path` stores a flat `Float32Array`
+in `p.p` with the count in `p.n`.
+
+### A platform is a raised island in a road, with all the traps that implies (2026-09-09)
+
+`src/world/Transit.js` builds the two Northeastern side platforms from the same
+declaration that widens the reservation for them, so a platform cannot end up
+outside the band that was widened to hold it. The deck is `PLAT_W` wide **or
+whatever the reservation leaves after the shy offset, whichever is less** — it
+shrinks and warns rather than overhanging a rail or standing on the lane line.
+
+**Keep the shy offset.** The platform arithmetic alone asks for 10.30 m of
+reservation, and at exactly that width the deck's back face — a raised 0.34 m
+kerb, 46 m long, twice — lands on the travelled lane's own edge with nothing
+between. 11.20 m buys 0.45 m of painted offset and still leaves 0.40 m at the
+kerb. The chain, from the reservation centre, is worth keeping written down:
+
+| | m |
+|---|---|
+| mast face | 0.110 |
+| inner rail / track centre / outer rail | 0.9825 / 1.700 / 2.4175 |
+| platform edge (MBTA 4'-9" from track centre) | 3.1478 |
+| platform back | 5.1478 |
+| reservation edge = lane near edge | 5.600 |
+| lane centre | 7.350 |
+| shoulder end / kerb (frozen) | 9.400 / 9.800 |
+
+**A ramp toe that stops exactly at the surface is a wall.** Measured: the player
+stood still for 150 frames, grounded, 23 mm up, against a ramp flush to 0.2 mm.
+A capsule catches on the knife edge. Burying the toe 60 mm — `RAMP_BURY`, the
+same number as `VERGE_BURY` for the same reason — makes first contact a slope.
+After it: 0 ungrounded frames and 12.6 mm peak snap, on and off both ends.
+
+**No mast conflicts, by construction.** The masts stand on the reservation
+centreline between the tracks; the platforms are outboard of the rails, 0.73 m
+beyond the nearest rail head. Nothing has to be moved or skipped, and a future
+change that moves either had better re-check this rather than assume it.
+
+**On-foot movement is CAMERA-relative.** Setting `player._yaw` alone does not
+steer a scripted walk — it follows `cameraRig.yaw`, and `api.setCamera` stands
+the rig driver down entirely. Two walk tests measured nothing before this was
+understood: one wandered 6 m backwards onto the footway and reported a climb.
+Set both, per frame, and never `setCamera` during a locomotion test.
+
 ### The railway in the median is decoration, and that is the contract (2026-09-09)
 
 `src/world/Transit.js` lays the Green Line E on the reserved median: two tracks

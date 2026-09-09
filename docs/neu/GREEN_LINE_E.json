@@ -1,8 +1,9 @@
 {
-  "_authored": "tools-free, authored by the Wave B mission 2026-09-09 from the MBTA V3 API and extended by Wave B2B the same day with the measured feasibility arithmetic. Not generated; edit deliberately.",
-  "what": "Green Line E infrastructure adjacent to Northeastern, as FACTS plus the arithmetic that decides what can be built from them. Track and catenary ARE now runtime geometry (src/world/Transit.js). Platforms are NOT - see blockerRemaining.",
+  "_authored": "tools-free, authored by the Wave B mission 2026-09-09 from the MBTA V3 API, extended by Wave B2B with the feasibility arithmetic and by Wave B2C with the MBTA's own design criteria and the station as built. Not generated; edit deliberately.",
+  "what": "Green Line E infrastructure adjacent to Northeastern, as FACTS plus the arithmetic that decides what can be built from them. Track, catenary AND the two side platforms are now runtime geometry (src/world/Transit.js) on a local station section of Huntington (src/data/boston-geo.js).",
   "attribution": [
-    "MBTA V3 API - https://api-v3.mbta.com (MBTA open data)"
+    "MBTA V3 API - https://api-v3.mbta.com (MBTA open data)",
+    "MBTA GLX Design Criteria Manual, Revision 2, January 2014 - https://cdn.mbta.com/sites/default/files/2018-11/2014-11-12-glx-design-criteria-manual-rev2.pdf (MBTA engineering standard, published openly). Read as REFERENCE for numeric criteria; no text or drawing is reproduced in this repository."
   ],
   "route": {
     "id": "Green-E",
@@ -98,19 +99,19 @@
       "carriagewayM": 19.6,
       "corridorM": 27.12,
       "laneCentresM": [
-        -5.25,
-        5.25
+        "-5.25 / +5.25 outside the station",
+        "-7.35 / +7.35 inside it"
       ],
-      "medianM": 7.0,
+      "medianM": "7.00 outside the station section, 11.20 inside it",
       "note": "Wave B2A gave the road a central reserved median. halfRoad stays 9.80 m and the parking bay stays at 8.55 m, so the footway, the graded W_VERGE crossing and the starter-SUV parking solution are all untouched; what changed is that the four lanes at -5.25/-1.75/+1.75/+5.25 became one lane per direction at -5.25/+5.25 and the middle 7.00 m is reserved. The game centreline is the CORRIDOR CENTRE - the average of the two directional carriageways - which is also the real reservation centre, so the reservation is in the right place even though its width is authored.",
       "lanesPerDirection": 1
     }
   },
   "waveCPrerequisite": [
-    "Sub-edge median width, so the reservation can widen over a stop and parking can be suspended only there.",
-    "Then two 2.00 m side platforms at the widened section, staggered the way the MBTA's own stop points are.",
-    "Keep halfRoad and the kerb line fixed at 9.80 m: the footway, the graded W_VERGE crossing and the parking lane must not move.",
-    "A moving trolley is a separate question and is still deferred; nothing here needs one."
+    "Settle the contact wire height deliberately: either bring it to the GLX 15'-0\" above top of rail, or record the street-running reason for keeping it higher as a decision rather than a deviation.",
+    "A moving trolley, if it is ever wanted, now has track, wire and two platforms to serve.",
+    "Lettering on the name blade needs a sign-atlas tile and a second material; decide whether one draw call is worth a legible station name.",
+    "halfRoad and the kerb line stay fixed at 9.80 m. The footway, the graded W_VERGE crossing and the parking lane outside the station must not move."
   ],
   "fiveDistinctQuantities": {
     "why": "Wave B2A's notes were shortened to 'two tracks at ~1.5 m gauge', which collapses five different measurements into one and makes the station look feasible when it is not. They are kept apart here.",
@@ -190,10 +191,9 @@
     ]
   },
   "blockerRemaining": {
-    "summary": "Platforms. Two tracks plus two accessible side platforms need 10.25 m of reservation and there are 7.00 m.",
-    "needs": "sub-edge reservation width: a median that can widen over a stop's length with kerbside parking suspended only there, instead of one width per 389 m edge.",
-    "notATasteJudgement": "With the reservation at 7.00 m the only way to seat a platform is to narrow it to 0.375 m or to put it over a rail. Neither is a platform.",
-    "consequenceAccepted": "A reservation carrying rails and wire with no stop is not incoherent: the stop is one point on 1.2 km of railway, and the railway is the part the player sees from the opening."
+    "summary": "CLOSED by Wave B2C. Both platforms are built.",
+    "wasNeeded": "sub-edge reservation width: a median that can widen over a stop's length with kerbside parking suspended only there, instead of one width per 389 m edge.",
+    "howItWasClosed": "A street may now declare `sections` - world-space spans that override the reserved width and the kerbside bay along part of an edge, with their own taper. Measured against origin/main with no section declared, all 540 edges are bit-identical in cross-section, edge polyline and lane path geometry; with the station declared, exactly one edge differs."
   },
   "builtInWaveB2B": {
     "file": "src/world/Transit.js",
@@ -227,5 +227,147 @@
       "verdict": "MARGINAL. 12 of 366 samples - 3.3% - survive occlusion, at 18.9 m and beyond, at the right-hand edge of the frame; they are not legible in the frame at 1x. The nearest reservation point is at bearing 228 deg, i.e. BEHIND the player: the opening looks into the Krentzman quadrangle, not at Huntington.",
       "correction": "The commit message on d545165 says the railway 'is what the player sees from the opening'. That overstates it. The railway is what the player sees on the canonical WALK from the quadrangle to the starter SUV, which ends on the Huntington footway with the reservation across the street. The first frame is the quadrangle."
     }
-  }
+  },
+  "designCriteria": {
+    "source": "MBTA GLX Design Criteria Manual, Rev 2, January 2014",
+    "whyThisSource": "It is the MBTA's own criteria for Green Line light rail, published openly on mbta.com. Before Wave B2C the track spacing, the platform setback and the platform height were all confidence-C authored numbers; three of them are now the MBTA's, and one authored value turned out to be within 23 mm of theirs.",
+    "caveat": "These are the criteria for the Green Line EXTENSION, i.e. new build on an exclusive alignment. Northeastern is an existing street-running stop. The CLEARANCE criteria carry over because they are about the vehicle; the 225 ft platform length does not, and is not used as one - see platformExtents.",
+    "trackGauge": {
+      "value": "4' 8-1/2\" measured 5/8\" below top of rail, on the gauge face",
+      "metres": 1.435,
+      "confidence": "A"
+    },
+    "trackCentresMainline": {
+      "preferredMinimum": "12'-0\"",
+      "preferredMinimumM": 3.6576,
+      "absoluteMinimum": "11'-0\"",
+      "absoluteMinimumM": 3.3528,
+      "qualifier": "the table is stated 'without center catenary poles'",
+      "asBuilt": 3.4,
+      "verdict": "3.40 m is above the absolute minimum and below the preferred one. It is unchanged from B2B and was not re-derived: Wave B2C was told not to redesign the accepted rail system without a real conflict, and there is none - see centrePoles.",
+      "confidence": "criteria A; the 3.40 m as-built remains C - authored"
+    },
+    "centrePoles": {
+      "criterion": "the criteria call for side poles and say that 'where this arrangement is not possible due to property restriction, center poles located between tracks shall be used'",
+      "verdict": "A 7.00 m reservation inside a 19.60 m carriageway IS a property restriction, so the centre-pole arrangement this project already built is the criteria's own fallback rather than a shortcut.",
+      "confidence": "A"
+    },
+    "platformEdgeToTrackCentre": {
+      "value": "4'-9\" for platforms located on tangent track",
+      "metres": 1.4478,
+      "asBuilt": 1.4478,
+      "note": "This replaced an authored 1.425 m, which came from half a 2.85 m car body. The two agree to 23 mm, which is why the authored cross-section survived contact with the standard.",
+      "confidence": "A"
+    },
+    "platformHeightAboveTopOfRail": {
+      "value": "8 inches at the edge, with 14 inches recorded as the future state 'to accommodate level boarding into the Type 9 LRVs'",
+      "metres": 0.2032,
+      "asBuilt": 0.2032,
+      "whyEightAndNotFourteen": "The MBTA's own facility data for place-nuniv lists a PORTABLE_BOARDING_LIFT for each direction - 'Customers can board/exit certain trains using mobile lift'. A stop that boards wheelchairs with a mobile lift is a stop without level boarding, so 8 inches is the honest height here and NO accessible boarding claim is made for it.",
+      "confidence": "A"
+    },
+    "platformGap": {
+      "value": "no larger than 3 inches, conforming to ADA",
+      "note": "Recorded for completeness. Not modelled: there is no vehicle.",
+      "confidence": "A"
+    },
+    "platformLength": {
+      "value": "225 feet, 'in order to accommodate a single three-car LRV'",
+      "metres": 68.58,
+      "derived": "225 ft / 3 cars = 75 ft = 22.86 m per car, which is the only vehicle length in this file and is derived from the MBTA's own figure rather than from a fleet page - mbta.com does not publish car dimensions.",
+      "notUsedDirectly": "225 ft is a GLX new-build island platform. Northeastern is a street stop with mobile lifts; claiming a 69 m accessible island here would be a fabrication.",
+      "confidence": "A for the criterion, not applicable as an extent here"
+    },
+    "clearanceEnvelopeMethod": {
+      "formula": "CE = VDE + OWF + RC, referenced from the centreline of track at top of rail",
+      "note": "The numeric vehicle dynamic envelope lives in a referenced drawing (BSP Dwg. No. 1018) that is not published with the manual, so the envelope half-width used elsewhere in this project stays authored.",
+      "confidence": "method A, numbers unavailable"
+    },
+    "knownDeviation": {
+      "item": "contact wire height",
+      "criterion": "15'-0\" above top of rail on the right of way; 16'-0\" in yards 'because of truck traffic beneath the wires'",
+      "criterionM": 4.572,
+      "asBuilt": "5.60 m above the reservation surface, i.e. about 5.46 m above top of rail = 17'-11\"",
+      "verdict": "DEVIATION, ACCEPTED AND RECORDED. Wave B2C was scoped not to redesign the accepted catenary without a real clearance conflict, and a wire that is too HIGH is not one. The criteria's own reasoning for raising it in yards - road vehicles underneath - applies to a street reservation. Left for Wave C to settle deliberately rather than changed in passing.",
+      "confidence": "criterion A; the deviation is a project decision"
+    }
+  },
+  "platformExtents": {
+    "label": "PROJECT-AUTHORED PLATFORM EXTENTS, ANCHORED TO MBTA DIRECTIONAL BOARDING POINTS",
+    "noSurveyClaim": "No extent for this stop exists in the open data. Three queries confirm it: /stops returns platform_code null for both directions; /facilities returns only the two mobile lifts, with no dimension property; and the two other stop ids the lift records exclude (41391, 81317) are BUS stops on Huntington, not further rail boarding points.",
+    "lengthM": 45.72,
+    "lengthDerivation": "two thirds of the MBTA's own 225 ft three-car platform criterion, i.e. two cars",
+    "anchorPlacement": "the boarding point is taken as three quarters along its platform in the direction of travel, on the reasoning that a train stops with its front at the far end. This is an ASSUMPTION; the data does not say where on a platform its boarding point sits. It is also what leaves room for the outbound taper to finish before the junction 41 m beyond it.",
+    "staggerM": 90.31,
+    "staggerSource": "the measured along-corridor separation of the two boarding points, preserved as-is",
+    "gapBetweenPlatformsM": 21.73,
+    "sideAssignment": "from the SIGNS of the projected boarding points - outbound +4.32 m, inbound -3.45 m - which is what right-hand running requires. The magnitudes are unusable and the caveat below still stands."
+  },
+  "stationSectionAsBuilt": {
+    "declaredIn": "src/data/boston-geo.js, as `sections` on Huntington Avenue",
+    "builtBy": "src/world/Roads.js + src/world/RoadNetwork.js (cross-section), src/world/Transit.js (platforms)",
+    "edge": 486,
+    "edgeLengthM": 389.47,
+    "coreSpanM": [
+      246.33,
+      359.49
+    ],
+    "coreLengthM": 113.17,
+    "taperM": 28,
+    "withTapersM": [
+      218.33,
+      387.49
+    ],
+    "spareBeforeJunctionM": 1.98,
+    "reservationM": 11.2,
+    "crossSectionFromReservationCentre": {
+      "mastFace": 0.11,
+      "innerRail": 0.9825,
+      "trackCentre": 1.7,
+      "outerRail": 2.4175,
+      "platformEdge": 3.1478,
+      "platformBack": 5.1478,
+      "reservationEdge": 5.6,
+      "laneNearEdge": 5.6,
+      "laneCentre": 7.35,
+      "laneFarEdge": 9.1,
+      "shoulderEnd": 9.4,
+      "kerb": 9.8,
+      "spareAtKerb": 0.4
+    },
+    "shyOffsetM": 0.4522,
+    "whyShyOffset": "At exactly 10.30 m of reservation - the width the platform arithmetic alone asks for - the platform's back face lands on the travelled lane's own edge with nothing between them, and that face is a raised 0.34 m kerb 46 m long, twice. 11.20 m buys the offset and still leaves 0.40 m at the kerb.",
+    "laneShiftM": 2.1,
+    "taperRate": "1:13.3",
+    "lanesPerDirection": {
+      "outsideStation": 1,
+      "insideStation": 1
+    },
+    "parkingSuspendedOver": [
+      218.33,
+      387.49
+    ],
+    "platformsBuilt": 2,
+    "platformWidthM": 2.0022,
+    "platformHeightAboveSurfaceM": 0.3432,
+    "rampRunM": 4.2,
+    "rampToeBuriedM": 0.06,
+    "cost": {
+      "transitTriangles": 6680,
+      "ofWhichPlatformsAndFurniture": 1100,
+      "drawCalls": 1,
+      "newMaterials": 0,
+      "newTextures": 0,
+      "colliders": 6,
+      "lights": 4,
+      "roadTrianglesDelta": "+3864, from densifying edge 486's polyline 22 -> 63 points and the finer ribbon sampling that a taper needs"
+    }
+  },
+  "remainingGaps": [
+    "No vehicle. A trolley remains deliberately deferred, and nothing here needs one.",
+    "The name blade carries NO lettering. Legible text needs a new tile in the sign atlas, which would put the platform on a second material and cost a draw call for a 1.9 m panel. The station reads by form and route colour instead.",
+    "The contact wire sits about 0.9 m higher than the GLX criterion - see designCriteria.knownDeviation.",
+    "`city.roads.parkingAllowedNear(x, z)` resolves through `nearestEdge`, so within a metre or two of a node it can bind to the neighbouring edge and answer for that one instead. Measured effect at this station: none - the parked-car audit finds 0 cars in the suspended span - but the by-edge and by-world forms are known to disagree at s=384 of edge 486, where the taper has already returned the median to 7.004 m.",
+    "docs/neu/TRANSIT.json still reports `railStations: 0`, `railAlignments: 0`, `surfaceTrolley: false`. It is generated by tools/neu-audit/build.mjs and is not hand-edited; its OSM-derived way counts are also ODbL, so regenerating it is a separate decision."
+  ]
 }

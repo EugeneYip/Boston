@@ -89,12 +89,21 @@ windows**, from a composition whose own comment says "deliberately ONE
 composition". That is the single largest recognition defect and it is what Wave A
 addresses.
 
-Three further gaps stay open after Wave A: **coverage** (103 buildings inventoried,
-12 modelled, 47 absent within 320 m of the opening — including Hurtig at 8° off the
-view axis and Snell Library), **public realm** (Krentzman is a regular octagon; no
-entrances; no seal ledge), and **transit** (no rail of any kind, although the Green
-Line E "Northeastern University" surface station sits 24 m from the spawn with
-confidence-A data already in `docs/neu/TRANSIT.json`).
+Three further gaps stayed open after Wave A. Two remain: **coverage** (103
+buildings inventoried, 13 modelled after Hurtig, 47 absent within 320 m of the
+opening — including Snell Library) and **public realm** (Krentzman is a regular
+octagon; no entrances; no seal ledge).
+
+**Transit is now closed.** Waves B2B and B2C built the Green Line E on the
+Huntington reservation: two tracks and centre-pole catenary over 973 m, and the
+two staggered side platforms of the "Northeastern University" surface station on
+a local station section that widens the reservation to 11.20 m and suspends
+kerbside parking for 169 m. The cross-section is the MBTA's own light rail design
+criteria, not authored guesses — platform edge 4'-9" from track centre, deck 8
+inches above top of rail. `docs/neu/GREEN_LINE_E.json` carries every figure with
+its confidence and the two accepted deviations. Note that the older
+`docs/neu/TRANSIT.json` still reports `railStations: 0`; it is generated, not
+hand-edited, and its way counts are OSM-derived.
 
 Gates re-scored in `docs/neu/CURRENT_VS_REAL.md`: 3 PASS→PARTIAL, 4 PASS→PARTIAL,
 5 PASS→**FAIL**. Gates 1, 2, 6, 7, 8, 9 stand — nothing technically correct was
