@@ -3,7 +3,7 @@ import {
   MeshBuf, GlassBuf, SURF, buildAtlas, buildRoomAtlas, buildMacroNoise,
   makeOpaqueMaterial, makeGlassMaterial, polyCentroid, hash2,
 } from './BuildingKit.js';
-import { frontStorey, edgeFrame } from './Facades.js';
+import { frontStorey, pierStorey, edgeFrame } from './Facades.js';
 import { NEU_HERO_PARTS, NEU_HERO_BUILDINGS, NEU_HERO_SOURCE } from '../data/neu-hero.js';
 import { NEU_WALK_ARRIVAL, NEU_WALK_CONTINUATION, NEU_WALK_SOURCE,
          NEU_ENTRANCE_CUES } from '../data/neu-walks.js';
@@ -78,7 +78,69 @@ const COL = {
   limestone:   [0.80, 0.78, 0.72],
   roof_tar:    [0.30, 0.30, 0.31],
   roof_gravel: [0.42, 0.41, 0.39],
+  // The front quadrangle's own masonry. Richards Hall is documented as LIGHT GREY
+  // brick -- Northeastern's own Architecture Program Report calls it the campus
+  // "signature white brick" -- so this is a pale warm-neutral, NOT a white. It is
+  // one notch lighter and a shade cooler than `limestone`, and it is deliberately
+  // kept off 0.85: glazed brick is bright because it is glossy, and the gloss
+  // belongs in the surface roughness, not in the albedo. Pushed to a true white
+  // it blows out against this exposure by early afternoon.
+  brick_white: [0.775, 0.770, 0.748],
+  // The recessed channel behind the glazing. Enough darker than the body to read
+  // as a shadowed reveal at 100 m, not so dark it stripes the building.
+  neu_channel: [0.560, 0.558, 0.545],
 };
+
+/**
+ * The 1938-56 front-quadrangle family: light grey brick, vertical window strips.
+ *
+ * Named individually and NOT derived from a date, because a date would sweep in
+ * buildings this evidence says nothing about. Richards (1937-38) is the primary
+ * source -- Coolidge, Shepley, Bulfinch and Abbott, the first building on the
+ * quadrangle, "light gray brick, punctured by vertical strips of windows" -- and
+ * the same documentation says the treatment was replicated in Dodge Library,
+ * Hayden Hall, Hurtig Hall, Mugar Sciences Building and Churchill Hall, after
+ * which the campus "became a campus of grey brick, courtyards, gathering spaces,
+ * and axial symmetry". Hurtig and Churchill are not modelled yet.
+ *
+ * Ell Hall is included at LOWER confidence. It is not in that replicated list by
+ * name, but it is a 1945-47 quadrangle building of the same programme, sitting
+ * between Richards and Dodge in date and directly on the quad. What it is NOT is
+ * evidence about Curry (1964), which currently shares Ell's source part -- see
+ * the note on `familyOf`.
+ *
+ * Everything absent from this set keeps whatever `ERA` gives it. Hastings and
+ * Ryder (both 1913) predate the master plan; Cabot (1954) is a field house that
+ * the sources do not place in the family. Leaving them alone is what stops the
+ * quadrangle turning into one grey material from end to end.
+ */
+const NEU_HISTORIC = new Set([
+  'Richards Hall',
+  'Dodge Hall',
+  'Hayden Hall',
+  'Mugar Life Sciences Building',
+  'Ell Hall',
+]);
+
+/**
+ * Is this part part of the historic family, and on whose evidence?
+ *
+ * Same earliest-year rule the era and typology already use. For part 661061,
+ * shared by Ell (1947) and Curry (1964), that resolves to Ell — which is the
+ * conservative answer available: the mass originated with Ell, and the Ell/Curry
+ * boundary is not in the source data, so there is nothing to draw a line along.
+ * Curry's own 1964 identity is therefore NOT represented, and cannot be until the
+ * primary-volume wave splits the part. Documented, not fudged.
+ */
+function familyOf(part) {
+  let best = null;
+  for (const name of part.buildings) {
+    const b = BUILDING.get(name);
+    if (!b) continue;
+    if (!best || (b.yearBuilt ?? 9999) < (best.yearBuilt ?? 9999)) best = b;
+  }
+  return best && NEU_HISTORIC.has(best.name) ? best : null;
+}
 
 /** Height of the stone base course. A real one is a storey or less. */
 const BASE_H = 1.6;
@@ -146,6 +208,20 @@ const TYPO = {
     cornice: 0.30, corniceOut: 0.12, plinth: 0.45, stoneGround: false,
     clerestoryAt: 0.58,
   },
+
+  /**
+   * The front-quadrangle family. Brick piers standing the full storey with a
+   * recessed channel between them, so the openings stack into an unbroken
+   * vertical strip -- see `Facades.pierStorey` for why `frontStorey` cannot do
+   * this. No stone ground storey: this family is one masonry from plinth to
+   * cornice, over a modest granite base, and a contrasting stone storey is the
+   * Boston collegiate move it was specifically NOT built with.
+   */
+  neuHistoric: {
+    bayW: 3.30, winW: 2.05, winH: 2.90, sillH: 0.62, headH: 0.34, reveal: 0.24,
+    winKind: 1, cornice: 0.28, corniceOut: 0.10, plinth: 0.70, stoneGround: false,
+    strip: true, stripInset: 0.24, chanFrac: 0.62,
+  },
 };
 
 /** Building -> typology. Everything unlisted is collegiate. */
@@ -172,7 +248,9 @@ function typoFor(part) {
     if (!b) continue;
     if (!best || (b.yearBuilt ?? 9999) < (best.yearBuilt ?? 9999)) best = b;
   }
-  const key = best ? (TYPO_OF[best.name] || 'collegiate') : 'collegiate';
+  const key = best
+    ? (TYPO_OF[best.name] || (NEU_HISTORIC.has(best.name) ? 'neuHistoric' : 'collegiate'))
+    : 'collegiate';
   return { key, T: TYPO[key], owner: best };
 }
 
@@ -489,14 +567,22 @@ export default class NeuHero {
       const top = gRef + part.heightM;
 
       const era = eraFor(part);
-      const bodyCol = COL[era.body], baseCol = COL[era.base], roofCol = COL[era.roof];
       const { key: typoKey, T, owner } = typoFor(part);
+      // The family overrides the BODY masonry only; base and roof stay with the
+      // era, because the evidence is about the wall. `brick_painted` is the right
+      // existing surface for glazed brick -- brick coursing at 1.224 m, but 0.80
+      // rough instead of 0.88, which is the gloss doing the work rather than a
+      // new atlas layer.
+      const fam = familyOf(part);
+      const bodySurf = fam ? 'brick_painted' : era.body;
+      const bodyCol = fam ? COL.brick_white : COL[era.body];
+      const baseCol = COL[era.base], roofCol = COL[era.roof];
 
       // ---- collision: one plain prism, exactly what Wave 2C shipped ---------
       const ci0 = cb.ni;
       for (let i = 0; i < ring.length; i++) {
         const a = ring[i], d = ring[(i + 1) % ring.length];
-        cb.wall(a.x, a.z, d.x, d.z, floor, top, era.body, bodyCol, 0, 0);
+        cb.wall(a.x, a.z, d.x, d.z, floor, top, bodySurf, bodyCol, 0, 0);
       }
       capPoly(cb, ring, top, era.roof, roofCol);
       const ci1 = cb.ni;
@@ -511,16 +597,28 @@ export default class NeuHero {
       // Per-part variation, seeded so it is stable across reboots: the four
       // quadrangle halls should relate, not match.
       const jit = hash2(part.id, 7717);
-      const bayW = T.bayW * (0.94 + jit * 0.12);
+      // Bay width from the building's OWN recorded course, not from a hash. The
+      // family shares a language, so the thing that should distinguish Ell from
+      // Dodge is the thing that actually differs in the survey: Ell courses at
+      // 4.00 m over 4 storeys in 16.0 m, Dodge at 3.69 over 5 in 18.5, Richards
+      // 3.73, Hayden 3.71, Mugar 3.78. Taller storey, wider bay -- so the same
+      // idiom comes out at visibly different rhythms per building instead of four
+      // clones. Richards is the reference because it is the one the source names.
+      const bayW = (T.strip && owner?.courseM)
+        ? T.bayW * (owner.courseM / 3.73) * (0.97 + jit * 0.06)
+        : T.bayW * (0.94 + jit * 0.12);
       const spec = {
-        S: { ...T, bayW },
-        wallSurf: era.body, wallCol: bodyCol,
+        S: { ...T, bayW, chanFrac: (T.chanFrac ?? 0.62) * (0.94 + jit * 0.12) },
+        wallSurf: bodySurf, wallCol: bodyCol,
         trimSurf: era.base, trimCol: baseCol,
+        chanSurf: fam ? 'limestone' : era.base,
+        chanCol: fam ? COL.neu_channel : baseCol,
         uOff: (part.id % 97) * 0.13,
         seed: part.id, base: gRef, lit: 0.26 + jit * 0.34,
         arched: false, purpleGlass: false, shutters: false,
       };
       const stoneSpec = { ...spec, wallSurf: era.base, wallCol: baseCol };
+      const layStorey = T.strip ? pierStorey : frontStorey;
 
       // Resolve this part's entrance cue against the ORIENTED ring by position,
       // not by the stored edge index: `orientRing` reverses a ring whose signed
@@ -548,14 +646,14 @@ export default class NeuHero {
         // plinth: the ground contact, always solid
         mb.wall(a.x, a.z, d.x, d.z, floor, plinthTop, era.base, baseCol, i * 2.7, 0);
         if (!fenestrate) {
-          mb.wall(a.x, a.z, d.x, d.z, plinthTop, corniceBot, era.body, bodyCol, i * 3.1, 0);
+          mb.wall(a.x, a.z, d.x, d.z, plinthTop, corniceBot, bodySurf, bodyCol, i * 3.1, 0);
         } else if (typoKey === 'largeSpan') {
           // One clerestory band high on a mostly solid wall.
           const cs = gRef + part.heightM * T.clerestoryAt;
           const ce = Math.min(cs + T.sillH + T.winH + 0.5, corniceBot);
-          mb.wall(a.x, a.z, d.x, d.z, plinthTop, cs, era.body, bodyCol, i * 3.1, 0);
+          mb.wall(a.x, a.z, d.x, d.z, plinthTop, cs, bodySurf, bodyCol, i * 3.1, 0);
           frontStorey(mb, gb, e, 0, e.L, cs, ce, spec, 0, 0);
-          mb.wall(a.x, a.z, d.x, d.z, ce, corniceBot, era.body, bodyCol, i * 3.1, 0);
+          mb.wall(a.x, a.z, d.x, d.z, ce, corniceBot, bodySurf, bodyCol, i * 3.1, 0);
           bays += Math.max(1, Math.round(e.L / bayW));
           if (i === 0) storeysEmitted += 1;
         } else {
@@ -568,7 +666,7 @@ export default class NeuHero {
             const sp = (k === 0 && T.stoneGround) ? stoneSpec : spec;
             // LOD 0 only at the storey a pedestrian stands in front of; the
             // sills and lintels above are sub-pixel from the quad and cost 3x.
-            frontStorey(mb, gb, e, 0, e.L, y0, y1, sp, k, k === 0 ? 0 : 1);
+            layStorey(mb, gb, e, 0, e.L, y0, y1, sp, k, k === 0 ? 0 : 1);
             bays += Math.max(1, Math.round(e.L / bayW));
           }
           if (i === 0) storeysEmitted += n;

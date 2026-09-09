@@ -944,6 +944,89 @@ export function frontStorey(mb, gb, e, uS, uE, y0, y1, spec, sIdx, lod) {
   }
 }
 
+/**
+ * Pier-and-channel storey — the Northeastern front-quadrangle idiom.
+ *
+ * `frontStorey` cannot express this and never could: it caps the opening at
+ * `hgt - 0.95`, so there is always a metre of solid wall between one storey's
+ * head and the next storey's sill, and the result is a punched window. That is
+ * correct for the Boston stock it was written for and wrong for Richards Hall
+ * (Coolidge, Shepley, Bulfinch & Abbott, 1937-38), which is light grey brick
+ * "punctured by vertical strips of windows" -- the treatment then replicated in
+ * Dodge, Hayden, Hurtig, Mugar and Churchill.
+ *
+ * So the wall is built the way that building is built: brick PIERS standing the
+ * full height of the storey at the wall plane, and between them a CHANNEL
+ * recessed by `stripInset`, carrying the glazing and its spandrels. Because the
+ * channel spans y0 to y1 with nothing crossing it, stacking storeys leaves an
+ * unbroken vertical shadow line from plinth to cornice, which is the whole read.
+ * No sill, no lintel, no arch -- a strip window has none of them, and dropping
+ * those two `mb.box` calls pays for the four cheek quads several times over.
+ *
+ * Same buffers, same window module, same atlas as everything else here.
+ */
+export function pierStorey(mb, gb, e, uS, uE, y0, y1, spec, sIdx, lod) {
+  const St = spec.S;
+  const L = uE - uS;
+  const bays = Math.max(1, Math.round(L / St.bayW));
+  const bw = L / bays;
+  const dep = St.stripInset ?? 0.22;
+  const chanW = Math.min(St.winW, bw * (St.chanFrac ?? 0.62));
+  const hgt = y1 - y0;
+  // The strip stops short of the slab line, not of the window head: a small
+  // spandrel top and bottom is what makes it a channel rather than a slot.
+  const sill = y0 + Math.min(St.sillH, hgt * 0.22);
+  const head = Math.max(sill + 0.6, y1 - Math.min(St.headH ?? 0.34, hgt * 0.16));
+  const wc = spec.wallCol, ws = spec.wallSurf;
+  const cc = spec.chanCol || spec.trimCol, cs = spec.chanSurf || spec.trimSurf;
+  const uo = spec.uOff;
+
+  for (let i = 0; i < bays; i++) {
+    const bu0 = uS + i * bw, bu1 = bu0 + bw;
+    const cu0 = (bu0 + bu1) * 0.5 - chanW * 0.5;
+    const cu1 = cu0 + chanW;
+    // Piers, full storey height, at the wall plane.
+    band(mb, e, bu0, cu0, y0, y1, ws, wc, uo, 0);
+    band(mb, e, cu1, bu1, y0, y1, ws, wc, uo, 0);
+    // Channel spandrels, set back the full inset.
+    bandAt(mb, e, cu0, cu1, y0, sill, dep, cs, cc, uo);
+    bandAt(mb, e, cu0, cu1, head, y1, dep, cs, cc, uo);
+    // Cheeks beside those spandrels, so the recess reads as depth over the whole
+    // storey. `windowUnit` draws its own jambs across the glazed part, so these
+    // cover only what it does not and nothing is emitted twice.
+    if (lod === 0) {
+      cheek(mb, e, cu0, y0, sill, dep, ws, wc, 1);
+      cheek(mb, e, cu1, y0, sill, dep, ws, wc, -1);
+      cheek(mb, e, cu0, head, y1, dep, ws, wc, 1);
+      cheek(mb, e, cu1, head, y1, dep, ws, wc, -1);
+    }
+
+    const seed = hash2(spec.seed + sIdx * 37, i * 911 + ((bu0 * 13) | 0));
+    windowUnit(mb, gb, e, cu0, cu1, sill, head, spec, {
+      reveal: dep, kind: St.winKind, lod,
+      seed, lit: spec.lit, roomDepth: 2.6 + seed * 2.2,
+      sill: false, lintel: false,
+      jambCol: wc, jambSurf: ws,
+      frameCol: [0.80, 0.80, 0.78],
+    });
+  }
+}
+
+/** `band`, set back `dep` from the wall plane. */
+function bandAt(mb, e, u0, u1, y0, y1, dep, surf, col, uo) {
+  if (u1 - u0 < 0.006 || y1 - y0 < 0.006) return;
+  const a = P(e, u0, y0, -dep), b = P(e, u1, y0, -dep);
+  mb.wall(a[0], a[2], b[0], b[2], y0, y1, surf, col, uo + u0, 0);
+}
+
+/** One side wall of a recess at `u`, facing `sgn` along the edge. */
+function cheek(mb, e, u, y0, y1, dep, surf, col, sgn) {
+  if (y1 - y0 < 0.006) return;
+  const uv = [0, 0, dep, 0, dep, y1 - y0, 0, y1 - y0];
+  mb.quadAuto(P(e, u, y0, 0), P(e, u, y0, -dep), P(e, u, y1, -dep), P(e, u, y1, 0),
+    sgn * e.dx, 0, sgn * e.dz, uv, col, surf);
+}
+
 /** Plain wall band between two u positions. */
 function band(mb, e, u0, u1, y0, y1, surf, col, uo, vo) {
   if (u1 - u0 < 0.006 || y1 - y0 < 0.006) return;
