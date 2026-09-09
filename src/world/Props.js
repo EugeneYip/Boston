@@ -1952,12 +1952,21 @@ function runPlacement(sys, L, counting, take) {
         let t = rng.range(2, 8);
         while (t < s.len - 6) {
           if (!rng.chance(fill)) { t += rng.range(4.0, 9.0); continue; }   // driveway, hydrant, loading
+          const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
           // A station section suspends the bay locally. Painting the bay away and
           // leaving the cars would be worse than not suspending it at all: they
           // are solid to characters, so they would be a wall along the platform.
-          if (L.city?.roads?.parkingAllowed
-              && !L.city.roads.parkingAllowed(s.edgeId, t)) { t += 5.5; continue; }
-          const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
+          //
+          // Asked BY WORLD POINT, not by distance along the edge: `t` here walks
+          // this strand, which is not the edge's own parameterisation, and asking
+          // the by-edge form left six cars standing in the taper. Nothing below
+          // this point draws from `rng` or `take`, so outside a station the
+          // sequence -- and every parked car in Boston -- is unchanged.
+          if (L.city?.roads?.parkingAllowedNear) {
+            const Q = L.roadPoint(s, t + carLen / 2);
+            const qx = Q.x - Q.dz * off * side, qz = Q.z + Q.dx * off * side;
+            if (!L.city.roads.parkingAllowedNear(qx, qz)) { t += 5.5; continue; }
+          }
           if (take('parked')) {
             // Follow the ROAD, not the chord. `s.ax/s.dx` is the straight line
             // between the two nodes; the carriageway is `edge.pts`. On a curve

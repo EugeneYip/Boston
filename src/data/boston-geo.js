@@ -584,24 +584,50 @@ export const STREETS = [
     //   track centre to platform edge   4'-9"  = 1.4478 m   (tangent track)
     //   two track centres                              3.40 m   (authored, above)
     //   platform width                                 2.00 m   (authored minimum)
-    //   => half-width 1.70 + 1.4478 + 2.00           = 5.148 m
+    //   shy offset, platform back to lane edge         0.45 m   (authored)
+    //   => half-width 1.70 + 1.4478 + 2.00 + 0.45    = 5.598 m
     //
-    // and 10.30 leaves 0.85 m spare between the platform back and a 3.50 m lane
-    // plus 0.30 m shoulder inside the frozen 9.80 m halfRoad -- but only with the
-    // kerbside parking bay suspended, which is what a real stop does and why
-    // `parking: false` is part of the same declaration rather than a second one.
+    // The shy offset is the part that is easy to leave out and should not be. At
+    // exactly 10.30 m the platform's back face -- a raised 0.34 m kerb, 46 m long,
+    // twice -- lands on the travelled lane's own edge with nothing between them.
+    // 11.20 m buys 0.45 m of painted offset and still leaves 0.40 m spare at the
+    // kerb, because the 3.50 m lane and 0.30 m shoulder fit inside the frozen
+    // 9.80 m halfRoad -- but only with the kerbside bay suspended, which is what a
+    // real stop does and why `parking: false` is part of this same declaration.
     //
-    // The 25 m taper is a 1:15 shift for the 1.65 m the travelled lane moves
+    // The 28 m taper is a 1:13 shift for the 2.10 m the travelled lane moves
     // outward. It is a street at 30 mph, not a highway: a work-zone taper rate
-    // would need 50 m, which does not fit between the outbound platform and the
-    // junction 41 m beyond it.
+    // would want 63 m, and there is not 63 m between the outbound platform and the
+    // junction 41 m beyond it. 28 m is what fits, with 2 m to spare.
     sections: [{
       tag: 'nuniv',
       a: { x: -1928.9, z: 1678.9 },
       b: { x: -2028.4, z: 1732.8 },
-      median: 10.30,
+      median: 11.20,
       parking: false,
-      taper: 25,
+      taper: 28,
+      // The two side platforms, declared with the section that widens for them so
+      // they cannot drift outside it. `side` is +1 right of the polyline, -1 left,
+      // and the sign is the MBTA's: projected onto this centreline, the outbound
+      // boarding point sits at +4.32 m and the inbound at -3.45 m. The MAGNITUDES
+      // are unusable -- 7.77 m apart, where two track centres are 3.40 -- but the
+      // SIGNS are evidence, and they are what right-hand running requires.
+      //
+      // PROJECT-AUTHORED PLATFORM EXTENTS, ANCHORED TO MBTA DIRECTIONAL BOARDING
+      // POINTS. No extent exists in the open data: no platform_code, no length,
+      // no shape. 45.72 m is two thirds of the 225 ft the MBTA's own criteria
+      // establish for a three-car LRV, i.e. two cars, and the stagger between them
+      // is the 90.3 m the two boarding points actually are apart. The anchor is
+      // taken as three quarters along its platform in the direction of travel --
+      // a train stops with its front at the far end -- which is an assumption, and
+      // is also what leaves room for the outbound taper to finish before the
+      // junction 41 m past it.
+      platforms: [
+        { tag: 'nuniv-inbound', side: -1,
+          a: { x: -1928.9, z: 1678.9 }, b: { x: -1969.1, z: 1700.7 } },
+        { tag: 'nuniv-outbound', side: 1,
+          a: { x: -1988.2, z: 1711.1 }, b: { x: -2028.4, z: 1732.8 } },
+      ],
     }],
   }),
   S('Beacon Street West', 'arterial', 3, [

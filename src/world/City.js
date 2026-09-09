@@ -192,6 +192,21 @@ export default class City {
         const e = net.edges[edgeId];
         return e ? RoadNetwork.sectionAt(e, s) : null;
       },
+      /**
+       * Is kerbside parking allowed at this WORLD point?
+       *
+       * The by-edge form needs a distance along the edge, and a caller that
+       * places props walks its own strand parameterisation instead -- measured,
+       * the two disagree, and six parked cars stood in the station taper because
+       * of it. A world point cannot be misinterpreted.
+       */
+      parkingAllowedNear: (x, z) => {
+        const ne = net.nearestEdge(x, z);
+        const e = ne && net.edges[ne.edgeId];
+        if (!e?.parking) return false;
+        const loc = RoadNetwork.sectionAt(e, ne.t * e.length);
+        return loc ? loc.parking : true;
+      },
     };
     this.sidewalks = net.sidewalks;
     this.plots = net.plots;

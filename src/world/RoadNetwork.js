@@ -518,8 +518,22 @@ export default class RoadNetwork {
       let s0 = Math.min(A.s, B.s), s1 = Math.max(A.s, B.s);
       s0 = Math.max(0, s0); s1 = Math.min(e.length, s1);
       if (s1 - s0 < 4) continue;
+      // Platforms ride along with the section that widens for them, projected the
+      // same way. The road model does not use them -- they are geometry for the
+      // transit system -- but they belong to the same declaration, so a platform
+      // cannot end up outside the reservation that was widened to hold it.
+      const plats = [];
+      for (const pf of q.platforms || []) {
+        const PA = proj(pf.a), PB = proj(pf.b);
+        if (PA.off > 40 || PB.off > 40) continue;
+        const a = Math.max(s0, Math.min(PA.s, PB.s));
+        const b = Math.min(s1, Math.max(PA.s, PB.s));
+        if (b - a < 4) continue;
+        plats.push({ s0: a, s1: b, side: pf.side < 0 ? -1 : 1, tag: pf.tag || '' });
+      }
       out.push({ s0, s1, taper: q.taper ?? 0,
-                 median: q.median, parking: q.parking, tag: q.tag || '' });
+                 median: q.median, parking: q.parking, tag: q.tag || '',
+                 platforms: plats });
     }
     if (!out.length) return;
     // A local section may not change how many lanes the edge has. `e.lanes` is

@@ -1337,9 +1337,14 @@ export default class Roads {
       const solid = e.type === 'arterial' || e.type === 'highway';
       // Kerbside parking bay: slightly darker and dirtier than the running
       // surface because nothing polishes it, and edged with a worn white line.
+      // A suspended bay must collapse to ZERO, not to negative: `pkW - 0.10` with
+      // pkW at 0 walked `o` backwards and emitted a 0.10 m band outside the kerb
+      // line, under the kerb face, where it z-fights the granite.
+      const pkEdge = pkW > 0.5 ? 0.10 : 0;
+      const pkBay = Math.max(0, pkW - pkEdge);
       if (pk > 0.5) {
-        add(o, o + pkW - 0.10, T_ASPHALT, C.parkbay, 0.99); o += pkW - 0.10;
-        add(o, o + 0.10, T_ASPHALT, C.whiteWorn, 0.72); o += 0.10;
+        add(o, o + pkBay, T_ASPHALT, C.parkbay, 0.99); o += pkBay;
+        add(o, o + pkEdge, T_ASPHALT, C.whiteWorn, 0.72); o += pkEdge;
       }
       if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
       if (solid) { add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12; }
@@ -1381,8 +1386,8 @@ export default class Roads {
       }
       if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
       if (pk > 0.5) {
-        add(o, o + 0.10, T_ASPHALT, C.whiteWorn, 0.72); o += 0.10;
-        add(o, R, T_ASPHALT, C.parkbay, 0.99); o = R;
+        add(o, o + pkEdge, T_ASPHALT, C.whiteWorn, 0.72); o += pkEdge;
+        add(o, Math.max(o, R - 0.0), T_ASPHALT, C.parkbay, 0.99); o = Math.max(o, R);
       }
       if (o < R - 0.02) add(o, R, T_ASPHALT, C.gutter, 0.99);
     }
