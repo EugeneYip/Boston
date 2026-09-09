@@ -489,6 +489,52 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D2 — THE GROUND FLOOR IS UNIFORM ON PURPOSE (2026-09-09)
+
+Audit only; no runtime source changed. Full data in
+`docs/neu/GROUND_FLOOR_AUDIT.json`.
+
+**Ell, not Dodge, owns the lower facade.** Ranking the visible 5 m lower-facade
+band across five gameplay viewpoints: **Ell/Curry 28.56% best (V5, 17 m) and
+46.88% summed over four views**, against Dodge 11.59%/16.75% over two. Dodge does
+own the *canonical first frame* at 54.4% of frame width. Both are legitimate
+targets; Ell is the bigger one overall. (Upper bound — hero-to-hero occlusion is
+not subtracted and tree occlusion is not modelled, which matters most at 17 m.)
+
+**The cue audit found one real defect and one clean result.** Ell's existing
+doorway cue is at bearing 13.9° from the quad centre — **correctly on the
+quad-facing frontage** and in frustum from both quad viewpoints. Dodge's single
+cue sits at bearing 145.9°, on its south-east side, **facing away from every
+tested gameplay viewpoint**, while Dodge presents 54.4% of the canonical frame
+with no cue at all on that face. That cue position is factual (a PDDL walk
+termination), so it must not be moved — what is missing is evidence for a
+quad-facing door.
+
+**The generic read has a precise cause, and it is deliberate.** `TYPO.neuHistoric`
+sets `strip: true`, so `pierStorey` lays identical full-storey brick piers on
+*every* storey including the ground one, and `stoneGround: false`, so there is no
+contrasting base. But that typology's own comment says why: *"No stone ground
+storey: this family is one masonry from plinth to cornice, over a modest granite
+base, and a contrasting stone storey is the Boston collegiate move it was
+specifically NOT built with."* Wave A reasoned it from the documented architecture
+and raised the plinth from 0.40 to 0.70 m — the largest of four typologies — to
+carry the base alone. **Restoring a stone ground storey would contradict a
+documented finding and make the range less like Northeastern.**
+
+**No evidence is reachable for anything else.** MACRIS surfaced no record for Ell,
+Richards or Dodge. Only 7 walk runs ship and **none terminate within 3 m of the Ell
+or Dodge outlines** — the cues' `fromWay` ids point at audit-time data absent from
+the repo. The accessible-entrance layer is excluded on both grounds the brief
+names: it is the wrong dataset, and `SOURCES.md` rules its coordinates out of
+`src/`. So widening the 2.6 m opening, or adding a landing, steps, a surround or
+ground-floor glazing, would each be inventing a specific architectural fact.
+
+**Three consecutive waves have now ended without implementation, and the reason has
+changed.** D0 and D1 found the premises wrong. D2's premise is *right* — the lower
+facade is where the generic read lives — but the programme is now evidence-starved
+on this axis. What would unblock it is listed in the audit; the cheapest is
+re-fetching the PDDL ways behind the existing cue ids.
+
 ### WAVE D1 — THE RANGE IS NOT FLAT, AND D0 WAS WRONG ABOUT IT (2026-09-09)
 
 D0 reported from screenshots that the historic range "reads as one continuous flat

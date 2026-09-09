@@ -1,0 +1,121 @@
+{
+  "_authored": "authored by Wave D2, 2026-09-09. Source-only: no WebGL boot was taken and no runtime source was changed. The host sat at 86-87 per cent swap with memory dipping to 26 per cent throughout.",
+  "what": "Which large lower facades a player actually sees, and whether there is licence-clean evidence to give any of them building-specific ground-floor articulation.",
+  "verdict": "NO IMPLEMENTATION. The highest-value facade was identified and the generator limitation was pinned down, but no licence-clean building-specific ground-floor or ordinary-entrance evidence is reachable, and the uniformity that reads generic turns out to be a DOCUMENTED, DELIBERATE Wave-A finding rather than an oversight.",
+  "phase1_groundFloorVisibilityRanking": {
+    "method": "5 m lower-facade band projected analytically to 1920x1080 at fov 55 from five gameplay viewpoints, clipped to the viewport. UPPER BOUND: hero-to-hero occlusion is not subtracted and TREE occlusion is not modelled at all, which matters most at the closest viewpoint.",
+    "ranking": [
+      {
+        "building": "Ell/Curry mass",
+        "bestBandPct": 28.56,
+        "bestView": "V5 quad walk, 17 m",
+        "sumBandPct": 46.88,
+        "views": 4,
+        "note": "100 per cent of frame width at V5, 77.3 at V3. Dominant by a wide margin."
+      },
+      {
+        "building": "Dodge Hall",
+        "bestBandPct": 11.59,
+        "bestView": "V1 canonical opening, 23 m",
+        "sumBandPct": 16.75,
+        "views": 2,
+        "note": "54.4 per cent of frame width at the canonical opening - the single biggest presence in the FIRST FRAME"
+      },
+      {
+        "building": "Richards Hall",
+        "bestBandPct": 6.02,
+        "bestView": "V4 Huntington sidewalk, 29 m",
+        "sumBandPct": 9.8,
+        "views": 2
+      },
+      {
+        "building": "Hayden Hall",
+        "bestBandPct": 4.75,
+        "bestView": "V5",
+        "sumBandPct": 9.9,
+        "views": 4
+      },
+      {
+        "building": "Hastings Hall",
+        "bestBandPct": 3.92,
+        "bestView": "V1",
+        "sumBandPct": 4.14,
+        "views": 2
+      },
+      {
+        "building": "Mugar",
+        "bestBandPct": 3.42,
+        "bestView": "V5",
+        "sumBandPct": 9.71,
+        "views": 4
+      },
+      {
+        "building": "Cabot",
+        "bestBandPct": 2.45,
+        "sumBandPct": 4.3,
+        "views": 2
+      },
+      {
+        "building": "Dana / Egan / Hurtig / Ryder / Shillman",
+        "bestBandPct": "0.11-0.62",
+        "note": "negligible"
+      }
+    ],
+    "correctionToTheBrief": "The brief expected Dodge to rank highest on the strength of D1 measuring 54 per cent frame width. On GROUND-FLOOR BAND across all gameplay viewpoints Ell is nearly 3x Dodge on best view and 2.8x on the sum. Dodge still owns the canonical FIRST FRAME. Both are legitimate targets; the order depends on whether the first frame or the quad experience is being optimised."
+  },
+  "phase2_targetsSelected": [
+    "Ell/Curry quad frontage (rank 1 overall)",
+    "Dodge Hall quad-facing frontage (rank 1 in the canonical frame)"
+  ],
+  "phase3_evidenceSearch": {
+    "required": "ordinary pedestrian-facing facade evidence: entrance position and width, recess vs projection, steps, plinth treatment, ground-floor glazing proportion",
+    "searched": [
+      "MACRIS / Massachusetts Cultural Resource Information System - no record surfaced for Ell, Richards or Dodge",
+      "the shipped PDDL walk network in src/data/neu-walks.js - only 7 runs ship and NONE terminate within 3 m of the Ell or Dodge outlines. The 8 NEU_ENTRANCE_CUES carry `fromWay` ids referencing audit-time data that is not in the repository, so no additional entrance can be derived from what ships.",
+      "the project record in CURRENT_VS_REAL.md - documents the BODY (light grey brick, vertical window strips, Coolidge Shepley Bulfinch and Abbott, 1934 competition) and says nothing about ground storeys or entrances",
+      "Northeastern ArcGIS accessible-entrance layer - EXCLUDED. It is an ACCESSIBLE-entrance dataset and absence from it is not evidence of absence of an ordinary door, exactly as the brief insists; and SOURCES.md rules its coordinates out of src/ regardless."
+    ],
+    "result": "NOTHING REACHABLE. No building-specific ground-floor or ordinary-entrance evidence exists in licence-clean form for Ell, Dodge or Richards."
+  },
+  "phase4_existingCueAudit": {
+    "cuesAreOnePerPart": "NeuHero resolves a cue with NEU_ENTRANCE_CUES.find(q => q.part === part.id) - the FIRST match. The data holds exactly one cue per part, so nothing is being dropped.",
+    "Ell/Curry": {
+      "cueAt": [
+        -1856.83,
+        1731.23
+      ],
+      "edge": 80,
+      "edgeLenM": 14,
+      "bearingFromQuadCentre": 13.9,
+      "verdict": "CORRECTLY PLACED. It is on the quad-facing frontage and inside the frustum from both quad viewpoints - 33.5 m at V3, 19.3 m at V5. Retain; do not add a second door beside it."
+    },
+    "Dodge Hall": {
+      "cueAt": [
+        -1830.82,
+        1648.32
+      ],
+      "edge": 20,
+      "edgeLenM": 22.52,
+      "bearingFromQuadCentre": 145.9,
+      "verdict": "FACES AWAY. Dodge presents 54.4 per cent of the canonical frame width to the quad with NO entrance cue on that face, while its single cue sits on the south-east side, away from every tested gameplay viewpoint. This is a real finding and it is actionable - but the cue position is FACTUAL, derived from a PDDL walk termination, so it must not be moved. What is missing is evidence for a quad-facing door, not a reason to relocate the evidenced one."
+    }
+  },
+  "phase5_generatorLimitation": {
+    "mechanism": "TYPO.neuHistoric sets strip: true, so Facades.pierStorey lays full-storey brick piers with a recessed channel between them for EVERY storey including the ground one, and sets stoneGround: false, so there is no contrasting base storey. A pedestrian at 17 m sees one unbroken vertical-strip wall from the 0.70 m plinth to the cornice, with a single 2.6 m entrance cue on a very long frontage.",
+    "butItIsDeliberate": "TYPO.neuHistoric documents this in its own comment: \"No stone ground storey: this family is one masonry from plinth to cornice, over a modest granite base, and a contrasting stone storey is the Boston collegiate move it was specifically NOT built with.\" Wave A reasoned it from the documented architecture and raised the plinth from 0.40 to 0.70 m - the largest of the four typologies - to carry the base on its own.",
+    "consequence": "Restoring a stone ground storey would contradict a documented Wave-A finding and would make the range LESS like Northeastern. Rejected."
+  },
+  "whyNothingWasImplemented": [
+    "Every change the brief allows is conditioned on evidence, and the evidence is not reachable.",
+    "The one uniformity that produces the generic read is documented as deliberate and correct.",
+    "Ell already has a correctly placed quad-frontage entrance cue; adding a second beside it is the duplicate the brief warns against.",
+    "Dodge lacks a quad-facing cue, but its existing cue is factual and there is no evidence for a second door.",
+    "Widening the 2.6 m opening, adding a landing, steps, a surround or ground-floor glazing would each be inventing a specific architectural fact, which the brief lists as not allowed without evidence."
+  ],
+  "whatWouldUnblockThis": [
+    "A MACRIS or Boston Landmarks Commission inventory form for the Krentzman quadrangle range, which would carry an architectural description including the ground storey. Worth one targeted attempt from a host that can reach mass.gov search directly.",
+    "Northeastern archival or facilities elevation drawings, if any are published under terms that permit use as FACTUAL reference - naming and description only, never geometry import.",
+    "The audit-time PDDL walk set behind NEU_ENTRANCE_CUES `fromWay` ids. If those ways were re-fetched, additional walk terminations against the Ell and Dodge quad frontages would be licence-clean positional evidence of exactly the kind already accepted."
+  ],
+  "recommendedNext": "Do 337 Huntington Avenue instead. It is the one item in the whole D0/D1/D2 evidence set that is BOTH measured-visible - 6.48 per cent of the viewport unoccluded from V3 - AND executable today: confidence-B official footprint of 783 m2, 50,023 sq ft over it implying 5.9 storeys and about 23 m, and a working pipeline in tools/neu-height/footprints.mjs that needs one CLUSTER entry and matches by footprint-area agreement. It reuses the NeuHero buffers, so no new material and no new draw call."
+}
