@@ -217,6 +217,15 @@
     "colliders": 0,
     "platforms": 0,
     "sharesMaterialWith": "buildings/neuHero opaque atlas material",
-    "collidersNote": "0 by design and measured: a car driven onto the reservation crosses all four rail heads with four wheels down, flat ride height and no damage, and a character walks across them with no snag. Rails that collided would be a trap in the middle of an arterial."
+    "collidersNote": "0 by design and measured: a car driven onto the reservation crosses all four rail heads with four wheels down, flat ride height and no damage, and a character walks across them with no snag. Rails that collided would be a trap in the middle of an arterial.",
+    "visibilityFromTheCanonicalOpening": {
+      "method": "366 rail-centreline samples along edges 486/487/488, tested against the cold-boot camera frustum (eye -1883/4.775/1677, bearing 65 deg, fov 55) and then raycast for occlusion against every other mesh in the scene",
+      "inFrustum": 63,
+      "unoccluded": 12,
+      "nearestUnoccludedM": 18.9,
+      "bearingToNearestReservationPointDeg": 228.2,
+      "verdict": "MARGINAL. 12 of 366 samples - 3.3% - survive occlusion, at 18.9 m and beyond, at the right-hand edge of the frame; they are not legible in the frame at 1x. The nearest reservation point is at bearing 228 deg, i.e. BEHIND the player: the opening looks into the Krentzman quadrangle, not at Huntington.",
+      "correction": "The commit message on d545165 says the railway 'is what the player sees from the opening'. That overstates it. The railway is what the player sees on the canonical WALK from the quadrangle to the starter SUV, which ends on the Huntington footway with the reservation across the street. The first frame is the quadrangle."
+    }
   }
 }
