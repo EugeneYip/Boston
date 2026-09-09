@@ -481,6 +481,106 @@ gate 5**, which stays FAIL: coverage (47 buildings absent within 320 m), quad fo
 entrances and transit are all untouched. Massing, coverage, public realm and
 transit remain open and are Waves B–E.
 
+### WAVE B2B / B2C — TRANSIT CLOSED (2026-09-09, `d545165`, `b11c98a`)
+
+Two Green Line tracks and centre-pole catenary over 973 m of the Huntington
+reservation, then the two staggered side platforms of the Northeastern University
+surface station on a local station section that widens the reservation to 11.20 m
+and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
+criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
+
+### WAVE C — AUDIT ONLY, NOTHING SHIPPED (2026-09-09)
+
+Wave C was scoped to correct the campus spatial identity: Krentzman's form, the
+quad-facing entrances, and the Ell/Curry split. It ran entirely under its own
+resource gate — swap 83–91% for the whole mission, load averages 8 to 59, two
+users on the machine — and the gate says *factual/source analysis only, and do not
+claim visual acceptance from an unreliable host*. So this wave produced evidence
+and changed no runtime geometry. Everything below is in
+`docs/neu/FRONT_QUAD.json`, with the derived ring ready to apply.
+
+**Krentzman is the wrong shape, and the shape matters more than the area.** The
+runtime is a regular octagon, area-derived about the recorded centre: 8 vertices,
+circumradius 30.1 m, **2,564 m²** against the recorded **3,345 m²** — 23% short.
+The centre is right to 0.3 m. But the real error is topological: a regular octagon
+is closed on all eight sides, and the actual space is **enclosed on three sides
+and open across a 100° sector toward Huntington**.
+
+Ray cast from the recorded centre every 10° against the PDDL roof-break faces
+within 45 m: **24 of 36 bearings hit a building** — Richards 9, Dodge 8, Ell 7 —
+and the gaps are **160°–250°** (100°, flanked by Dodge and Richards, the Huntington
+opening) plus two 10° notches. The canonical spawn sits at bearing 219.8° from the
+quad centre, in the middle of the principal opening, which is a good sign the
+opening was placed on real ground rather than a chosen one.
+
+The derived form is **24 vertices, 3,166 m², −5.4%** against the recorded area,
+with no vertex inside any footprint. The truth is bracketed and the construction
+that lands closest is also the only one with the right topology:
+
+| construction | area m² | vs factual |
+|---|---|---|
+| runtime octagon | 2,564 | −23.3% |
+| **derived, faces + chords** | **3,166** | **−5.4%** |
+| recorded (OSM `leisure=park`, conf C) | 3,345 | — |
+| faces closed by one chord | 3,726 | +11.4% |
+| full void swept to the footway | 4,211 | +25.9% |
+
+**Two runtime risks must be cleared before it is applied.** `NeuHero`'s campus
+ground cuts the park ring as a hole only if *every* ring vertex lies inside the
+dilated campus contour; the derived ring reaches 40.3 m where the octagon reached
+30.1, and a dropped hole would double-surface the whole quadrangle — z-fighting
+across the entire opening frame. And the canonical spawn falls *outside* the
+derived ring, so it moves from `Districts` park grass to the `NeuHero` campus
+ground surface. Both are real surfaces, so it should not be bare terrain, but it is
+a first-frame material change. **Do not move the spawn to suit the ring.**
+
+**The entrances phase produced a negative result, and it is the useful kind.**
+Comparing, for each of the 82 official accessible-entrance points, the bearing from
+its building's own footprint centroid to the entrance against the bearing to the
+quad centre: **Richards has no accessible entrance at all**; Ell's two face away by
+128° and 115°; Dodge's one faces away by 64°, sitting on the north face while the
+quad lies at 299°. Hayden (Δ5.4°) and Mugar (Δ16.4°) *do* face the quad, but each
+encloses the room at 1 of 180 rays — they face its direction from outside it.
+
+So: **zero quad-facing accessible entrances on the three buildings that enclose the
+quadrangle.** This refines the standing note in `NeuHero.js`, which says none of the
+82 points are on the quadrangle frontage — very nearly right, slightly too strong.
+There is therefore no evidence basis for portal architecture on the quad frontage,
+and the licence ruling forbids copying those coordinates into `src/` anyway. The
+existing modest PDDL-walk doorway cues are the correct level of claim.
+
+**Ell/Curry: the blocker stands, and now it is measured.** Both records resolve to
+the same PDDL roof-break part **661061** — 95 vertices, 5,970 m², one part, one
+tier. The two official footprints, Ell 2,864 m² and Curry 3,271 m², **sum to 6,135
+m², within 2.8% of that single part**: the PDDL part is the two of them as one
+structure, which is what they are on the ground. Scanned for a waist on six axes,
+the polygon is **a single lobe at essentially every cross-section**, narrowest
+interior widths 23–95 m. The cut that would reproduce Ell's 2,864 m² lands where
+the mass is **44.7 m wide and one continuous lobe** — straight through a solid
+plate. MassGIS parcels are network-blocked from this environment; the Northeastern
+layer does separate them and is exactly the source `SOURCES.md` rules out. **No
+split was invented.**
+
+One consolation, and it changes the priority. The quad centre projects to s = −83.6
+on the mass's principal axis, whose span is −53.7 to +77.2 — the quadrangle lies
+entirely off its low-s tip, and on the official-area reckoning **Ell occupies the
+whole quad-facing end**. The Wave-A historic treatment is therefore correct on
+every surface the quadrangle and the opening can see; the mislabelling is confined
+to the far north-east end, which no existing gameplay view reaches. Correctness
+debt, not an opening defect.
+
+**The Wave-D candidate list was wrong, and the Hurtig lesson is why.** Ranking the
+46 un-modelled buildings within 320 m by unoccluded projected solid angle from
+three gameplay viewpoints: **Snell Library ranks 12th and falls in none of the
+three frusta** at 220 m; Churchill likewise. The strongest candidates are 337 and
+335A Huntington Avenue at 51–58 m, **East Village** — 60 m tall and the only tall
+thing inside the opening frustum — Speare Hall, Marino, and the four HERO_A St.
+Stephen Street houses at 88–100 m. Every figure is an **upper bound**: occlusion is
+the missing term, and Hurtig was chosen at 8° off the view axis, built, and then
+measured at 42 of 42 points in frustum and **zero unoccluded**. Bearing and solid
+angle alone have a 0-for-1 record here, so the occlusion test is Wave D's gate, not
+its afterthought.
+
 ## CANONICAL NORTHEASTERN OPENING IS LIVE (2026-09-08, `5c5e349`)
 
 **All nine gates PASS. Gates 7, 8 and 9 are MIGRATED.** The game now opens at
