@@ -565,7 +565,45 @@ export const STREETS = [
     [42.34509, -71.08215], [42.34337, -71.08418], [42.34135, -71.08672],
     [42.34109, -71.08717], [42.34087, -71.08767], [42.33797, -71.09491],
     [42.33755, -71.09607], [42.33732, -71.09695],
-  ], { median: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7.0, 7.0, 7.0, 7.0] }),
+  ], {
+    median: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7.0, 7.0, 7.0, 7.0],
+    // The Northeastern University station section. A per-vertex median cannot
+    // express this: the authored vertices are hundreds of metres apart and the
+    // road graph cuts this street into edges at junctions, so a station has to be
+    // declared where it actually is and projected onto whichever edge it lands on.
+    //
+    // The endpoints are WORLD metres, not lat/lon, and deliberately so. They were
+    // derived by projecting the MBTA's two directional boarding points onto THIS
+    // PROJECT'S Huntington centreline; writing them back as coordinates would
+    // claim a survey position for a number that inherits the corridor's own
+    // ~0.8 m fit and the 5.9 m route-shape error recorded in docs/neu/GAPS.json.
+    //
+    // 10.30 m of reservation, from the MBTA's own light rail design criteria
+    // (GLX Design Criteria Manual, 2014) rather than from taste:
+    //
+    //   track centre to platform edge   4'-9"  = 1.4478 m   (tangent track)
+    //   two track centres                              3.40 m   (authored, above)
+    //   platform width                                 2.00 m   (authored minimum)
+    //   => half-width 1.70 + 1.4478 + 2.00           = 5.148 m
+    //
+    // and 10.30 leaves 0.85 m spare between the platform back and a 3.50 m lane
+    // plus 0.30 m shoulder inside the frozen 9.80 m halfRoad -- but only with the
+    // kerbside parking bay suspended, which is what a real stop does and why
+    // `parking: false` is part of the same declaration rather than a second one.
+    //
+    // The 25 m taper is a 1:15 shift for the 1.65 m the travelled lane moves
+    // outward. It is a street at 30 mph, not a highway: a work-zone taper rate
+    // would need 50 m, which does not fit between the outbound platform and the
+    // junction 41 m beyond it.
+    sections: [{
+      tag: 'nuniv',
+      a: { x: -1928.9, z: 1678.9 },
+      b: { x: -2028.4, z: 1732.8 },
+      median: 10.30,
+      parking: false,
+      taper: 25,
+    }],
+  }),
   S('Beacon Street West', 'arterial', 3, [
     [42.34866, -71.09540], [42.34840, -71.09800], [42.34820, -71.10080],
     [42.34800, -71.10360],
