@@ -3,6 +3,9 @@ import { GROUP, groups } from '../physics/PhysicsWorld.js';
 import {
   CrowdMesh, HERO, dressActor, clipForSpeed, phaseRate, CLIP_ROW, REF_HEIGHT,
 } from './Character.js';
+import {
+  OPENING_PLAYER, OPENING_YAW, OPENING_SNAP_R, OPENING_SUV_ANCHOR,
+} from '../data/opening.js';
 
 /**
  * Player.
@@ -90,7 +93,7 @@ export default class Player {
     this.visible = true;
 
     this._vy = 0;
-    this._yaw = 0;                   // where the character is facing
+    this._yaw = OPENING_YAW;          // where the character is facing
     this._hh = CAP_HH;               // current capsule half height
     this._crouched = false;
     this._snapOn = true;
@@ -156,24 +159,45 @@ export default class Player {
       `${spawn.z.toFixed(0)} (${this.city?.districtAt?.(spawn.x, spawn.z) ?? '?'})`);
 
     // The car he starts next to. Placement is the vehicle system's business —
-    // this only says WHERE the player is, which is the one thing it owns that
-    // the factory does not. `vehicles` initialises before `player`, so it is
-    // there; if it ever is not, the player simply starts on foot.
-    try { ctx.get('vehicles')?.spawnStarter?.(ctx, spawn); } catch (err) {
+    // this only says WHERE to look, which is the one thing it owns that the
+    // factory does not. `vehicles` initialises before `player`, so it is there;
+    // if it ever is not, the player simply starts on foot.
+    //
+    // The anchor, not the spawn. At the Common those were the same point and
+    // passing the spawn was right. Here the player opens on campus and the only
+    // kerbside he can be given a car on is Huntington, 38 m away and across a
+    // graded bank, so searching outward from his feet finds the wrong frontage.
+    // `spawnStarter` still solves everything that matters — the slot, the side
+    // of the street, the clearance, the heading off the road tangent — it is
+    // only told where to look.
+    try { ctx.get('vehicles')?.spawnStarter?.(ctx, this._starterAnchor(spawn)); } catch (err) {
       console.warn('[player] starting vehicle could not be placed', err);
     }
   }
 
-  /** A pavement spawn near the Common, so the player starts somewhere that reads. */
+  /**
+   * Where the game opens. See `src/data/opening.js` for why each number is what
+   * it is; this only carries them out.
+   *
+   * The snap is BOUNDED, and that is the whole difference from the retired
+   * Boston Common opening. That one snapped to the nearest `sidewalk` point at
+   * any distance, which was correct when the anchor already stood on a sidewalk
+   * three metres from the car. From the campus anchor the nearest sidewalk point
+   * is on the Huntington footway, over the graded bank and outside the
+   * composition — an unbounded snap would move the opening there and leave no
+   * trace of having done it. Inside `OPENING_SNAP_R` the snap still does its
+   * original job of tidying the anchor onto a real walking surface; beyond it,
+   * the authored anchor stands.
+   */
   _pickSpawn() {
     const c = this.city;
-    const out = new THREE.Vector3(34, 0, 96);
+    const out = new THREE.Vector3(OPENING_PLAYER.x, 0, OPENING_PLAYER.z);
     const pts = c?.spawnPoints;
     if (pts?.length) {
-      let best = null, bd = Infinity;
+      let best = null, bd = OPENING_SNAP_R * OPENING_SNAP_R;
       for (const p of pts) {
         if (p.kind !== 'sidewalk') continue;
-        const d = (p.x - 34) ** 2 + (p.z - 96) ** 2;
+        const d = (p.x - OPENING_PLAYER.x) ** 2 + (p.z - OPENING_PLAYER.z) ** 2;
         if (d < bd) { bd = d; best = p; }
       }
       if (best) out.set(best.x, best.y ?? 0, best.z);
@@ -185,6 +209,23 @@ export default class Player {
     // follow it. `out.y` disambiguates a bridge deck from the ground beneath.
     out.y = (c?.surfaceHeight?.(out.x, out.z, out.y) ?? c?.groundHeight?.(out.x, out.z) ?? 0) + 0.06;
     return out;
+  }
+
+  /**
+   * Where `spawnStarter` should look for a kerbside slot.
+   *
+   * `OPENING_SUV_ANCHOR` is a search target on the Huntington kerbside, not a
+   * transform: the solver derives the slot, the side of the street, the parked-
+   * car clearance and the heading from the road tangent, and lands a couple of
+   * metres off the anchor. Falls back to the spawn so a build without the
+   * opening data behaves as it always did.
+   */
+  _starterAnchor(spawn) {
+    const a = OPENING_SUV_ANCHOR;
+    if (!a || !Number.isFinite(a.x) || !Number.isFinite(a.z)) return spawn;
+    const c = this.city;
+    const y = c?.surfaceHeight?.(a.x, a.z) ?? c?.groundHeight?.(a.x, a.z) ?? spawn.y;
+    return { x: a.x, y, z: a.z };
   }
 
   // -- input ----------------------------------------------------------------

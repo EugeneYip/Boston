@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
+import { OPENING_YAW } from '../data/opening.js';
 
 /**
  * Camera.
@@ -63,7 +64,10 @@ export default class CameraRig {
   async init(ctx) {
     this.enabled = true;
     this.mode = 'chase';             // 'chase' | 'free'
-    this.yaw = 0;
+    // The rig owns facing: `Player._lookYaw` prefers `rig.yaw` whenever the rig
+    // exists, so this is what the opening frame actually points at. It is a rig
+    // yaw, NOT a bearing — `src/data/opening.js` has the conversion and why.
+    this.yaw = OPENING_YAW;
     this.pitch = -0.16;
     this.pos = new THREE.Vector3(120, 55, 220);   // harness compatibility
     this.vel = new THREE.Vector3();
