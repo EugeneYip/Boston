@@ -494,7 +494,13 @@ criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 A rebaseline on the corrected world, and it overturns the coverage plan. Full
 data in `docs/neu/COVERAGE_RANKING.json`; no runtime source changed.
 
-**Nothing a player can see is missing.** Twenty-one un-modelled candidates were
+**Missing coverage is not the DOMINANT defect of the canonical opening** — which
+is a narrower claim than "nothing visible is missing", and the narrower one is
+what was measured. 337 Huntington Avenue *is* a visible missing building from a
+normal nearby view (6.48% of the viewport from V3), 335A reaches 0.97%, and the
+St. Stephen row registers small non-zero visibility. What the data shows is that
+coverage ranks below skyline, enclosure articulation and ground-floor
+articulation — not that it is irrelevant. Twenty-one un-modelled candidates were
 tested for real line of sight — 13 sample points each on a box at the recorded
 centroid, against all 815 visible scene meshes — from five gameplay viewpoints.
 **At the canonical opening every single candidate is 0% unoccluded**, including
