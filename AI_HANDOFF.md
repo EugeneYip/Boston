@@ -264,6 +264,16 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
+**Before you plan Green Line work, read `docs/neu/GREEN_LINE_E.json`.** The
+station is 23.9 m from the spawn and the factual geometry is committed, but the
+game's Huntington carriageway is drawn ON TOP of the real reservation — MassGIS
+splits the street into two carriageways either side of a 48 ft median and the game
+took the corridor centre. There is no median concept in the road system and
+`halfRoad` derives from lane count, so making room moves the kerb, the footway,
+the graded crossing and the SUV parking lane. It needs a reserved band in the
+Roads section model first. Hurtig Hall is in (19.57 m, PDDL-confirmed) but it is
+fully occluded from the opening — 42 of 42 sample points in frustum, 0 unoccluded.
+
 **The opening is technically correct and architecturally NOT yet Northeastern.**
 Keep those apart: gameplay opening PASS; hero massing PARTIAL; public realm
 PARTIAL; eye-level likeness **FAIL**. The front quadrangle is documented as light

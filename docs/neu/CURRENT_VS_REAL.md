@@ -394,6 +394,48 @@ glazed brick.
 boundary is not in the data, and the earliest-year rule resolves the part to Ell.
 Curry's 1964 identity is absent and waits on the primary-volume wave.
 
+### WAVE B — PARTIAL (2026-09-09, `979ce0c`, `d445599`)
+
+**The Green Line was not built, and the reason is structural.** MassGIS models
+Huntington as two directional carriageways either side of a median that widens to
+48 ft across the campus — that median *is* the E reservation — and the game's
+centreline is the corridor centre, the average of the pair. **The modelled
+carriageway is drawn on top of the real reservation.** There is no median concept
+in the road system, and `halfRoad` is derived from lane count, so freeing ~7 m of
+median moves the kerb line in 3.5 m and takes the footway, the graded W_VERGE
+crossing and the SUV's parking lane with it. Laying track anyway would put rails
+at offsets −3.5…+3.5 with the four travelled lanes centred at −5.25, −1.75, +1.75
+and +5.25: traffic driving down the reservation.
+
+The factual geometry is now committed in `docs/neu/GREEN_LINE_E.json` — station
+`place-nuniv` at (−1904.9, 1667.5), **23.9 m from the spawn**, two staggered side
+platforms (70243 outbound, 70244 inbound) 90.6 m apart, route colour `#00843D`, all
+confidence A from the MBTA V3 API. **Correction:** the earlier claim that
+alignment data was "already in the repo" was wrong — `TRANSIT.json` holds way
+counts, not geometry, and what it counted was ODbL OSM.
+
+**Hurtig Hall was added** (19.57 m, 1,505 m², PDDL `OBJECTID 661069`, CONFIRMED)
+but **it does not improve the opening**: all 42 sample points across its outline
+fall inside the opening frustum and **zero are unoccluded** — Mugar and Dodge hide
+it completely at 206 m. It was promoted on a bearing argument that was never
+raycast. It closes the campus interior to the east; that is all.
+
+It is `research`, **not** `neuHistoric`: the only Tier-A date (Northeastern's own
+facilities record) says **1968**, thirty years after Richards and outside the 1944
+master plan, while the SAH attribution is hedged ("appear to have replicated") and
+unverifiable at source. One line in `TYPO_OF` to overrule.
+
+| | before | after |
+|---|---|---|
+| hero parts | 18 | **19** |
+| hero triangles | 92,742 | **96,996** |
+| hero draw calls | 4 | **4** |
+| colliders | 18 / 1,776 tris | 19 / 1,834 tris |
+
+Canonical opening and first-minute smoke unchanged: 71.0° turn, 35.89 m in 11.47 s,
+0 ungrounded frames, 18 mm snap, 0.996 m climb, F-enter, 13.46 m at 20.5 km/h with
+0 off-road frames, F-exit onto pavement. Traffic 62 cars, 19/25 moving.
+
 ### Scope note
 
 Wave A closes the **historic-facade-idiom** subproblem only. **It does not close
