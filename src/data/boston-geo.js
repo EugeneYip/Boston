@@ -543,13 +543,29 @@ export const STREETS = [
   // The old 9-vertex line ran a median 108 m from the real centreline and 152 m
   // out at the campus itself, bowed north-west — a chord cutting the corner of a
   // curve. Corrected, the hero core sits 0.8 m from the MassGIS centreline.
+  //
+  // The Green Line E reservation, per authored vertex, in the same style as
+  // `bridge` above. It starts at vertex 10 (world -1811, 1615) and runs west: the
+  // E surfaces at the Northeastern portal just east of the university and stays on
+  // the median to Heath Street, and east of that vertex it is in the Huntington
+  // Avenue Subway, where a surface reservation would be simply wrong.
+  //
+  // 7.0 m, and that number is pinned from two directions. MassGIS records a median
+  // that "widens to 48 ft" -- a MAXIMUM somewhere along the street, not the width
+  // here; 14.6 m plus two carriageways plus two footways does not fit in a 99 ft
+  // right of way. The MBTA's own platform coordinates are the local measurement:
+  // 70244 inbound sits 3.45 m from this centreline and 70243 outbound 4.32 m the
+  // other side, a 7.77 m span, and side platforms flank the tracks. Independently,
+  // 7.0 m is the widest reservation that fits inside the accepted 9.80 m halfRoad
+  // while leaving the parking bay the starter SUV resolves against. The two agree,
+  // which is the only reason to trust either.
   S('Huntington Avenue', 'arterial', 4, [
     [42.34980, -71.07660], [42.34857, -71.07853], [42.34819, -71.07906],
     [42.34775, -71.07952], [42.34672, -71.08025], [42.34626, -71.08066],
     [42.34509, -71.08215], [42.34337, -71.08418], [42.34135, -71.08672],
     [42.34109, -71.08717], [42.34087, -71.08767], [42.33797, -71.09491],
     [42.33755, -71.09607], [42.33732, -71.09695],
-  ]),
+  ], { median: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7.0, 7.0, 7.0, 7.0] }),
   S('Beacon Street West', 'arterial', 3, [
     [42.34866, -71.09540], [42.34840, -71.09800], [42.34820, -71.10080],
     [42.34800, -71.10360],
