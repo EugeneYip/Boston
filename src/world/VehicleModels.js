@@ -2165,14 +2165,37 @@ export class VehicleVisual {
    * @param {number} steer    steer angle (rad)
    * @param {number} spin     accumulated wheel rotation (rad)
    */
+  /**
+   * Pose one wheel: suspension travel, steer, spin.
+   *
+   * `steer` is in the SIMULATION's convention, which is the authoritative one:
+   * **positive steers RIGHT.** That is what `Vehicle` means by `wheel.steer` --
+   * it turns the tyre's direction vectors with `applyAxisAngle(up, -steer)`, and
+   * its Ackermann picks the +X wheel as the inner one for a positive angle.
+   *
+   * The rotation applied here is therefore `-steer`. A Three.js `rotation.y` of
+   * +theta is a right-handed turn about +Y, which swings a forward of (0,0,-1)
+   * towards -X -- that is LEFT in this project's frame (forward -Z, right +X).
+   * Writing `rotation.y = steer` pointed both front wheels the wrong way in every
+   * turn: measured on the starter SUV, a full-right input gave a chassis yaw of
+   * -47.7 degrees and a path 3.34 m to the RIGHT, with the front wheel planes
+   * sitting at +28.7 and +39.0 degrees -- pointing LEFT. The physics was never
+   * involved; only these two mesh transforms were wrong.
+   *
+   * `Traffic` reaches this with the opposite sign, because its own `steer` is
+   * derived from yaw rate and positive yaw about +Y is a LEFT turn. It negates at
+   * the call site rather than here, so both callers arrive in one convention.
+   */
   setWheel(i, susLen, steer, spin) {
     if (this._lod !== 0) return;
     const w = this.wheels[i];
     if (!w) return;
     w.root.position.y = w.cfg.p[1] - susLen;
     // The left-hand wheels are the same geometry turned around, so their spin flips.
+    // The extra PI is about the same axis as the steer, so it leaves the wheel's
+    // PLANE where the steer put it -- which is the only thing a steered wheel reads.
     const flip = w.side < 0;
-    w.root.rotation.y = steer + (flip ? Math.PI : 0);
+    w.root.rotation.y = -steer + (flip ? Math.PI : 0);
     w.spin.rotation.x = flip ? -spin : spin;
   }
 

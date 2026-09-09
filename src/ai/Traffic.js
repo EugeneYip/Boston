@@ -1156,7 +1156,11 @@ export default class Traffic {
             const rest = w[k].p[1] - w[k].radius;
             const squat = rest - (c.pitch * (w[k].p[2] > 0 ? -1 : 1) * 0.9
                                 + c.roll * (w[k].p[0] > 0 ? 1 : -1) * 0.6) * 0.9;
-            c.visual.setWheel(k, squat, w[k].steer ? c.steer : 0, c.wheelSpin);
+            // `-c.steer`: this car's steer comes from its yaw rate, so positive is
+            // a LEFT turn, and `setWheel` takes the simulation convention where
+            // positive is RIGHT. Negating here keeps this identical to before and
+            // leaves one convention at the visual.
+            c.visual.setWheel(k, squat, w[k].steer ? -c.steer : 0, c.wheelSpin);
           }
         }
         c.visual.setLights(c, dt);
