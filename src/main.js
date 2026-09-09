@@ -37,6 +37,7 @@ const OPTIONAL = [
   './world/Buildings.js',
   './world/Landmarks.js',
   './world/NeuHero.js',
+  './world/Transit.js',
   './world/Props.js',
   './world/Vegetation.js',
   './world/VehicleFactory.js',
