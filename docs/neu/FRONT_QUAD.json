@@ -302,16 +302,78 @@
       "fullVoidToFootway": 4211,
       "reading": "The truth is bracketed. The runtime is 23% too small; sweeping the open side all the way to the footway is 26% too large. The chord construction lands 5% under, which is the closest of the four and the only one with the right topology."
     },
-    "status": "DERIVED, NOT APPLIED",
+    "status": "DERIVED AND VERIFIED, APPLIED AND REVERTED — one blocker left",
     "whyNotApplied": [
-      "Wave C ran under the brief's own resource gate: swap 83-91% for the whole mission, load averages 8-59, two users on the machine. The brief says perform factual/source analysis only and do not claim visual acceptance from an unreliable host.",
-      "This change is visible in the FIRST FRAME of the game, so shipping it without a trustworthy look at it is the one thing the gate exists to prevent."
+      "Wave C-2 applied the ring, booted it, measured it, found ONE real regression, and reverted. See waveC2Result."
     ],
     "runtimeRisksToClearFirst": [
-      "NeuHero._campusGround cuts the park ring as a hole only if EVERY ring vertex lies inside the dilated campus contour (holes = cand.filter(r => r.every(...pointInRing...))). The derived ring reaches 40.3 m where the octagon reached 30.1 m. If one vertex falls outside the contour the hole is dropped silently and the campus ground double-surfaces the whole quadrangle - z-fighting across the entire opening frame. Test this before anything else.",
-      "The canonical spawn (-1883, 1677) is 28.3 m from the centre and falls OUTSIDE the derived ring, because the 100 degree chord cuts inside the octagon's 30.1 m radius. It therefore moves from Districts park grass to the NeuHero campus ground surface. Both are real surfaces so it should not be bare terrain, but it is a first-frame material change and must be looked at. Do NOT move the spawn to suit the ring: OPENING_PLAYER is frozen.",
-      "Consumers of the ring: Districts (grass), ParkPaths (circulation), Props (planting), Vegetation (understorey 0.06), NeuHero (ground hole), and isReserved/inPark (no-build). The octagon is convex; the derived ring is not. Any consumer assuming convexity has to be checked."
-    ]
+      "SUPERSEDED by waveC2Result. Risk A is measured clear; Risk B is measured REAL and is the only thing left."
+    ],
+    "waveC2Result": {
+      "date": "2026-09-09",
+      "whatWasDone": "The derived ring was regenerated from scratch and matched this file exactly (24 vertices, 3,166 m2). It was then written into src/data/boston-geo.js, booted, and measured. It is reverted; the runtime still carries the octagon.",
+      "candidateVerification": {
+        "reproducible": true,
+        "vertices": 24,
+        "areaM2": 3166,
+        "selfIntersections": 0,
+        "verticesInsideAnyFootprint": 0,
+        "edgesCrossingBuildingGeometry": 0,
+        "bboxM": [
+          76.9,
+          70.0
+        ],
+        "windingFixed": "The derived ring came out CW and every other park ring here is CCW, so it must be reversed on application. Applied reversed.",
+        "openSectors": "150-260 degrees (110), plus 20 degree notches at 60-80 and 340-0",
+        "minClearanceToOwnFaceM": 1.02
+      },
+      "riskA_groundHoleOwnership": {
+        "verdict": "CLEAR — and it needed no code change at all",
+        "contour": "convex hull of the 9 NEU_HERO_PARTS whose centroid is within GROUND.near = 110 m of the quad centre, dilated GROUND.dilate = 24 m radially from the hull centroid; 13 points",
+        "containmentTest": "NeuHero._buildGround: holes = cand.filter(r => r.length >= 3 && r.every(q => pointInRing(q.x, q.z, contour)))",
+        "octagonVerticesInside": "8 of 8 — which is why the hole works today",
+        "derivedRingVerticesInside": "24 of 24 — so the hole is ACCEPTED",
+        "liveConfirmation": "114 sample points inside the applied ring, raycast down against park_lawn / park_plaza / park_path_paved / park_path_stone / park_path_edge / neu_ground_lawn / neu_ground_paved: ZERO points hit both a park_ and a neu_ground_ mesh. 1 true coplanar pair under 5 mm in 114, a pre-existing park-path-over-lawn edge case.",
+        "notDone": "No containment check was weakened, no epsilon was added, no Northeastern-specific z-offset was introduced. The risk simply does not materialise."
+      },
+      "riskB_spawnSurfaceOwnership": {
+        "verdict": "REAL. This is the blocker.",
+        "measurement": "Downward raycast against every park_ and neu_ground_ mesh. At the canonical spawn (-1883, 1677): ZERO hits. Also zero at (-1886,1673), (-1890,1668), (-1875,1670). A point just inside the ring, (-1878,1682), hits park_lawn at y 3.145.",
+        "meaning": "With the octagon replaced, nothing in the public-realm system owns the ground at the canonical spawn. It is not a hole - city.surfaceHeight still returns 3.095 and the player is grounded on base terrain - it is a MATERIAL ownership gap, which is the accidental dirt patch the brief forbids.",
+        "myEarlierPredictionWasWrong": "Wave C predicted NeuHero would cover it: 24.93 m from Richards edge against GROUND.reach = 30, and 3.71 m from NEU_WALK_ARRIVAL against GROUND.walkReach = 8. Both tests pass on paper and the runtime disagrees, so one of the other per-triangle tests in _buildGround excludes that area. Isolating which one is the first job of the next attempt; the renderer became unusable before I could.",
+        "nextSteps": [
+          "Instrument NeuHero._buildGround to report, per rejected triangle near the spawn, WHICH test rejected it: contour containment, reach, walkReach, or the road keep-out (corridorHalf + verge).",
+          "Then choose from the brief’s acceptable outcomes: an evidence-supported contour correction, narrow clipping/intersection ownership, or another existing public-realm ownership path. Not an epsilon and not a z-offset.",
+          "Note the arrival walk passes 3.71 m from the spawn, so walkReach ownership is the most likely clean route if the road keep-out is what is rejecting it."
+        ]
+      },
+      "bootHealthWithTheChangeApplied": {
+        "systems": 28,
+        "failed": [],
+        "errors": 0,
+        "glFaults": 0,
+        "validate": "ok, 0 problems",
+        "rapier": "live",
+        "spawnSurfaceHeightM": 3.095,
+        "spawnSurfaceHeightBeforeM": 3.095,
+        "note": "Structurally sound. Nothing broke; it fails only on ground ownership outside the new ring."
+      },
+      "unrelatedSystemsUnchanged": {
+        "starterSuv": "1, unmoved at (-1856.163, 1649.221)",
+        "transit": "2 platforms, 6,680 tris, 1 draw, 6 colliders - identical",
+        "roadTriangles": "388,729 - identical",
+        "openingBearingDeg": 65.01
+      },
+      "sideEffectFound": {
+        "what": "districtAt at the canonical spawn changed from \"park\" to \"northeastern\"",
+        "why": "the spawn is no longer inside the park polygon",
+        "verdict": "IMPROVEMENT. It retires the residual recorded in docs/CURRENT_STATE.md that the HUD district text reads PARKLAND at the opening. Worth keeping when the ring finally lands."
+      },
+      "beforeStateEvidence": [
+        "The canonical spawn sits 0.41 m from the octagon boundary - essentially ON its rim - which is why a hard paved diagonal runs past the player feet in the first frame with no architectural logic behind it.",
+        "From the air the octagon reads unmistakably as a formal-garden roundabout dropped into a rectangular court, with radial paths converging on a centre and the court own corners left as unowned ground. That is the isolated-octagonal-park read, and it is the single most visible campus-identity defect in the opening."
+      ]
+    }
   },
   "entrances": {
     "question": "Which opening-facing entrances can be evidenced for the buildings that enclose the quadrangle?",
