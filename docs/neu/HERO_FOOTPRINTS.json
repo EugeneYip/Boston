@@ -30,8 +30,8 @@
   "cabot": "CONFIRMED at 11.61 m. Roof-break part 661048 sits 1 m from the inventory centroid and measures 7,926 m2 against an official 7,851 m2 — a 1% agreement. The taller parts nearby (18-19.6 m) are 88-105 m away and belong to Richards, Hayden and Mugar. Cabot is a wide large-span athletic building; it reads low against the word \"arena\", not against the evidence. NOT raised.",
   "hastings": "CONFIRMED for height, COMPLEX for footprint. Part 677308 is 27.83 m over 7 assessor storeys = 3.98 m/storey, which is right, and its RC land use matches a residence hall. But it measures 1,681 m2 against an official 1,046 m2, so the part covers Hastings plus an adjoining structure. This is why Roof Breaks reads HIGHER than Boston 3D here: Hastings really is taller than the 5-storey quadrangle around it."
  },
- "clusterCount": 12,
- "resolved": 12,
+ "clusterCount": 13,
+ "resolved": 13,
  "buildings": [
   {
    "name": "Ell Hall",
@@ -3553,6 +3553,121 @@
    "boston3dHeightM": 26.7,
    "boston3dExcessM": 8,
    "boston3dConfidence": "CONFLICT"
+  },
+  {
+   "name": "Hurtig Hall",
+   "priority": "CONTEXT_C",
+   "status": "CONFIRMED",
+   "statusWhy": "footprint agrees to within 10%",
+   "heightM": 19.57,
+   "dominantMass": {
+    "objectId": 661069,
+    "heightM": 19.57,
+    "areaM2": 1505
+   },
+   "tiers": [
+    {
+     "objectId": 661069,
+     "heightM": 19.57,
+     "areaM2": 1505,
+     "landUse": "E",
+     "gndElevM": 2.74,
+     "outlineWorld": [
+      [
+       -1673.62,
+       1711.27
+      ],
+      [
+       -1658.97,
+       1738.77
+      ],
+      [
+       -1667.76,
+       1743.5
+      ],
+      [
+       -1667.99,
+       1743.62
+      ],
+      [
+       -1673.12,
+       1746.37
+      ],
+      [
+       -1673.14,
+       1746.38
+      ],
+      [
+       -1675.12,
+       1747.45
+      ],
+      [
+       -1677.39,
+       1748.67
+      ],
+      [
+       -1690.04,
+       1755.47
+      ],
+      [
+       -1694.49,
+       1757.85
+      ],
+      [
+       -1694.87,
+       1758.06
+      ],
+      [
+       -1701.47,
+       1761.6
+      ],
+      [
+       -1705.07,
+       1754.84
+      ],
+      [
+       -1707.71,
+       1749.89
+      ],
+      [
+       -1709.7,
+       1746.17
+      ],
+      [
+       -1716.14,
+       1734.08
+      ],
+      [
+       -1699.58,
+       1725.18
+      ],
+      [
+       -1698.18,
+       1724.43
+      ],
+      [
+       -1673.66,
+       1711.26
+      ],
+      [
+       -1673.64,
+       1711.24
+      ],
+      [
+       -1673.62,
+       1711.27
+      ]
+     ]
+    }
+   ],
+   "partCount": 1,
+   "totalFootprintM2": 1505,
+   "officialFootprintM2": 1519,
+   "storeysCrossCheck": null,
+   "metresPerStorey": null,
+   "boston3dHeightM": null,
+   "boston3dExcessM": null,
+   "boston3dConfidence": null
   }
  ]
 }

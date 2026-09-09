@@ -74,10 +74,19 @@ const inv = JSON.parse(fs.readFileSync(path.join(OUT, 'BUILDING_INVENTORY.json')
 const meas = JSON.parse(fs.readFileSync(path.join(OUT, 'HEIGHT_MEASUREMENTS.json'), 'utf8'));
 const measBy = new Map(meas.measurements.map(m => [m.name, m]));
 
-/** The opening composition. Deliberately not the whole campus. */
+/**
+ * The opening composition. Deliberately not the whole campus.
+ *
+ * Hurtig Hall was added for Wave B. It sits 204 m from the canonical spawn and
+ * 8 degrees off the opening bearing -- close enough to the view axis that its
+ * absence left a hole in the middle distance where the quadrangle should close.
+ * The 2010 layer has it cleanly: one part, 1,505 m2 against an official 1,519,
+ * centroid 1 m from the inventory's.
+ */
 const CLUSTER = ['Ell Hall', 'Richards Hall', 'Hayden Hall', 'Dodge Hall', 'Curry Student Center',
   'Cabot Center (& Barletta Natatorium)', 'Mugar Life Sciences Building', 'Ryder Hall',
-  'Egan Engineering/Science Research Center', 'Shillman Hall', 'Hastings Hall', 'Dana Research Center'];
+  'Egan Engineering/Science Research Center', 'Shillman Hall', 'Hastings Hall', 'Dana Research Center',
+  'Hurtig Hall'];
 
 /**
  * Footprint AREA agreement is the decisive match test, not centroid distance.

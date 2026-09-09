@@ -67,6 +67,7 @@ const YEAR = {
   'Mugar Life Sciences Building': 1941, 'Ell Hall': 1947, 'Dodge Hall': 1952,
   'Cabot Center (& Barletta Natatorium)': 1954, 'Hayden Hall': 1956,
   'Curry Student Center': 1964, 'Dana Research Center': 1966,
+  'Hurtig Hall': 1968,
   'Shillman Hall': 1995, 'Egan Engineering/Science Research Center': 1996,
 };
 
@@ -230,6 +231,18 @@ const TYPO_OF = {
   'Dana Research Center': 'research',
   'Egan Engineering/Science Research Center': 'research',
   'Shillman Hall': 'research',
+  // Hurtig is `research`, and DELIBERATELY NOT `neuHistoric`, which is the
+  // opposite of what Wave B was asked for. SAH Archipedia lists Hurtig among the
+  // buildings that "appear to have replicated" Richards -- hedged language, in a
+  // summary I could not fetch the primary text for (403) -- while the only Tier-A
+  // date available, Northeastern's own facilities record already committed in
+  // `BUILDING_INVENTORY.json`, says 1968. That is thirty years after Richards and
+  // well outside the 1944 master plan. Dressing a 1968 science building in a 1938
+  // idiom would be the same class of error Wave A just corrected, pointing the
+  // other way, so it takes the 1960+ research language its own evidence supports
+  // -- the same treatment Dana (1966) already has. One line to overrule if a
+  // primary source turns up saying otherwise.
+  'Hurtig Hall': 'research',
 };
 
 const BUILDING = new Map(NEU_HERO_BUILDINGS.map(b => [b.name, b]));

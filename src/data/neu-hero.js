@@ -28,7 +28,7 @@
  * extrude those twice.
  */
 
-/** Parts worth runtime geometry: 18 of 22, 622 ring vertices. */
+/** Parts worth runtime geometry: 19 of 23, 643 ring vertices. */
 export const NEU_HERO_PARTS = [
   {
     id: 661048, tier: 'PRIMARY', heightM: 11.61, areaM2: 7926,
@@ -99,6 +99,13 @@ export const NEU_HERO_PARTS = [
     buildings: ["Dodge Hall"],
     dominantOf: ["Dodge Hall"],
     outline: [[-1822.89,1666.07], [-1812.64,1686.21], [-1805.08,1682.33], [-1801.19,1689.63], [-1801,1689.99], [-1796,1699.37], [-1820.38,1712.47], [-1820.52,1712.54], [-1821.46,1710.79], [-1821.58,1710.55], [-1821.73,1710.27], [-1831.24,1692.43], [-1831.78,1691.41], [-1838.23,1679.32], [-1840.41,1675.23], [-1840.5,1675.06], [-1848.2,1660.61], [-1848.45,1660.14], [-1849.43,1658.31], [-1847.47,1657.26], [-1847.09,1657.05], [-1827.25,1646.4], [-1826.98,1646.25], [-1826.77,1646.14], [-1824.9,1645.14], [-1818.84,1656.51], [-1818.24,1657.63], [-1815.71,1662.39], [-1822.89,1666.07]],
+  },
+  {
+    id: 661069, tier: 'PRIMARY', heightM: 19.57, areaM2: 1505,
+    landUse: "E", gndElevM: 2.74,
+    buildings: ["Hurtig Hall"],
+    dominantOf: ["Hurtig Hall"],
+    outline: [[-1673.62,1711.27], [-1658.97,1738.77], [-1667.76,1743.5], [-1667.99,1743.62], [-1673.12,1746.37], [-1673.14,1746.38], [-1675.12,1747.45], [-1677.39,1748.67], [-1690.04,1755.47], [-1694.49,1757.85], [-1694.87,1758.06], [-1701.47,1761.6], [-1705.07,1754.84], [-1707.71,1749.89], [-1709.7,1746.17], [-1716.14,1734.08], [-1699.58,1725.18], [-1698.18,1724.43], [-1673.66,1711.26], [-1673.64,1711.24], [-1673.62,1711.27]],
   },
   {
     id: 665219, tier: 'SECONDARY', heightM: 12.36, areaM2: 1437,
@@ -329,6 +336,17 @@ export const NEU_HERO_BUILDINGS = [
     storeys: 5, courseM: 3.75, storeyConfidence: 'C',
     storeyBasis: "OSM levels, corroborated by the factual height",
     statusWhy: "parts sum to 2860 m2 against an official 1244 m2 (x2.30) — the radius includes a neighbour",
+  },
+  {
+    name: "Hurtig Hall", status: 'CONFIRMED',
+    headlineHeightM: 19.57, dominantPart: 661069,
+    dominantHeightM: 19.57,
+    parts: [661069],
+    sourceFootprintM2: 1505, officialFootprintM2: 1519,
+    yearBuilt: 1968,
+    storeys: 5, courseM: 3.91, storeyConfidence: 'DERIVED',
+    storeyBasis: "dominant mass / 3.8 m; gross-area implication was 5",
+    statusWhy: "footprint agrees to within 10%",
   },
 ];
 
