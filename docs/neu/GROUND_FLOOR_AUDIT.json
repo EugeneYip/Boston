@@ -117,5 +117,81 @@
     "Northeastern archival or facilities elevation drawings, if any are published under terms that permit use as FACTUAL reference - naming and description only, never geometry import.",
     "The audit-time PDDL walk set behind NEU_ENTRANCE_CUES `fromWay` ids. If those ways were re-fetched, additional walk terminations against the Ell and Dodge quad frontages would be licence-clean positional evidence of exactly the kind already accepted."
   ],
-  "recommendedNext": "Do 337 Huntington Avenue instead. It is the one item in the whole D0/D1/D2 evidence set that is BOTH measured-visible - 6.48 per cent of the viewport unoccluded from V3 - AND executable today: confidence-B official footprint of 783 m2, 50,023 sq ft over it implying 5.9 storeys and about 23 m, and a working pipeline in tools/neu-height/footprints.mjs that needs one CLUSTER entry and matches by footprint-area agreement. It reuses the NeuHero buffers, so no new material and no new draw call."
+  "recommendedNext": "Do 337 Huntington Avenue instead. It is the one item in the whole D0/D1/D2 evidence set that is BOTH measured-visible - 6.48 per cent of the viewport unoccluded from V3 - AND executable today: confidence-B official footprint of 783 m2, 50,023 sq ft over it implying 5.9 storeys and about 23 m, and a working pipeline in tools/neu-height/footprints.mjs that needs one CLUSTER entry and matches by footprint-area agreement. It reuses the NeuHero buffers, so no new material and no new draw call.",
+  "waveD2bResult": {
+    "date": "2026-09-09",
+    "commit": "5c3472f",
+    "supersedes": "D2 concluded no ordinary-entrance evidence was reachable. For ELL that is no longer true.",
+    "evidence": [
+      {
+        "source": "news.northeastern.edu/2013/02/06/earle-brown/",
+        "type": "official Northeastern news",
+        "quote": "When you enter Ell Hall from Krentzman Quad, you'll hear music echoing throughout the lobby.",
+        "establishes": "an ordinary entrance from the quad, opening into a LOBBY - a principal door, not a service one",
+        "confidence": "HIGH"
+      },
+      {
+        "source": "news.northeastern.edu/2025/01/22/steps-in-frame/",
+        "type": "official Northeastern photo caption",
+        "quote": "students framed by windows in Ell Hall, walking toward Krentzman Quad",
+        "establishes": "substantial glazing at that frontage at the level people walk through",
+        "confidence": "MEDIUM-HIGH"
+      },
+      {
+        "source": "existing PDDL walk cue, part 661061 edge 80",
+        "type": "project evidence already accepted",
+        "establishes": "position - bearing 13.9 degrees from the quad centre, the same frontage both articles describe",
+        "confidence": "HIGH"
+      }
+    ],
+    "confidenceTable": {
+      "entrance exists on the Krentzman frontage": "HIGH - two independent official sources plus the PDDL cue agree",
+      "it is a principal entrance into a lobby": "HIGH - stated",
+      "substantial ground-floor glazing there": "MEDIUM-HIGH - photo caption",
+      "exact width": "UNKNOWN",
+      "recessed vs flush": "UNKNOWN - DRS photo pages return HTTP 418 to automated fetch",
+      "landing or steps": "UNKNOWN - \"Steps in Frame\" is a pun on footsteps, NOT architectural evidence",
+      "door count": "UNKNOWN",
+      "masonry surround": "UNKNOWN"
+    },
+    "whyTheOldCueWasTooWeak": "2.6 x 2.75 m at plinthTop, laid after the bays. At the quad walk that is 140 x 148 px against an Ell lower-facade band of 28.56 per cent of the viewport - about 3.5 per cent of the visible lower facade. At nine metres it read as one more window bay, which the BEFORE capture shows plainly.",
+    "implementation": {
+      "mechanism": "ENTRANCE_BY_PART table in NeuHero.js, consulted at the single call site; entranceCue merges the override over the default. neu-walks.js is GENERATED so the override could not live there.",
+      "scope": "part 661061 ONLY. Dodge, Richards, Hayden, Mugar, Dana and Ryder are untouched.",
+      "widthM": 4.6,
+      "headM": 3.2,
+      "widthRationale": "PROJECT-AUTHORED, and bounded by the factual cue rather than chosen: the cue sits 11.48 m along a 14 m edge, so a centred opening reaches u1 = 13.78 against the 13.80 limit. 5.20 m clips.",
+      "headRationale": "keeps the opening inside the ground storey, which is 3.755 m of course on this part",
+      "notModelled": "steps, landing, canopy, columns, portico, signage, extra surround",
+      "familyUntouched": "TYPO.neuHistoric unchanged - grey brick, vertical strips, uniform masonry plinth to cornice"
+    },
+    "measuredDelta": {
+      "glazedLeafBeforeM": [
+        2.48,
+        2.57
+      ],
+      "glazedLeafAfterM": [
+        4.48,
+        3.02
+      ],
+      "areaBeforeM2": 6.37,
+      "areaAfterM2": 13.53,
+      "ratio": "2.12x",
+      "projectedPx": {
+        "V3 Krentzman centre 33.5 m": "80x85 -> 142x111",
+        "V5 quad walk 19.3 m": "140x148 -> 248x194",
+        "close approach 9 m": "430x455 -> 762x596"
+      },
+      "shareOfEllVisibleLowerFacadeAtV5": "3.5 per cent -> 8.1 per cent",
+      "honestCharacterisation": "decisive at pedestrian approach, modest at quad distance. Not sub-pixel at any tested viewpoint, so it clears the brief bar, but the quad-distance gain is real rather than dramatic."
+    },
+    "qa": {
+      "boot": "28 systems, failed [], errors 0, glFaults 0, validate ok 0 problems, Rapier live",
+      "kcc": "entrance approach 340 frames, 340 grounded, 0 ungrounded, 2.4 mm peak snap, stops at 0.32 m against the wall - solid, no ghost collider, doorway correctly not passable",
+      "collision": "unchanged by construction: the opening is emitted into the visible shell buffers only; collision is the separate plain prism built from the ring",
+      "nightRain": "night - the opening lights as a lobby, recess legible, no bright trim stripe, hot-pixel fraction 0.0000. rain - glazing coherent, not blown out, hot-pixel fraction 0.0000.",
+      "regression": "canonical spawn (-1883, 3.155, 1677) and surfaceHeight 3.0953 unchanged, districtAt northeastern, starter SUV at (-1856.163, 1649.221), Green Line 2 platforms / 6,680 tris / 6 colliders, road triangles 388,729 - all identical"
+    },
+    "cost": "ZERO. Same quad count so neu_hero_opaque stays 96,996 and neu_hero_glass 10,934; no new material, no new draw call, no collider change."
+  }
 }

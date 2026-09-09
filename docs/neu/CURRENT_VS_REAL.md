@@ -489,6 +489,42 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D2B — ELL'S QUAD DOOR, ON NORTHEASTERN'S OWN EVIDENCE (2026-09-09, `5c3472f`)
+
+D2 concluded no ordinary-entrance evidence was reachable. For **Ell** that is no
+longer true, and the university said it itself:
+
+> *"When you enter Ell Hall from Krentzman Quad, you'll hear music echoing
+> throughout the lobby."* — [news.northeastern.edu, 2013](https://news.northeastern.edu/2013/02/06/earle-brown/)
+
+and students *"framed by windows in Ell Hall, walking toward Krentzman Quad"* —
+[news.northeastern.edu, 2025](https://news.northeastern.edu/2025/01/22/steps-in-frame/).
+Two independent official sources: an ordinary entrance from the quad, opening into
+a **lobby**, with substantial glazing at the level people walk through. Both agree
+with the PDDL cue this project already had at bearing 13.9° from the quad centre.
+
+**The position did not move and no second entrance was created.** What changed is
+the size of the existing one, on Ell alone: an `ENTRANCE_BY_PART` table overrides
+the default for part 661061 only, so every other building keeps the modest
+pair-of-doors cue its walk evidence supports.
+
+**The dimensions are PROJECT-AUTHORED and bounded by the factual cue rather than
+chosen.** 4.60 m is the widest opening that cue's own edge permits before clipping
+— it sits 11.48 m along a 14 m edge, so a centred opening reaches u1 = 13.78
+against a 13.80 limit, and 5.20 m clips. The 3.20 m head keeps the opening inside
+the 3.755 m ground storey. **Not modelled:** steps, landing, canopy, columns,
+portico, signage. "Steps in Frame" is the article's pun on footsteps.
+
+Measured: the glazed leaf goes **2.48 × 2.57 m → 4.48 × 3.02 m**, 6.4 → 13.5 m²,
+**2.12×**. Projected, **140×148 → 248×194 px** from the quad walk and **430×455 →
+762×596 px** on approach — 3.5% → 8.1% of Ell's visible lower facade. Honestly:
+decisive at pedestrian range, modest at quad distance.
+
+Zero cost — same quad count, no new material, no new draw. Collision unchanged by
+construction, and the wall stays solid: walked at it for 340 frames, 340 grounded,
+2.4 mm peak snap, stopping at 0.32 m. `TYPO.neuHistoric` is untouched, and Ell and
+Curry remain one part.
+
 ### WAVE D2 — THE GROUND FLOOR IS UNIFORM ON PURPOSE (2026-09-09)
 
 Audit only; no runtime source changed. Full data in
