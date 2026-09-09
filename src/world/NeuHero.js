@@ -454,14 +454,51 @@ const ENTRANCE = {
 };
 
 /**
+ * Per-part entrance size, where official evidence supports more than a pair of doors.
+ *
+ * The default above is deliberately modest because the walk-derived cue proves
+ * "people enter along here" and nothing more. Where a named source describes an
+ * actual entrance, the opening can be sized to it — and only there.
+ *
+ * ELL HALL, Krentzman Quadrangle frontage (part 661061, cue edge 80). Two official
+ * Northeastern sources, independent of each other and of the PDDL cue:
+ *
+ *   news.northeastern.edu/2013/02/06/earle-brown/ — "When you enter Ell Hall from
+ *   Krentzman Quad, you'll hear music echoing throughout the lobby." An ordinary
+ *   entrance from the quad, and it opens into a LOBBY, so it is a principal door
+ *   rather than a service one.
+ *
+ *   news.northeastern.edu/2025/01/22/steps-in-frame/ — students "framed by windows
+ *   in Ell Hall, walking toward Krentzman Quad", which puts substantial glazing at
+ *   that frontage at the level people walk through.
+ *
+ * Both agree with the cue this project already had, which sits at bearing 13.9
+ * degrees from the quad centre — on that same frontage.
+ *
+ * THE DIMENSIONS ARE PROJECT-AUTHORED, NOT SURVEYED. Perspective photography
+ * cannot give a width and the articles give none. 4.60 m is not a guess about the
+ * real door, it is the widest opening the factual cue's own edge allows before it
+ * clips: the cue sits 11.48 m along a 14 m edge, so a centred opening reaches
+ * u1 = 13.78 against a 13.80 m limit. 5.20 m clips. The head at 3.20 m keeps the
+ * whole opening inside the ground storey, which is 3.755 m of course here.
+ *
+ * Not modelled, because nothing supports them: steps, a landing, a canopy, columns,
+ * or any surround beyond the one every cue already has. "Steps in Frame" is the
+ * article's pun on footsteps and is not evidence of a stair.
+ */
+const ENTRANCE_BY_PART = {
+  661061: { width: 4.60, height: 3.20 },   // Ell Hall — see above
+};
+
+/**
  * Emit one entrance cue on an edge, at `u` along it.
  *
  * `spec` is the part's facade spec, so the surround takes the building's own trim
  * surface and the recess its wall surface — an entrance that belongs to the
  * building rather than being applied to it.
  */
-function entranceCue(mb, gb, e, u, y0, spec) {
-  const E = ENTRANCE;
+function entranceCue(mb, gb, e, u, y0, spec, over) {
+  const E = over ? { ...ENTRANCE, ...over } : ENTRANCE;
   const half = E.width / 2;
   const u0 = Math.max(0.2, u - half), u1 = Math.min(e.L - 0.2, u + half);
   if (u1 - u0 < 1.4) return 0;                    // no room on this edge
@@ -688,7 +725,7 @@ export default class NeuHero {
         // bays are laid, so it overrides the window rhythm locally rather than
         // fighting it.
         if (cue && cue.edge === i && fenestrate) {
-          entranceTris += entranceCue(mb, gb, e, cue.u, plinthTop, spec);
+          entranceTris += entranceCue(mb, gb, e, cue.u, plinthTop, spec, ENTRANCE_BY_PART[part.id]);
           entranceCount++;
         }
         // Cornice: a projecting course per edge. Boxes rather than an offset
