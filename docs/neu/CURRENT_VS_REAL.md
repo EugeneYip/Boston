@@ -436,6 +436,44 @@ Canonical opening and first-minute smoke unchanged: 71.0° turn, 35.89 m in 11.4
 0 ungrounded frames, 18 mm snap, 0.996 m climb, F-enter, 13.46 m at 20.5 km/h with
 0 off-road frames, F-exit onto pavement. Traffic 62 cars, 19/25 moving.
 
+### WAVE B2A — HUNTINGTON RESERVED-MEDIAN ROAD CONTRACT CLOSED (2026-09-09, `8f57c2f`, `0f10c8f`)
+
+**Green Line infrastructure is now unblocked.** The road contract the last mission
+diagnosed as missing exists: a street may reserve a central median, the outer
+corridor is held by `halfRoad`, and lanes are allocated inside it.
+
+Huntington edges **486, 487, 488** carry a **7.0 m** reservation from the portal
+vertex (−1811, 1615) west; the other **530** edges in the city carry none.
+
+| | before | after |
+|---|---|---|
+| halfRoad | 9.80 m | **9.80 m** |
+| parking offset | 8.55 m | **8.55 m** |
+| lane centres | ±1.75, ±5.25 | **±5.25 only** |
+| reservation | — | **\|o\| < 3.5 m** |
+| road triangles | 386,377 | 384,865 |
+| collider tris / bodies | 47,093 / 47 | **47,093 / 47** |
+| live cars inside the reservation | n/a | **0** of 26 |
+| starter SUV | (−1856.164, 3.810, 1649.222) | **identical** |
+| canonical walk | 35.89 m / 11.47 s / 0 ungrounded | **identical** |
+
+**Width evidence.** The "48 ft median" is a maximum ("widens to"), not the local
+width — 14.6 m plus two carriageways plus two footways does not fit a 99 ft right
+of way. The local measurement is the MBTA's own platform geometry: inbound 70244
+sits **3.45 m** off this centreline, outbound 70243 **4.32 m** the other side, a
+**7.77 m** span, and side platforms flank the tracks. Independently, 7.0 m is the
+widest reservation that fits inside the frozen 9.80 m halfRoad with the parking bay
+intact. The two agree, which is the only reason to trust either.
+
+**Project-authored, stated as such:** the carriageway is represented as **1 travel
+lane per direction** rather than the real 2+2, because 2+2 plus a reservation plus
+parking does not fit in the 19.6 m the accepted corridor provides. And the
+subway/surface boundary resolves to edge granularity — the frontage edge begins
+~114 m east of the portal vertex and takes the reservation for its whole length.
+
+**No rail was built** — no track, no platform, no catenary, no vehicle. Gate 4
+stays PARTIAL and gate 5 stays FAIL.
+
 ### Scope note
 
 Wave A closes the **historic-facade-idiom** subproblem only. **It does not close

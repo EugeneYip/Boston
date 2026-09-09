@@ -1768,6 +1768,38 @@ So the verge is reported now, `kind: 'ground'` (no caller's decision changes) an
 hillside. **If you add a band outboard of the walk, extend `surfaceAt` with it.**
 Anything that stands on the world, or asks what is underfoot, reads this.
 
+### A road may reserve a central median (2026-09-09)
+
+A street may carry `median`, an array of widths per authored vertex in the same
+style as `bridge`. Default absent = 0 = every road exactly as before. A span
+carries a reservation only where both its ends do; an edge takes it when the
+majority of its LENGTH lies inside such a span, so the boundary resolves to edge
+granularity, not to the metre.
+
+**The invariant that matters: `halfRoad` stays derived from the DECLARED lane
+count.** The outer corridor is fixed and lanes are allocated INSIDE it. Deriving
+halfRoad from usable lanes instead pulls the kerb inward the moment a lane is
+given up, and takes the footway, the graded verge crossing and the parking lane
+with it.
+
+**`RoadNetwork.laneLayout(e)` is the one lane rule.** Before this there were
+three, and they agreed by luck:
+
+| site | derived offsets as | used by |
+|---|---|---|
+| `Roads.section` | `shift ± (k−0.5)·laneW` | the painted carriageway |
+| `RoadNetwork.laneCenter` | `(k+0.5)·lane` | published `city.roads` |
+| `Navigation.laneInfo` | `shift + (fwd−i−0.5)·laneW` | **what traffic drives** |
+
+They do not even agree on which lane index 0 is, and they coincide numerically
+only because `shift` is zero on a symmetric section. **`Navigation.lanePath`
+builds from `laneInfo`, not from `laneCenter`, despite the comment at the top of
+`Navigation.js` saying otherwise** — so a test against `city.roads.laneCenter`
+proves nothing about where cars go. Ask a car for its own lane key instead.
+
+If you add any cross-section band, add it to `laneLayout` and let all three read
+it. Do not patch a call site with a constant.
+
 ### Testing notes that cost time to learn
 
 - `surfaceAt(x, z)` returns the hillside **beside** a road cutting as the

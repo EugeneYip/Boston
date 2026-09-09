@@ -264,7 +264,18 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
-**Before you plan Green Line work, read `docs/neu/GREEN_LINE_E.json`.** The
+**The Green Line is unblocked (`8f57c2f`, `0f10c8f`).** Huntington edges 486/487/488
+now reserve a 7.0 m central median; halfRoad, the kerb, the footway, the graded
+crossing and the SUV's 8.55 m parking bay are all unmoved, and zero cars drive in
+the reservation. B2B builds track, platforms and catenary into it.
+
+**If you touch lane geometry, read the `laneLayout` note in CONTRACTS.md first.**
+Three places derived lane offsets and they agreed by luck; `Navigation.lanePath`
+builds from `laneInfo`, NOT from `laneCenter`, whatever the comment at the top of
+that file says. Testing `city.roads.laneCenter` proves nothing about where cars go
+— 26 cars drove down the reservation while that API reported clean.
+
+**Superseded, kept for the evidence: read `docs/neu/GREEN_LINE_E.json`.** The
 station is 23.9 m from the spawn and the factual geometry is committed, but the
 game's Huntington carriageway is drawn ON TOP of the real reservation — MassGIS
 splits the street into two carriageways either side of a 48 ft median and the game
