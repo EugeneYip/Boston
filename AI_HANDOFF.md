@@ -264,6 +264,15 @@ position gives 11.7 m sign clearance, a 11.5 m shorter walk, tangent dot 1.000, 
 an identical campus opening. Nothing has migrated; a clean reboot proves spawn and
 SUV are still canonical with exactly one #f07318.
 
+**The opening is technically correct and architecturally NOT yet Northeastern.**
+Keep those apart: gameplay opening PASS; hero massing PARTIAL; public realm
+PARTIAL; eye-level likeness **FAIL**. The front quadrangle is documented as light
+grey brick with vertical window strips (Coolidge, Shepley, Bulfinch & Abbott,
+Richards 1938, replicated in Dodge, Hayden, Hurtig, Mugar, Churchill); the game
+shipped it as red brick with punched windows. Wave A fixes that idiom only —
+coverage, quad form, entrances and the Green Line remain open. Details and the
+re-scored gate table are in `docs/neu/CURRENT_VS_REAL.md`.
+
 **THE GAME OPENS AT NORTHEASTERN (`5c5e349`). Boston Common is RETIRED as the
 normal production start.** A cold boot puts the player at (−1883, 3.115, 1677),
 grounded on the campus side, facing 65.01°, with the single #f07318 starter solved

@@ -68,6 +68,38 @@ Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` i
 | Daylight hue | **CLOSED — no defect, legitimate scene composition** (runtime, 2026-09-01, measured at `dbcb1d1`). The whole-frame reading reproduces (R 109.7 / G 103.5 / B 109.5) but does not indicate magenta. **The pavement classes are not neutral surfaces**: asphalt's baked albedo is −5.31% on M/mean and concrete's is +4.53%, so M on them measures the material. Pinning albedo to those known means with `setAtlas(0,1)` gives rendered M/mean of **−2.96%** (asphalt sunlit, n=223), **−4.12%** (asphalt shadowed, n=11) and **+0.66%** (concrete sunlit, n=35) — every region keeps its input's sign and shrinks its magnitude, so the pipeline compresses chroma toward neutral rather than adding a green deficiency. Concrete goes in green-positive and comes out green-positive. Sky is B>G>R (M +2.44); the upper frame is red brick. `gradeIntensity(0)` moves asphalt −3.65 → −2.75 and concrete +0.79 → +0.63 — opposite directions, i.e. the grade acts on each material's own hue. No source change; the daylight `ColorGrade` keys were NOT touched. See `AI_HANDOFF.md` §9. |
 | Road surface | **Rebalanced by Wave A (`19f32f4`) on spatial scale, not magnitude.** macro 18.68 sd/256 px -> **6.96/128 px**; chip 12.57/256 -> **10.79/16**; grit 7.58/2 -> **9.38/2**. `macro`'s 2.7 m octave was the offender. See `AI_HANDOFF.md` §5 before touching this — `grit` has been wrongly blamed once already. |
 
+## Northeastern architectural fidelity — NOT PASS, and separate from the opening (2026-09-09)
+
+> ### The opening is technically correct and stays live. The place does not yet look like Northeastern.
+>
+> | | |
+> |---|---|
+> | technical / gameplay opening | **PASS** |
+> | hero massing fidelity | **PARTIAL** |
+> | public-realm fidelity | **PARTIAL** |
+> | eye-level architectural likeness | **FAIL** |
+
+The owner rejected the likeness, and the evidence agrees. The 1938–56 front
+quadrangle is documented as **light grey brick punctured by vertical strips of
+windows** — Richards Hall (Coolidge, Shepley, Bulfinch & Abbott, 1937–38), the
+treatment then replicated in Dodge, Hayden, Hurtig, Mugar and Churchill until the
+campus "became a campus of grey brick, courtyards, gathering spaces, and axial
+symmetry". The game rendered that family as **red brick with punched square
+windows**, from a composition whose own comment says "deliberately ONE
+composition". That is the single largest recognition defect and it is what Wave A
+addresses.
+
+Three further gaps stay open after Wave A: **coverage** (103 buildings inventoried,
+12 modelled, 47 absent within 320 m of the opening — including Hurtig at 8° off the
+view axis and Snell Library), **public realm** (Krentzman is a regular octagon; no
+entrances; no seal ledge), and **transit** (no rail of any kind, although the Green
+Line E "Northeastern University" surface station sits 24 m from the spawn with
+confidence-A data already in `docs/neu/TRANSIT.json`).
+
+Gates re-scored in `docs/neu/CURRENT_VS_REAL.md`: 3 PASS→PARTIAL, 4 PASS→PARTIAL,
+5 PASS→**FAIL**. Gates 1, 2, 6, 7, 8, 9 stand — nothing technically correct was
+rolled back.
+
 ## THE GAME OPENS AT NORTHEASTERN (2026-09-08, `5c5e349`)
 
 > ### Boston Common is RETIRED as the normal production start.

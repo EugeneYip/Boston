@@ -274,9 +274,9 @@ The canonical spawn and the `#f07318` starting SUV move **together**, and only w
 |---|---|---|
 | 1 | real geography established in the envelope | **PASS** — Wave 0/1A |
 | 2 | major roads correct, Huntington offset under ~10 m | **PASS** — 0.8 m from the MassGIS centreline |
-| 3 | key campus building massing credible | **PASS** — 18 survey-derived volumes, heights validated sub-metre against two known towers |
-| 4 | key campus public realm credible | **PASS** (3B acceptance, `c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
-| 5 | eye-level visual audit passes | **PASS** (3A) — fenestration on 16 of 18 parts from recorded storey counts, stone ground storeys, cornices, and a quadrangle floor. The district reads as an institutional campus at pedestrian distance. |
+| 3 | key campus building massing credible | **PARTIAL** (re-scored 2026-09-09) — 18 survey-derived volumes with sub-metre height validation, but Ell (1947) and Curry (1964) share ONE flat 5,970 m² / 16 m extrusion, and no modelled volume exceeds 27.8 m while East Village (2014, 17 storeys, ~60 m) stands 138 m from the opening. Massing is credible; it is not yet correct. |
+| 4 | key campus public realm credible | **PARTIAL** (re-scored 2026-09-09) — traversable and correct as ground, but Krentzman is a regular 56 × 56 m octagon rather than the axial court open to Huntington; there is no seal ledge at the quad head, no building entrance anywhere in the district, and no rail transit at all (`TRANSIT.json`: `railStations 0, railAlignments 0, surfaceTrolley false`) although the Green Line E "Northeastern University" surface station sits **24 m from the spawn** at confidence A. Original 3B text: **PASS** (`c9bf5b0`) — Krentzman is a mown quadrangle with stone circulation, furniture and specimen trees, surrounded by ~20,000 m2 of maintained campus ground that abuts the octagon on all eight bearings, with 163 m of PDDL survey path from the Huntington footway into the quad. Rendered and traversed: 0 ungrounded frames, 14 mm max snap, no road intrusion, 4.0 ms. Caveat: the ground has a finite outer boundary, so a lawn-to-terrain transition still exists where it ends. |
+| 5 | eye-level visual audit passes | **FAIL** (re-scored 2026-09-09, owner rejection) — it reads as *an* institutional campus, which is what the 3A wording claimed and all it ever established. It does not read as **Northeastern**. The 1938–56 front-quadrangle family is documented as light grey brick punctured by vertical strips of windows; the game renders it as red brick with punched square windows from one shared composition. See "ARCHITECTURAL FIDELITY" below. |
 | 6 | player pedestrian access passes | **PASS** — 0 ungrounded frames, no walk-through, no ghost colliders, 8/8 bearings clear inside the quad; max vertical snap 12 mm on the new ground plane, 0.45 m at the real Huntington kerb |
 | 7 | vehicle access passes | **PASS / MIGRATED** (`5c5e349`) — from a cold production boot, no teleport: hold forward, 35.89 m of path in 11.47 s, 688 grounded frames and **zero ungrounded**, 18 mm max snap, a continuous 0.996 m climb up the corrected verge, `ground` → `pavement` at t=10.0 s, ending 3.49 m from the car. Then F-enter, 0.000 m drift while seated, 18.86 m at 23.1 km/h with zero off-road frames, four wheels throughout, 1.4° peak pitch, no high-centring, no damage, F-exit back onto the pavement. |
 | 8 | SUV placement passes | **PASS / MIGRATED** (`5c5e349`) — derived by the production solver from `OPENING_SUV_ANCHOR`, not pasted. Lands 2.80 m off the anchor at (−1856.164, 3.808, 1649.222) on edge 486 segment 9; lateral 8.55 m against a parking offset of exactly 8.55, surface `road`, heading 2.0675 against tangent 2.0675 (error 0.00°, dot 1.0000), four wheels, zero damage, 0.000 m drift over 3 s, 8.93 m clear of the nearest No Parking plate. Exactly one #f07318. |
@@ -304,6 +304,61 @@ Wave 3B's acceptance session ran on a free lane and **PASSED**, moving gate 4 to
 PASS and improving 9 within PARTIAL. Two narrow corrections were needed: the road
 keep-out was leaking ground onto the Huntington footway, and the ground contour
 overshot at its elongated extremes.
+
+## ARCHITECTURAL FIDELITY — SEPARATE FROM, AND BEHIND, THE TECHNICAL OPENING (2026-09-09)
+
+The two things are not the same gate and must not be reported as one.
+
+| | verdict |
+|---|---|
+| **Technical / gameplay opening** | **PASS** — live, and not to be rolled back |
+| **Hero massing fidelity** | **PARTIAL** |
+| **Public-realm fidelity** | **PARTIAL** |
+| **Eye-level architectural likeness** | **FAIL** |
+
+The opening works. Spawn, bearing, SUV, pedestrian and vehicle access, and the
+verge crossing are all correct and measured. What fails is *likeness*: a person
+who knows Northeastern would not recognise this place.
+
+### What the sources say the front quadrangle is
+
+The 1934 competition campus was designed by **Coolidge, Shepley, Bulfinch and
+Abbott**. Richards Hall (1937–38) was the first building, and it is documented as
+**light grey brick punctured by vertical strips of windows** — the point at which
+"Beaux-Arts bulk and ornamentation had been replaced by Bauhaus surface effect and
+choice of color". That treatment was then **replicated in Dodge Library, Hayden
+Hall, Hurtig Hall, Mugar Sciences Building and Churchill Hall**, and the campus
+"became a campus of grey brick, courtyards, gathering spaces, and axial symmetry".
+Northeastern's own Architecture Program Report records Richards as Shepley,
+Bulfinch, Richardson and Abbott, 1938, the first building on the front quadrangle,
+in what became the campus **signature white brick**.
+
+### What the game had before Wave A
+
+Red brick and punched square windows, from one shared composition:
+
+- `NeuHero.ERA[0].body = 'brick_red'`, `COL.brick_red = [0.74, 0.46, 0.38]`, applied
+  to **every** pre-1960 hero building — the entire quadrangle.
+- `TYPO.collegiate` — `bayW 2.95, winW 1.34, winH 2.18` — discrete punched openings,
+  and its own comment says "deliberately ONE composition".
+- `Facades.frontStorey` caps window height at `hgt - 0.95`, so a continuous
+  vertical band is not expressible through it at all.
+
+### The rest of the fidelity gap, measured
+
+- **Coverage.** 103 buildings inventoried, 12 modelled. **47 are absent within 320 m
+  of the opening**, including three near the view axis — Hurtig (8° off), Robinson
+  (13°), Cullinane (17°) — and Snell Library (1990, 4,589 m², the largest missing
+  footprint nearby).
+- **Opening frame.** Only **three parts** fall inside the 62° FOV: Dodge, Mugar and
+  one unnamed secondary. The Wave 4A claim that the first frame "carries six hero
+  buildings" is superseded by that measurement.
+- **Skyline.** Everything modelled is 16–21 m except Hastings at 27.8 m.
+
+### Scope note
+
+Wave A closes the **historic-facade-idiom** subproblem only. It does not close
+gate 5. Massing, coverage, public realm and transit remain open and are Waves B–E.
 
 ## CANONICAL NORTHEASTERN OPENING IS LIVE (2026-09-08, `5c5e349`)
 
