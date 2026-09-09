@@ -1,4 +1,4 @@
-import { PROFILE as ROAD_PROFILE } from '../world/RoadNetwork.js';
+import RoadNetwork, { PROFILE as ROAD_PROFILE } from '../world/RoadNetwork.js';
 
 /**
  * Navigation — the shared routing layer under Traffic and Pedestrians.
@@ -328,8 +328,8 @@ export default class Navigation {
 
   /** Forward (a->b) and backward lane counts, matching what Roads.js paints. */
   laneSplit(e) {
-    const fwd = e.oneway ? e.lanes : Math.ceil(e.lanes / 2);
-    return { fwd, bwd: e.lanes - fwd };
+    const L = RoadNetwork.laneLayout(e);
+    return { fwd: L.fwd, bwd: L.bwd };
   }
 
   /**
@@ -341,22 +341,31 @@ export default class Navigation {
    */
   laneInfo(e, laneIndex, out = _laneInfo) {
     const laneW = profileFor(e.type).lane;
-    const { fwd, bwd } = this.laneSplit(e);
-    // Roads.js recentres the painted section on the edge centreline.
-    const shift = ((bwd - fwd) * laneW) / 2;
+    const LAY = RoadNetwork.laneLayout(e);
+    const fwd = LAY.fwd, bwd = LAY.bwd;
+    // `inner` is the half-width of a reserved central median -- the lanes start
+    // OUTSIDE it. This is the third place lane offsets were derived, after
+    // `Roads.section` and `RoadNetwork.laneCenter`, and it is the one traffic
+    // actually drives: `lanePath` builds from here, not from `laneCenter`, in
+    // spite of the comment at the top of this file. With no median `inner` is 0
+    // and every formula below is exactly what it was.
+    const inner = LAY.medianW ? LAY.medianW / 2 : 0;
+    // Roads.js recentres the painted section on the edge centreline. A median
+    // road is symmetric by construction (fwd === bwd), so its shift is zero.
+    const shift = LAY.medianW ? 0 : ((bwd - fwd) * laneW) / 2;
     if (laneIndex < fwd) {
       // `oneway: -1` is authored b->a, but the paint is symmetric either way, so
       // only the travel direction (and therefore which side is the kerb) flips.
       const dir = e.oneway === -1 ? -1 : 1;
       out.off = dir > 0
-        ? shift + (fwd - laneIndex - 0.5) * laneW
+        ? shift + inner + (fwd - laneIndex - 0.5) * laneW
         : shift + (laneIndex + 0.5) * laneW;
       out.dir = dir; out.ok = true;
       return out;
     }
     const j = laneIndex - fwd;
     if (j >= bwd) { out.off = 0; out.dir = 1; out.ok = false; return out; }
-    out.off = shift - (bwd - j - 0.5) * laneW;
+    out.off = shift - inner - (bwd - j - 0.5) * laneW;
     out.dir = -1; out.ok = true;
     return out;
   }

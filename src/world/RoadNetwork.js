@@ -197,14 +197,20 @@ export default class RoadNetwork {
       const a = raw[i], b = raw[i + 1];
       const L = Math.hypot(b.x - a.x, b.z - a.z);
       const n = Math.max(1, Math.ceil(L / RESAMPLE));
+      // Reserved median, per authored vertex, exactly like `bridge` above: a span
+      // only carries one where BOTH its ends do, so a value never bleeds past the
+      // vertex where the author stopped it.
+      const med = st.median
+        ? Math.min(st.median[i] || 0, st.median[i + 1] || 0) : 0;
       for (let s = 0; s < n; s++) {
         const t = s / n;
         const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
-        out.push({ x, z, y: onGrade ? T.groundHeight(x, z) : ry[i] + (ry[i + 1] - ry[i]) * t });
+        out.push({ x, z, y: onGrade ? T.groundHeight(x, z) : ry[i] + (ry[i + 1] - ry[i]) * t, med });
       }
     }
     const last = raw[raw.length - 1];
-    out.push({ x: last.x, z: last.z, y: ry[ry.length - 1] });
+    out.push({ x: last.x, z: last.z, y: ry[ry.length - 1],
+               med: st.median ? (st.median[raw.length - 1] || 0) : 0 });
 
     // Smooth the elevation profile: a road cuts and fills, it does not follow
     // every ripple of the ground.
@@ -227,7 +233,7 @@ export default class RoadNetwork {
       name: st.name, type: st.type, lanes: st.lanes, oneway: st.oneway || 0,
       surface: st.surface || 'asphalt', mall: !!st.mall, bridged: !!(st.y || st.bridge),
       halfRoad, park, walk: st.surface === 'cobble' ? 1.4 : p.walk, kerb: p.kerb,
-      speed: p.speed, pts: out, splits: [],
+      speed: p.speed, pts: out, splits: [], hasMedian: !!st.median,
     };
   }
 
@@ -380,6 +386,7 @@ export default class RoadNetwork {
       const id = this.edges.length;
       const e = {
         id, a, b, name: st.name, type: st.type, lanes: st.lanes,
+        lanesDeclared: st.lanes, median: 0,
         oneway: st.oneway, width: st.halfRoad * 2, halfRoad: st.halfRoad,
         walk: st.walk, kerb: st.kerb, speed: st.speed, surface: st.surface,
         mall: st.mall, bridged: st.bridged, pts, length: 0, cum: [0],
@@ -387,6 +394,39 @@ export default class RoadNetwork {
         parking: st.park > 0.5
           ? { width: st.park, offset: st.halfRoad - st.park * 0.5 } : null,
       };
+      // A median edge takes its width from the span it sits in and then reports
+      // the lanes that actually fit BESIDE the reservation, so `Navigation` and
+      // `Traffic` -- which read `e.lanes` -- never lay a lane through it.
+      // Does the majority of this edge lie inside a reserved-median span?
+      //
+      // Two things make a naive test wrong. The endpoints are replaced above with
+      // fresh `{x, y, z}` when an edge is cut at a node, so they carry no `med` at
+      // all -- a plain `Math.min` over every point read 0 on every edge and
+      // switched the feature off silently. And an edge routinely straddles the
+      // authored vertex where the span begins: the Northeastern frontage is one
+      // 389 m edge that starts ~114 m east of the portal vertex, so `min` refused
+      // it and the campus lost the reservation that is the entire point.
+      //
+      // So: weight by length, over the points that carry a value. The boundary
+      // between subway and surface running is therefore resolved to the road
+      // graph's own edge granularity, not to the metre -- an edge is all
+      // reservation or none. That is an approximation and it is the honest one
+      // available without splitting the street.
+      if (st.hasMedian && !st.oneway) {
+        let medLen = 0, totLen = 0, m = 0;
+        for (let i = 1; i < pts.length; i++) {
+          const L = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+          totLen += L;
+          const a = pts[i - 1].med, b = pts[i].med;
+          const v = typeof a === 'number' && typeof b === 'number' ? Math.min(a, b)
+            : typeof a === 'number' ? a : typeof b === 'number' ? b : 0;
+          if (v > 0) { medLen += L; if (v > m) m = v; }
+        }
+        if (m > 0 && totLen > 0 && medLen / totLen > 0.5) {
+          e.median = m;
+          e.lanes = RoadNetwork.laneLayout(e).count;
+        }
+      }
       for (let i = 1; i < pts.length; i++) {
         e.length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
         e.cum.push(e.length);
@@ -422,14 +462,46 @@ export default class RoadNetwork {
    * Lanes 0..f-1 run a->b on the right of the centreline; the rest run b->a.
    * @param {number} edgeId @param {number} laneIndex @returns {{x,y,z}[]}
    */
+  /**
+   * Where this edge's travelled lanes are, as signed offsets from the corridor
+   * centre. THE one rule -- `Roads.section` draws from it and `laneCenter` below
+   * navigates from it, so the painted carriageway and the lane traffic uses
+   * cannot drift apart. They used to be computed independently and agreed only
+   * because `shift` is zero on a symmetric section; a median is not symmetric
+   * about the lanes, and the first thing that would have gone wrong is cars
+   * driving down the reservation with the markings drawn correctly around them.
+   *
+   * With no median this returns exactly what both sites computed before, so every
+   * road in Boston is bit-identical.
+   */
+  static laneLayout(e) {
+    const P = PROFILE[e.type];
+    const laneW = P.lane;
+    const M = e.median || 0;
+    if (M <= 0 || e.oneway) {
+      const fwd = e.oneway ? e.lanes : Math.ceil(e.lanes / 2);
+      return { medianW: 0, laneW, fwd, bwd: e.lanes - fwd, count: e.lanes,
+        off: (i) => { const back = i >= fwd; const k = back ? i - fwd : i;
+                      return (k + 0.5) * laneW * (back ? -1 : 1); } };
+    }
+    // Reserved median: the OUTER boundary is fixed by `halfRoad` and lanes are
+    // allocated inside it, which is the whole point -- deriving halfRoad from the
+    // lane count instead would pull the kerb, the footway, the graded verge and
+    // the parking lane inward the moment a lane was given up for the reservation.
+    const pk = e.parking ? e.parking.width : 0;
+    const outer = e.halfRoad - pk - P.shoulder;
+    const inner = M / 2;
+    const n = Math.max(1, Math.floor((outer - inner) / laneW + 1e-6));
+    return { medianW: M, laneW, fwd: n, bwd: n, count: n * 2, innerEdge: inner, outerEdge: outer,
+      off: (i) => { const back = i >= n; const k = back ? i - n : i;
+                    return (inner + (k + 0.5) * laneW) * (back ? -1 : 1); } };
+  }
+
   laneCenter(edgeId, laneIndex) {
     const e = this.edges[edgeId]; if (!e) return [];
-    const { lane } = PROFILE[e.type];
-    const fwd = e.oneway ? e.lanes : Math.ceil(e.lanes / 2);
-    const back = laneIndex >= fwd;
-    const k = back ? laneIndex - fwd : laneIndex;
-    const off = (k + 0.5) * lane * (back ? -1 : 1);
-    const out = this.offsetPolyline(e, off);
+    const L = RoadNetwork.laneLayout(e);
+    const back = laneIndex >= L.fwd;
+    const out = this.offsetPolyline(e, L.off(laneIndex));
     if (back) out.reverse();
     return out;
   }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PROFILE } from './RoadNetwork.js';
+import RoadNetwork from './RoadNetwork.js';
 
 /**
  * Road, kerb and pavement geometry.
@@ -137,6 +138,8 @@ const C0 = {
   cobble:    [0.170, 0.166, 0.158],
   verge:     [0.115, 0.126, 0.076],
   parkbay:   [0.082, 0.084, 0.090],
+  // Reserved transit median: a neutral ballast bed, clearly not carriageway.
+  median:      [0.30, 0.29, 0.28],
   graniteTop:[0.255, 0.251, 0.243],
 };
 const C = Object.fromEntries(Object.entries(C0).map(([k, v]) => {
@@ -400,6 +403,7 @@ const KERB_SCALE = 1.5;
  * between two classes and the comparisons below cannot straddle a boundary.
  */
 const W_ROAD = 0, W_WALK = -1, W_KERB_FACE = -2, W_KERB_TOP = -3, W_VERGE = -4;
+const W_MEDIAN = -5;
 
 /**
  * Procedural surface detail shared by every paved surface.
@@ -1280,15 +1284,21 @@ export default class Roads {
     const bwd = e.lanes - fwd;
     const sh = P.shoulder;
     const pk = e.parking ? e.parking.width : 0;
-    let L = lw ? -lw / 2 : -(bwd * laneW) - sh - pk;
-    let R = lw ? lw / 2 : (fwd * laneW) + sh + pk;
+    // A reserved median holds the OUTER boundary at `halfRoad` and allocates lanes
+    // inside it. Deriving L/R from the lane count instead -- which is right for
+    // every other road -- would pull the kerb, the footway, the graded verge and
+    // the parking lane inward the moment a lane was given up to the reservation.
+    const MED = e.median || 0;
+    const inner = MED / 2;
+    let L = lw ? -lw / 2 : MED > 0 ? -e.halfRoad : -(bwd * laneW) - sh - pk;
+    let R = lw ? lw / 2 : MED > 0 ? e.halfRoad : (fwd * laneW) + sh + pk;
     const shift = -(L + R) / 2;
     L += shift; R += shift;
     const half = Math.max(-L, R);
 
     const bands = [];
-    const add = (o0, o1, tile, tint, rough, dash) =>
-      bands.push({ o0, o1, tile, tint, rough, dash, road: true });
+    const add = (o0, o1, tile, tint, rough, dash, cls) =>
+      bands.push({ o0, o1, tile, tint, rough, dash, road: true, ...(cls !== undefined ? { cls } : {}) });
 
     const surfTile = e.surface === 'cobble' ? T_COBBLE : T_ASPHALT;
     const surfTint = e.surface === 'cobble' ? C.cobble : C.asphalt;
@@ -1300,8 +1310,13 @@ export default class Roads {
     // otherwise the tracks land in the parking bay and the gutter.
     const lanes = [];
     if (marks) {
-      for (let k = bwd; k >= 1; k--) lanes.push(shift - (k - 0.5) * laneW);
-      for (let k = 1; k <= fwd; k++) lanes.push(shift + (k - 0.5) * laneW);
+      // `RoadNetwork.laneLayout` is the single source: what is painted here and
+      // what `laneCenter` hands Navigation are now the same numbers by
+      // construction. With no median it returns the same set this loop used to
+      // build, in a different order -- and only `_nearestLane` reads it, which
+      // scans rather than indexes.
+      const LAY = RoadNetwork.laneLayout(e);
+      for (let i = 0; i < LAY.count; i++) lanes.push(shift + LAY.off(i));
     } else {
       const n = Math.max(1, Math.round((R - L) / laneW));
       for (let k = 0; k < n; k++) lanes.push(L + (k + 0.5) * ((R - L) / n));
@@ -1322,12 +1337,22 @@ export default class Roads {
       if (solid) { add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12; }
       // left-hand (b->a) lanes
       for (let k = bwd; k >= 1; k--) {
-        const next = shift - (k - 1) * laneW;
+        const next = shift - (inner + (k - 1) * laneW);
         add(o, k === 1 ? next - 0.09 : next - 0.06, T_ASPHALT, surfTint, 0.97);
         if (k > 1) { add(next - 0.06, next + 0.06, T_ASPHALT, C.white, 0.62, 1); o = next + 0.06; }
-        else o = next - 0.09;
+        else o = MED > 0 ? next : next - 0.09;
       }
-      if (bwd > 0 && fwd > 0) {
+      if (MED > 0 && bwd > 0 && fwd > 0) {
+        // The reservation. It belongs to neither carriageway, so it gets no lane
+        // markings and no centre line -- a solid edge line each side and a bed
+        // between them. Flush with the carriageway on purpose: a raised kerb here
+        // would be a naked trimesh edge across the middle of an arterial, which is
+        // the exact defect `_vergeToe` was written to remove.
+        add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12;
+        add(o, shift + inner - 0.12, T_ASPHALT, C.median, 0.99, 0, W_MEDIAN);
+        o = shift + inner - 0.12;
+        add(o, o + 0.12, T_ASPHALT, C.whiteWorn, 0.7); o += 0.12;
+      } else if (bwd > 0 && fwd > 0) {
         // double yellow centre line, with the real 10 cm gap between them
         add(o, o + 0.10, T_ASPHALT, C.yellow, 0.66); o += 0.10;
         add(o, o + 0.08, T_ASPHALT, surfTint, 0.97); o += 0.08;
@@ -1337,7 +1362,7 @@ export default class Roads {
       }
       // right-hand (a->b) lanes
       for (let k = 1; k <= fwd; k++) {
-        const next = shift + k * laneW;
+        const next = shift + (inner + k * laneW);
         const isLast = k === fwd;
         add(o, isLast ? next : next - 0.06, T_ASPHALT, surfTint, 0.97);
         if (!isLast) { add(next - 0.06, next + 0.06, T_ASPHALT, C.white, 0.62, 1); o = next + 0.06; }
@@ -1404,7 +1429,7 @@ export default class Roads {
                      cls: W_VERGE, toe: side < 0 ? 0 : 1 });
       }
     }
-    return { bands, L, R, half, shift, lanes,
+    return { bands, L, R, half, shift, lanes, medianW: MED,
              corridor: half + (walk > 0.3 ? walk + 0.16 : 0) };
   }
 
@@ -1905,8 +1930,9 @@ export default class Roads {
         const f0 = this._at(e, d), f1 = this._at(e, d + 0.6);
         const bat = this._batch(f0.x, f0.z);
         // only the approach half of the carriageway
-        const o0 = end === 0 ? sec.shift + 0.14 : sec.L + 0.6;
-        const o1 = end === 0 ? sec.R - 0.5 : sec.shift - 0.14;
+        const mIn = Math.max(0.14, (sec.medianW || 0) / 2);
+        const o0 = end === 0 ? sec.shift + mIn : sec.L + 0.6;
+        const o1 = end === 0 ? sec.R - 0.5 : sec.shift - mIn;
         if (o1 - o0 < 1) continue;
         const wear = 0.6 + rnd(e.id * 3 + end) * 0.5;
         const vs = [[f0, o0], [f0, o1], [f1, o1], [f1, o0]].map(([f, o]) => {
