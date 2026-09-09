@@ -234,6 +234,7 @@ export default class RoadNetwork {
       surface: st.surface || 'asphalt', mall: !!st.mall, bridged: !!(st.y || st.bridge),
       halfRoad, park, walk: st.surface === 'cobble' ? 1.4 : p.walk, kerb: p.kerb,
       speed: p.speed, pts: out, splits: [], hasMedian: !!st.median,
+      sections: st.sections || null,
     };
   }
 
@@ -431,6 +432,7 @@ export default class RoadNetwork {
         e.length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
         e.cum.push(e.length);
       }
+      if (st.sections) RoadNetwork._attachSections(e, st.sections);
       this.edges.push(e);
       this.nodes[a].edges.push(id);
       this.nodes[b].edges.push(id);
@@ -473,11 +475,154 @@ export default class RoadNetwork {
    *
    * With no median this returns exactly what both sites computed before, so every
    * road in Boston is bit-identical.
+   *
+   * `s` is optional: metres along the edge. Pass it and an edge carrying a local
+   * section reports the cross-section AT THAT POINT; omit it -- as every caller
+   * did before local sections existed -- and the answer is the edge's own values,
+   * so no road without a section can change.
    */
-  static laneLayout(e) {
+  /**
+   * Resolve a street's declared local sections onto ONE edge, as distance ranges
+   * along that edge. Called once per edge at build time.
+   *
+   * A local section is authored in world space -- two points on the street -- and
+   * not as an index into anything, because the road graph cuts streets into edges
+   * at junctions and an author cannot know where the cuts land. Projection is
+   * onto this edge's own polyline, and a section that misses the edge, or that
+   * only clips its very end, is dropped rather than stretched.
+   *
+   * `taper` is the length over which the override eases in and out. It is part of
+   * the section, not a global: a lane shift needs a taper proportional to the
+   * shift and the design speed, and only the author knows both.
+   */
+  static _attachSections(e, decl) {
+    const proj = (p) => {
+      // nearest point on the polyline, as a distance along it
+      let best = Infinity, bd = 0;
+      for (let i = 1; i < e.pts.length; i++) {
+        const a = e.pts[i - 1], b = e.pts[i];
+        const vx = b.x - a.x, vz = b.z - a.z;
+        const L2 = vx * vx + vz * vz || 1;
+        const t = Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.z - a.z) * vz) / L2));
+        const qx = a.x + vx * t, qz = a.z + vz * t;
+        const d = (p.x - qx) ** 2 + (p.z - qz) ** 2;
+        if (d < best) { best = d; bd = e.cum[i - 1] + Math.sqrt(L2) * t; }
+      }
+      return { s: bd, off: Math.sqrt(best) };
+    };
+    const out = [];
+    for (const q of decl) {
+      const A = proj(q.a), B = proj(q.b);
+      // Both ends must land ON this street, not merely near it somewhere else.
+      if (A.off > 40 || B.off > 40) continue;
+      let s0 = Math.min(A.s, B.s), s1 = Math.max(A.s, B.s);
+      s0 = Math.max(0, s0); s1 = Math.min(e.length, s1);
+      if (s1 - s0 < 4) continue;
+      out.push({ s0, s1, taper: q.taper ?? 0,
+                 median: q.median, parking: q.parking, tag: q.tag || '' });
+    }
+    if (!out.length) return;
+    // A local section may not change how many lanes the edge has. `e.lanes` is
+    // read once, by Traffic and Navigation, to assign a car to a lane index; an
+    // index that exists at one end of the edge and not the other is a car with
+    // nowhere to drive. Refuse the section instead of producing that.
+    const want = RoadNetwork.laneLayout(e).count;
+    for (const q of out) {
+      for (const s of [q.s0, (q.s0 + q.s1) / 2, q.s1]) {
+        const got = RoadNetwork.laneLayout(e, s, out).count;
+        if (got !== want) {
+          console.warn(`[roads] local section "${q.tag}" on edge ${e.id} would change `
+            + `lane count ${want} -> ${got}; refused`);
+          return;
+        }
+      }
+    }
+    e.sections = out;
+
+    // Densify the polyline across every override and its tapers. The street is
+    // resampled at 20 m, which gives a 50 m taper three points -- enough for the
+    // ribbon, nowhere near enough for the lane path traffic drives, which is a
+    // plain per-point offset of these same points. Densifying HERE means the
+    // ribbon frames, the lane path and the rails all get the smooth taper from
+    // one change, instead of three sites each solving it differently.
+    const extra = [];
+    for (const q of out) {
+      const t = q.taper || 0;
+      for (let d = Math.max(0, q.s0 - t); d <= Math.min(e.length, q.s1 + t); d += 4) extra.push(d);
+    }
+    if (!extra.length) return;
+    const pts = [];
+    let wi = 0;
+    extra.sort((a, b) => a - b);
+    for (let i = 0; i < e.pts.length; i++) {
+      const here = e.cum[i];
+      while (wi < extra.length && extra[wi] < here - 0.5) {
+        const d = extra[wi++];
+        pts.push(RoadNetwork._along(e, d));
+      }
+      while (wi < extra.length && Math.abs(extra[wi] - here) <= 0.5) wi++;
+      pts.push(e.pts[i]);
+    }
+    e.pts = pts;
+    e.cum = [0]; e.length = 0;
+    for (let i = 1; i < pts.length; i++) {
+      e.length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+      e.cum.push(e.length);
+    }
+  }
+
+  /** A point `d` metres along an edge's polyline. */
+  static _along(e, d) {
+    let i = 1;
+    while (i < e.cum.length - 1 && e.cum[i] < d) i++;
+    const a = e.pts[i - 1], b = e.pts[i];
+    const seg = e.cum[i] - e.cum[i - 1] || 1;
+    const f = Math.min(1, Math.max(0, (d - e.cum[i - 1]) / seg));
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, z: a.z + (b.z - a.z) * f };
+  }
+
+  /**
+   * The effective median width and parking flag at `s` metres along `e`.
+   * Returns null when the edge carries no local section, so every caller that
+   * asks about an ordinary road gets the edge's own values untouched.
+   */
+  static sectionAt(e, s, list) {
+    const S = list || e.sections;
+    if (!S) return null;
+    const base = e.median || 0;
+    let median = base, parking = true;
+    for (const q of S) {
+      const t = q.taper || 0;
+      let w = 0;
+      if (s >= q.s0 && s <= q.s1) w = 1;
+      else if (t > 0 && s > q.s0 - t && s < q.s0) w = (s - (q.s0 - t)) / t;
+      else if (t > 0 && s > q.s1 && s < q.s1 + t) w = ((q.s1 + t) - s) / t;
+      if (w <= 0) continue;
+      // Smoothstep, not linear: a linear taper leaves a slope discontinuity at
+      // both ends of the shift, which reads as a kink in the lane and in the
+      // painted line. This has zero gradient at both ends by construction.
+      w = w * w * (3 - 2 * w);
+      // Union, not assignment: two sections whose tapers overlap must not fight
+      // over the width and leave a dip between them.
+      if (typeof q.median === 'number') {
+        median = Math.max(median, base + (q.median - base) * w);
+      }
+      // Parking goes the moment the override starts moving, not when it
+      // arrives: the lane shifts outward THROUGH the taper, into the bay.
+      if (q.parking === false) parking = false;
+    }
+    return { median, parking };
+  }
+
+  static laneLayout(e, s, list) {
     const P = PROFILE[e.type];
     const laneW = P.lane;
-    const M = e.median || 0;
+    let M = e.median || 0;
+    let localPark = null;
+    if (typeof s === 'number') {
+      const loc = RoadNetwork.sectionAt(e, s, list);
+      if (loc) { M = loc.median; localPark = loc.parking; }
+    }
     if (M <= 0 || e.oneway) {
       const fwd = e.oneway ? e.lanes : Math.ceil(e.lanes / 2);
       return { medianW: 0, laneW, fwd, bwd: e.lanes - fwd, count: e.lanes,
@@ -488,7 +633,7 @@ export default class RoadNetwork {
     // allocated inside it, which is the whole point -- deriving halfRoad from the
     // lane count instead would pull the kerb, the footway, the graded verge and
     // the parking lane inward the moment a lane was given up for the reservation.
-    const pk = e.parking ? e.parking.width : 0;
+    const pk = localPark === false ? 0 : (e.parking ? e.parking.width : 0);
     const outer = e.halfRoad - pk - P.shoulder;
     const inner = M / 2;
     const n = Math.max(1, Math.floor((outer - inner) / laneW + 1e-6));

@@ -1952,6 +1952,11 @@ function runPlacement(sys, L, counting, take) {
         let t = rng.range(2, 8);
         while (t < s.len - 6) {
           if (!rng.chance(fill)) { t += rng.range(4.0, 9.0); continue; }   // driveway, hydrant, loading
+          // A station section suspends the bay locally. Painting the bay away and
+          // leaving the cars would be worse than not suspending it at all: they
+          // are solid to characters, so they would be a wall along the platform.
+          if (L.city?.roads?.parkingAllowed
+              && !L.city.roads.parkingAllowed(s.edgeId, t)) { t += 5.5; continue; }
           const [name, carLen] = PARKED_CARS[rng.int(PARKED_CARS.length)];
           if (take('parked')) {
             // Follow the ROAD, not the chord. `s.ax/s.dx` is the straight line

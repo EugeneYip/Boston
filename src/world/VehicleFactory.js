@@ -356,6 +356,11 @@ export default class VehicleFactory {
       // The player's own side of the street: he spawned on that pavement, and a
       // car parked across four lanes of traffic is not "in front of" him.
       const side = Math.sign((near.x - a.x) * nx + (near.z - a.z) * nz) || 1;
+      // A local station section can suspend the bay along part of the edge. The
+      // surface there is still `road` -- the carriageway keeps its full width --
+      // so nothing else in this solver would notice, and the starter would park
+      // in a platform.
+      if (net.parkingAllowed && !net.parkingAllowed(ed.id, t * ed.length)) return null;
       const off = ed.parking.offset * side;
       const x = a.x + nx * off, z = a.z + nz * off;
       const surf = city.surfaceAt(x, z, a.y);

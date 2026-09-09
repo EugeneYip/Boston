@@ -173,6 +173,25 @@ export default class City {
        * `edge.parking = { width, offset }` for direct placement.
        */
       parkingLane: (edgeId, side) => net.parkingLane(edgeId, side),
+      /**
+       * Is kerbside parking allowed `s` metres along this edge?
+       *
+       * True everywhere on a street with a bay, EXCEPT inside a local station
+       * section that suspends it. Everything that puts a car at the kerb has to
+       * ask -- the parked-car props and the starter-SUV solver both do -- or the
+       * suspension is paint over cars still standing in the platform.
+       */
+      parkingAllowed: (edgeId, s) => {
+        const e = net.edges[edgeId];
+        if (!e?.parking) return false;
+        const loc = RoadNetwork.sectionAt(e, s);
+        return loc ? loc.parking : true;
+      },
+      /** Local cross-section `s` metres along an edge, or null if it has none. */
+      sectionAt: (edgeId, s) => {
+        const e = net.edges[edgeId];
+        return e ? RoadNetwork.sectionAt(e, s) : null;
+      },
     };
     this.sidewalks = net.sidewalks;
     this.plots = net.plots;

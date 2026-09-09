@@ -1289,16 +1289,11 @@ export default class Roads {
     // every other road -- would pull the kerb, the footway, the graded verge and
     // the parking lane inward the moment a lane was given up to the reservation.
     const MED = e.median || 0;
-    const inner = MED / 2;
     let L = lw ? -lw / 2 : MED > 0 ? -e.halfRoad : -(bwd * laneW) - sh - pk;
     let R = lw ? lw / 2 : MED > 0 ? e.halfRoad : (fwd * laneW) + sh + pk;
     const shift = -(L + R) / 2;
     L += shift; R += shift;
     const half = Math.max(-L, R);
-
-    const bands = [];
-    const add = (o0, o1, tile, tint, rough, dash, cls) =>
-      bands.push({ o0, o1, tile, tint, rough, dash, road: true, ...(cls !== undefined ? { cls } : {}) });
 
     const surfTile = e.surface === 'cobble' ? T_COBBLE : T_ASPHALT;
     const surfTint = e.surface === 'cobble' ? C.cobble : C.asphalt;
@@ -1322,6 +1317,19 @@ export default class Roads {
       for (let k = 0; k < n; k++) lanes.push(L + (k + 0.5) * ((R - L) / n));
     }
 
+    // The carriageway, as a function of the only two quantities a local station
+    // section is allowed to change. An ordinary road calls this once with the
+    // edge's own values, so every road in Boston keeps the numbers it had.
+    //
+    // `pk > 0.5` deliberately stays a test on the edge's OWN bay rather than on
+    // `pkW`: the band LIST must not change shape along the edge, or the index
+    // mapping used below to make a band a function of distance would point at a
+    // different band at each end. A suspended bay therefore keeps its two bands
+    // and collapses them to zero width, which is also what the paint does.
+    const carriageway = (inner, pkW) => {
+      const bands = [];
+      const add = (o0, o1, tile, tint, rough, dash, cls) =>
+        bands.push({ o0, o1, tile, tint, rough, dash, road: true, ...(cls !== undefined ? { cls } : {}) });
     if (!marks) {
       add(L, R, surfTile, surfTint, e.surface === 'cobble' ? 0.86 : 0.97);
     } else {
@@ -1330,7 +1338,7 @@ export default class Roads {
       // Kerbside parking bay: slightly darker and dirtier than the running
       // surface because nothing polishes it, and edged with a worn white line.
       if (pk > 0.5) {
-        add(o, o + pk - 0.10, T_ASPHALT, C.parkbay, 0.99); o += pk - 0.10;
+        add(o, o + pkW - 0.10, T_ASPHALT, C.parkbay, 0.99); o += pkW - 0.10;
         add(o, o + 0.10, T_ASPHALT, C.whiteWorn, 0.72); o += 0.10;
       }
       if (sh > 0.05) { add(o, o + sh, T_ASPHALT, C.gutter, 0.99); o += sh; }
@@ -1377,6 +1385,37 @@ export default class Roads {
         add(o, R, T_ASPHALT, C.parkbay, 0.99); o = R;
       }
       if (o < R - 0.02) add(o, R, T_ASPHALT, C.gutter, 0.99);
+    }
+      return bands;
+    };
+
+    const bands = carriageway(MED / 2, pk);
+    // A local station section makes the INTERNAL boundaries functions of distance
+    // along the edge. `L`, `R`, `half` and `shift` are untouched by construction --
+    // with a median they come from `halfRoad` alone -- so the kerb line, the
+    // footway and the graded verge cannot move, which is the invariant the whole
+    // widening rests on.
+    if (e.sections) {
+      const cache = new Map();
+      const at = (d) => {
+        const k = Math.round(d * 4);                    // 0.25 m buckets
+        let v = cache.get(k);
+        if (!v) {
+          const loc = RoadNetwork.sectionAt(e, k / 4);
+          v = carriageway(loc.median / 2, loc.parking ? pk : 0);
+          cache.set(k, v);
+        }
+        return v;
+      };
+      for (let i = 0; i < bands.length; i++) {
+        const b = bands[i], k = i;
+        // Wear coordinates and the lane pick keep reading the BASE offsets: they
+        // are shading, they are picked once per band rather than per vertex, and
+        // a function there would be a NaN.
+        b.bo0 = b.o0; b.bo1 = b.o1;
+        b.o0 = (f) => at(f.d)[k].o0;
+        b.o1 = (f) => at(f.d)[k].o1;
+      }
     }
 
     // Kerbs and pavement. Boston mixes poured concrete with red brick; brick
@@ -1569,13 +1608,17 @@ export default class Roads {
     // vertex lets a 12 cm lane-divider band pick lane A at one edge and lane B
     // at the other, so the interpolated offset sweeps ±1.7 m across 12 cm and
     // paints a bogus wheel track inside the painted line.
+    // Base offsets: numeric even on a sectioned edge, where `o0`/`o1` are
+    // functions of distance. Wear is shading and is picked once per band.
+    const b0 = band.bo0 !== undefined ? band.bo0 : band.o0;
+    const b1 = band.bo1 !== undefined ? band.bo1 : band.o1;
     const cMid = cls === W_ROAD && lanes.length
-      ? Roads._nearestLane(lanes, (band.o0 + band.o1) / 2) : 0;
+      ? Roads._nearestLane(lanes, (b0 + b1) / 2) : 0;
     const wearAt = (o) => cls !== W_ROAD ? [0, cls]
       : [band.laneOff !== undefined ? band.laneOff
                                     : Math.max(-2.2, Math.min(2.2, o - cMid)),
          Math.max(0, Math.min(o - sec.L, sec.R - o))];
-    const wa = wearAt(band.o0), wb = wearAt(band.o1);
+    const wa = wearAt(b0), wb = wearAt(b1);
     const vy = (o, fr) => {
       const base = band.vertical || band.y0 !== undefined ? 0 : 0;
       const cam = band.road === true || band.y0 === undefined
@@ -1586,7 +1629,8 @@ export default class Roads {
     let prevA = -1, prevB = -1;
     for (let i = 0; i < frames.length; i++) {
       const f = frames[i];
-      const o0 = band.o0, o1 = band.o1;
+      const o0 = typeof band.o0 === 'function' ? band.o0(f) : band.o0;
+      const o1 = typeof band.o1 === 'function' ? band.o1(f) : band.o1;
       let y0 = (band.y0 !== undefined ? band.y0 : vy(o0, f));
       let y1 = (band.y1 !== undefined ? band.y1 : vy(o1, f));
       if (band.toe !== undefined) {
@@ -1864,7 +1908,11 @@ export default class Roads {
       if (cwB && d1 - d0 > CROSSWALK + 6) { this._crosswalk(e, sec, d1 - CROSSWALK, d1); d1 -= CROSSWALK; }
       e._span = [d0, d1];
 
-      const coarse = this._frames(e, d0, d1, STEP);
+      // A local station section moves internal boundaries along the edge, and a
+      // 12 m station spacing turns a smoothstep taper into four flat facets. Only
+      // sectioned edges pay for the finer sampling.
+      const solidStep = e.sections ? STEP / 4 : STEP;
+      const coarse = this._frames(e, d0, d1, solidStep);
       const fine = this._frames(e, d0, d1, DASH_ON);
       const phase = rnd(e.id) * (DASH_ON + DASH_OFF);
       for (const band of sec.bands) {

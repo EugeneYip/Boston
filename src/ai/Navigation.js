@@ -224,12 +224,16 @@ export class Path {
 export function offsetPolyline(pts, off, out) {
   out.length = 0;
   const n = pts.length;
+  // `off` may be a function of the point index, so a lane can shift sideways
+  // along an edge -- which is what a local station section makes it do.
+  const fn = typeof off === 'function';
   for (let i = 0; i < n; i++) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
     let dx = b.x - a.x, dz = b.z - a.z;
     const L = Math.hypot(dx, dz) || 1;
     dx /= L; dz /= L;
-    out.push({ x: pts[i].x - dz * off, y: pts[i].y, z: pts[i].z + dx * off });
+    const o = fn ? off(i) : off;
+    out.push({ x: pts[i].x - dz * o, y: pts[i].y, z: pts[i].z + dx * o });
   }
   return out;
 }
@@ -286,6 +290,7 @@ class Signal {
 const _tmpPts = [];
 const _laneInfo = { off: 0, dir: 1, ok: true };
 const _laneInfoB = { off: 0, dir: 1, ok: true };
+const _laneInfoC = { off: 0, dir: 1, ok: true };
 
 export default class Navigation {
   /**
@@ -339,9 +344,13 @@ export default class Navigation {
    * Lane indices are ordered kerb-outwards in travel direction: 0 is the
    * right-hand (slow) lane. Forward lanes come first, then backward lanes.
    */
-  laneInfo(e, laneIndex, out = _laneInfo) {
+  laneInfo(e, laneIndex, out = _laneInfo, s) {
     const laneW = profileFor(e.type).lane;
-    const LAY = RoadNetwork.laneLayout(e);
+    // `s` is optional: metres along the edge. It only changes anything on an edge
+    // carrying a local station section, where the reservation widens and the lane
+    // moves outward with it. Omitted -- as every caller but `lanePath` does -- the
+    // answer is the edge's own cross-section, unchanged.
+    const LAY = RoadNetwork.laneLayout(e, s);
     const fwd = LAY.fwd, bwd = LAY.bwd;
     // `inner` is the half-width of a reserved central median -- the lanes start
     // OUTSIDE it. This is the third place lane offsets were derived, after
@@ -407,7 +416,14 @@ export default class Navigation {
     const off = info.off, dir = info.dir;
     const src = e.pts || this._samplePts(edgeId);
     if (!src || src.length < 2) return null;
-    const pts = offsetPolyline(src, off, _tmpPts).map(p => ({ x: p.x, y: p.y, z: p.z }));
+    // On a sectioned edge the lane centre is a function of distance, so the
+    // offset is resolved per point. `_laneInfoC` is a third scratch record --
+    // `_laneInfo` is still held by `info` above, and `laneInfo` returns a REUSED
+    // object, so writing through it here would overwrite `off` mid-loop.
+    const offAt = e.sections && e.cum
+      ? (i) => this.laneInfo(e, laneIndex, _laneInfoC, e.cum[i]).off
+      : off;
+    const pts = offsetPolyline(src, offAt, _tmpPts).map(p => ({ x: p.x, y: p.y, z: p.z }));
     if (dir < 0) pts.reverse();
     path = new Path(pts);
     path.laneKey = k;
