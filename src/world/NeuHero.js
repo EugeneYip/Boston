@@ -932,7 +932,20 @@ export default class NeuHero {
           }
           tri.push(m);
         }
-        idx.push(tri[0], tri[1], tri[2]);
+        // `ShapeUtils` works in 2-D with +y up the page, and mapping that y to
+        // world z flips the handedness: a CCW 2-D triangle becomes a
+        // DOWNWARD-facing one in XZ and is back-face culled. `Districts` and
+        // `Water` both reverse for exactly this reason and say so; this emitted
+        // `tri[0], tri[1], tri[2]` and pushed a +Y normal attribute above, which
+        // fixes the lighting and does nothing about the winding.
+        //
+        // Measured before the fix: 25 of 25 sampled `neu_ground_lawn` faces had
+        // a geometric normal with NEGATIVE y, against 24 of 25 positive on
+        // `park_lawn`. With an emissive magenta debug tint the surface was
+        // invisible at FrontSide and covered the frame at DoubleSide -- a 2.55
+        // log-unit jump in the same ROI. The whole campus ground surface had
+        // never once been drawn.
+        idx.push(tri[0], tri[2], tri[1]);
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
