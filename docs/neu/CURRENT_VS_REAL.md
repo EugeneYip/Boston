@@ -355,10 +355,51 @@ Red brick and punched square windows, from one shared composition:
   buildings" is superseded by that measurement.
 - **Skyline.** Everything modelled is 16–21 m except Hastings at 27.8 m.
 
+### WAVE A — DONE (2026-09-09, `110c6fc`)
+
+The front-quadrangle family is now light grey glazed brick with vertical window
+strips. `Facades.pierStorey` builds it the way the building is built — brick piers
+at the wall plane, a 0.24 m recessed channel between them carrying the glazing and
+its spandrels, nothing crossing the channel, so stacked storeys leave an unbroken
+vertical line from plinth to cornice. `frontStorey` could never express it: it
+caps the opening at `hgt - 0.95` and always leaves a metre of solid between head
+and sill.
+
+Applied by NAME — `NEU_HISTORIC` = Richards, Dodge, Hayden, Mugar (all on the
+source's replicated list) plus **Ell at lower confidence** (a 1945–47 quadrangle
+building of the same programme, not named in that list). A date rule would have
+swept in Hastings and Ryder (1913) and Cabot (1954); those keep red brick, which is
+what stops the quad becoming one grey material and is visible as the red Hastings
+link beside grey Dodge.
+
+| | before | after |
+|---|---|---|
+| hero triangles | 102,306 | **92,742** (−9.3%) |
+| hero draw calls | 4 | **4** |
+| glass triangles | 10,922 | 10,454 |
+| colliders | 1,776 tris | 1,776 tris |
+| new materials / textures / SURF layers | — | **none** (`brick_painted` + `limestone` already existed) |
+
+Not clones: bay width comes from each building's own recorded course — Ell 4.00 m
+over 4 storeys, Mugar 3.78 over 5, Richards 3.73, Hayden 3.71, Dodge 3.69 — giving
+bays of 3.22–3.52 m, a 9.3% spread, with Ell reading four tall storeys against the
+others' five.
+
+Exposure measured, not eyeballed: near-clipping pixel fraction on a close Richards
+facade is 0.011 at 14:30 and **0.006 at noon** — lower at noon, so the light
+masonry does not blow out. Night keeps window light (peak −0.14); rain reads as wet
+glazed brick.
+
+**Curry is not addressed and could not be here.** It shares Ell's source part, the
+boundary is not in the data, and the earliest-year rule resolves the part to Ell.
+Curry's 1964 identity is absent and waits on the primary-volume wave.
+
 ### Scope note
 
-Wave A closes the **historic-facade-idiom** subproblem only. It does not close
-gate 5. Massing, coverage, public realm and transit remain open and are Waves B–E.
+Wave A closes the **historic-facade-idiom** subproblem only. **It does not close
+gate 5**, which stays FAIL: coverage (47 buildings absent within 320 m), quad form,
+entrances and transit are all untouched. Massing, coverage, public realm and
+transit remain open and are Waves B–E.
 
 ## CANONICAL NORTHEASTERN OPENING IS LIVE (2026-09-08, `5c5e349`)
 
