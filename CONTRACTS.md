@@ -1800,6 +1800,43 @@ proves nothing about where cars go. Ask a car for its own lane key instead.
 If you add any cross-section band, add it to `laneLayout` and let all three read
 it. Do not patch a call site with a constant.
 
+### The railway in the median is decoration, and that is the contract (2026-09-09)
+
+`src/world/Transit.js` lays the Green Line E on the reserved median: two tracks
+of four rail heads, a centre mast every 30 m, one contact wire per track, over
+973 m of edges 486/487/488. It costs **1 draw call, 5,580 triangles and zero new
+materials or textures** because it shares the building atlas material — a railway
+with its own material would cost a draw call per chunk along the whole street.
+
+**Zero colliders, deliberately.** Rails standing 0.14 m proud in the middle of an
+arterial would be a trap. Measured, not assumed: a car driven onto the
+reservation crosses all four heads with four wheels down, ride height flat to the
+centimetre and no damage; a character walks across with no snag and 16 mm of
+snap. If you ever give the rails collision, that is a gameplay decision about
+trapping the player, not a fidelity improvement.
+
+**Keep the five station quantities apart.** "Two tracks at ~1.5 m gauge" is the
+sentence that makes this look easy and it collapses five different measurements:
+rail gauge *within* a track (1.435 m, factual), track centre-to-centre (3.40 m,
+authored), platform setback from the nearest rail (1.425 m from *track centre* —
+say which), platform width (2.00 m needed) and reservation width (7.00 m built).
+`docs/neu/GREEN_LINE_E.json` carries each with its own confidence.
+
+**There is no platform, and the arithmetic is why.** Two tracks fit the 7.00 m
+reservation with 1.08 m to spare. Two tracks *plus two side platforms* need
+10.25 m, which leaves **0.375 m** for a platform — narrower than a person. A real
+stop widens the reservation locally and suspends kerbside parking there; the
+median in `boston-geo.js` is declared per EDGE, and edge 486 is 389.5 m long and
+carries the bay the starter SUV resolves against. **Sub-edge reservation width is
+the missing capability.** Do not close the gap by shrinking the platform.
+
+**MBTA stop points are boarding anchors, not geometry.** The two directional
+points at Northeastern sit on opposite sides of the corridor 7.77 m apart, while
+two track centres are 3.40 m apart; read as track centres, one track lands in the
+eastbound traffic lane. The published route shape is a single 8-vertex polyline
+shared by both directions and sits a systematic 5.9 m off this project's
+Huntington, so it cannot supply two track centres either.
+
 ### Testing notes that cost time to learn
 
 - `surfaceAt(x, z)` returns the hillside **beside** a road cutting as the
