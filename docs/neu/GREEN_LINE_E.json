@@ -1,6 +1,6 @@
 {
-  "_authored": "tools-free, authored by the Wave B mission 2026-09-09 from the MBTA V3 API. Not generated; edit deliberately.",
-  "what": "Green Line E infrastructure adjacent to Northeastern, as FACTS. No runtime geometry is built from this yet - see blocker.",
+  "_authored": "tools-free, authored by the Wave B mission 2026-09-09 from the MBTA V3 API and extended by Wave B2B the same day with the measured feasibility arithmetic. Not generated; edit deliberately.",
+  "what": "Green Line E infrastructure adjacent to Northeastern, as FACTS plus the arithmetic that decides what can be built from them. Track and catenary ARE now runtime geometry (src/world/Transit.js). Platforms are NOT - see blockerRemaining.",
   "attribution": [
     "MBTA V3 API - https://api-v3.mbta.com (MBTA open data)"
   ],
@@ -64,7 +64,16 @@
     "type": "two side platforms, staggered",
     "separationM": 90.6,
     "bearingOutboundToInboundDeg": 113.5,
-    "note": "GTFS gives one stop point per direction, not platform extents. Extents must be surveyed or inferred at modelling time."
+    "note": "GTFS gives one stop point per direction. They are BOARDING ANCHORS - no extents, no width, no platform_code; the 'platformName' values are direction labels ('Heath Street', 'Park Street & North'), not platform identifiers.",
+    "measuredAgainstGameCorridor": {
+      "method": "projected onto edges 486/487/488 sampled at 300 stations each; perp = signed offset from the corridor centreline",
+      "stationNodePerpM": -1.4,
+      "outbound70243PerpM": 4.32,
+      "inbound70244PerpM": -3.45,
+      "apartAcrossCorridorM": 7.77,
+      "whyThisSettlesIt": "The two directional points sit on OPPOSITE sides of the corridor 7.77 m apart, while two track centres are 3.40 m apart. Read as track centres they would put one track at +4.32 m - outside the 3.50 m reservation, in the eastbound traffic lane. Read as platform centroids they would put a platform in the same place. They are boarding anchors and nothing else.",
+      "caveat": "These perpendicular values also inherit the 5.9 m road-position error in routeShape, so they are not evidence about where the REAL platforms are either. Both readings say the same thing: do not use these points as geometry."
+    }
   },
   "crossSection": {
     "realWorld": {
@@ -79,7 +88,7 @@
       "aadt": 22184
     },
     "asBuiltInGame": {
-      "edge": "Huntington Avenue, arterial, lanes 4",
+      "edge": "Huntington Avenue, arterial; lanesDeclared 4 in src/data/boston-geo.js, resolved to lanes 2 (one per direction) by RoadNetwork.laneLayout once the median is declared",
       "laneWidthM": 3.5,
       "shoulderM": 0.3,
       "parkingM": 2.5,
@@ -90,28 +99,124 @@
       "corridorM": 27.12,
       "laneCentresM": [
         -5.25,
-        -1.75,
-        1.75,
         5.25
       ],
-      "medianM": 0,
-      "note": "the game centreline is the CORRIDOR CENTRE - the average of the two directional carriageways - so the modelled carriageway is drawn ON TOP of the real reservation"
+      "medianM": 7.0,
+      "note": "Wave B2A gave the road a central reserved median. halfRoad stays 9.80 m and the parking bay stays at 8.55 m, so the footway, the graded W_VERGE crossing and the starter-SUV parking solution are all untouched; what changed is that the four lanes at -5.25/-1.75/+1.75/+5.25 became one lane per direction at -5.25/+5.25 and the middle 7.00 m is reserved. The game centreline is the CORRIDOR CENTRE - the average of the two directional carriageways - which is also the real reservation centre, so the reservation is in the right place even though its width is authored.",
+      "lanesPerDirection": 1
     }
   },
-  "blocker": {
-    "summary": "A factual Green Line reservation cannot be built without first making Huntington a divided road, and that moves every locked artefact of the canonical opening.",
-    "why": [
+  "waveCPrerequisite": [
+    "Sub-edge median width, so the reservation can widen over a stop and parking can be suspended only there.",
+    "Then two 2.00 m side platforms at the widened section, staggered the way the MBTA's own stop points are.",
+    "Keep halfRoad and the kerb line fixed at 9.80 m: the footway, the graded W_VERGE crossing and the parking lane must not move.",
+    "A moving trolley is a separate question and is still deferred; nothing here needs one."
+  ],
+  "fiveDistinctQuantities": {
+    "why": "Wave B2A's notes were shortened to 'two tracks at ~1.5 m gauge', which collapses five different measurements into one and makes the station look feasible when it is not. They are kept apart here.",
+    "1_railGaugeM": {
+      "value": 1.435,
+      "confidence": "A - factual",
+      "means": "rail head to rail head WITHIN ONE TRACK. The MBTA Green Line is standard gauge.",
+      "note": "This is the number people quote as '1.435' or loosely '~1.5'. It says nothing about how far apart two tracks are."
+    },
+    "2_trackCentreToCentreM": {
+      "value": 3.4,
+      "confidence": "C - authored",
+      "means": "centreline of track 1 to centreline of track 2.",
+      "note": "Cannot be derived from MBTA data: the published route shape is a single polyline shared by both directions - see routeShape. 3.40 m is ordinary for street-running light rail and is what src/world/Transit.js lays. Outer rail lands at 2.4175 m from the reservation centre.",
+      "derivation": "1.70 (half of 3.40) + 0.7175 (half gauge) = 2.4175 m; reservation half-width is 3.50 m, so 1.0825 m clear."
+    },
+    "3_platformSetbackFromNearestRailM": {
+      "valueFromTrackCentre": 1.425,
+      "confidence": "C - authored from vehicle envelope",
+      "means": "how far the platform edge must stand off, so a car body clears it.",
+      "note": "Green Line low-floor cars are about 2.85 m over the body, so half-envelope 1.425 m from track centre. Measured from the RAIL rather than the track centre it is 1.425 - 0.7175 = 0.7075 m, which is why quoting a setback without saying what it is measured from is useless."
+    },
+    "4_platformWidthM": {
+      "neededMin": 2.0,
+      "availableInReservation": 0.375,
+      "confidence": "C - authored minimum",
+      "means": "usable width of the platform itself.",
+      "note": "2.00 m is about the least that carries a shelter, a wheelchair turn and a waiting queue. 0.375 m is what the 7.00 m reservation actually leaves: 3.50 - 1.70 - 1.425."
+    },
+    "5_reservationWidthM": {
+      "asBuilt": 7.0,
+      "neededForTwoSidePlatforms": 10.25,
+      "realWorldAcrossCampusM": 14.6,
+      "confidence": "asBuilt C - authored; realWorld A - MassGIS",
+      "means": "kerb-to-kerb width of the central reserved band.",
+      "note": "The real 14.6 m median cannot be spent in this model: the game's Huntington is ONE corridor centreline with halfRoad frozen at 9.80 m, and 14.6 m of median inside +/-9.80 m leaves 2.5 m per side for everything else. 7.00 m is the largest reservation that still leaves a travelled lane and the kerbside parking bay - see src/data/boston-geo.js for the same reasoning at the source."
+    }
+  },
+  "routeShape": {
+    "source": "MBTA V3 /shapes for Green-E",
+    "vertices": 8,
+    "spanM": 320,
+    "sharedByBothDirections": true,
+    "systematicOffsetFromGameCentrelineM": 5.9,
+    "offsetMethod": "median of perpendicular distance over 1.2 km of corridor; every sample the same sign",
+    "conclusion": "UNUSABLE as track geometry, for two independent reasons: one polyline cannot yield two track centres, and the offset from this project's Huntington is larger than the whole 3.40 m spacing being placed. The offset is the known road-position error recorded in docs/neu/GAPS.json, not a discovery about the median."
+  },
+  "feasibility": {
+    "twoTracks": {
+      "verdict": "FITS",
+      "arithmetic": "outer rail at 1.70 + 0.7175 = 2.4175 m; reservation half-width 3.50 m; clear 1.0825 m",
+      "mastClearance": "centre mast is 0.22 m square, so its face is 0.11 m from the reservation centre and 1.59 m from a track centre, against a 1.425 m vehicle half-envelope: 0.165 m clear. Tight, and the reason centre-pole reservations are spaced the way they are.",
+      "built": "yes - src/world/Transit.js"
+    },
+    "twoTracksPlusTwoSidePlatforms": {
+      "verdict": "DOES NOT FIT",
+      "arithmetic": "3.40 (track centres) + 2 x 1.425 (vehicle half-envelope) + 2 x 2.00 (platform) = 10.25 m needed against 7.00 m available; deficit 3.25 m",
+      "widthLeftForAPlatform": 0.375,
+      "whyNotJustBuildItNarrow": "0.375 m is not a platform. It is narrower than a person. Building it to avoid reporting the gap would put a decorative sliver where a boarding platform belongs.",
+      "built": "no - deliberately"
+    },
+    "wideningInsideTheFrozenKerb": {
+      "verdict": "GEOMETRICALLY POSSIBLE, needs a capability the road model does not have",
+      "arithmetic": "a 10.25 m reservation has half-width 5.125 m; from there to the kerb at 9.80 m is 4.675 m, against 3.50 m of lane plus 0.30 m of shoulder = 3.80 m needed. 0.875 m clear - IF kerbside parking is suspended, which is exactly what real stops do.",
+      "blockedBy": "B2A's median is declared PER EDGE. The frontage edge 486 is 389.5 m long and carries the parking bay the starter SUV resolves against, so widening it would suspend parking over 389 m to serve a 60 m stop. Sub-edge granularity is the missing capability."
+    }
+  },
+  "blockerResolvedByWaveB2A": {
+    "was": "A factual Green Line reservation cannot be built without first making Huntington a divided road, and that moves every locked artefact of the canonical opening.",
+    "resolution": "Wave B2A added the reserved-median section to Roads.js/RoadNetwork.js with lane layout, parking and the kerb line all derived AROUND the band rather than across it. halfRoad 9.80 and parking 8.55 are unchanged, 530 other edges are untouched, and traffic on the median edges drives at +/-5.25 with nothing inside the reservation.",
+    "keptForTheRecord": [
       "There is no median or reservation concept anywhere in the road system: no field, no band, no section support.",
       "halfRoad is DERIVED from lane count: halfRoad = (lanes/2)*laneW + shoulder + park. Dropping Huntington from 4 lanes to 2 to free ~7 m of median takes halfRoad from 9.80 m to 6.30 m.",
       "That moves the kerb line inward 3.5 m, and with it the footway, the graded W_VERGE crossing accepted in 35d56ae, and the parking lane whose offset (8.55 m) the starter SUV solver resolves against.",
       "Holding halfRoad by overriding street width sets `lw`, which disables lane markings entirely (`marks = ... && !lw`) and replaces real lane centres with a naive division.",
       "So a median needs NEW section capability in Roads.js - a reserved band that lane layout, parking and the kerb line all respect."
-    ],
-    "notATasteJudgement": "The rails would otherwise sit under live traffic lanes at o = -3.5..+3.5, because the four travelled lanes are centred at -5.25, -1.75, +1.75 and +5.25."
+    ]
   },
-  "waveCPrerequisite": [
-    "Add a median/reservation band to the Roads section model, with lane layout and parking derived AROUND it rather than across it.",
-    "Keep halfRoad and the kerb line fixed at 9.80 m so the footway, the graded crossing and the parking lane do not move.",
-    "Then lay two tracks on the corridor centre - which is already the real reservation centre - and the two staggered side platforms above."
-  ]
+  "blockerRemaining": {
+    "summary": "Platforms. Two tracks plus two accessible side platforms need 10.25 m of reservation and there are 7.00 m.",
+    "needs": "sub-edge reservation width: a median that can widen over a stop's length with kerbside parking suspended only there, instead of one width per 389 m edge.",
+    "notATasteJudgement": "With the reservation at 7.00 m the only way to seat a platform is to narrow it to 0.375 m or to put it over a rail. Neither is a platform.",
+    "consequenceAccepted": "A reservation carrying rails and wire with no stop is not incoherent: the stop is one point on 1.2 km of railway, and the railway is the part the player sees from the opening."
+  },
+  "builtInWaveB2B": {
+    "file": "src/world/Transit.js",
+    "spans": 3,
+    "edgeIds": [
+      486,
+      487,
+      488
+    ],
+    "metres": 973,
+    "masts": 36,
+    "triangles": {
+      "rails": 3240,
+      "masts": 720,
+      "wires": 1620,
+      "total": 5580
+    },
+    "drawCalls": 1,
+    "newMaterials": 0,
+    "newTextures": 0,
+    "colliders": 0,
+    "platforms": 0,
+    "sharesMaterialWith": "buildings/neuHero opaque atlas material",
+    "collidersNote": "0 by design and measured: a car driven onto the reservation crosses all four rail heads with four wheels down, flat ride height and no damage, and a character walks across them with no snag. Rails that collided would be a trap in the middle of an arterial."
+  }
 }
