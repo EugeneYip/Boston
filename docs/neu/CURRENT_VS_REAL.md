@@ -489,6 +489,33 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE C-2B — KRENTZMAN FORM SHIPPED (2026-09-09, `e1fa294`)
+
+The 24-vertex three-sided ring is in production. Krentzman is enclosed by
+Richards, Dodge and Ell and open across 110 degrees toward Huntington; the
+regular octagon and the arbitrary paved diagonal past the player's feet are gone,
+and `districtAt` at the spawn reads `northeastern` instead of `park`.
+
+**Risk B never existed.** C-2 reported no ground mesh under the canonical spawn
+and reverted the ring for it. That was an instrument error: the ground triangles
+are wound front-face-**down** and all seven ground materials are `FrontSide`, so
+C-2's downward raycast hit the back face and `Raycaster` rejected it. The
+`park_` meshes are wound the other way, so park surfaces answered and campus
+surfaces did not — which reads exactly like a localised hole rather than a broken
+probe. `neu_ground_lawn` owns the spawn at terrain **+0.0200 m**, the documented
+emit offset, and `_buildGround`'s rule table shows every rule PASSING there.
+
+**No ownership fix was needed.** `NeuHero.js` is byte-identical to `origin/main`.
+The two C-2 probes that genuinely have no owner sit inside the Huntington keep-out
+and are meant to: one has a corner 13.41 m from the centreline against a 14.76 m
+keep radius. The keep-out itself holds to the centimetre — nearest campus-ground
+vertex **14.77 m** over 3,512 vertices tested, 1.21 m clear of the city footway.
+
+Cost: **+253 public-realm triangles**, no new draw, material or collider. Transit
+and road triangles identical. KCC across the new boundary: 0 ungrounded, 40 mm
+peak snap, no step and no seam. The canonical walk still climbs **0.995 m**
+against a recorded 0.996.
+
 ### WAVE C — AUDIT ONLY, NOTHING SHIPPED (2026-09-09)
 
 Wave C was scoped to correct the campus spatial identity: Krentzman's form, the

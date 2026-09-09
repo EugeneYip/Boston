@@ -302,12 +302,12 @@
       "fullVoidToFootway": 4211,
       "reading": "The truth is bracketed. The runtime is 23% too small; sweeping the open side all the way to the footway is 26% too large. The chord construction lands 5% under, which is the closest of the four and the only one with the right topology."
     },
-    "status": "DERIVED AND VERIFIED, APPLIED AND REVERTED — one blocker left",
+    "status": "SHIPPED (Wave C-2B)",
     "whyNotApplied": [
-      "Wave C-2 applied the ring, booted it, measured it, found ONE real regression, and reverted. See waveC2Result."
+      "SUPERSEDED — applied. See waveC2bResult."
     ],
     "runtimeRisksToClearFirst": [
-      "SUPERSEDED by waveC2Result. Risk A is measured clear; Risk B is measured REAL and is the only thing left."
+      "SUPERSEDED — Risk A clear (C-2), Risk B was a measurement error (C-2B)."
     ],
     "waveC2Result": {
       "date": "2026-09-09",
@@ -373,6 +373,159 @@
         "The canonical spawn sits 0.41 m from the octagon boundary - essentially ON its rim - which is why a hard paved diagonal runs past the player feet in the first frame with no architectural logic behind it.",
         "From the air the octagon reads unmistakably as a formal-garden roundabout dropped into a rectangular court, with radial paths converging on a centre and the court own corners left as unowned ground. That is the isolated-octagonal-park read, and it is the single most visible campus-identity defect in the opening."
       ]
+    },
+    "waveC2bResult": {
+      "date": "2026-09-09",
+      "outcome": "The ring is in production. Risk B did not exist.",
+      "riskB_wasAnInstrumentError": {
+        "whatC2Claimed": "No park_ or neu_ground_ mesh under the canonical spawn, i.e. a material ownership gap.",
+        "whatIsActuallyTrue": "neu_ground_lawn owns the spawn, at terrain +0.0200 m exactly — the emit offset in _buildGround.",
+        "theBug": "C-2 probed with a DOWNWARD raycast. These ground triangles are wound front-face-DOWN and every one of the seven ground materials is FrontSide, so a downward ray hits the back face and Raycaster rejects it. Proven three ways: an upward ray finds the mesh; forcing DoubleSide makes the downward ray find it; and a geometric point-in-triangle test over the emitted vertices finds it regardless of ray direction.",
+        "whyItLookedLocalisedAndReal": "The park_ meshes are wound the other way, so downward rays DID find park_lawn. Park surfaces answered and campus surfaces did not, which reads exactly like a hole in one place rather than a broken instrument.",
+        "lesson": "Probe emitted geometry, not rays, when asking who owns a surface — or at minimum verify the prober against a point the classifier says is covered."
+      },
+      "phase1_ruleTable": {
+        "method": "_buildGround temporarily instrumented to record every rule verdict, unshort-circuited, for the triangle covering each probe. Instrumentation removed afterwards; NeuHero.js is byte-identical to origin/main.",
+        "rows": [
+          {
+            "probe": [
+              -1883,
+              1677
+            ],
+            "note": "canonical spawn",
+            "district": "PASS",
+            "road": "PASS",
+            "procedural": "PASS",
+            "footprint": "PASS",
+            "reach": "PASS",
+            "dFoot": 25.2,
+            "dWalk": 3.33,
+            "maxEdge": 5.86,
+            "verdict": "ACCEPTED"
+          },
+          {
+            "probe": [
+              -1886,
+              1673
+            ],
+            "district": "PASS",
+            "road": "FAIL",
+            "procedural": "PASS",
+            "footprint": "PASS",
+            "reach": "PASS",
+            "rejectingEdge": 486,
+            "keep": 14.76,
+            "vertexDistances": [
+              13.41,
+              15.01,
+              15.81
+            ],
+            "centroidDistance": 14.74,
+            "verdict": "road keep-out, CORRECTLY — one corner is 13.41 m from the Huntington centreline"
+          },
+          {
+            "probe": [
+              -1890,
+              1668
+            ],
+            "district": "PASS",
+            "road": "FAIL",
+            "procedural": "PASS",
+            "footprint": "PASS",
+            "reach": "PASS",
+            "rejectingEdge": 486,
+            "keep": 14.76,
+            "vertexDistances": [
+              13.42,
+              8.42,
+              8.16
+            ],
+            "centroidDistance": 10.0,
+            "verdict": "road keep-out, CORRECTLY — this is the footway approach"
+          },
+          {
+            "probe": [
+              -1875,
+              1670
+            ],
+            "district": "PASS",
+            "road": "PASS",
+            "procedural": "PASS",
+            "footprint": "PASS",
+            "reach": "PASS",
+            "dFoot": 26.47,
+            "dWalk": 1.53,
+            "verdict": "ACCEPTED"
+          }
+        ],
+        "conclusion": "No rule wrongly rejects the spawn area. Two of the four C-2 probes are inside the Huntington keep-out and are meant to be rejected; the other two are accepted and owned."
+      },
+      "ownershipFixRequired": "NONE. No line of NeuHero.js was changed. The road keep-out, the per-vertex test, reach, walkReach, the district test and the footprint test are all exactly as they were.",
+      "roadKeepOutRegressionProof": {
+        "corridorHalfM": 13.56,
+        "vergeM": 1.2,
+        "keepRadiusM": 14.76,
+        "campusGroundVerticesTested": 3512,
+        "nearestCampusGroundVertexToHuntingtonCentrelineM": 14.77,
+        "verdict": "HOLDS to the centimetre. 1.21 m clear of the city footway; the coplanar z-fight the keep-out exists to prevent cannot occur."
+      },
+      "liveOwnership": {
+        "probes": 12,
+        "zeroOwner": [
+          "(-1886,1673)",
+          "(-1890,1668)",
+          "(-1872,1665)"
+        ],
+        "zeroOwnerExplanation": "all three are inside the Huntington road keep-out band, by design, with surfaceHeight rising to 3.28-3.78 on the graded verge. They are not intended campus public realm.",
+        "canonicalSpawnOwner": "neu_ground_lawn, exactly one owner, y 3.115",
+        "parkPlusCampusDoubleOwnership": 0,
+        "coplanarConflicts": 0,
+        "quadCentre": "park_lawn + park_path_stone, 134 mm apart — the park path over its own lawn, intended"
+      },
+      "geometryLive": {
+        "vertices": 24,
+        "areaM2": 3159,
+        "areaNote": "3,159 live against 3,166 derived: the 7 m2 difference is the lat/lon round-trip at 5 decimal places, about 1 m of precision",
+        "winding": "CCW",
+        "bboxM": [
+          76.5,
+          70.1
+        ],
+        "spawnToBoundaryM": 5.82,
+        "spawnToBoundaryBeforeM": 0.41
+      },
+      "deltas": {
+        "park_lawn": "3942 -> 3995",
+        "park_path_paved": "5592 -> 5592",
+        "park_path_stone": "3252 -> 3162",
+        "park_path_edge": "7376 -> 7216",
+        "neu_ground_lawn": "2743 -> 2937",
+        "neu_ground_paved": "1736 -> 1992",
+        "netPublicRealmTriangles": "+253",
+        "draws": "unchanged",
+        "materials": "unchanged, 7 ground meshes on 7 pre-existing material instances",
+        "colliders": "unchanged — the public realm carries none; terrain provides the collision",
+        "transit": "2 platforms, 6,680 tris, 1 draw, 6 colliders — identical",
+        "roadTriangles": "388,729 — identical"
+      },
+      "materialAdjacencyNote": "park_surface_lawn and neu_ground_lawn are separate material instances with identical parameters — registry variants of one surface. The tonal step between them is per-vertex tint and UV tiling, it ran all the way around the octagon before this change, and only its LOCATION moved. No new material pairing was introduced.",
+      "qa": {
+        "kcc_spawnToQuadCentre": "420 frames, 420 grounded, 0 ungrounded, 40 mm peak snap, Y flat 3.115-3.119 across the boundary — no step, no ghost wall, no seam",
+        "kcc_quadToHuntingtonOpening": "300 frames, 0 ungrounded, 4.3 mm peak snap",
+        "kcc_towardDodgeEll": "340 frames, 0 ungrounded, 4.7 mm peak snap",
+        "canonicalWalk": "720 frames / 12.0 s / 37.07 m, 0 ungrounded, 40.1 mm peak snap, climb 0.995 m against a recorded 0.996, ground 612 -> pavement 108, initial turn 71.0 degrees",
+        "snapNote": "peak snap on the canonical walk is 40.1 mm where the octagon gave 18.2 mm. Both are far below any step threshold; the campus ground is tessellated at a 7 m max edge against the park mesh, which is finer.",
+        "drive": "enter -> driving gear 1, 23.02 m at 27.8 km/h, 4 wheels throughout, 0 off-road frames, 0 damage, exit onFoot on pavement 1.76 m away, 1 starter",
+        "nightRain": "no bright or dark seam at the boundary, wetness continuous, hot-pixel fraction 0.0002 night / 0.0000 rain",
+        "boot": "28 systems, failed [], errors 0, glFaults 0, validate ok 0 problems, Rapier live"
+      },
+      "performance": {
+        "verdict": "UNMEASURABLE",
+        "resourceEvent": "The host was rebooted 30 minutes before this mission and opened healthy — swap total 2 GB against the 6 GB of the previous session, memory 31-40 per cent free, 15-minute load flat at 5.6. It then spiked to a 1-minute load of 71.97 with macOS adding two more swapfiles.",
+        "responsibleProcesses": "MTLCompilerService at 76.8 per cent CPU — Metal shader recompilation, driven by this mission own repeated cold boots, each of which recompiles the postprocessing chain — plus six Safari WebKit.WebContent processes at 28-50 per cent each and WindowServer at 50. The boston dev server is not in the top ten.",
+        "practicalLesson": "Cold boots are expensive on this machine because each one recompiles shaders. Batch runtime probes into as few boots as possible.",
+        "structuralCostsStand": "triangle, draw, material and collider figures above are deterministic and unaffected."
+      }
     }
   },
   "entrances": {
