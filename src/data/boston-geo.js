@@ -950,10 +950,65 @@ export const PARKS = [
   // footprints and the reservation — and the honest alternative was to leave the
   // quadrangle as dirt.
   {
+    // The front quadrangle's real form, replacing a regular octagon (Wave C-2B).
+    //
+    // The octagon was an area-derived reservation -- the recorded 3,345 m2 about
+    // the recorded centre, capped twice to clear Richards -- and it said so. Its
+    // area was 23 per cent short. Its SHAPE error was worse and is what showed:
+    // closed on all eight sides, it read from the air as a formal-garden
+    // roundabout dropped into a rectangular court, radial paths and all, leaving
+    // the court's own corners as unowned ground. The canonical spawn stood 0.4 m
+    // off its rim, so a paved diagonal ran past the player's feet in the first
+    // frame with nothing explaining it.
+    //
+    // Derived, not traced. Ray cast from the same recorded centre every 10
+    // degrees against the PDDL roof-break faces within 45 m -- the same
+    // licence-clean footprints `neu-hero.js` is built from -- boundary set 1.2 m
+    // off each face, contiguous gaps left as straight chords between the flanking
+    // faces. 24 of 36 bearings hit a building: Richards 9, Dodge 8, Ell 7. The
+    // gaps are 150-260 degrees, which is Huntington, plus two 20 degree notches
+    // where the ranges do not quite meet.
+    //
+    // So it is enclosed on THREE sides and open toward Huntington, which is what
+    // a front quadrangle is, and the spawn sits at bearing 219.8 degrees from the
+    // centre -- in the middle of that opening.
+    //
+    // 3,166 m2, 5.4 per cent under the recorded scalar -- and that scalar is
+    // confidence C, used to CHECK the shape rather than as a target. Verified: no
+    // self-intersection, no vertex inside a footprint, no EDGE crossing building
+    // geometry, CCW to match every other ring here, and all 24 vertices inside
+    // the dilated campus contour so `NeuHero`'s ground hole is still accepted --
+    // that one is load-bearing, because a dropped hole double-surfaces the whole
+    // quadrangle. Derivation and tests: docs/neu/FRONT_QUAD.json.
+    //
+    // The spawn is 5.8 m OUTSIDE this ring. `NeuHero`'s campus ground owns it --
+    // measured at terrain +0.020 m, the emit offset -- and OPENING_PLAYER does
+    // not move to suit a lawn.
     name: 'Krentzman Quadrangle', kind: 'formal', understorey: 0.06, ring: [
-      [42.34002, -71.08798], [42.33987, -71.08818], [42.33987, -71.08846],
-      [42.34002, -71.08866], [42.34022, -71.08866], [42.34037, -71.08846],
-      [42.34037, -71.08818], [42.34022, -71.08798],
+      [42.33978, -71.08849],   // Richards
+      [42.33985, -71.08853],   // Richards
+      [42.33990, -71.08857],   // Richards
+      [42.33995, -71.08860],   // Richards
+      [42.33999, -71.08863],   // Richards
+      [42.34003, -71.08866],   // Richards
+      [42.34007, -71.08869],   // Richards
+      [42.34012, -71.08873],   // Richards
+      [42.34018, -71.08877],   // Richards
+      [42.34041, -71.08809],   // Dodge
+      [42.34035, -71.08805],   // Dodge
+      [42.34031, -71.08802],   // Dodge
+      [42.34026, -71.08799],   // Dodge
+      [42.34022, -71.08796],   // Dodge
+      [42.34017, -71.08792],   // Dodge
+      [42.34012, -71.08788],   // Dodge
+      [42.34006, -71.08784],   // Dodge
+      [42.33995, -71.08793],   // Ell
+      [42.33993, -71.08801],   // Ell
+      [42.33990, -71.08807],   // Ell
+      [42.33988, -71.08813],   // Ell
+      [42.33985, -71.08819],   // Ell
+      [42.33983, -71.08825],   // Ell
+      [42.33980, -71.08832],   // Ell
     ],
   },
   {
