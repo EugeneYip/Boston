@@ -870,6 +870,158 @@
       "boot": "errors 0, glFaults 0, validate ok",
       "runtimeChanged": false,
       "regression": "Not required and not claimed: no file under src/ was touched, so runtime behaviour cannot have changed."
-    }
+    },
+    "scopeBoundary": "What D4 established is narrow and should be read narrowly: THE KRENTZMAN HUNTINGTON BRICK LEDGE / SIGN is not a viable gameplay identity carrier under the available positional evidence and at its actual screen scale. It established NOTHING about Northeastern-specific identity in general. Other architectural or semantic carriers may well be viable and are not prejudged by this result — D5 is itself an example, since it examines identity carried by a building's own facade. Recorded because a summary of D4 was phrased more broadly than the finding supports."
+  },
+  "waveD5Result": {
+    "date": "2026-09-09",
+    "question": "How different is the runtime 337 facade from the actual building at recognition scale?",
+    "verdict": "PASS-B — CURRENT MODEL VALIDATED. No runtime change. src/ byte-identical to HEAD.",
+    "headline": "D3 flagged collegiate.stoneGround as evidence-thin and probably wrong for a 1923 brick apartment block. Official imagery says the opposite: 337 genuinely has a contrasting lighter ground storey, and the fallback was right. Five of the six priority coarse cues match.",
+    "evidence": {
+      "officialImage": {
+        "url": "https://housing.northeastern.edu/wp-content/uploads/2017/05/337Fairwoods.jpg",
+        "status": "REACHABLE — HTTP 200, JPEG, 300 x 169 px, 20.5 kB",
+        "onlySize": "The housing page references no other size; there is no srcset and no larger original. 300 x 169 is the official image.",
+        "useMade": "VISUAL REFERENCE ONLY. No pixels copied, nothing traced, no texture derived, no dimension inferred. It was upscaled locally only to look at it.",
+        "caution": "The left ~20 per cent of the frame is a SEPARATE neighbouring building with a green-awning storefront, not 337. An early crop landed on it. The colour profile below samples x 250-1000 of 1400, which is 337."
+      },
+      "macris": {
+        "key": "BOS.15509 — 'Coleman, Harry - Gilbert, Bernard Apartment House', 337 Huntington Ave, 1923",
+        "result": "NOT REACHABLE. mhc-macris.net returns HTTP 200 for every path tried, including Details.aspx?MhcId=BOS.15509, but the body is an 845-byte bot-protection interstitial (NOINDEX/NOFOLLOW iframe shim), not the record. The identifier could be neither confirmed nor read.",
+        "searchResult": "No MACRIS record surfaced through search either.",
+        "unexploitedLead": "Search surfaced that The Riviera, 270 Huntington Avenue, also 1923, was developed by Coleman & Gilbert — the same developers, year and street. NOT used as evidence: a sibling building is not a source about 337's facade, and it was not verified."
+      },
+      "institutional": "337 Huntington Avenue, 1923, 5 stories, brick, residence facility, ~50,023 sq ft — already in BUILDING_INVENTORY.json and used in D3 for classification, not facade geometry."
+    },
+    "confidenceTable": {
+      "A. red/brown brick upper body": "HIGH — visually unambiguous and measured: body R-B +36 to +44 of 255, saturation 0.28-0.32",
+      "B. contrasting light masonry ground floor / base": "HIGH — measured, see stoneGroundVerdict. This is the wave's main finding.",
+      "C. strong top cornice / parapet": "MEDIUM — a light corbel/cornice band is visible at the roofline; its profile is not readable at 300 px",
+      "D. regular punched-window rhythm": "HIGH — plainly regular across the whole facade",
+      "E. corner emphasis": "LOW — no special corner treatment is visible, but the frame does not cleanly show either end",
+      "F. horizontal belt courses": "MEDIUM — a clear horizontal band at the base/body transition; pale lintels and sills read as horizontal accents",
+      "G. entry stair existence": "HIGH — Northeastern Housing states it, and an arched entrance with steps and railings is visible",
+      "H. exact stair position": "UNKNOWN — hard stop, see entranceStatus",
+      "I. exact entrance position": "UNKNOWN — hard stop",
+      "J. exact bay count": "UNKNOWN — deliberately not derived",
+      "K. exact window dimensions": "UNKNOWN",
+      "L. exact cornice profile": "UNKNOWN"
+    },
+    "aMeasurementIDiscarded": "A first attempt derived storey pitch and bay pitch by detecting luminance troughs, and produced a self-contradicting result — it implied an 18.46 m facade only 263 px tall when the building plainly fills about 600 px of the frame. It was finding window panes and shadows, not storey rows. Discarded rather than reported: at 300 px source this is exactly the fake precision the brief forbids, which is why J-L stay UNKNOWN. The colour finding below survives because it is a large-area median, not feature detection.",
+    "currentRuntimeParameters": {
+      "typology": "collegiate — 337 is in neither NEU_HISTORIC nor TYPO_OF, so typoFor falls through to the default",
+      "bayW": 2.95,
+      "winW": 1.34,
+      "winH": 2.18,
+      "sillH": 0.95,
+      "reveal": 0.2,
+      "winKind": 1,
+      "cornice": 0.36,
+      "corniceOut": 0.16,
+      "plinth": 0.4,
+      "stoneGround": true,
+      "storeys": 5,
+      "courseM": 3.69,
+      "heightM": 18.46,
+      "measuredAlbedo": {
+        "method": "Vertex colours read directly from the neu_hero_opaque buffer, filtered to 337's two footprint rings and bucketed by height. Resolution-independent and immune to the compositing problem noted below.",
+        "base 0.2-3.69 m": "RGB (0.800, 0.780, 0.720), luminance 0.780, saturation 0.100, R-B +0.08, n=1398",
+        "body >4.2 m": "RGB (0.670, 0.538, 0.460), luminance 0.561, saturation 0.314, R-B +0.21, n=3600",
+        "base/body luminance ratio": 1.39
+      }
+    },
+    "stoneGroundVerdict": {
+      "question": "D3 flagged collegiate.stoneGround as generic institutional treatment rather than evidenced fact for a 1923 brick apartment block. Is it wrong?",
+      "answer": "NO. It is directionally CORRECT, and this is the most valuable thing D5 found.",
+      "method": "Vertical colour profile of the official image: median RGB across the facade in 40-px bands, dropping pixels below luminance 45 so window voids and deep shadow cannot skew it. Median over ~3,000 samples per band, not point sampling.",
+      "upperBody": "five bands, y 80-440: luminance 100-114, saturation 0.279-0.317, R-B +36 to +44",
+      "groundStoreyBand": "y 440-640: luminance 118-141, saturation 0.152-0.242",
+      "transition": "Sharp at y about 440: luminance rises about 35 per cent and saturation falls about 22 per cent. Confirmed visually at full frame — a crisp horizontal line with the arched entrance sitting inside the lighter band.",
+      "extent": "ONE storey. Visually unambiguous at full frame: a single row of windows in the buff band. The runtime also gives one storey, so ground-storey proportion matches.",
+      "residualDifference": "The real base is a warm buff; the runtime base is a near-neutral pale grey (albedo saturation 0.100 against 0.314 for its own brick, where the photo's base sits at roughly 0.73 of its own brick's saturation rather than 0.32). Direction and magnitude of the LIGHTNESS step are right; the HUE is cooler than the building.",
+      "notActedOn": "Three reasons. The comparison is cross-domain — a lit, exposed, JPEG-compressed 300 px photograph against pre-lighting vertex albedo — so the saturation numbers are not strictly commensurable. The stone colour lives in shared `collegiate`, which other buildings depend on and which the brief forbids altering globally. And a per-building colour override does not exist, so this would mean new mechanism for a hue shift on a band worth 0.90 per cent of screen at V3. Recorded as UNRESOLVED, not corrected."
+    },
+    "coarseFormComparison": [
+      {
+        "priority": "1. body vs base material hierarchy",
+        "real": "red-brown brick body over a lighter masonry base",
+        "runtime": "brick body over pale stone ground storey",
+        "verdict": "MATCH",
+        "class": "SUPPORTED"
+      },
+      {
+        "priority": "2. horizontal vs vertical emphasis",
+        "real": "horizontally banded, but with prominent projecting oriel bays stacked through the brick storeys",
+        "runtime": "horizontally banded, flat facade, no projections",
+        "verdict": "PARTIAL — the oriels are a genuine coarse-form feature and they are absent",
+        "class": "CONTRADICTED (bounded)"
+      },
+      {
+        "priority": "3. window rhythm",
+        "real": "regular punched openings, grouped/paired",
+        "runtime": "regular punched openings at bayW 2.95",
+        "verdict": "MATCH at recognition scale",
+        "class": "PLAUSIBLE FALLBACK"
+      },
+      {
+        "priority": "4. corner treatment",
+        "real": "no special corner emphasis visible",
+        "runtime": "none",
+        "verdict": "MATCH",
+        "class": "PLAUSIBLE FALLBACK"
+      },
+      {
+        "priority": "5. roof-edge / cornice silhouette",
+        "real": "light corbel/cornice band at the parapet",
+        "runtime": "cornice 0.36 m, projecting 0.16 m",
+        "verdict": "MATCH in kind; profile unreadable at 300 px",
+        "class": "PLAUSIBLE FALLBACK"
+      },
+      {
+        "priority": "6. ground-storey proportion",
+        "real": "ONE storey of lighter masonry",
+        "runtime": "ONE storey",
+        "verdict": "MATCH",
+        "class": "SUPPORTED"
+      }
+    ],
+    "scorecard": "Five of six priority cues match. The single miss is the projecting oriel bays.",
+    "whyTheOrielsWereNotBuilt": {
+      "theyAreReal": "Clearly visible in the official image: stacked rectangular oriels with heavy hoods, breaking the facade plane.",
+      "screenValue": "At V5 the facade renders at 21.0 px/m, so a 0.8 m projection would read as about 17 px of relief — visible. At V3, 11.8 px/m gives about 9 px — marginal.",
+      "reason1_mechanism": "NeuHero has no projecting-bay capability at all; `bayW` there means bay SPACING. This would be new facade geometry generation, not the parameter override the brief prefers, and well beyond 'the smallest coherent correction'.",
+      "reason2_evidence": "Decisive. Building oriels requires knowing WHICH bays project and at what spacing — that is 'exact bay count', graded UNKNOWN, and the brief explicitly forbids letting a photograph turn it into a surveyed fact. Placing them at chosen positions on a 31.37 m frontage would be authoring facade composition from a thumbnail. That is the Dodge error in a new costume.",
+      "recordedAs": "The highest-value future 337 item IF bay positions ever become establishable from a rights-clean elevation or plan. Not otherwise."
+    },
+    "typologyDecision": {
+      "outcome": "A — the collegiate fallback is close enough",
+      "noBespokeTypology": true,
+      "addedToNeuHistoric": false,
+      "no1920sFamilyInvented": true,
+      "note": "This is a validation, not an endorsement of fallbacks in general. It happens that a generic pre-1960 Boston institutional idiom and a 1923 Boston apartment house share the cues that matter at recognition scale: brick body, lighter base, punched rhythm, modest cornice."
+    },
+    "entranceStatus": {
+      "existence": "HIGH — Housing states a stair entry, and the image shows an arched entrance with steps.",
+      "position": "UNKNOWN. NOT BUILT.",
+      "why": "The photograph shows an entrance but its framing cannot be tied to the PDDL footprint defensibly: the frame does not cleanly show both ends of the building, and the neighbouring storefront occupies the left of the image. Locating the arch along a 31.37 m edge would be a choice, not a measurement. Same hard stop as Dodge."
+    },
+    "screenSpaceGate": {
+      "V3 Krentzman -> Huntington": "silhouette 371 x 251 px; the ground-storey band is 371 x 50 px = 0.90 per cent of screen",
+      "V5 useful 337 view": "silhouette 659 x 446 px; ground-storey band 659 x 89 px = 2.83 per cent of screen",
+      "reading": "The base band is a real but modest share. A hue shift within an already-correct light base is a subtle tonal change on it, not a presence/absence change, and does not justify new override mechanism on cross-domain evidence."
+    },
+    "instrumentNotes": [
+      "The Browser pane was hidden for part of the session and the canvas collapsed to 600 x 337 from 1920 x 1080, with screenshots part-composited. Fronting the tab restored it. This is the documented hidden-pane trap.",
+      "Because of it, the runtime colour comparison was taken from VERTEX COLOURS rather than the framebuffer — exact, resolution-independent, and unaffected by compositing.",
+      "Screen-space figures are computed from D3's measured 1920 x 1080 silhouettes, not from the collapsed canvas."
+    ],
+    "qa": {
+      "boot": "errors 0, glFaults 0, validate ok 0 problems",
+      "runtimeChanged": false,
+      "regression": "Not required and not claimed: no file under src/ was touched, so 337 collision, procedural suppression, campus ground, Huntington keep-out, Green Line, Krentzman, Ell, Dodge, spawn and SUV cannot have changed.",
+      "beforeAfter": "Not captured. The brief is explicit: if no runtime change, do not fabricate BEFORE/AFTER."
+    },
+    "nextScope": "335A Huntington Avenue remains the only unmodelled parcel on this frontage at 441 m2 and leased, and D5 does not raise its value: the frontage already reads closed, and 335A would add a fourth mass without adding a cue a player lacks. The better next targets are elsewhere — either a rights-clean elevation source that would unlock 337's oriels and entrance together, or the eye-level items on surfaces the player already sees."
   }
 }

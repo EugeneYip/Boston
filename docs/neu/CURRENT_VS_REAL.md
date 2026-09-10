@@ -489,6 +489,66 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D5 — THE FALLBACK WAS RIGHT ABOUT 337 (2026-09-09)
+
+**Audit only. PASS-B: the current model is validated and nothing changed.** D3
+shipped 337 through the generic `collegiate` fallback and flagged one thing as
+evidence-thin — `stoneGround: true`, a stone ground storey on a 1923 brick
+apartment block, which looked like institutional convention rather than fact.
+
+**The official image says the opposite, and that is the finding.** Northeastern
+Housing's own photograph of 337 is reachable (300 × 169, the only size published;
+used as visual reference only, nothing traced or copied). A vertical colour
+profile — median RGB in 40 px bands, dropping pixels under luminance 45 so window
+voids cannot skew it — gives:
+
+| band | luminance | saturation |
+|---|---|---|
+| upper body, 5 bands | **100–114** | 0.279–0.317 |
+| ground storey | **118–141** | 0.152–0.242 |
+
+A sharp break: luminance up ~35 %, saturation down ~22 %, confirmed visually as a
+crisp horizontal line with the arched entrance sitting inside the lighter band.
+**337 really does have a contrasting lighter base, and it is one storey — which
+is exactly what the runtime gives it.** The flagged parameter was right.
+
+**Five of six priority cues match**: body-over-base hierarchy, brick body, punched
+window rhythm, absent corner emphasis, cornice in kind, and one-storey base
+proportion. The single miss is **projecting oriel bays**, which the real building
+has prominently and the runtime has not at all.
+
+**The oriels were not built, and the reason is evidence rather than effort.**
+NeuHero has no projecting-bay capability — its `bayW` is spacing — so this would
+be new geometry, not the parameter override the brief prefers. More decisively,
+building them requires knowing *which* bays project across a 31.37 m frontage,
+and "exact bay count" is graded UNKNOWN. Choosing positions from a 300 px
+thumbnail is the Dodge error in a new costume. Recorded as the highest-value
+future 337 item **if** a rights-clean elevation ever makes bay positions
+establishable.
+
+**One residual difference, recorded and not acted on.** The real base is a warm
+buff; the runtime's is a near-neutral pale grey — measured from vertex colours as
+albedo saturation 0.100 against its own brick's 0.314, where the photograph's
+base sits nearer 0.73 of its brick's saturation than 0.32. The *lightness* step is
+right; the *hue* is cool. It stays UNRESOLVED because the comparison is
+cross-domain (a lit, compressed 300 px photo against pre-lighting albedo), the
+stone colour lives in shared `collegiate` which other buildings depend on, and the
+band is worth 0.90 % of screen at V3.
+
+**No entrance or stair.** Housing establishes a stair entry exists; the image
+shows an arch. Neither locates it on the footprint — the frame does not cleanly
+show both ends and a neighbouring storefront occupies the left of it. Same hard
+stop as Dodge.
+
+**MACRIS BOS.15509 could not be read.** `mhc-macris.net` answers HTTP 200 on every
+path including the record URL, but serves an 845-byte bot-protection interstitial
+rather than content. Search surfaced that The Riviera, 270 Huntington, also 1923,
+shared 337's developers Coleman & Gilbert — noted, and deliberately not used: a
+sibling building is not a source about this facade.
+
+`src/` is byte-identical to HEAD. No BEFORE/AFTER was captured, because there is
+no AFTER.
+
 ### WAVE D4 — THE SEAL LEDGE IS WELL EVIDENCED AND STILL CANNOT BE BUILT (2026-09-09)
 
 **Audit only. Two independent gates fail.** The brick Northeastern sign at
