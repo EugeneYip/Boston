@@ -489,6 +489,66 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### SECOND-STAGE CLOSURE AUDIT — THE PROGRAMME CLOSES (2026-09-09)
+
+**Audit only, no runtime change. Outcome A: the Northeastern second-stage
+fidelity programme is CLOSED.** Not complete — every remaining known gap is
+blocked on evidence, below screen-value threshold, or both.
+
+**Scores from the current build, not from programme history.** Place recognition
+**PASS**, primary massing **PASS**, public realm **PASS**, Huntington identity
+**PASS**, coverage **PASS**, materials **PASS**. Two partials, and both defects
+are named rather than gestured at:
+
+- **Eye-level likeness — PARTIAL.** Under high midday sun the near-neutral pale
+  historic family (albedo saturation 0.040) loses relief and reads flat. The
+  articulation is genuinely in the geometry: re-lit at 16:30 the same Ell
+  frontage shows vertical piers and recessed strips clearly. A lighting response,
+  not a geometry defect, and no authoritative source for the correct tone exists.
+- **Ground-floor credibility — PARTIAL.** Buildings meet the public realm with a
+  uniform facade and at most one modest doorway cue; Dodge's quad frontage has
+  none. All of it blocked on positional evidence, which D2, D2C and D2D each went
+  looking for and did not find.
+
+**Twice in this audit my eye was wrong and measurement corrected it.** I read the
+Ell frontage as near-curtain-wall; measured on vertical faces only, facade glass
+is **9.3 %** for the historic family and **7.8 %** for 337 — masonry-dominant, if
+anything under-glazed. I read it as generically flat; at 16:30 it plainly is not.
+Both were contrast and exposure artefacts of a downsampled frame. This is the same
+error D0 made calling the historic range a flat slab, which D1 disproved.
+
+**The first minute works end to end.** Spawn → Krentzman → across the quad → the
+starter SUV at 38.6 m → enter → **50.03 m along Huntington at up to 57.4 km/h,
+gear 1→3, asphalt throughout** → exit clean. About 70 m of walking with 0
+ungrounded frames on the quad legs and Y flat within 11 mm; one kerb transition
+onto the footway climbed 1.06 m, which C-2B independently recorded at 0.995 m. No
+seam, no snag, no procedural duplicate, no blocker.
+
+**Nothing passes the six-part filter as a Northeastern wave.** Every
+high-recognition candidate — 337's oriel bays, its entrance, Dodge's door, the
+Krentzman ledge, Richards' entrance, the Ell/Curry split — fails on *source
+evidence sufficient to implement without fabrication*. The one item that passes
+visibility, recognition, pixels and evidence is **Green Line rolling stock**, and
+that is not Northeastern-specific: it is a city-wide asset.
+
+**Owner-complaint verdict: PARTLY.** *"Not similar enough"* is no longer
+supported — the three-sided quad open to a rail-median arterial, the vertical-strip
+masonry range, and the red-brick block closing the frontage are specific cues, and
+the campus ground actually renders. *"Not refined enough"* still is, where
+buildings meet people. The qualifier that matters: that residual is **evidence-bound,
+not craft-bound**, and closing is therefore correct rather than a claim of
+completeness.
+
+**Frozen until** new authoritative evidence appears — a rights-clean elevation or
+plan is the single highest-leverage artefact, unlocking 337's oriels and entrance
+together — or a new viewpoint exposes something currently occluded, or the owner
+points at a specific defect.
+
+**Next Boston-wide priority: Green Line rolling stock.** The rails, catenary and
+platforms already exist and are accepted, so it extends transit rather than
+reopening it, MBTA LRV dimensions are published, and it pays off on every branch
+in the city rather than in one district.
+
 ### WAVE D5 — THE FALLBACK WAS RIGHT ABOUT 337 (2026-09-09)
 
 **Audit only. PASS-B: the current model is validated and nothing changed.** D3
@@ -512,10 +572,14 @@ crisp horizontal line with the arched entrance sitting inside the lighter band.
 **337 really does have a contrasting lighter base, and it is one storey — which
 is exactly what the runtime gives it.** The flagged parameter was right.
 
-**Five of six priority cues match**: body-over-base hierarchy, brick body, punched
-window rhythm, absent corner emphasis, cornice in kind, and one-storey base
-proportion. The single miss is **projecting oriel bays**, which the real building
-has prominently and the runtime has not at all.
+**Stated by class, not as a tally.** Only one cue is positively **SUPPORTED** by
+the imagery: the contrasting lighter **one-storey base hierarchy**. Three more are
+**PLAUSIBLE FALLBACK** — window rhythm, corner treatment, cornice — consistent
+with the photograph but not evidenced by it at 300 px. One is **CONTRADICTED**:
+the **projecting oriel bays**, which the real building has prominently and the
+runtime has not at all. Exact dimensions, entrance and stair position, and
+ornamental treatment stay **UNRESOLVED**. Saying "five of six match" would count
+absence of contradiction as agreement.
 
 **The oriels were not built, and the reason is evidence rather than effort.**
 NeuHero has no projecting-bay capability — its `bayW` is spacing — so this would

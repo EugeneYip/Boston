@@ -986,7 +986,7 @@
         "class": "SUPPORTED"
       }
     ],
-    "scorecard": "Five of six priority cues match. The single miss is the projecting oriel bays.",
+    "scorecard": "Stated by CLASS, not as a tally, because 'five of six match' conflated evidence-supported cues with ones that merely are not contradicted. SUPPORTED (positively evidenced): the contrasting lighter ONE-STOREY base hierarchy — that is the whole of what the imagery establishes about the runtime being right. PLAUSIBLE FALLBACK (consistent with the image, not evidenced by it): window rhythm, corner treatment, cornice. CONTRADICTED / MISSING: projecting oriel bays. UNRESOLVED: exact facade dimensions, entrance and stair position, exact ornamental treatment. The wave's conclusion is unchanged — no runtime change is preferable — but it rests on ONE supported cue plus three uncontradicted ones, not on six matches.",
     "whyTheOrielsWereNotBuilt": {
       "theyAreReal": "Clearly visible in the official image: stacked rectangular oriels with heavy hoods, breaking the facade plane.",
       "screenValue": "At V5 the facade renders at 21.0 px/m, so a 0.8 m projection would read as about 17 px of relief — visible. At V3, 11.8 px/m gives about 9 px — marginal.",
@@ -1023,5 +1023,159 @@
       "beforeAfter": "Not captured. The brief is explicit: if no runtime change, do not fabricate BEFORE/AFTER."
     },
     "nextScope": "335A Huntington Avenue remains the only unmodelled parcel on this frontage at 441 m2 and leased, and D5 does not raise its value: the frontage already reads closed, and 335A would add a fourth mass without adding a cue a player lacks. The better next targets are elsewhere — either a rights-clean elevation source that would unlock 337's oriels and entrance together, or the eye-level items on surfaces the player already sees."
+  },
+  "secondStageClosureAudit": {
+    "date": "2026-09-09",
+    "question": "Has the Northeastern hero district reached the rational closeout point for the second-stage fidelity programme?",
+    "outcome": "A — CLOSE",
+    "declaration": "NORTHEASTERN SECOND-STAGE FIDELITY PROGRAMME — CLOSED. Not photorealistically complete: every remaining known gap is blocked on evidence, below screen-value threshold, or both.",
+    "runtimeChanged": false,
+    "scores": {
+      "A place recognition": "PASS — the combination on screen is specific: a three-sided quadrangle open to a rail-median arterial, grey-brick ranges with vertical window strips, a red-brick five-storey block closing the far frontage, and the HUD naming NORTHEASTERN / Huntington Avenue. A knowledgeable player has enough to name it.",
+      "B primary massing": "PASS — 21 hero parts on PDDL Roof Breaks heights, footprints agreeing with official areas to within 10 per cent on the confirmed set. The aerial reads as credible volumes, not boxes.",
+      "C public realm": "PASS — campus ground renders (4,929 tris), lawn and paved are distinguished, PDDL walks and park paths connect, and 60+ m of walking gave 0 ungrounded frames with Y varying under 11 mm. Known caveat, recorded since Wave 3B and visible from the air: campus ground has a finite outer boundary, so a lawn-to-terrain transition exists where it ends.",
+      "D Huntington identity": "PASS — reserved median, rails, catenary poles, two platforms and 6,680 transit triangles, all legible at eye level from the footway and from the turn.",
+      "E eye-level architectural likeness": "PARTIAL — see namedDefects.E",
+      "F ground-floor credibility": "PARTIAL — see namedDefects.F",
+      "G coverage / enclosure": "PASS — the one candidate D0 measured as materially visible is built. The rest measured fully occluded from every tested gameplay viewpoint.",
+      "H material / colour identity": "PASS — the families are measurably distinct in albedo, not just nominally: historic range luminance 0.720 at saturation 0.040, 337 at 0.653 and 0.213. Grey masonry against red brick reads as two different periods."
+    },
+    "namedDefects": {
+      "E": "Under high midday sun the near-neutral pale historic family (albedo saturation 0.040) loses its relief and reads flat. The articulation IS in the geometry: at 16:30 the same Ell frontage shows vertical piers and recessed window strips clearly. So this is a tonal response to lighting, not a geometry defect, and no authoritative source for the correct brick tone is available. Wave A is closed and nothing here reopens it.",
+      "F": "Hero buildings meet the public realm with a uniform facade and at most one modest doorway cue. There is no ground-floor differentiation — no shopfront, areaway or plinth variety — and Dodge's quad frontage has no entrance at all. Every part of this is blocked on positional evidence, not on effort: D2 established the uniformity is deliberate, D2C and D2D exhausted Dodge, and Richards has no entry in the accessible layer and no walk cue on its quad frontage."
+    },
+    "twoImpressionsMeasurementOverturned": [
+      "I read the Ell frontage as having an enormous window-to-wall ratio, close to a curtain wall. Measured on vertical faces only, the facade glass fraction is 9.3 per cent for the historic family and 7.8 per cent for 337 — masonry-dominant, and if anything under-glazed. What I was seeing was high contrast between dark window recesses and a near-white wall at 800 x 450.",
+      "I read the same frontage as generically flat. Re-lit at 16:30 it is plainly articulated. The first read was a midday exposure artefact.",
+      "Both are the same failure the programme has hit before — D0 called the historic range a continuous flat slab and D1's measurement disproved it. Impressions from a downsampled frame are a hypothesis, not a finding."
+    ],
+    "pixelWeightedResiduals": [
+      {
+        "rank": 1,
+        "item": "337 projecting oriel bays",
+        "views": "V5, marginally V3",
+        "size": "about 17 px of relief at V5 (21.0 px/m), about 9 px at V3",
+        "recognition": "MEDIUM-HIGH — a real Boston apartment-house cue",
+        "evidence": "INSUFFICIENT — requires knowing which bays project across a 31.37 m frontage; exact bay count is UNKNOWN and the only image is a 300 px thumbnail",
+        "feasibility": "LOW — NeuHero has no projecting-bay capability at all",
+        "verdict": "BLOCKED"
+      },
+      {
+        "rank": 2,
+        "item": "Green Line trolley (rolling stock)",
+        "views": "V2, V4, and the whole Huntington corridor",
+        "size": "LARGE — a ~28 m vehicle in the near reservation",
+        "recognition": "HIGH",
+        "evidence": "AVAILABLE — MBTA published LRV dimensions, and the MBTA Design Criteria Manual is already an accepted source here",
+        "feasibility": "MEDIUM — new vehicle geometry plus a mover along the existing alignment",
+        "verdict": "DEFER — and NOT as a Northeastern wave. Rolling stock is a city-wide asset serving every Green Line branch; it is the recommended next Boston-wide priority."
+      },
+      {
+        "rank": 3,
+        "item": "337 entrance / stair",
+        "views": "V5, close approach",
+        "size": "moderate",
+        "recognition": "MEDIUM",
+        "evidence": "INSUFFICIENT — existence HIGH, position UNKNOWN",
+        "verdict": "BLOCKED"
+      },
+      {
+        "rank": 4,
+        "item": "Historic-range midday tonal wash",
+        "views": "all quad views at high sun",
+        "size": "large area, low amplitude",
+        "recognition": "MEDIUM",
+        "evidence": "NONE — no authoritative source for the correct brick tone; Wave A closed",
+        "verdict": "BLOCKED"
+      },
+      {
+        "rank": 5,
+        "item": "Krentzman brick ledge / seal",
+        "views": "V3, V4",
+        "size": "0.21-0.23 per cent of screen, 14 px tall; absent from the canonical opening",
+        "recognition": "HIGH in reality, unresolvable in game",
+        "evidence": "INSUFFICIENT on position AND fails screen value",
+        "verdict": "BLOCKED — D4"
+      },
+      {
+        "rank": 6,
+        "item": "335A Huntington Avenue",
+        "size": "441 m2, leased, on a frontage that already reads closed",
+        "verdict": "LOW VALUE — this is the benchmark other items must beat, and nothing needs it"
+      },
+      {
+        "rank": 7,
+        "item": "Station name lettering",
+        "verdict": "LOW VALUE — the sub-resolvable benchmark D4 used as its negative control"
+      },
+      {
+        "rank": 8,
+        "item": "Ell / Curry primary-volume split",
+        "evidence": "INSUFFICIENT — the boundary is not in the source data, recorded in Wave C",
+        "verdict": "BLOCKED"
+      },
+      {
+        "rank": 9,
+        "item": "Richards ordinary entrance",
+        "evidence": "INSUFFICIENT — no entry in the 82-point accessible layer and no PDDL walk cue on its quad frontage",
+        "verdict": "BLOCKED"
+      },
+      {
+        "rank": 10,
+        "item": "Further missing buildings (Snell, East Village, others)",
+        "verdict": "LOW VALUE — measured fully occluded from every tested gameplay viewpoint"
+      }
+    ],
+    "hardFilterResult": "No remaining Northeastern-specific item satisfies all six conditions. Every high-recognition candidate fails condition 4, source evidence sufficient to implement without fabrication. The one item that passes conditions 1-5 — Green Line rolling stock — is not Northeastern-specific: it is a city-wide asset, so it belongs to a Boston-wide wave rather than to this programme.",
+    "firstMinuteExperience": {
+      "route": "spawn -> Krentzman centre -> across the quad -> starter SUV -> enter -> drive Huntington -> exit",
+      "spawn": "(-1883, 4.02, 1677), grounded, onFoot, district northeastern, surfaceHeight 3.0953",
+      "walk": "about 70 m over 1,120 frames. 0 ungrounded on the quad legs, peak snap 4.8-9.8 mm, Y flat within 11 mm. One kerb transition onto the Huntington footway climbed 1.06 m with a 105 mm step and a single ungrounded frame — the same climb C-2B independently recorded at 0.995 m, so expected.",
+      "suv": "1 starter, at (-1856.164, 1649.222), 38.6 m from spawn, reached on foot and entered — mode driving, gear 1",
+      "drive": "50.03 m along Huntington, max 57.4 km/h, gear 1 to 3, surface asphalt throughout",
+      "exit": "clean — onFoot, grounded, surfaceHeight 3.095",
+      "blockers": "NONE. No seam, no snag, no procedural duplicate, no first-minute blocker.",
+      "honestNote": "Vehicle damage read 0.405 after the drive. I held full throttle from a parked start with no steering, so that is my input rather than a world defect, and it is not reported as one."
+    },
+    "ownerComplaintVerdict": {
+      "statement": "campus is still obviously not similar enough and not refined enough",
+      "verdict": "PARTLY",
+      "notSimilarEnough": "NO LONGER SUPPORTED. The quadrangle is the right three-sided form open to Huntington, the arterial carries a reserved median with rails and platforms, the historic range has its own vertical-strip masonry language measurably distinct from the 1923 brick block that now closes the frontage, and the campus ground actually renders. These are specific cues, not generic Boston.",
+      "notRefinedEnough": "PARTLY SUPPORTED, and this is the honest half. Buildings meet the ground uniformly with at most one modest doorway each; Dodge's quad frontage has no entrance; the pale historic range flattens under midday sun. A critical eye at ground level will still find the district under-detailed where buildings meet people.",
+      "theQualifierThatMatters": "Every one of those residuals is blocked on EVIDENCE, not on effort or craft. Three separate waves went looking for the positional data that would let them be built honestly and came back empty. Closing is therefore the correct call, and it is not a claim of completeness."
+    },
+    "structuralBaseline": {
+      "neuHeroParts": 21,
+      "microWithheld": 4,
+      "neu_hero_opaqueTris": 103249,
+      "neu_hero_glassTris": 11634,
+      "campusGroundTris": 4929,
+      "parkSurfaceTris": 20144,
+      "greenLineTris": 6680,
+      "roadTris": 34149,
+      "totalSceneTris": 2049231,
+      "sceneMeshes": 894,
+      "materials": 60,
+      "geometries": 597,
+      "programs": 83,
+      "textures": 108,
+      "rapierBodies": 63,
+      "rapierColliders": 16749,
+      "openingDraws": "519-525",
+      "note": "Scene mesh, material and road figures are camera-dependent because terrain and roads stream; the NeuHero, campus-ground and transit figures are deterministic."
+    },
+    "performance": {
+      "verdict": "UNMEASURABLE as a scene cost",
+      "why": "step() is vsync-bound: median 18.0-18.2 ms against a 16.67 ms display interval. The median measures the display cadence, not the frame.",
+      "headroomEvidence": "minimum sample 3.8-5.4 ms and p10 4.9 ms at the opening, so real work sits far under budget",
+      "hostCaveat": "15-minute load average reached 10.53 shortly before the session, which adds variance and is a second reason not to quote a figure"
+    },
+    "qa": {
+      "boot": "24 modules, failed [], errors [], glFaults [], validate ok 0 problems, Rapier live, 28 systems",
+      "bootMissing": "Missions.js — pre-existing and optional; the file does not exist in src/",
+      "runtimeChanged": false
+    },
+    "freezeCondition": "These residuals are frozen until one of: new authoritative evidence appears (a rights-clean elevation or plan would unlock 337's oriels and entrance together, and is the single highest-leverage artefact); a new gameplay viewpoint makes something currently occluded visible; or the owner supplies visual evidence of a specific remaining defect.",
+    "nextBostonWidePriority": "GREEN LINE ROLLING STOCK. It is the only identified item that passes visibility, recognition, pixel and evidence tests — MBTA LRV dimensions are published and the MBTA Design Criteria Manual is already an accepted source in this project. The rails, catenary and platforms it needs already exist and are accepted, so it extends the transit system rather than reopening it, and it pays off across every Green Line branch in the city rather than in one district."
   }
 }
