@@ -1032,8 +1032,8 @@
     "runtimeChanged": false,
     "scores": {
       "A place recognition": "PASS — the combination on screen is specific: a three-sided quadrangle open to a rail-median arterial, grey-brick ranges with vertical window strips, a red-brick five-storey block closing the far frontage, and the HUD naming NORTHEASTERN / Huntington Avenue. A knowledgeable player has enough to name it.",
-      "B primary massing": "PASS — 21 hero parts on PDDL Roof Breaks heights, footprints agreeing with official areas to within 10 per cent on the confirmed set. The aerial reads as credible volumes, not boxes.",
-      "C public realm": "PASS — campus ground renders (4,929 tris), lawn and paved are distinguished, PDDL walks and park paths connect, and 60+ m of walking gave 0 ungrounded frames with Y varying under 11 mm. Known caveat, recorded since Wave 3B and visible from the air: campus ground has a finite outer boundary, so a lawn-to-terrain transition exists where it ends.",
+      "B primary massing": "PASS for the tested opening composition, at recognition scale. Runtime parts use the accepted PDDL Roof Breaks geometry and heights throughout. This is NOT a claim that every named building's footprint independently agrees within 10 per cent: the cluster resolves as 10 CONFIRMED and 4 COMPLEX, and the shared/complex/partial source cases — Ell and Curry sharing one mass, Hastings at 1,681 m2 against an official 1,046, Dana, Cabot — stay explicitly documented in HERO_FOOTPRINTS.json and are not overridden here. CORRECTION: the first version of this entry said '21 hero parts ... footprints agreeing with official areas to within 10 per cent', which read as a blanket claim and was too broad.",
+      "C public realm": "PASS FOR THE CANONICAL OPENING / FIRST-MINUTE CORE — Krentzman's form is correct, campus ground renders (4,929 tris), the opening paths work, and 60+ m of traversal gave 0 ungrounded frames with Y varying under 11 mm. BROADER DISTRICT PUBLIC REALM IS NOT CLAIMED COMPLETE. The finite outer campus-ground boundary remains a known recorded caveat, visible from the air and on record since Wave 3B. This is a scope statement, not a newly found defect.",
       "D Huntington identity": "PASS — reserved median, rails, catenary poles, two platforms and 6,680 transit triangles, all legible at eye level from the footway and from the turn.",
       "E eye-level architectural likeness": "PARTIAL — see namedDefects.E",
       "F ground-floor credibility": "PARTIAL — see namedDefects.F",
@@ -1139,10 +1139,11 @@
     },
     "ownerComplaintVerdict": {
       "statement": "campus is still obviously not similar enough and not refined enough",
-      "verdict": "PARTLY",
+      "verdict": "PARTLY — as a TECHNICAL reading only. See closureType.",
       "notSimilarEnough": "NO LONGER SUPPORTED. The quadrangle is the right three-sided form open to Huntington, the arterial carries a reserved median with rails and platforms, the historic range has its own vertical-strip masonry language measurably distinct from the 1923 brick block that now closes the frontage, and the campus ground actually renders. These are specific cues, not generic Boston.",
       "notRefinedEnough": "PARTLY SUPPORTED, and this is the honest half. Buildings meet the ground uniformly with at most one modest doorway each; Dodge's quad frontage has no entrance; the pale historic range flattens under midday sun. A critical eye at ground level will still find the district under-detailed where buildings meet people.",
-      "theQualifierThatMatters": "Every one of those residuals is blocked on EVIDENCE, not on effort or craft. Three separate waves went looking for the positional data that would let them be built honestly and came back empty. Closing is therefore the correct call, and it is not a claim of completeness."
+      "theQualifierThatMatters": "Every one of those residuals is blocked on EVIDENCE, not on effort or craft. Three separate waves went looking for the positional data that would let them be built honestly and came back empty. Closing is therefore the correct call, and it is not a claim of completeness.",
+      "boundary": "This verdict is the audit's technical reading of current evidence. It is NOT owner acceptance. Owner visual acceptance of the current build remains a separate, outstanding judgement."
     },
     "structuralBaseline": {
       "neuHeroParts": 21,
@@ -1152,7 +1153,8 @@
       "campusGroundTris": 4929,
       "parkSurfaceTris": 20144,
       "greenLineTris": 6680,
-      "roadTris": 34149,
+      "roadNearLodTrianglesWorldTotal": 388729,
+      "roadTrianglesVisibleAtMeasurementCamera": 34149,
       "totalSceneTris": 2049231,
       "sceneMeshes": 894,
       "materials": 60,
@@ -1162,7 +1164,7 @@
       "rapierBodies": 63,
       "rapierColliders": 16749,
       "openingDraws": "519-525",
-      "note": "Scene mesh, material and road figures are camera-dependent because terrain and roads stream; the NeuHero, campus-ground and transit figures are deterministic."
+      "note": "CAMERA-DEPENDENT (vary with streaming and camera position): sceneMeshes, materials, geometries, programs, textures, totalSceneTris, openingDraws, and roadTrianglesVisibleAtMeasurementCamera. DETERMINISTIC (build-time, camera-independent): neuHeroParts, microWithheld, neu_hero_opaqueTris, neu_hero_glassTris, campusGroundTris, parkSurfaceTris, greenLineTris, roadNearLodTrianglesWorldTotal. See roadTriangleReconciliation. Previous note: Scene mesh, material and road figures are camera-dependent because terrain and roads stream; the NeuHero, campus-ground and transit figures are deterministic."
     },
     "performance": {
       "verdict": "UNMEASURABLE as a scene cost",
@@ -1176,6 +1178,34 @@
       "runtimeChanged": false
     },
     "freezeCondition": "These residuals are frozen until one of: new authoritative evidence appears (a rights-clean elevation or plan would unlock 337's oriels and entrance together, and is the single highest-leverage artefact); a new gameplay viewpoint makes something currently occluded visible; or the owner supplies visual evidence of a specific remaining defect.",
-    "nextBostonWidePriority": "GREEN LINE ROLLING STOCK. It is the only identified item that passes visibility, recognition, pixel and evidence tests — MBTA LRV dimensions are published and the MBTA Design Criteria Manual is already an accepted source in this project. The rails, catenary and platforms it needs already exist and are accepted, so it extends the transit system rather than reopening it, and it pays off across every Green Line branch in the city rather than in one district."
+    "nextBostonWidePriority": "CANDIDATE, NOT A RANKED WINNER: Green Line rolling stock is a credible candidate for the next Boston-wide programme, but it must compete against other current-pixel defects in a fresh Boston-wide rebaseline rather than being promoted here. Its evidence position is good — MBTA LRV dimensions are published and the MBTA Design Criteria Manual is already accepted in this project — and the rails, catenary and platforms it would run on already exist. CORRECTION: the first version of this entry called it 'the recommended next Boston-wide priority' and said it 'pays off across every Green Line branch in the city'. That overstated current coverage. src/world/Transit.js is explicitly 'Green Line E surface infrastructure, in the Huntington reservation', so the only PROVEN payoff today is the modelled Huntington / Green Line E corridor. Wider reuse is future capability, not current coverage.",
+    "closureType": {
+      "technicalClosure": "SUPPORTED. Current measurements and current-pixel inspection of the current build support closing the second-stage programme: no remaining Northeastern-specific item passes the six-part implementation filter.",
+      "ownerVisualAcceptance": "NOT GRANTED AND NOT CLAIMED. PENDING the owner's own review of the current deployed build.",
+      "why": "The original rejection — 'obviously not similar enough and not refined enough' — was an OWNER visual judgement. Measurements can establish that the evidence no longer supports that description; they cannot retire the judgement on the owner's behalf. Nothing in this audit should be read as the owner having approved the likeness."
+    },
+    "roadTriangleReconciliation": {
+      "problem": "The first version of this baseline recorded 'roadTris: 34,149' beside deterministic figures, while earlier waves repeatedly recorded about 388,729. Presenting both under one label 'road tris' was wrong: they are different measurement DOMAINS, and neither number is faulty.",
+      "tracedToSource": "src/world/Roads.js, build path around lines 1948-1969.",
+      "metric_388729": {
+        "name": "roadNearLodTrianglesWorldTotal",
+        "what": "Roads.triangles — accumulated at BUILD time as `tris += ch.near.i.length / 3` over EVERY chunk in this.chunks, regardless of camera, visibility or LOD state.",
+        "properties": "Camera-independent, deterministic, whole-world. Counts the NEAR batch only.",
+        "corroboration": "Earlier waves recorded it as '388,729 — identical' across separate sessions and camera positions. Only a build-time total can be identical across sessions; a camera-dependent count cannot. That independently confirms which metric it is."
+      },
+      "metric_34149": {
+        "name": "roadTrianglesVisibleAtMeasurementCamera",
+        "what": "Sum of triangles over scene meshes that were VISIBLE and whose name matched /^road_/, at the single camera position where the closure snapshot was taken (after the drive leg, not at the opening).",
+        "properties": "Camera-dependent and streaming-dependent. It also structurally EXCLUDES the far-LOD meshes: Roads names them 'roadLod_' + key, which /^road_/ does not match, and they are created with visible = false."
+      },
+      "neitherCountsFarLod": "Note for both: ch.far geometry is built and added to the scene but is NOT included in Roads.triangles, so 388,729 is the near-LOD world total rather than all road geometry that exists.",
+      "rule": "The closure structural baseline must never present two measurement domains under one label. Both are now named explicitly, and the other camera-dependent figures in this baseline — sceneMeshes, materials, geometries, programs, textures, totalSceneTris — are flagged in the same note."
+    },
+    "recommendedNextAction": "FRESH BOSTON-WIDE CURRENT-PIXELS / HOSTILE-CRITIC REBASELINE, to rank the largest remaining world-level visual defects before choosing another implementation programme. Candidate classes are deliberately NOT pre-ranked here: rolling stock, parked-car visual quality, lighting and atmosphere, props and streetscape, world semantic/architectural issues, and whatever a fresh pass finds.",
+    "reopenTriggers": [
+      "New authoritative / rights-clean evidence.",
+      "A new gameplay viewpoint exposes a currently occluded defect.",
+      "The owner identifies a specific visible defect in the current build."
+    ]
   }
 }

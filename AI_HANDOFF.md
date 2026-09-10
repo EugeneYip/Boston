@@ -41,6 +41,41 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
+### Northeastern status — TECHNICALLY CLOSED (2026-09-09)
+
+**Do not reopen Northeastern implementation work without one of the triggers below.**
+The full record is `docs/neu/CURRENT_VS_REAL.md` and the
+`secondStageClosureAudit` block in `docs/neu/GROUND_FLOOR_AUDIT.json`.
+
+- **Second-stage fidelity programme: TECHNICALLY CLOSED.** No remaining
+  Northeastern-specific item passes the implementation filter — every
+  high-recognition candidate fails on *source evidence sufficient to build without
+  fabricating*. Closed is not complete.
+- **Owner visual acceptance is a SEPARATE, OUTSTANDING judgement.** The audit's
+  technical reading is that current evidence no longer supports "obviously not
+  similar enough". That is not owner approval and must not be written up as such.
+- **Opening / first-minute public realm: PASS.** Spawn → Krentzman → starter SUV →
+  drive Huntington → exit runs clean. Broader district public realm is *not*
+  claimed complete; campus ground still has a finite outer boundary.
+- **Eye-level: PARTIAL in absolute fidelity, with no currently executable
+  high-ROI blocker.** Buildings meet the public realm uniformly; the pale historic
+  range flattens under midday sun (a lighting response — the articulation is in the
+  geometry and reads at 16:30).
+- **Dodge quad entrance: CLOSED**, positional evidence exhausted (D2C, D2D).
+- **337 Huntington: validated at recognition scale** (D5). Its oriel bays and
+  entrance are blocked on bay/door positions that no reachable source gives.
+- **335A Huntington: LOW VALUE.** **Krentzman brick ledge/seal: BLOCKED** on both
+  position and screen value (D4). **Station lettering: LOW VALUE.**
+- **Green Line rolling stock is a FUTURE Boston-wide CANDIDATE only** — not a
+  Northeastern requirement and not a ranked winner. `src/world/Transit.js` covers
+  the Green Line E surface infrastructure in the Huntington reservation only.
+- **Recommended next action: a fresh Boston-wide current-pixels / hostile-critic
+  rebaseline**, to rank world-level defects before choosing a new programme.
+
+**Reopen triggers — only these:** (1) new authoritative / rights-clean evidence;
+(2) a new gameplay viewpoint exposes a currently occluded defect; (3) the owner
+identifies a specific visible defect in the current build.
+
 ### Where the project stands
 The city is geographically real and materially complete: road graph, terrain, water,
 buildings with facades and bays, landmarks, props, vegetation, traffic, pedestrians,
@@ -284,6 +319,16 @@ took the corridor centre. There is no median concept in the road system and
 the graded crossing and the SUV parking lane. It needs a reserved band in the
 Roads section model first. Hurtig Hall is in (19.57 m, PDDL-confirmed) but it is
 fully occluded from the opening — 42 of 42 sample points in frustum, 0 unoccluded.
+
+> **SUPERSEDED — 2026-09-09. Read this before the paragraph below.**
+>
+> The paragraph that follows describes the state *before* the second-stage
+> fidelity programme and is kept for the record. Its scores are no longer current:
+> it says eye-level likeness **FAIL**, hero massing and public realm **PARTIAL**,
+> and "coverage, quad form, entrances and the Green Line remain open". All of those
+> were subsequently worked. **The Northeastern second-stage fidelity programme is
+> now TECHNICALLY CLOSED** — see §0 "Northeastern status" above and
+> `docs/neu/CURRENT_VS_REAL.md` for the closure audit.
 
 **The opening is technically correct and architecturally NOT yet Northeastern.**
 Keep those apart: gameplay opening PASS; hero massing PARTIAL; public realm

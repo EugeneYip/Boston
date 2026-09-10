@@ -340,6 +340,43 @@ sight line, and a proper ray test found **0 prop cars within 2.2 m of the
 player→SUV line for either candidate**. Third time this district has produced a
 phantom defect from camera placement — measure the geometry, then look.
 
+## Northeastern hero district — SECOND-STAGE PROGRAMME TECHNICALLY CLOSED (2026-09-09, `cd70119`)
+
+**Do not reopen Northeastern implementation work without a documented trigger.**
+Everything below Wave 4A in this file predates the second-stage programme (B2B/B2C
+transit, C/C-2 Krentzman form and the campus-ground winding fix, D0–D5) and is
+history, not current state. The current state is here and in
+`docs/neu/CURRENT_VS_REAL.md`.
+
+- **Technically closed.** No remaining Northeastern-specific item passes the
+  implementation filter; every high-recognition candidate fails on *evidence
+  sufficient to build without fabricating*. Closed ≠ complete.
+- **Owner visual acceptance is separate and still outstanding.** The audit's
+  technical reading is that current evidence no longer supports "obviously not
+  similar enough" — that is not owner approval.
+- **Opening / first-minute public realm PASS**: spawn → Krentzman → starter SUV →
+  50 m Huntington drive → exit runs clean, 0 ungrounded on the quad legs. Broader
+  district public realm is **not** claimed complete (campus ground still has a
+  finite outer boundary).
+- **Eye-level PARTIAL** in absolute fidelity, no currently executable high-ROI
+  blocker. **Dodge entrance CLOSED** (evidence exhausted). **337 validated** at
+  recognition scale; its oriels/entrance blocked on position. **335A LOW VALUE.**
+  **Krentzman ledge BLOCKED.** **Station lettering LOW VALUE.**
+- **Green Line rolling stock is a future Boston-wide CANDIDATE only**, not a
+  Northeastern requirement and not a ranked winner. `src/world/Transit.js` covers
+  the Green Line E surface infrastructure in the Huntington reservation only.
+- **Recommended next action: a fresh Boston-wide current-pixels / hostile-critic
+  rebaseline** before any new programme is chosen.
+
+**Reopen triggers — only these:** (1) new authoritative / rights-clean evidence;
+(2) a new gameplay viewpoint exposes a currently occluded defect; (3) the owner
+identifies a specific visible defect in the current build.
+
+**Structural note on road triangles:** `Roads.triangles` ≈ **388,729** is a
+build-time, camera-independent, near-LOD world total. A figure of **34,149** in
+the closure snapshot was *visible meshes matching `/^road_/` at one camera* and
+excludes the `roadLod_` far meshes. Different domains — never label both "road tris".
+
 ## Northeastern hero district — Wave 4A, entrance cues + opening readiness (2026-09-08, `1434346`)
 
 **All nine migration gates are now PASS or READY. The migration itself was NOT

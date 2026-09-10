@@ -496,9 +496,20 @@ fidelity programme is CLOSED.** Not complete — every remaining known gap is
 blocked on evidence, below screen-value threshold, or both.
 
 **Scores from the current build, not from programme history.** Place recognition
-**PASS**, primary massing **PASS**, public realm **PASS**, Huntington identity
-**PASS**, coverage **PASS**, materials **PASS**. Two partials, and both defects
-are named rather than gestured at:
+**PASS**, primary massing **PASS** *for the tested opening composition*, public
+realm **PASS** *for the canonical opening / first-minute core*, Huntington
+identity **PASS**, coverage **PASS**, materials **PASS**. Two partials, and both
+defects are named rather than gestured at:
+
+Two of those need their scope stated, because the first version of this section
+overstated them. **Primary massing** passes at recognition scale on accepted PDDL
+Roof Breaks geometry and heights — it is *not* a claim that every named building's
+footprint independently agrees within 10 %. The cluster resolves 10 CONFIRMED and
+4 COMPLEX, and the shared and complex cases (Ell/Curry as one mass, Hastings at
+1,681 m² against an official 1,046, Dana, Cabot) stay documented in
+`HERO_FOOTPRINTS.json`. **Public realm** passes for the opening core; broader
+district public realm is **not claimed complete**, and the finite outer
+campus-ground boundary remains a recorded caveat.
 
 - **Eye-level likeness — PARTIAL.** Under high midday sun the near-neutral pale
   historic family (albedo saturation 0.040) loses relief and reads flat. The
@@ -531,23 +542,49 @@ evidence sufficient to implement without fabrication*. The one item that passes
 visibility, recognition, pixels and evidence is **Green Line rolling stock**, and
 that is not Northeastern-specific: it is a city-wide asset.
 
-**Owner-complaint verdict: PARTLY.** *"Not similar enough"* is no longer
-supported — the three-sided quad open to a rail-median arterial, the vertical-strip
-masonry range, and the red-brick block closing the frontage are specific cues, and
-the campus ground actually renders. *"Not refined enough"* still is, where
-buildings meet people. The qualifier that matters: that residual is **evidence-bound,
-not craft-bound**, and closing is therefore correct rather than a claim of
-completeness.
+**Owner-complaint verdict: PARTLY — as a technical reading only.** *"Not similar
+enough"* is no longer supported by current evidence: the three-sided quad open to a
+rail-median arterial, the vertical-strip masonry range, and the red-brick block
+closing the frontage are specific cues, and the campus ground actually renders.
+*"Not refined enough"* still is, where buildings meet people. That residual is
+**evidence-bound, not craft-bound**, which is why closing is correct rather than a
+claim of completeness.
+
+**Two different things, and this closure only settles one.** *Technical closure*
+is supported: no remaining Northeastern-specific item passes the six-part filter.
+*Owner visual acceptance* is **not granted and not claimed** — it is pending the
+owner's own review of the current build. The original rejection was an owner
+judgement; measurement can show the evidence no longer supports the description,
+but it cannot retire that judgement on the owner's behalf.
+
+**Road-triangle labelling, corrected.** The closure baseline first recorded
+`roadTris: 34,149` beside deterministic figures, while earlier waves recorded
+~388,729. Both are right; they are different domains, traced to
+`src/world/Roads.js`. **388,729** is `Roads.triangles`, accumulated at *build* time
+over every chunk (`tris += ch.near.i.length / 3`) — camera-independent, near-LOD
+only, which is why earlier waves could report it "identical" across sessions.
+**34,149** counted only *visible* meshes matching `/^road_/` at one camera after
+the drive leg, and structurally excludes the far-LOD meshes, which Roads names
+`roadLod_` + key. Both are now named explicitly, and the other camera-dependent
+figures are flagged as such.
 
 **Frozen until** new authoritative evidence appears — a rights-clean elevation or
 plan is the single highest-leverage artefact, unlocking 337's oriels and entrance
 together — or a new viewpoint exposes something currently occluded, or the owner
 points at a specific defect.
 
-**Next Boston-wide priority: Green Line rolling stock.** The rails, catenary and
-platforms already exist and are accepted, so it extends transit rather than
-reopening it, MBTA LRV dimensions are published, and it pays off on every branch
-in the city rather than in one district.
+**Next action: a fresh Boston-wide current-pixels / hostile-critic rebaseline**,
+to rank the largest remaining world-level defects before any new programme is
+chosen. Candidate classes are deliberately not pre-ranked.
+
+**Green Line rolling stock is a candidate, not a ranked winner.** Its evidence
+position is good — published MBTA LRV dimensions, the Design Criteria Manual
+already accepted here, and rails, catenary and platforms already built — but it
+must compete in that rebaseline. An earlier version of this section claimed it
+"pays off on every branch in the city"; that overstated current coverage.
+`src/world/Transit.js` is explicitly *"Green Line E surface infrastructure, in the
+Huntington reservation"*, so the only proven payoff today is the modelled
+Huntington / Green Line E corridor. Wider reuse is future capability.
 
 ### WAVE D5 — THE FALLBACK WAS RIGHT ABOUT 337 (2026-09-09)
 
