@@ -41,16 +41,33 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
+### NPC hair — BLOCKED on one raster capture (2026-09-10)
+
+The only missing evidence is raster evidence. Two sessions were stopped by the
+resource gate; the second saw load **43.50**, memory **26% free**, swap grown to
+**7,168 MB** with 5,937 used, and a competing Codex renderer at **42.4% CPU**.
+
+**The one test, when the host is quiet:** a median-height adult NPC at 5-7 m,
+~180-250 px tall, 1920x1080, at three *computed* aspects (FRONT, REAR 3/4, REAR),
+phase and camera frozen. Capture production frames, then force **only** `Z_HAIR`
+to a diagnostic colour and count the pixels winning the depth test. Outcomes:
+hair already reads -> **close the P0 as an aspect misclassification**; debug
+visible but production not -> a colour-only fix; debug not visible -> a later
+bounded geometry wave. Touch nothing else about pedestrians to answer it.
+
 ### NPC pedestrians — P0 PREMISE UNVERIFIED, do not start (2026-09-10)
 
 Evidence: `docs/CRITIC_REPORT.md` top block. **The P0 rested on an observation
 that did not survive the geometry, so do not begin work.**
 
-- **Hair is present, correctly coloured, and depth-visible.** `Z_HAIR` covers
-  **76.1%** of the rear-facing skull surface and **0.0%** of the front
-  (solid-angle weighted), staying 31 mm inside the skull at the face. Its colour
-  for seed 0.9216 is sRGB **(108, 84, 56)** — a dark brown, nowhere near skin.
-  **Do not call hair absent, do not call it occluded, do not darken the palette.**
+- **Hair is present and analytically exposed; raster ownership is UNMEASURED.**
+  `Z_HAIR` covers **76.1%** of the rear-facing skull surface and **0.0%** of the
+  front (solid-angle weighted, analytical), staying 31 mm inside the skull at the
+  face, and its colour for seed 0.9216 is sRGB **(108, 84, 56)** — a dark brown,
+  nowhere near skin. So it is *expected* to read. **Nobody has counted the
+  `Z_HAIR` pixels that win the depth test** — two resource gates stopped WebGL.
+  Do not call hair absent or occluded, do not call it confirmed visible, and do
+  not darken the palette.
 - **Faces are bald front-on BY DESIGN** — the source says an ellipsoid centred on
   the head would "paint the whole face brown".
 - **My "every pedestrian reads bald" claim was aspect-specific and is withdrawn

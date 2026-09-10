@@ -1,5 +1,59 @@
 # CRITIC_REPORT.md
 
+> ## NPC HAIR RASTER TEST — NOT RUN, GATE FAILED, 2026-09-10
+>
+> **Outcome: UNDETERMINED — not A, not B, not C.** The one missing piece of
+> evidence is raster evidence, and the host would not support acquiring it.
+>
+> ### Resource gate, failed on every requirement
+>
+> | required | measured |
+> |---|---|
+> | competing renderer quiet | **Codex Renderer 42.4% CPU**, still resident |
+> | swap stable or improving | total **4,096 -> 7,168 MB**; used **3,291 -> 5,937 MB** |
+> | memory healthy for one session | **26% free** — the worst reading of the programme |
+> | (observed) load | **43.50** 1-min, against 4.49 an hour earlier |
+> | (observed) other load | iOS Simulator `mobileassetd` **51.8%**, `diskimagesiod` 25.5% |
+>
+> Per the brief this is a STOP, including a stop on further static work. Nothing was
+> rendered; no actor, camera aspect, or debug-ownership figure exists for this pass.
+>
+> ### Wording narrowed in the block below (this is the mandated correction)
+>
+> The static pass reached conclusions the renderer never confirmed. Corrected:
+>
+> - "H1 (occlusion) **is refuted**" -> **NOT YET RASTER-TESTED**; analytical coverage
+>   makes it unlikely.
+> - "H2 (colour) **is refuted**" -> **NOT YET RASTER-TESTED**; the palette arithmetic
+>   makes it unlikely.
+> - "`Z_HAIR` is **depth-visible** over the rear" -> **analytically exposed** over much
+>   of the rear hemisphere and *expected* to be raster-visible; **ownership unmeasured**.
+>
+> What the static pass does legitimately support, unchanged: `Z_HAIR` geometry
+> exists; its expected colour sRGB **(108, 84, 56)** is materially unlike skin; the
+> geometry predicts **76.1%** rear-hemisphere coverage and **0.0%** front; and the
+> original "all NPCs are bald" premise is **no longer supported**. H4 (aspect
+> misclassification) remains the strong hypothesis — still a hypothesis.
+>
+> ### The one test that remains
+>
+> A median-height adult NPC at 5-7 m, ~180-250 px tall, 1920x1080, at three
+> **computed** aspects (FRONT, REAR 3/4, REAR) with frozen phase and camera: capture
+> production frames, then force only `Z_HAIR` to a diagnostic colour and count the
+> pixels that win the depth test. That is the whole question. Nothing else about
+> pedestrians should be touched to answer it.
+>
+> Also still open from the previous pass: whether the recorded lower-head band at
+> **(113, 74, 55)** was in fact hair — it sits within 11 RGB of the predicted
+> **(108, 84, 56)**. Unproven until aspect and ownership are known.
+>
+> ### Status
+>
+> **NPC hair / P0 is NOT closed and NOT dead — it is BLOCKED on one bounded raster
+> capture.** No runtime change was made in this pass or the previous one.
+
+---
+
 > ## NPC P0A — THE BALD PREMISE IS IN DOUBT, 2026-09-10 (static only)
 >
 > **Resource gate stopped this before WebGL** — memory 37% -> 31% free and
@@ -8,14 +62,14 @@
 > runtime change. It was enough to refute both of the mission's hypotheses **and
 > my own premise.**
 >
-> ### H2 (colour) is refuted by arithmetic
+> ### H2 (colour) — NOT YET RASTER-TESTED; arithmetic makes it unlikely
 >
 > `Character.js` zone 4 mixes `(0.016, 0.011, 0.008)` -> `(0.155, 0.092, 0.040)`
 > by `fract(aAnim.w * 4.31)`. For the reference actor's seed **0.9216078**:
 > `t = 0.9721`, linear **(0.1511, 0.0897, 0.0391)**, sRGB **(108, 84, 56)** — a
 > medium-dark brown. **`Z_HAIR` is nowhere near skin.** Do not touch the palette.
 >
-> ### H1 (occlusion) is refuted by coverage
+> ### H1 (occlusion) — NOT YET RASTER-TESTED; analytical coverage makes it unlikely
 >
 > Protrusions are small — rear **23.0 mm (2.95 px at 5 m)**, crown 11.0 mm
 > (1.41 px), temple 6.5 mm (0.83 px) — which is what my earlier "3.0 px hair
@@ -73,8 +127,11 @@
 >
 > Nothing implemented. `src/` untouched. The durable position:
 >
-> - `Z_HAIR` geometry is **present and depth-visible over the rear of the head**
->   (76.1% of rear-facing surface) — do **not** call it absent or occluded.
+> - `Z_HAIR` geometry is **present, and analytically exposed over much of the rear
+>   hemisphere** (76.1% of rear-facing surface by solid angle), so it is *expected*
+>   to be raster-visible. **Final raster ownership was never measured** — the
+>   resource gate stopped WebGL. Do **not** call it absent or occluded, and do not
+>   call it confirmed visible either.
 > - Hair colour is correct at (108, 84, 56) — do **not** darken the palette.
 > - Faces are bald **by design**, front-on only.
 > - **Whether NPCs actually read bald in normal play is now UNVERIFIED.** The
