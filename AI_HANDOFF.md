@@ -41,28 +41,32 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
-### Next programme — PEDESTRIAN VISUAL FIDELITY (2026-09-10)
+### NPC pedestrians — attribution PARTIAL, not started (2026-09-10)
 
-Selected by a four-way shootout after the parked-car closure; evidence in
-`docs/CRITIC_REPORT.md`, top block. **Not yet started.**
+Evidence: `docs/CRITIC_REPORT.md` top block. **Read it before touching the crowd
+mesh — the shootout's stated reasons were wrong and are retracted there.**
 
-- **Why:** nearest pedestrian in a normal street view is **3.8 m and 314 px tall**;
-  peds occupy **4.48%** of that frame across 620 active actors, day and night. They
-  are **676 triangles (near) / 287 (far) on ONE material**, with no faces, no
-  hands, no feet and clothing as a single flat colour block. A parked car at 6.7 m
-  gets 4,928 triangles.
-- **Scope it to the ladder in §"The player character"**: silhouette and proportion,
-  then hands/feet/head, then clothing volumes. **Not a facial rig** — that ladder
-  puts face detail last on purpose. The player already has `buildHeroGeometry`;
-  this is the NPC crowd path. Hold the 620-instance budget; the far tier needs
-  nothing.
-- **Also open, as a small separate bug:** at night, bright cream shapes replace the
-  lower half of each parked-car tyre. Real and reproducible, absent in daylight,
-  and **not** the adjacent street lamp (ablating both nearby PointLights moved the
-  region 1.4%). Ownership unattributed. Do not fold it into the pedestrian work.
-- **Rejected:** parked d1 mid-distance (largest instance 49×40 px — an earlier
-  "124 px" figure was a broadside upper bound and is corrected); dusk sky clipping
-  (sky-only, 0% magenta, never touches buildings or roads).
+- **The crowd already has** hair (`Z_HAIR`, pushed back with `phiMax 0.70π` so it
+  does not cover the face), hands (0.060 × 0.100 × 0.042 m), shoes (0.232 m,
+  tapered), a neck tube, joint volumes, and **six colour zones**. One `ped_body`
+  material is one *draw*, not one colour. Only **facial features** are genuinely
+  absent.
+- **Do NOT add anatomy.** Measured on a median 1.732 m NPC at 5 m / fov 62 /
+  1920×1080: silhouette 69 × 224 px, head **24 × 30 px**, hand 7.7 × 12.8 px, and
+  **a nose would be 2.6 px**. Faces and hand detail cannot read at gameplay range.
+- **The live carrier is a colour break at the head.** A vertical profile through
+  the head is ~20 px of uniform skin tone with **no hair band at the crown**, even
+  from behind — every NPC reads bald. At 24 × 30 px a tonal edge survives where
+  geometry does not. **Why `Z_HAIR` fails to read is not yet established** (aspect
+  coverage vs per-instance colour); that ablation is the next step.
+- **Heights are fine** — near median 1.710 m, far 1.672. An earlier "1.30 m" note
+  was the population minimum sampled as n=1.
+- `buildHeroGeometry`'s docstring describes the crowd as a plank with no neck and
+  no feet in profile. That predates the hero and is **stale**: current crowd
+  side/front ≈ 0.635 vs hero ≈ 0.672.
+- Preserve the architecture: near cap 72, far cap 560, pool 620, two crowd draws,
+  one material, shared animation texture. Crowd lod0 is 676 tris, lod1 287, hero
+  1,474.
 
 ### Vehicle appearance — parked-car work CLOSED (2026-09-10, `737f897`)
 

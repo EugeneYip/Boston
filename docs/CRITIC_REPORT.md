@@ -1,5 +1,96 @@
 # CRITIC_REPORT.md
 
+> ## P0 NPC ATTRIBUTION — PARTIAL, NO IMPLEMENTATION, 2026-09-10
+>
+> **The shootout's ranking survives; its stated reasons do not.** Three of its
+> four structural claims about the crowd mesh were wrong, and the direction they
+> implied — add anatomy — is refuted by pixel measurement. No runtime code changed.
+>
+> ### Retracted: the crowd already has what the shootout said it lacked
+>
+> From `buildCharacterGeometry(0)` in `src/gameplay/Character.js`, read as
+> generated geometry rather than as an impression:
+>
+> | feature | shootout said | actually |
+> |---|---|---|
+> | hair | "no hair" | **PRESENT** — `Z_HAIR` blob, pushed back +0.023 with `phiMax 0.70π` *deliberately* so it does not paint over the face |
+> | hands | "no hands" | **PRESENT** — 0.060 × 0.100 × 0.042 m box per side on the hand bone |
+> | feet | "no feet" | **PRESENT** — 0.092 × 0.080 × **0.232 m** shoe per side, taper 0.80 |
+> | clothing | "one flat colour block" | **SIX ZONES** — `Z_SKIN / Z_TOP / Z_BOT / Z_SHOE / Z_HAIR / Z_SLEEVE`, per-instance coloured. One `ped_body` material is one *draw*, not one colour |
+> | neck | (implied absent) | **PRESENT** — tube y 1.385→1.475, r 0.052→0.048 |
+> | joints | — | shoulder, elbow, hip and knee volumes at lod 0 |
+> | **facial features** | "no faces" | **CONFIRMED ABSENT** — no nose, brow, jaw or ear geometry |
+>
+> Generated counts: **crowd lod0 676 tris / 497 verts, lod1 287 tris, hero 1,474
+> tris.** The hero's whole silhouette fix cost ~800 triangles, not an order of
+> magnitude.
+>
+> Also stale: `buildHeroGeometry`'s docstring records the crowd as a "plank" at 54%
+> side-to-front silhouette, "no neck", head "0.198 m across", and feet that "do not
+> exist in profile". That was measured **before the hero existed**. Current crowd:
+> torso side/front ≈ **0.635** (vs hero ≈ 0.672 — only 5.5% apart), a neck tube
+> exists, the head is 0.186 m, and shoes are 0.232 m long. Do not inherit it.
+>
+> ### The measurement that kills the anatomy direction
+>
+> A **median-height** NPC (1.732 m) at **5 m, production fov 62, 1920×1080**:
+>
+> | | projected |
+> |---|---|
+> | silhouette | **69 × 224 px** |
+> | head | **23.9 × 29.8 px** |
+> | hand | **7.7 × 12.8 px** |
+> | shoe length | 29.8 px |
+> | neck height | 11.6 px |
+> | torso | 45.7 × 29.0 px |
+> | **a nose would be** | **2.6 px** |
+> | hair forward offset | 3.0 px |
+>
+> **A face cannot read at gameplay distance.** A nose is 2.6 px, a brow or jaw 3–5.
+> Hands are 7.7 px wide, so a thumb is ~2 px. **Phases 4 and 5 both answer no:** do
+> not build facial features, and do not enlarge hand or foot detail. Anatomy is the
+> wrong axis.
+>
+> ### What does read, and the one thing that does not
+>
+> Perceptually at 5 m the NPC reads as a *person* — silhouette, limbs, gait, shoes
+> and the top/bottom garment boundary all resolve. The conspicuous wrong note is
+> the **head**: a vertical median-RGB profile through it shows a ~20 px band of
+> uniform skin tone (RGB ~170,136,111 falling smoothly to ~113,74,55) with **no
+> darker hair band at the crown** — measured on an NPC walking *away* from camera,
+> where hair coverage should be greatest. **Every pedestrian reads as bald.**
+>
+> So the live carrier is a **colour/zone break at the head**, not geometry: at
+> 24 × 30 px a hair/skin tonal edge survives where a 2.6 px nose never will.
+>
+> ### Not established — deliberately left open
+>
+> - **Why** the hair zone fails to produce a raster break. Two candidates remain
+>   unseparated: the hair blob's aspect coverage, or `Z_HAIR` per-instance colour
+>   landing too close to skin. This needs a zone-colour ablation that was not run.
+> - The **A/B/C/D/E carrier ablation was not performed.** No variant was built, so
+>   nothing is recorded as tested-and-failed.
+>
+> ### Two errors of my own, caught here
+>
+> 1. **"Pedestrians are 1.30 m tall" — nearly reported, and false.** That was the
+>    *minimum of 19* near-tier instances. Real distribution: near median **1.710 m**
+>    (p10 1.529, p90 1.831), far median 1.672. Heights are correct; I had sampled
+>    n=1 and it was the population floor.
+> 2. **Raster sampling by rest-pose coordinates on an animated mesh** put my first
+>    head samples on the shoulder. Redone as an animation-independent vertical
+>    profile.
+>
+> ### Verdict: **PARTIAL — root cause narrowed, nothing implemented**
+>
+> The expensive directions are eliminated on measurement, and the remaining
+> candidate is cheap and specific. **NPC visual fidelity is NOT closed**; it is
+> parked at a well-defined next step: establish why `Z_HAIR` does not read, then
+> ablate a hair/skin tonal break at 24 × 30 px before touching geometry. Cost model
+> unchanged — near cap 72, far cap 560, pool 620, two crowd draws, one material.
+
+---
+
 > ## B-LIST SHOOTOUT — NEXT PROGRAMME SELECTED, 2026-09-10
 >
 > Four candidates, one short session, no runtime change. **OUTCOME A: one winner —
