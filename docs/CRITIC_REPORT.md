@@ -1,3 +1,105 @@
+# CRITIC_REPORT.md
+
+> ## P0 ROOT-CAUSE INVESTIGATION, 2026-09-10 — READ THIS BEFORE THE REBASELINE BELOW
+>
+> The rebaseline's **P0 attribution and severity did not survive investigation.**
+> Its high-level observation — vehicles are the weakest large foreground element —
+> partly stands. Its explanation, its numbers and its "featureless shell"
+> characterisation do not. No runtime behaviour was changed; one stale source
+> comment was corrected.
+>
+> ### What was actually measured
+>
+> **The reference car renders the FULL near tier.** `carSuvB` at **6.74 m**,
+> 366×246 px — the rebaseline's own case — is held by **LOD 0 at 4,928
+> triangles**, not the distant shell. The closest parked car of all, at 3.97 m,
+> is also d0.
+>
+> **Per-instance LOD selection is correct, with no mismatch anywhere.** `Props.js`
+> already implements an opt-in per-instance near tier (`splitNear`, enabled for
+> every `car*` batch) and the chunk pre-test is deliberately conservative
+> (`dist(chunkCentre) − CHUNK_R`). Surveyed across four districts:
+>
+> | district | 0–10 m | 10–20 m | 20–40 m | 40–80 m | closest d1 | farthest d0 |
+> |---|---|---|---|---|---|---|
+> | Back Bay | 3 d0 / 0 d1 | 6/0 | 11/0 | 0/19 | **43.4 m** | 37.9 m |
+> | Beacon Hill | 2/0 | 3/0 | 11/2 | 0/22 | **38.8 m** | 37.9 m |
+> | North End | 1/0 | 6/0 | 8/1 | 0/20 | **38.9 m** | 35.1 m |
+> | South End | 1/0 | 7/0 | 9/2 | 0/18 | **39.7 m** | 33.5 m |
+>
+> **No d1 car is nearer than 38.8 m in any district; no d0 car is beyond 37.9 m.**
+> A clean cut at the authored `near` of 38. **Hypothesis "chunk-level LOD
+> mis-selection" is refuted.**
+>
+> ### The rebaseline's instrument was invalid for this question
+>
+> Mean |gradient| over a car's bounding box **does not measure vehicle detail.**
+> Proven by ablation at the reference car, frozen, with an A/A floor of ±0.01:
+>
+> | state | gradient | edge density |
+> |---|---|---|
+> | d0 — 4,928 tris | 3.77 | 10.47% |
+> | d1 — 408 tris, **no wheels, no glazing** | 3.49 | 9.65% |
+>
+> A 12× geometry cut scores **8% worse** — while the d1 car at 6.8 m is
+> *visually* a faceted wedge with two black stubs for wheels. The metric is
+> dominated by background inside the box and by lighting, not by feature
+> presence. **The rebaseline's "2.61 vs 9.21, 3.5× less detail than the facade"
+> is therefore withdrawn as evidence of severity.** A car is a smooth manufactured
+> object; comparing its local contrast to brick masonry was never a fair test.
+>
+> ### Material collapse is real but small
+>
+> `CAR_SLOT` does remap `glass`/`glassDark` → `carPaint` and `lensRed` → `paint`,
+> so parked glazing shades as lacquered body paint (aSurf `0.34, 0.05, 1.0, 1.25`
+> — identical to the body) and tail lamps are not emissive. Confirmed by vertex
+> inspection: 288 of 14,784 vertices are glazing carrying the body's own surface
+> class. Ablated to a true glass class: **gradient 3.55 → 3.67 (+3%)** against a
+> ±0.01 floor — statistically real, perceptually minor, because glazing is ~2% of
+> the vertices. **Not the primary cause.** The original mapping's *safety*
+> argument also still holds: d0 has no `under` bucket, so it genuinely has no
+> floor and transparent glazing would still see through.
+>
+> ### The real, smaller residual
+>
+> Matched at 6.79 m, the moving tier is **perceptibly better** — visible window
+> frames and pillars, a door shut-line, a side mirror, a lower rub strip — on
+> 18,244 triangles and **17 materials**, against parked d0's 4,928 triangles and
+> **1** shared `prop_surf`. Yet the gradient metric separates them by only 13%
+> (4.02 vs 3.77), which is further proof the metric is the wrong one. Parked d0
+> lacks frames, shut-lines and mirrors; that is the genuine gap, and it is a **B**,
+> not an **A**.
+>
+> Secondary: the d1 shell serves 92% of visible cars and its nearest in-frustum
+> instance sits at **43.4 m ≈ 124 px wide** (then 108, 97, 96 px). A wheelless
+> faceted body at ~120 px is the more defensible artifact by count, though each is
+> small.
+>
+> ### Corrections to the record
+>
+> - **Stale source comment corrected** in `src/world/StreetFurniture.js`: it said
+>   "LOD0 is ~380 triangles and LOD1 ~90". Real values are **d0 4,632–4,928** and
+>   **d1 408–432**. That text described a hand-rolled box stack
+>   `buildCarFromVehicle` had already replaced. Comment only; no semantics.
+> - **The "~150 × (380 − 90) ≈ 43,500 triangles" cost estimate is withdrawn.** It
+>   was built on the stale figures and on the refuted assumption that close cars
+>   render the shell. A street view is ~200k triangles of parked car (20 d0 + 241
+>   d1 in one Back Bay frustum), and the authored sweep already records `near` 95
+>   costing 622k.
+> - **"Featureless shell" is withdrawn.** At full framing a d0 car shows formed
+>   wheels with spokes, a distinct dark glazing band, a tail lens and correct
+>   silhouette. That description came from 800×450 captures in which the car was
+>   ~150 px.
+>
+> ### Verdict: **E — the P0 attribution was wrong.**
+>
+> Per the mission's own gate, E stops implementation. **Root cause is closed; no
+> vehicle work was performed.** P0 is **demoted from A to B** and no longer claims
+> a close-range LOD or shell cause. The ranking below is otherwise unchanged, and
+> everything in §S (old suspects re-tested) and §P (structural baseline) stands.
+
+---
+
 # CRITIC_REPORT.md — Boston-wide current-pixels rebaseline, 2026-09-09 at `c621899`
 
 > ## THIS SECTION IS THE ACTIVE LIST. Everything below it is historical.

@@ -1781,8 +1781,23 @@ function buildSnowBank() {
 // or litter makes a street read as inhabited. These are STATIC SHELLS, not
 // vehicles: no physics body, no simulation, no wheels that turn. They exist to
 // line the kerb, so the budget goes on silhouette and proportion and nothing
-// else. LOD0 is ~380 triangles and LOD1 ~90, both instanced, so a fully parked
-// street costs a few tens of thousands of triangles rather than millions.
+// else.
+//
+// TRIANGLE FIGURES, MEASURED AT RUNTIME 2026-09-10 (the previous "~380 / ~90"
+// here described a hand-rolled box stack that `buildCarFromVehicle` replaced,
+// and was off by more than an order of magnitude):
+//
+//   d0 = level(1) = VehicleModels LOD1   4,632-4,928 tris   near 38 m
+//   d1 = level(2) = VehicleModels LOD2     408-432 tris     far 155 m
+//
+// d0 carries paint, glass, chrome, trimDark (tyres) and lensRed but NOT `under`,
+// so it has no floor. d1 carries only trim and paint -- no tyres and no glazing
+// at all, which is why it must stay beyond ~38 m.
+//
+// A street view is therefore ~200k triangles of parked car, not "a few tens of
+// thousands": measured at the Back Bay street viewpoint, 20 instances on d0 and
+// 241 on d1 in one frustum. Any change to `near` should be costed against the
+// sweep table below, not against these per-car numbers alone.
 //
 // Real overall dimensions, because scale is what sells a vehicle at 3 m:
 // a Camry is 4.88 x 1.84 x 1.45, a RAV4 4.60 x 1.86 x 1.69, a Civic hatch

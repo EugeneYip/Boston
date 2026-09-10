@@ -340,6 +340,22 @@ sight line, and a proper ray test found **0 prop cars within 2.2 m of the
 player→SUV line for either candidate**. Third time this district has produced a
 phantom defect from camera placement — measure the geometry, then look.
 
+## P0 root-cause investigation — parked-car attribution refuted, demoted to B (2026-09-10)
+
+The 2026-09-09 rebaseline ranked kerbside parked cars P0/A. Investigation
+**refuted the attribution**; see `docs/CRITIC_REPORT.md` top block.
+
+- Parked-car **LOD selection is correct**: per-instance `splitNear` gives a clean
+  38 m cut — no d1 car nearer than 38.8 m, no d0 beyond 37.9 m, across four
+  districts. The reference car at 6.74 m is **d0, 4,928 triangles**.
+- Real figures: **d0 4,632–4,928**, **d1 408–432** (no tyres, no glazing). The old
+  "~380 / ~90" source comment was stale and has been corrected. The 43,500-triangle
+  cost estimate is withdrawn; a street view is ~200k triangles of parked car.
+- **Mean-gradient is not a valid vehicle-detail metric** — it rates a wheelless
+  wedge within 8% of the full car. "Featureless shell" is withdrawn.
+- Residual, **severity B**: parked d0 lacks the moving tier's window frames,
+  shut-lines and mirrors (1 shared material vs 17). Glass-class ablation is +3%.
+
 ## Boston-wide critic rebaseline — P0 is kerbside vehicle fidelity (2026-09-09, `c621899`)
 
 **The active defect list is the top section of `docs/CRITIC_REPORT.md`.** The
