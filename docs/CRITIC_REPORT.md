@@ -1,5 +1,87 @@
 # CRITIC_REPORT.md
 
+> ## P0B — SUPERSEDES THE VERDICT-E BLOCK BELOW, 2026-09-10 (`737f897`)
+>
+> **The "Verdict E / root cause closed" conclusion below was wrong on two source
+> facts, and the correct verdict is B1: transparent glazing was the missing
+> carrier.** It is now implemented. What survives from that block: the LOD system
+> is sound, `splitNear` works, the 38 m cut is clean, raising `near` is not the
+> answer, and mean-gradient is not a valid vehicle-detail metric. Those all stand.
+>
+> ### Two claims below are retracted
+>
+> **1. "d0 has no floor, so transparent glazing would still see through" — WRONG.**
+> `REMAP_LOD1` folds **both** `interior` and `under` into `trimDark`, and
+> `VehicleModels.cabinShell` runs for every `lod < 2`, emitting the cabin in both
+> windings. Verified on generated SUV LOD1: **trimDark 2,024 triangles** against
+> LOD0's **under 1,580 + trimDark 512** — the same cabin and floor, merged into one
+> bucket. A ray through the greenhouse returns **4** front-facing hits; through the
+> body below the belt, **1**. There was always an opaque near-black occluder. The
+> claim mistook a missing bucket *name* for missing geometry — the same error the
+> old `StreetFurniture` comment made.
+>
+> **2. "parked d0 lacks shut-lines, handles, mirrors, window frames and defined
+> lamps" — WRONG on four of five.** At `lod < 2` the generated SUV runs
+> `doorFurniture` (shut-lines **and** handles), `mirrors` (SUV has
+> `mirrors: true`), `archLips`, `frontFascia`/`rearFascia`, and at `lod === 1`
+> **only**, `plateBlock` front and rear. Confirmed visually at diagnostic
+> magnification: three shut-lines, two handles, the A-pillar mirror, arch lips, a
+> beltline crease, 5-spoke alloys and the tail lens are all present. **Only
+> pillars/window-rails, wipers and the rocker crease are genuinely LOD0-only.**
+>
+> Why they looked absent: they are physically scaled and fine-grained. A shut-line
+> is `sweepPath(..., 0.009)` — **1.6 px at 6.7 m at full 1920, and 0.65 px in the
+> 800×450 captures every earlier judgement was made from.** Handles are 25×7 px
+> full-res, 10×3 px downsampled; the mirror 26 px, 11 px downsampled. So: cause A
+> (sub-pixel at judged resolution) plus G (the earlier judgement simply missed
+> them) — **not** material collapse, not shader flattening.
+>
+> ### The true-glass experiment, which the E verdict never ran
+>
+> Diagnostic: the 96 glass triangles extracted, the opaque originals collapsed,
+> and a genuinely transparent pass overlaid sharing the same instance matrices.
+> Matched frames at 6.5 m:
+>
+> | variant | result |
+> |---|---|
+> | **A** current (glass → carPaint) | flat matte dark rectangles — painted-on holes |
+> | **C** opaque + glass-like aSurf, **zero extra draws** | **indistinguishable from A** |
+> | **B** true transparent glass | reflection sweep, tonal depth, reads as a cabin |
+>
+> **C is the important negative result:** the free fix does not work. Transparency
+> is the carrier, not the surface class — which is also why the earlier aSurf
+> ablation's "+3%" was not worth acting on.
+>
+> ### Shipped
+>
+> A new `glassCar` prop bucket: near-black by vertex colour, 0.62 opacity,
+> roughness 0.15, **FrontSide and depthWrite ON** (unlike the shared prop `glass`,
+> which is a bus shelter's at 0.20 opacity, DoubleSide, depthWrite off), so the
+> near pane depth-rejects the far one. `CAR_SLOT` routes `glass`/`glassDark` there.
+>
+> **Cost, measured:** d0 gains a second group; **d1 is untouched**, so nothing
+> changes for the 92% of visible cars beyond 38 m. **+1 draw per car type with
+> instances inside `near` — 7 in a Back Bay street view — and zero new
+> triangles**, because the 96 glass triangles changed bucket rather than appearing.
+> Shadow casters **1.71M**, inside the 2.5M budget.
+>
+> **Verified:** no see-through against a lit brick wall, no sorting artefact,
+> grounding −0.7 to 0.0 mm on both LODs, 38 m boundary unmoved (43.4 / 37.9),
+> moving vehicles untouched (17 materials, not using this bucket), starter SUV
+> canonical, traffic 124, errors and glFaults empty, validate ok.
+>
+> **Observation, not attributed:** at night, bright cream shapes appear at the base
+> of each wheel arch. They are absent in daylight at the identical camera, and
+> wheels are `trimDark → rough` which this change does not touch, so it is a
+> pre-existing night-lighting phenomenon. **Not compared against the pre-change
+> build**, so it is logged rather than claimed.
+>
+> **Parked-car work is now closed.** The remaining gap is pillars/window-rails,
+> which is LOD0-only mid-frequency detail and did not survive the minimum-carrier
+> test.
+
+---
+
 > ## P0 ROOT-CAUSE INVESTIGATION, 2026-09-10 — READ THIS BEFORE THE REBASELINE BELOW
 >
 > The rebaseline's **P0 attribution and severity did not survive investigation.**

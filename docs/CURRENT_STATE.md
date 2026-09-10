@@ -340,6 +340,24 @@ sight line, and a proper ray test found **0 prop cars within 2.2 m of the
 player→SUV line for either candidate**. Third time this district has produced a
 phantom defect from camera placement — measure the geometry, then look.
 
+## Parked-car glazing shipped, vehicle work closed (2026-09-10, `737f897`)
+
+Supersedes the entry below, which concluded the root cause was closed with no fix.
+It was wrong on two source facts; see `docs/CRITIC_REPORT.md` top block.
+
+- Parked glazing now uses a transparent `glassCar` bucket. Opaque glazing on the
+  body's paint class read as a painted-on hole; a glass-like aSurf class on the
+  same opaque panel was tested and is indistinguishable, so **transparency is the
+  carrier**.
+- It is safe because `cabinShell` runs for every `lod < 2` and `REMAP_LOD1` folds
+  `interior` **and** `under` into `trimDark` — the earlier "empty floorless shell"
+  claim mistook a missing bucket name for missing geometry.
+- parked d0 already had shut-lines, handles, mirrors, plates and lamps; only
+  pillars/window-rails, wipers and the rocker crease are LOD0-only. They read as
+  absent because a shut-line is 1.6 px at 6.7 m at 1920 and 0.65 px at 800×450.
+- Cost: +1 draw per car type inside `near` (~7 per street view), zero new
+  triangles, d1 untouched, shadow casters 1.71M of 2.5M.
+
 ## P0 root-cause investigation — parked-car attribution refuted, demoted to B (2026-09-10)
 
 The 2026-09-09 rebaseline ranked kerbside parked cars P0/A. Investigation

@@ -41,32 +41,32 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
-### Active priority — vehicle appearance, demoted to B (2026-09-10)
+### Vehicle appearance — parked-car work CLOSED (2026-09-10, `737f897`)
 
-A Boston-wide critic rebaseline ranked kerbside parked cars P0/A. A root-cause
-investigation the next day **refuted its attribution and demoted the severity.**
-Full detail: `docs/CRITIC_REPORT.md`, top block. Read that before doing any
-vehicle work.
+Full detail: `docs/CRITIC_REPORT.md`, top block. Read it before any vehicle work;
+two earlier conclusions in that file are retracted there.
 
-- **Parked-car LOD selection is CORRECT.** `Props.js` has a per-instance near
-  tier (`splitNear`, on for every `car*` batch). Measured across four districts:
-  no d1 car nearer than **38.8 m**, no d0 car beyond **37.9 m** — a clean cut at
-  the authored `near` of 38. The rebaseline's reference car at 6.74 m renders
-  **d0 at 4,928 triangles**, not a shell.
-- **Real LOD figures** (the source comment that said ~380/~90 was stale and is
-  now corrected): **d0 = VehicleModels LOD1, 4,632–4,928 tris**; **d1 =
-  VehicleModels LOD2, 408–432 tris**, with no tyres and no glazing. A street view
-  is ~200k triangles of parked car.
+- **Shipped:** parked-car glazing now has its own transparent bucket, `glassCar`
+  (near-black by vertex colour, 0.62 opacity, FrontSide, depthWrite ON). Opaque
+  glazing on the body's paint class read as a painted-on hole; giving that panel a
+  glass-like aSurf class instead was tested and is **indistinguishable** —
+  transparency is the carrier, not the surface class.
+- **Safe because the cabin exists.** `REMAP_LOD1` folds `interior` AND `under`
+  into `trimDark`, and `cabinShell` runs for every `lod < 2`. Generated SUV LOD1
+  trimDark is 2,024 tris against LOD0's under 1,580 + trimDark 512. An earlier
+  note claiming the shell was empty and floorless was reading a missing bucket
+  NAME as missing geometry — do not repeat that inference.
+- **parked d0 already has** shut-lines, handles, mirrors, plates, fascias, arch
+  lips and lamps. Only **pillars/window-rails, wipers and the rocker crease** are
+  LOD0-only. They looked absent because a shut-line is **1.6 px at 6.7 m at
+  1920, and 0.65 px in an 800×450 capture** — judge vehicle detail at full
+  resolution or not at all.
+- **Cost:** +1 draw per car type with instances inside `near` (~7 in a street
+  view), zero new triangles, d1 untouched. Shadow casters 1.71M of 2.5M.
+- **LOD is sound** — `splitNear` gives a clean 38 m cut. Do not raise `near`; the
+  authored sweep records 95 costing 622k triangles.
 - **Do not use mean-gradient to judge vehicle detail.** It rates a wheelless
-  408-tri wedge within 8% of a 4,928-tri car. The rebaseline's "3.5× less detail
-  than the facade" is withdrawn on that basis.
-- **The genuine residual is a B**: parked d0 lacks the moving tier's window
-  frames, door shut-lines and mirrors — 1 shared `prop_surf` versus 17 dedicated
-  materials. Glazing is remapped to body paint (`CAR_SLOT`), which is real but
-  worth only +3%; and d0 has no `under` bucket, so transparent glazing is still
-  unsafe.
-- **Do not raise `near` blindly.** The authored sweep records `near` 95 costing
-  622k triangles in one frustum.
+  408-tri wedge within 8% of a 4,928-tri car.
 
 ### Northeastern status — TECHNICALLY CLOSED (2026-09-09)
 
