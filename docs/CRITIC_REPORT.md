@@ -1,3 +1,196 @@
+# CRITIC_REPORT.md — Boston-wide current-pixels rebaseline, 2026-09-09 at `c621899`
+
+> ## THIS SECTION IS THE ACTIVE LIST. Everything below it is historical.
+>
+> The 2026-09-01 pass at `319c092` (which itself superseded the 6/10 pass on
+> `9bd5e55`) is retained below as evidence. **It is not the current priority
+> list** — most of its open items no longer reproduce. Re-tested results are in
+> §S "Old suspects, re-tested" below.
+
+**Verdict: the city reads well at macro and building scale, and badly at the kerb.**
+The single largest currently visible defect is **kerbside parked-car surface
+fidelity at close range** — measured, attributed, and present in every street
+view tested, in every district, day and night.
+
+**Conditions.** One WebGL session, `high` preset, fov 62, **drawing buffer verified
+1920x1080** before any pixel claim. Boot clean: 24 modules, failed [], errors [],
+glFaults [], validate ok 0 problems, Rapier live. 15 view set drawn from
+`tools/world-sweep/viewpoints.json` gameplay positions plus the canonical opening,
+a driver-eye Huntington view, dusk/night/rain conditions and an elevated overview.
+
+---
+
+## A. INSTRUMENT WARNINGS FOUND THIS PASS — read before trusting any capture
+
+1. **`computer:screenshot` returns part-composited frames while `document.hidden`
+   is true.** Repeatedly the lower ~55% of a screenshot came back black with a
+   stale HUD overlay, while the framebuffer was fine. Proven: at the Beacon Hill
+   view the camera was verifiably at y 13.19 (ground 11.54) and the framebuffer's
+   bottom-half row means measured **97.2** max-channel — a normally lit street —
+   while the screenshot showed black and a HUD reading `y 2`. **A torn screenshot
+   also carries a stale HUD, so the HUD is not a check on itself.** Fronting the
+   tab and stepping ~15 frames between calls produces clean frames; validate every
+   capture before judging it.
+2. **`drawImage` from the canvas in the same task IS valid** even when the
+   screenshot path tears. All statistics here come from that route.
+3. **`viewpoints.json` `eye` is a height ABOVE GROUND, not an absolute Y.** Using
+   it as absolute put the camera underground and produced a convincing fake defect.
+   This is the fourth time camera placement has manufactured a phantom in this
+   project. Resolve with `city.surfaceHeight(x, z) + eye`.
+4. **A per-pixel raycast ownership pass was built, produced nonsense (55% "sky",
+   0.1% road in a street view) and was DISCARDED**, not reported. `setFromCamera`
+   overwrites `near`/`far` and the sky dome answers at ~9 km. Screen-area figures
+   here come from projected bounding boxes instead, the method already proven in
+   the Northeastern waves.
+5. **A 1 m-per-step camera dolly cannot detect LOD popping** — camera motion
+   dominates the frame delta. Built, run, and not reported as evidence.
+
+---
+
+## B. THE HEADLINE DEFECT — kerbside parked cars at close range
+
+**Symptom, measured in one frame at one exposure** (Back Bay street, midday):
+
+| region | mean abs gradient | mean luma |
+|---|---|---|
+| **parked car, 258 x 229 px at 6.7 m** | **2.61** | 124.4 |
+| building facade, 442 x 378 px, same frame | **9.21** | 128.3 |
+| bare asphalt in shadow | 2.02 | 19.4 |
+| whole frame | 5.22 | 75.4 |
+
+A car six metres from the player carries **3.5x less surface detail than the brick
+wall behind it**, and barely more than bare road. The sampled box includes some
+background, which can only *raise* the car's figure — the true shell is flatter.
+
+**Screen presence** (summed projected bounding boxes, upper bound, no occlusion or
+overlap removal):
+
+| view | parked cars | largest single car | pedestrians |
+|---|---|---|---|
+| Back Bay street | 16.2% | 369 x 416 px at 6.7 m | 0.8% |
+| Beacon Hill street | 6.7% | 321 x 213 px | 1.2% |
+| North End street | 18.1% | 1260 x 1636 px at 2.0 m | 0.5% |
+
+**Attribution — from the owning source, not from a filename.**
+`src/world/StreetFurniture.js` §"Parked cars" states it outright: *"LOD0 is ~380
+triangles and LOD1 ~90"*, and **"LOD1, the tier parked cars use up close"**. The
+same block records that LOD1 also drops the `under` bucket, so the shell has no
+floor, and that `CAR_SLOT` maps `glass` and `glassDark` onto `carPaint` — parked
+cars have **no transparent glazing at all**, by design, to fix an earlier
+see-through bug. Net effect at 6 m: a ~90-triangle body-coloured shell with no
+cabin, no glass, no lamps, no plates. That is exactly what the gradient measures
+and exactly what the night frame shows.
+
+**This is NOT the old "pale / polystyrene parked vehicles" finding**, which does
+not reproduce — colour and proportion are good, and the source deliberately spent
+its budget on silhouette and proportion. The current symptom is different and
+narrower: **no surface detail at the range where they fill the frame.**
+
+**Moving vehicles are a different, better tier.** At a matched 6.1 m a traffic
+vehicle measures gradient **3.43**, with visible dark glazing, wheels and red tail
+lamps — the same source comment explains why (*"the moving cars do not do this
+because VehicleModels glazes them at 0.62 opacity on near-black"*). So the owning
+subsystem for the headline defect is the **parked-car prop tier in
+`StreetFurniture.js`**, not `VehicleModels`.
+
+---
+
+## C. Confirmed defect table
+
+| # | defect | views affected | screen impact | severity | owner | confidence |
+|---|---|---|---|---|---|---|
+| **A1** | Parked-car close-range surface fidelity — ~90-tri shells, no glazing, no lamps | every street view, all districts, day+night+dusk | 6.7-18.1% summed; single cars to 1260x1636 px | **A** | `StreetFurniture.js` parked-car tier | HIGH |
+| **B1** | Moving-vehicle surface detail below architecture | traffic views, driving | gradient 3.43 vs facade 9.21 | B | `VehicleModels.js` LOD | MEDIUM-HIGH |
+| **B2** | Dusk sky clips to pure white | dusk only | 2.615% of frame at 254; 6.77% of top band | B | grade / tonemap at low sun | HIGH |
+| **B3** | Pedestrian fidelity — flat-shaded, crude at close range | all street views | 0.46-1.17% per view, 620 active | B | peds | MEDIUM |
+| **C1** | Road surface local detail | all street views | large area, gradient 2.02 (partly correct for asphalt) | C | Roads material | LOW-MEDIUM |
+| **C2** | Water surface simplicity | water views | high contrast from glint, reads acceptable | C | `Water.js` | LOW |
+
+**No A-level defect was found in architecture, city-scale composition, lighting,
+night, rain, atmosphere or performance.**
+
+---
+
+## S. Old suspects, re-tested
+
+| suspect | verdict | evidence |
+|---|---|---|
+| Night highlight range | **STALE** | 10.7% >=200, 2.97% >=250, **0% clipped**, max 252 |
+| Daylight sky clips to paper white | **STALE** | daylight views cap at 248-250 with **0%** at 254 |
+| Dusk grade is magenta not amber | **STALE** | frame is plainly warm amber; the measurable dusk issue is clipping, logged as B2 |
+| Aerial perspective barely desaturates | **STALE** | clear atmospheric falloff to the horizon in the elevated overview |
+| Distant building atmospheric loss | **STALE** | same frame |
+| Shadow triangle budget breach (2.73-3.47M vs 2.5M) | **STALE / FIXED** | 1.93M shadow-caster triangles |
+| Pale / polystyrene parked vehicles | **NOT REPRODUCED** | colour and proportion are fine; see B for the real symptom |
+| Daylight road brightness | **NOT REPRODUCED** | no view clips; road reads dark and correct |
+| Overcast has no black/white point | **NOT REPRODUCED** as stated | rain/overcast block range 236.1, p01 10.8 |
+| Performance is the dominant defect | **NOT REPRODUCED** | p10 3.1 ms of real work; see §P |
+| Building facade repetition | **LOW VALUE** | facades measure the highest detail in frame (9.21) and read well across four districts |
+| Green Line lacks rolling stock | **LOW VALUE citywide** | see §T |
+
+---
+
+## T. Green Line rolling stock, evaluated without privilege
+
+`src/world/Transit.js` is, verbatim, *"Green Line E surface infrastructure, in the
+Huntington reservation."* The modelled rail is therefore **structurally confined to
+one corridor**. It cannot appear in the other twelve non-Northeastern views in this
+set, and it did not.
+
+Against A1 that is decisive on **frequency**: parked cars line every kerb in every
+district and are the nearest large object in most street views; the rail corridor
+is one street. A trolley would be a place-specific improvement to a corridor the
+player passes once, not a citywide one. **It does not win, and it is not P0.** It
+remains a reasonable future candidate on its own merits.
+
+---
+
+## P. Structural and performance baseline (Back Bay street, 1920x1080, high)
+
+| | |
+|---|---|
+| camera triangles | 2,732,926 |
+| draw calls | 645 |
+| scene visible triangles | 2,929,519 |
+| shadow-caster triangles | 1,934,369 |
+| scene meshes | 1,174 |
+| instanced instances | 5,560 |
+| materials / geometries / programs / textures | 70 / 632 / 88 / 109 |
+| Rapier bodies / colliders | 68 / 16,960 |
+| active traffic / slots | 122 / 150 |
+| pedestrians | 620 |
+
+**Timing: UNMEASURABLE as a scene cost.** Median 15.4 ms sits at the 16.67 ms
+display interval while the minimum is **2.5 ms** and p10 is **3.1 ms** — the median
+measures the compositor, not the frame. The host was also under load. The p10
+figure is consistent with `PERF_REPORT.md`'s standing conclusion that there is
+roughly 11 ms of headroom, and **performance is not the constraint.**
+
+---
+
+## R. Ranked priority
+
+Ranked by visible impact x frequency x recognition damage x executability.
+
+**P0 — KERBSIDE VEHICLE FIDELITY AT CLOSE RANGE.**
+Every street in every district; the nearest large object in most street views;
+3.5x less surface detail than the wall behind it; owning code and cause already
+identified in source; ~150 instances x (380 - 90) triangles is about 43,500
+triangles against a 2.7M frame, inside the documented headroom. It is the defect a
+stranger would point at first.
+
+**P1 — moving-vehicle surface detail.** Same family, extends the same win, already
+the better tier at 3.43.
+
+**P2 — pedestrian fidelity.** 620 actors and crude up close, but only 0.5-1.2% of
+screen per view, so it cannot outrank either vehicle item on pixels.
+
+**Northeastern:** no new current-build defect was observed that violates the
+closure assumptions. The district appears in this set only as part of the world and
+the programme stays closed.
+
+---
+
 # CRITIC_REPORT.md — current-pixels critic, 2026-09-01 at `319c092`
 
 **This supersedes the 6/10 pass on `9bd5e55` as the active list.** Four shots captured on

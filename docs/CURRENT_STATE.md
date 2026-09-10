@@ -340,6 +340,27 @@ sight line, and a proper ray test found **0 prop cars within 2.2 m of the
 player→SUV line for either candidate**. Third time this district has produced a
 phantom defect from camera placement — measure the geometry, then look.
 
+## Boston-wide critic rebaseline — P0 is kerbside vehicle fidelity (2026-09-09, `c621899`)
+
+**The active defect list is the top section of `docs/CRITIC_REPORT.md`.** The
+2026-09-01 pass is historical; most of its open items were re-tested this pass and
+no longer reproduce (night highlight range, daylight sky clipping, dusk magenta,
+aerial perspective, shadow budget, pale parked cars, performance).
+
+- **P0 — kerbside parked-car close-range fidelity.** ~90-triangle static shells up
+  close with no glazing and no lamps (`StreetFurniture.js` §"Parked cars" says so
+  itself). Measured gradient **2.61 vs 9.21** for the facade in the same frame.
+  Present in every street view, every district, day and night.
+- **P1** moving-vehicle detail. **P2** pedestrian fidelity.
+- **Rolling stock is not P0**: the modelled rail is confined to the Huntington
+  reservation, so it is one corridor against every kerb in the city.
+- Architecture, city-scale composition, night, rain, atmosphere and performance
+  produced **no A-level defect**.
+- Structural baseline (Back Bay street, 1920x1080, high): 2.73M camera triangles,
+  645 draws, 1.93M shadow-caster triangles, 1,174 meshes, 70 materials, 122 active
+  traffic, 620 pedestrians. Timing UNMEASURABLE (compositor-bound; p10 real work
+  3.1 ms).
+
 ## Northeastern hero district — SECOND-STAGE PROGRAMME TECHNICALLY CLOSED (2026-09-09, `cd70119`)
 
 **Do not reopen Northeastern implementation work without a documented trigger.**

@@ -41,6 +41,33 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
+### Active priority — P0 kerbside vehicle fidelity (2026-09-09, `c621899`)
+
+A fresh **Boston-wide current-pixels critic rebaseline** ran after the Northeastern
+closure. Full evidence: `docs/CRITIC_REPORT.md`, top section (it is the active list;
+everything below it there is historical and mostly no longer reproduces).
+
+- **P0 — kerbside parked-car fidelity at close range.** Parked cars are static
+  shells at **LOD1 ~90 triangles up close**, with glazing remapped onto the opaque
+  `carPaint` class (no glass, no cabin, no lamps) and no floor — all stated in
+  `src/world/StreetFurniture.js` §"Parked cars". Measured: **gradient 2.61 against
+  9.21 for the brick facade in the same frame**, at 6.7 m and 258x229 px. They line
+  every kerb in every district and are the nearest large object in most street
+  views (6.7-18.1% summed projected area per view).
+- **P1** moving-vehicle surface detail (`VehicleModels`, measures 3.43 — better
+  tier, same family). **P2** pedestrian fidelity (620 actors but only 0.5-1.2% of
+  screen).
+- **Not P0: Green Line rolling stock.** `Transit.js` is Green Line E surface
+  infrastructure *in the Huntington reservation* only, so the modelled rail is one
+  corridor. Frequency loses to parked cars decisively. Still a fair future candidate.
+- **Performance is not the constraint** — p10 of real work is 3.1 ms; the median
+  sits at the display interval and is not a scene cost.
+- **Instrument warning that cost real time:** `computer:screenshot` returns
+  part-composited frames (black lower half, *stale HUD*) while `document.hidden` is
+  true. `drawImage` from the canvas in the same task is valid. And
+  `viewpoints.json` `eye` is height ABOVE GROUND — using it as absolute Y puts the
+  camera underground and manufactures a fake defect.
+
 ### Northeastern status — TECHNICALLY CLOSED (2026-09-09)
 
 **Do not reopen Northeastern implementation work without one of the triggers below.**
