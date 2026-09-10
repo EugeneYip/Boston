@@ -195,6 +195,11 @@ const SURF = {
   rusty: [0.93, 0.30],
   sign: [0.34, 0.05],
   glass: [0.05, 0.00],
+  // Car glazing. Its own bucket rather than `glass`, whose material is a bus
+  // shelter's: pale blue-grey at 0.20 opacity, double-sided and depth-write off.
+  // These numbers are inert -- `prop_glass_car` is not patched by aSurf -- but are
+  // kept honest so the class reads correctly next to its neighbours.
+  glassCar: [0.15, 0.00],
   lamp: [0.32, 0.00],
   lampRed: [0.28, 0.00],
   lampGreen: [0.28, 0.00],
@@ -203,12 +208,12 @@ const SURF = {
 const SLOT_MAT = {
   paint: 'surf', carPaint: 'surf', metal: 'surf', rough: 'surf', chrome: 'surf',
   rusty: 'surf',
-  sign: 'sign', glass: 'glass',
+  sign: 'sign', glass: 'glass', glassCar: 'glassCar',
   lamp: 'emitNight',            // dusk-to-dawn: luminaires, shelter strips
   lampRed: 'emit', lampGreen: 'emit',   // always on: signal lenses, LEDs
 };
 /** Material bucket order, so groups are deterministic across LOD levels. */
-const MAT_ORDER = ['surf', 'sign', 'glass', 'emit', 'emitNight'];
+const MAT_ORDER = ['surf', 'sign', 'glass', 'glassCar', 'emit', 'emitNight'];
 
 /** Accumulates transformed, vertex-coloured parts bucketed by material. */
 export class GeoSet {
@@ -888,6 +893,29 @@ export function getPropMaterials(ctx) {
       color: 0xa9bcc6, roughness: 0.05, metalness: 0.0, transparent: true,
       opacity: 0.20, depthWrite: false, side: THREE.DoubleSide, vertexColors: true,
     })),
+    // Car glazing, and ONLY car glazing.
+    //
+    // Parked cars used to route `glass` onto `carPaint`, which made a windscreen
+    // an opaque dark panel shaded exactly like the body: measured against a true
+    // glass pass at 6.5 m, that reads as a painted-on hole, and a glass-like
+    // aSurf class on the SAME opaque material does not fix it -- tested, and
+    // indistinguishable from the paint it replaced. Transparency is the carrier.
+    //
+    // It is safe here because `VehicleModels.cabinShell` runs for every `lod < 2`
+    // and remaps `interior` onto `trimDark`, so parked LOD1 carries an opaque
+    // near-black cabin behind the glazing. (LOD1 also folds `under` into
+    // `trimDark`, so it is NOT floorless -- its trimDark is 2,024 triangles
+    // against LOD0's under 1,580 plus trimDark 512.) An earlier note claiming the
+    // shell was empty was reading a missing bucket NAME as missing geometry.
+    //
+    // FrontSide and depthWrite ON, unlike `prop_glass`: the near pane then depth
+    // rejects the far one, so there is no double-glazing artefact and no sorting
+    // scramble between neighbouring cars.
+    glassCar: A.material('prop_glass_car', () => wet(new THREE.MeshPhysicalMaterial({
+      roughness: 0.15, metalness: 0.0, vertexColors: true,
+      transparent: true, opacity: 0.62, depthWrite: true,
+      side: THREE.FrontSide, envMapIntensity: 1.25,
+    }))),
     // Always-on: traffic signal lenses, meter LEDs, dock indicators.
     emit: A.material('prop_emit', () => patchEmit(new THREE.MeshStandardMaterial({
       color: 0x14181a, emissive: 0xffffff, emissiveIntensity: 2.4,
@@ -1812,21 +1840,29 @@ const CAR_SLOT = {
   // `carPaint`, not `paint`: the `paint` class is also the hydrant bonnet, the
   // bench slat, the BigBelly shell and the bollard, and none of those is
   // lacquered. Only the body loft goes on the glossy class.
-  // Car glazing does NOT go on the shared prop glass. That material is a bus
-  // shelter's: pale blue-grey (0xa9bcc6) at 0.20 opacity, which is right for a
-  // shelter you are meant to see through and catastrophic on a car, because a
-  // car body has nothing inside it. No LOD carries an `interior` bucket -- the
-  // mapping below has named one for a long time and `getVehicleGeometry` has
-  // never produced it -- and LOD1, the tier parked cars use up close, also
-  // drops `under`, so the shell has no floor either. Eighty per cent
-  // transparent glass over an empty, floorless shell whose inner faces are
-  // back-face culled means you look straight through a parked car and out the
-  // far side: the owner's "some cars you can see right through". The moving
-  // cars do not do this because VehicleModels glazes them at 0.62 opacity on
-  // near-black. Put car glazing on the body's own opaque class instead and it
-  // reads as dark tinted glass, which is what `CAR_COL.glass` (#20272b) was
-  // already asking for. Nothing else that uses prop glass is touched.
-  paint: 'carPaint', glass: 'carPaint', glassDark: 'carPaint', chrome: 'chrome',
+  // Car glazing goes on `glassCar`, not the shared prop `glass`. That material
+  // is a bus shelter's -- pale blue-grey (0xa9bcc6) at 0.20 opacity, DoubleSide,
+  // depthWrite off -- which is right for a shelter and catastrophic on a car.
+  //
+  // CORRECTED 2026-09-10. The previous note here routed glazing onto `carPaint`
+  // and justified it thus: "No LOD carries an `interior` bucket ... and LOD1 also
+  // drops `under`, so the shell has no floor either." Both halves were reading a
+  // missing bucket NAME as missing geometry. `REMAP_LOD1` folds `interior` AND
+  // `under` into `trimDark`, and `VehicleModels.cabinShell` runs for every
+  // `lod < 2`, emitting the cabin in BOTH windings. Verified on generated LOD1:
+  // trimDark is 2,024 triangles against LOD0's under 1,580 + trimDark 512 -- the
+  // same cabin and floor, one bucket. There is an opaque near-black occluder
+  // behind parked glazing, so transparency was never unsafe.
+  //
+  // It mattered. Opaque glazing on the body's own class reads as a painted-on
+  // hole: measured at 6.5 m against a true glass pass, the flat dark rectangle
+  // is the single most obvious difference between a parked car and a moving one.
+  // Giving that same opaque panel a glass-LIKE aSurf class was also tested and is
+  // indistinguishable from the paint it replaced -- transparency is the carrier,
+  // not the surface class. Cost is one draw per car type with instances inside
+  // `near`, so ~7 in a street view, and ~96 triangles per near car.
+  // Nothing else that uses prop glass is touched.
+  paint: 'carPaint', glass: 'glassCar', glassDark: 'glassCar', chrome: 'chrome',
   trimDark: 'rough', trim: 'rough', under: 'rough', tire: 'rough',
   interior: 'rough', lensRed: 'paint', lensClear: 'chrome', gap: 'rough',
 };
