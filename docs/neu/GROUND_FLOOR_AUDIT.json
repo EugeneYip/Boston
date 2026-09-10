@@ -568,5 +568,211 @@
       "webgl": "NOT BOOTED. Per the brief's resource policy this was an offline GIS task and produced no runtime geometry, so no WebGL session was required.",
       "instrumentSelfTest": "The measurement code reproduces the shipped Dodge cue exactly — OBJECTID 56330 end, ring edge 20, 0.91 m, edgeLen 22.52 — which is what makes the zero on edges 10/12/15 admissible rather than a silent no-op."
     }
+  },
+  "waveD3Result": {
+    "date": "2026-09-09",
+    "what": "337 Huntington Avenue — factual massing + visible Huntington enclosure",
+    "verdict": "PASS",
+    "commits": [
+      "ed0c68e factual/generator",
+      "beea8c5 generated runtime integration"
+    ],
+    "officialEvidence": {
+      "source": "housing.northeastern.edu/337-huntington-ave/",
+      "quotes": [
+        "337 Huntington Avenue is located directly across the street from the Krentzman Quadrangle and a short walk to Hastings Hall. This 5-story apartment complex is steps away from the Northeastern T stop as well as neighborhood restaurants.",
+        "319 and 337 Huntington Ave each have a stair entry which cannot be equipped with a ramp."
+      ],
+      "establishes": "5 storeys; apartment/residential use; directly across Huntington from the quad; a stair entry EXISTS",
+      "doesNotEstablish": "where any entrance or stair is, its width, riser count, door count or arrangement"
+    },
+    "pddlMatch": {
+      "status": "CONFIRMED",
+      "statusWhy": "footprint agrees to within 10%",
+      "objectIds": [
+        668573,
+        668576
+      ],
+      "dominantPart": 668573,
+      "partAreasM2": [
+        428,
+        385
+      ],
+      "summedFootprintM2": 813,
+      "officialFootprintM2": 783,
+      "areaRatio": 1.0383,
+      "heightM": 18.46,
+      "gndElevM": 2.74,
+      "landUse": "RC",
+      "boston3dHeightM": 19.0,
+      "boston3dExcessM": 0.5,
+      "neighbourContamination": "NONE. 335A Huntington's centroid is 25.06 m away, outside the 24 m match radius; both parts sit 8.6/8.7 m from 337's centroid against 26.1/27.4 m from 335A's. A swept-in 335A would require ~1,224 m2, not 813.",
+      "thresholdsRelaxed": "NONE"
+    },
+    "storeyReconciliation": {
+      "official": 5,
+      "pddlHeightM": 18.46,
+      "metresPerStorey": 3.692,
+      "neighbours": "Dodge 3.69, Hayden 3.71, Richards 3.73, Mugar 3.78",
+      "derivedPipelineAlreadyGave5": "YES — round(18.46 / 3.8) = 5, so the value was retained and only its provenance changed, from DERIVED to owner-published confidence B.",
+      "grossAreaImplicationExplained": "50,023 sq ft over a 783 m2 footprint is 5.94 floors of gross area. Five above-grade storeys plus a basement accounts for it exactly, so the old 5.9 implication and the official 5 are not in conflict — the implication counted a basement the exterior does not show."
+    },
+    "typology": {
+      "assigned": "collegiate",
+      "why": "337 is in neither NEU_HISTORIC nor TYPO_OF, so typoFor falls through to the default.",
+      "explicitly": "This is the existing generic pre-1960 FALLBACK. It is NOT a claim that 337 has Richards-family architecture, and no bespoke 337 family was invented.",
+      "knownLimitation": "`collegiate` carries stoneGround: true, so the model shows a stone ground storey. For a 1923 brick apartment block that is a generic institutional treatment rather than evidenced fact. Recorded rather than silently accepted or silently 'fixed', because inventing a residential typology is exactly what the brief forbade.",
+      "notAdded": "NEU_HISTORIC membership, signature white brick, Richards vertical strips"
+    },
+    "entranceDecision": "NONE BUILT. The stair entry is factual in existence and unlocated. Same rule that closed Dodge in D2C/D2D: existence is not position. No entrance, no steps, no landing, no canopy, no ramp, no signage.",
+    "proceduralReplacement": {
+      "mechanism": "At source. Districts.inHeroFootprint blocks plot generation and Buildings.heroOverlap filters plots; both read NEU_HERO_PARTS, so adding 337 suppresses automatically. No mesh was hidden.",
+      "suppressedPlots": "5 -> 7",
+      "totalPlots": "10,946 -> 10,944",
+      "proceduralPlotsIntersecting337Footprint": 0,
+      "verdict": "Exactly one procedural building removed per 337 part. No duplicate building, no duplicate collider."
+    },
+    "campusGroundSideEffect": {
+      "theFlaw": "GROUND.near is a radius and a radius knows nothing about roads. 337's two masses sit 74.5 and 87.9 m from the quad centre, inside the 110 m radius, so the dilated hull reached ACROSS Huntington.",
+      "measuredHarmIfUnfixed": {
+        "eligibleGroundBeforeM2": 25136,
+        "eligibleGroundAfterNoFixM2": 28832,
+        "farSideOfHuntingtonBeforeM2": 0,
+        "farSideOfHuntingtonAfterNoFixM2": 3612,
+        "reading": "Essentially ALL new ground would have landed across the arterial, around a residential parcel — the prohibited outcome. The road keep-out held (rejections 2,920 -> 6,532 m2) so nothing reached the carriageway, but it says nothing about ground beyond it."
+      },
+      "fix": "One predicate in NeuHero._buildGround's contour selection: a part reachable from the quad centre only by CROSSING the Huntington centreline does not define the opening's ground. Continuity, not distance. Implemented as a proper segment-intersection test, not a side-of-nearest-segment sign, which is unreliable near a curving centreline.",
+      "predicateVerified": "All 9 already-selected parts return false; both 337 parts return true.",
+      "scope": "Contour selection only. footEdges/reach was left untouched; both candidate fixes measured identically, so the smaller was taken.",
+      "resultMeasuredLive": {
+        "neu_ground_lawnTris": "2,937 before -> 2,937 after",
+        "neu_ground_pavedTris": "1,992 before -> 1,992 after",
+        "campusGroundVertices": "3,512 before -> 3,512 after",
+        "nearestGroundVertexToHuntingtonCentrelineM": "14.77 before -> 14.77 after",
+        "note": "All four match the figures C-2B recorded independently. The ground did not move."
+      },
+      "rejected": "z-offsets, epsilon widening, or hiding the surface.",
+      "n337OutlineClearanceToHuntingtonCentrelineM": 15.53
+    },
+    "visibility": {
+      "question": "Does the ACTUAL generated 337 produce a material gameplay-visible change?",
+      "answer": "YES at V2, V3 and V5. NO at V1 and V4, where it is behind the camera.",
+      "instrumentNote": "An absolute before/after pixel diff OVERSTATED this: V1, where 337 is provably behind the camera, still showed 6.5 per cent of pixels changed, because frames are not deterministic across a page reload. The admissible measurement is therefore signal inside 337's projected silhouette against control outside it, in the SAME frame pair.",
+      "perViewpoint": [
+        {
+          "view": "V1 canonical opening",
+          "inFrustum": false,
+          "note": "337 is behind the camera: the opening faces into the quad. minCz -46.4."
+        },
+        {
+          "view": "V2 Huntington turn",
+          "silhouetteScreenPct": 17.0,
+          "unoccScreenPct": 14.29,
+          "horizEnclosurePct": 36.0,
+          "vertScreenPct": 47.2,
+          "roiSignalMeanDelta": 29.44,
+          "controlMeanDelta": 14.61,
+          "signalToControl": 2.0,
+          "pctChangedInRoi": 54.9
+        },
+        {
+          "view": "V3 Krentzman centre out to Huntington",
+          "silhouetteScreenPct": 4.5,
+          "unoccScreenPct": 3.26,
+          "horizEnclosurePct": 19.3,
+          "vertScreenPct": 23.3,
+          "roiSignalMeanDelta": 45.66,
+          "controlMeanDelta": 6.08,
+          "signalToControl": 7.5,
+          "pctChangedInRoi": 84.5
+        },
+        {
+          "view": "V4 Huntington sidewalk toward campus",
+          "inFrustum": false,
+          "note": "behind the camera, minCz -27.9"
+        },
+        {
+          "view": "V5 opening, player turned to face 337 (54.4 m)",
+          "silhouetteScreenPct": 14.18,
+          "unoccScreenPct": 9.28,
+          "horizEnclosurePct": 34.3,
+          "vertScreenPct": 41.3,
+          "roiSignalMeanDelta": 45.2,
+          "controlMeanDelta": 12.07,
+          "signalToControl": 3.7,
+          "pctChangedInRoi": 65.8
+        }
+      ],
+      "versusD0": "D0's candidate-box estimate was 6.48 per cent of the viewport at V3. The real geometry measures a 4.5 per cent silhouette / 6.1 per cent ROI there — close agreement, so the box did not oversell it.",
+      "refinementToD0": "D0 said 'visible from two gameplay viewpoints'. Measured: visible from three (V2, V3, V5) and NOT from the canonical opening V1, where the player faces into the quad and 337 is behind. It becomes visible the moment the player looks toward Huntington, which is V3 and V5.",
+      "occluders": "Street trees (London plane, red maple), the road mesh at grazing angles, the Green Line, and 337's own near mass occluding its far mass. No procedural building occludes it — there is none.",
+      "honestCharacterisation": "At V3 this closes a frontage that was previously open sky: 84.5 per cent of pixels inside the silhouette change, at 7.5x the control zone. It is decisive where it is visible and absent where it is not, and the wave does not claim the canonical opening improved."
+    },
+    "structuralDelta": {
+      "NEU_HERO_PARTS": "19 -> 21",
+      "MICRO withheld": "4 -> 4",
+      "ringVertices": "643 -> 674",
+      "renderedParts": "19 of 23 -> 21 of 25",
+      "primary/secondary": "13 PRIMARY / 8 SECONDARY after",
+      "neu_hero_opaqueTris": "96,996 -> 103,249 (+6,253)",
+      "neu_hero_glassTris": "10,934 -> 11,634 (+700)",
+      "totalSceneTris": "1,887,816 -> 1,894,579 (+6,763)",
+      "sceneMeshes": "303 -> 303 (0)",
+      "materials": "42 -> 42 (0)",
+      "geometries": "269 -> 269 (0)",
+      "newDrawCalls": 0,
+      "newMaterials": 0,
+      "proceduralBuildingsRemoved": 2
+    },
+    "protectedUnchanged": {
+      "krentzman": "24 vertices, kind formal",
+      "spawnSurfaceHeightM": 3.0953,
+      "districtAtSpawn": "northeastern",
+      "greenLine": "1 transit mesh, 6,680 triangles",
+      "starterSuv": "1, at (-1856.164, 1649.222) — the recorded canonical position",
+      "ellGeometry": "untouched; only a source comment reworded",
+      "dodge": "untouched and still deferred"
+    },
+    "collision": {
+      "walkTest": "Teleported to the Huntington footway 3.37 m from 337's wall and walked at it for 300 frames.",
+      "travelledM": 3.37,
+      "stoppedDistFromWallM": 0.32,
+      "insideBuilding": false,
+      "ungroundedFrames": 0,
+      "peakSnapMM": 28.4,
+      "note": "The first attempt measured nothing: setting player.position does not move a Rapier-driven body, and the player sat at spawn the whole time. Redone through body.setTranslation with input driven via gpAxes."
+    },
+    "nightRain": {
+      "day 11:00 clear": {
+        "mean": 0.4849,
+        "hotFrac": 0.0,
+        "darkFrac": 0.0001
+      },
+      "night 21:30 clear": {
+        "mean": 0.1749,
+        "hotFrac": 0.0,
+        "darkFrac": 0.0222
+      },
+      "day 11:00 rain": {
+        "mean": 0.4252,
+        "hotFrac": 0.0,
+        "darkFrac": 0.0
+      },
+      "verdict": "Facade legible in all three, no glass blowout anywhere (hot fraction 0.0000), rain wetness continuous, no ground seam introduced."
+    },
+    "performance": {
+      "verdict": "UNMEASURABLE as a delta",
+      "why": "step() is vsync-bound: median frame time 16.3-17.8 ms against a 16.67 ms refresh, while the minimum sample is 2.2-3.7 ms. The median measures the display, not the render cost.",
+      "draws": "500-527 across V1/V3/V5",
+      "structuralCostStands": "zero new draw calls, zero new materials, +6,953 hero triangles"
+    },
+    "gates": {
+      "npm run check": "OK — 86 files parse, 109 files no undefined references",
+      "git diff --check": "clean",
+      "npm run build:pages": "built in 1.87 s",
+      "boot": "24 modules loaded, failed [], errors [], glFaults [], validate ok 0 problems",
+      "bootMissing": "Missions.js — pre-existing, the file does not exist in src/ and is optional"
+    },
+    "nextScope": "The Huntington frontage is now closed at its most-seen gap. The remaining D0 coverage candidates were all measured as fully occluded from every gameplay viewpoint, so coverage is no longer the dominant defect there. The most valuable next target is eye-level fidelity on what the player DOES see from the opening: the collegiate stoneGround treatment now visible on 337 is the clearest evidence-thin detail this wave exposed, and 335A Huntington (441 m2, leased, adjacent) is the only remaining unmodelled parcel on the same frontage."
   }
 }

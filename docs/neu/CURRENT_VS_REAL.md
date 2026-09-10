@@ -489,6 +489,79 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D3 — 337 HUNTINGTON CLOSES THE FRONTAGE (2026-09-09, `ed0c68e`, `beea8c5`)
+
+The first building added since Hurtig, and the first one D0's occlusion ranking
+actually asked for. **It is now in, and from the quadrangle it closes a gap that
+was previously open sky.**
+
+**Nothing was authored.** The footprint and height are the City of Boston Roof
+Breaks layer's own, matched by the established pipeline with no threshold
+relaxed: two parts, 813 m² against an official 783 — a **3.8 % agreement** on the
+test that file calls decisive — at **18.46 m**, with Boston 3D reading 19 m, an
+excess of **+0.5 m** and the tightest cross-source agreement of all fourteen
+buildings. The neighbour was checked, not assumed: 335A's centroid is 25.06 m
+away, outside the 24 m radius, and a swept-in 335A would need ~1,224 m².
+
+**Five storeys is now sourced rather than derived.** Northeastern Housing says
+*"This 5-story apartment complex"*. The derived path reached 5 anyway
+(18.46 / 3.8 rounds to 5), so the number did not move — but a rhythm that happens
+to agree with the evidence should not be recorded as though arithmetic produced
+it. 18.46 m over 5 storeys is **3.69 m each: Dodge's 3.69 exactly**. That also
+retires the old 5.9 gross-area implication, which counted a basement the exterior
+does not show.
+
+**337 is NOT in `NEU_HISTORIC`.** It takes the generic `collegiate` fallback,
+which is a statement about the absence of building-specific evidence, not a claim
+that a 1923 brick apartment block shares Richards' 1938 idiom. Recorded honestly:
+that fallback carries `stoneGround: true`, so the model shows a stone ground
+storey which is generic institutional treatment rather than evidenced fact.
+Inventing a residential typology is exactly what was forbidden, so it stands and
+is written down. **No entrance and no steps were built** — Housing establishes a
+stair entry *exists* and nothing establishes where, so the Dodge rule applies.
+
+**The real find was the ground.** `GROUND.near` is a radius, and a radius knows
+nothing about roads. 337 is the first hero part on the far side of Huntington —
+74.5 and 87.9 m from the quad centre, inside the 110 m radius — so the dilated
+hull reached across the arterial and laid **3,612 m² of maintained campus lawn
+around a residential parcel on the other side of the road**, where there had been
+exactly none. The keep-out stops lawn *on* the carriageway and says nothing about
+ground beyond it.
+
+Fixed at the abstraction, not with an offset. The contour means *the continuous
+public realm of the Krentzman opening*, so the test is continuity rather than
+distance: a part reachable from the quad centre only by **crossing** Huntington
+does not define this ground. All nine already-selected parts return false; both
+337 parts return true. The result is that **the ground did not move at all** —
+lawn 2,937, paved 1,992, 3,512 vertices, nearest 14.77 m from the centreline,
+every figure identical to what C-2B recorded independently.
+
+**Visible, and honestly bounded.** An absolute pixel diff *overstated* this: V1,
+where 337 is provably behind the camera, still showed 6.5 % of pixels changed,
+because frames are not deterministic across a reload. Measuring signal inside
+337's silhouette against control outside it in the same frame pair:
+
+| view | ROI signal : control | pixels changed in ROI |
+|---|---|---|
+| **V3** Krentzman → Huntington | **7.5×** | **84.5 %** |
+| **V5** opening, turned to 337 | 3.7× | 65.8 % |
+| **V2** Huntington turn | 2.0× | 54.9 % |
+| V1 / V4 | — | 337 is behind the camera |
+
+D0 predicted 6.48 % of the viewport at V3; the real geometry measures a 4.5 %
+silhouette / 6.1 % ROI there, so the box did not oversell it. One refinement:
+D0 said "two gameplay viewpoints"; it is **three**, and **not the canonical
+opening**, where the player faces into the quad. 337 appears the moment they look
+toward Huntington.
+
+**Cost is what the batching promised: zero new materials, zero new meshes, zero
+new draw calls**, +6,253 opaque and +700 glass triangles. Procedural fabric gave
+way at source — suppressed plots 5 → 7, total 10,946 → 10,944, one per part — so
+there is no duplicate building and no duplicate collider. Walked at the wall for
+300 frames: stops at **0.32 m**, never inside, 0 ungrounded. Krentzman 24
+vertices, spawn 3.0953, Green Line 6,680 triangles, starter SUV at
+(−1856.164, 1649.222) — all unchanged.
+
 ### WAVE D2D — THE LAST MILE ENDS 6.78 m SHORT (2026-09-09)
 
 **Audit only. Outcome B. Dodge is deferred and closed.** D2C ended by naming the
