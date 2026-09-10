@@ -489,6 +489,70 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D2D — THE LAST MILE ENDS 6.78 m SHORT (2026-09-09)
+
+**Audit only. Outcome B. Dodge is deferred and closed.** D2C ended by naming the
+one evidence class that could still settle Dodge's door: re-query the City of
+Boston Sidewalk Centerline layer and look for a walk dead-end on the Krentzman
+frontage. That query has now been run. It does not produce one.
+
+**Provenance first, and it is clean.** The live service is the same layer the
+project already uses, and the licence question was settled long ago — **PDDL**,
+no attribution, no share-alike, and `src/data/neu-walks.js` is *already* a
+committed runtime artefact derived from it. The brief was right not to assume the
+live service matches the project's snapshot, so it was tested: within the Dodge
+envelope, **80 features live against 80 in the snapshot, zero OBJECTIDs on either
+side alone, zero geometry differences, zero TYPE differences**. Way **56330** —
+the source of Dodge's existing cue — is present, `PWALK-CL`, geometry identical.
+
+**The accepted standard was read, not guessed.** `tools/neu-walks/build.mjs`
+qualifies a cue as: `TYPE === 'PWALK-CL'`, a path **endpoint**, within
+**`ENTRANCE_MAX_FACE_M = 2.0`** of the ring, on an edge **≥ 5 m**; `fromWay` is
+the `OBJECTID`. Its own comment says what the threshold is for — *"a genuine
+dead-end at the wall, not a passer-by"*.
+
+One consequence matters: the pipeline keeps only the **closest** termination per
+part, so the shipped file could never have answered this question. It records that
+Dodge's winner is edge 20; it is silent on the rest of the building. D2D
+enumerated them all.
+
+**Result: across the whole envelope, exactly one termination qualifies against
+Dodge — the southeast cue that already ships**, reproduced to the centimetre
+(edge 20, 0.91 m, edgeLen 22.52, way 56330). On edges 10, 12 and 15 the count is
+**zero**. That the same code reproduces the shipped cue exactly is what makes the
+zero admissible rather than a silent no-op.
+
+Two near misses, both genuine and both short:
+
+- **72265** `SWALK-CL` comes closest to the frontage at **1.29 m** — but it is a
+  public sidewalk, the edge it matches is a **1.15 m** corner connector, and its
+  heading against that plane is **−0.01**: it runs *parallel*. A sidewalk going
+  past Dodge is the passer-by the rule exists to reject.
+- **97731** `PWALK-CL` is the right type, the only private walk near the quad
+  frontage, and appears to aim straight at edge 10 (heading **+1.00**) — but it
+  stops **6.78 m** out, 3.4× the threshold. And it is **not a dead end at all**:
+  sidewalks **72312** and **95997** share that endpoint at **0.00 m**. It is a
+  path junction in open quad, and 97731 runs *away* from it.
+
+**A note worth keeping.** D2C recorded edge 12 as the tempting answer. What weak
+directional evidence exists points at **edge 10** instead. Had D2C placed a door
+on edge 12 by taste, this wave would have contradicted it. The refusal held —
+which is not an argument for edge 10 either, since a shared junction 6.78 m out
+in open grass is not evidence of a door.
+
+**DODGE QUAD-FACING ENTRANCE — DEFERRED FOR POSITIONAL EVIDENCE.** Every source
+class the project can use is now exhausted: official Northeastern text (five
+sources, D2C), official photography (HTTP 418, twice), the accessible-entrance
+layer (faces away), and the authoritative PDDL centreline (no qualifying
+termination). **No further Dodge entrance wave should be opened** — only new
+evidence, a published plan or elevation or a reachable image naming the face,
+should reopen it.
+
+`src/` is byte-identical to HEAD: no entrance, no `ENTRANCE_BY_PART` row for
+676668, no steps, the southeast cue untouched, `NEU_ENTRANCE_CUES` still 8, and
+the standard not loosened by a centimetre. **Next implementation target is 337
+Huntington Avenue.**
+
 ### WAVE D2C — DODGE'S QUAD DOOR CANNOT BE PLACED, AND SO IT WAS NOT (2026-09-09)
 
 **Audit only. The gate failed and no door was created.** Dodge Hall's Krentzman

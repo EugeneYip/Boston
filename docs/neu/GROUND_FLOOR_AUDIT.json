@@ -391,5 +391,182 @@
       "cues": "NEU_ENTRANCE_CUES still 8; the Dodge entry is unchanged at edge 20, t 0.82, (-1830.82, 1648.32)",
       "regression": "Not required and not claimed: src/ is byte-identical to HEAD, so runtime behaviour cannot have changed. Boot health above was measured on that unchanged tree."
     }
+  },
+  "waveD2dResult": {
+    "date": "2026-09-09",
+    "question": "Does the official City of Boston Sidewalk Centerline layer provide a factual termination or approach anchor on Dodge's Krentzman-facing frontage?",
+    "outcome": "B — BROAD APPROACH ONLY",
+    "verdict": "DODGE QUAD-FACING ENTRANCE — DEFERRED FOR POSITIONAL EVIDENCE. No runtime change. Dodge entrance work for this programme is CLOSED; the next implementation target is 337 Huntington Avenue.",
+    "headline": "The last mile was walked and it ends short. Applying the project's OWN accepted cue standard to the live City layer, there is exactly ONE qualifying walk termination against Dodge anywhere — the southeast cue that already ships. There are ZERO on the three Krentzman-facing planes.",
+    "phase1_provenance": {
+      "layer": "https://gisportal.boston.gov/arcgis/rest/services/Infrastructure/OpenData/MapServer/5",
+      "sameLayerAsProject": "YES — byte-identical URL to tools/neu-walks/config.mjs LAYER.",
+      "liveMetadata": {
+        "name": "Sidewalk Centerline",
+        "type": "Feature Layer",
+        "geometryType": "esriGeometryPolyline",
+        "spatialReference": "wkid 102686 / latestWkid 2249",
+        "maxRecordCount": 2000,
+        "supportedQueryFormats": "JSON, geoJSON, PBF",
+        "fields": "OBJECTID, TYPE, Shape, Shape.STLength()",
+        "copyrightText": "\"\" (empty)",
+        "description": "\"\" (empty)"
+      },
+      "licence": "PDDL — Open Data Commons Public Domain Dedication and Licence. No attribution condition, no share-alike. docs/neu/SOURCES.md calls it 'the cleanest licence encountered in the programme'.",
+      "runtimeDerivationPermitted": "YES, and not newly decided here: src/data/neu-walks.js is ALREADY a committed runtime artefact derived from this exact layer. tools/neu-walks/fetch.mjs states it outright — 'Unlike the audit cache, this source is PDDL, so the DERIVED artefact is committed freely.' This is the opposite of the Northeastern ArcGIS layer, which stays reference-only.",
+      "compatibilityWithProjectSnapshot": {
+        "why": "The brief correctly refused to assume the live service matches the historical snapshot, so it was tested rather than assumed.",
+        "snapshot": "tools/neu-walks/.cache/sidewalks.json, fetched 2026-09-08T13:52:01.159Z, 6,799 features city-wide",
+        "featuresInDodgeEnvelope": {
+          "live": 80,
+          "snapshot": 80
+        },
+        "objectidsOnlyInLive": 0,
+        "objectidsOnlyInSnapshot": 0,
+        "geometryDifferences": 0,
+        "typeDifferences": 0,
+        "decisiveCheck": "OBJECTID 56330 — the way behind the EXISTING Dodge cue — is present live, TYPE=PWALK-CL, geometry identical to the snapshot.",
+        "verdict": "COMPATIBLE. Within this envelope the live layer and the project snapshot are identical, so nothing downstream had to be re-validated and no conflict (outcome D) exists."
+      }
+    },
+    "phase2_query": {
+      "scope": "Tight envelope around Dodge Hall only. The citywide dataset was NOT downloaded.",
+      "worldBboxXZ": [
+        [
+          -1909.43,
+          1585.14
+        ],
+        [
+          -1736.0,
+          1772.54
+        ]
+      ],
+      "marginM": 60,
+      "envelopeWGS84": {
+        "xmin": -71.08886120664918,
+        "ymin": 42.339457075098814,
+        "xmax": -71.08675297562256,
+        "ymax": 42.34114051024074
+      },
+      "parameters": "where=1=1, geometryType=esriGeometryEnvelope, inSR=4326, spatialRel=esriSpatialRelIntersects, outFields=OBJECTID,TYPE, returnGeometry=true, outSR=4326, resultRecordCount=2000, f=json",
+      "returned": 80,
+      "byType": {
+        "SWALK-CL": 58,
+        "PWALK-CL": 18,
+        "CWALK-CL": 3,
+        "CWALK-CL-UM": 1
+      },
+      "projection": "Coordinates transformed through the project's own Geo.geo(), the same function tools/neu-walks/build.mjs uses. No independent reprojection was introduced."
+    },
+    "phase4_acceptedStandard": {
+      "source": "tools/neu-walks/build.mjs, entranceCues() — read directly rather than inferred",
+      "rules": [
+        "TYPE must be PWALK-CL. Line 1 of the loop is `if (f.attributes.TYPE !== 'PWALK-CL') continue;` — SWALK-CL public sidewalk is explicitly NOT entrance evidence.",
+        "Only path ENDPOINTS are tested, indices [0, length-1]. Mid-segment proximity never qualifies.",
+        "ENTRANCE_MAX_FACE_M = 2.0 — the endpoint must be within 2.0 m of the part ring. Its comment: 'a genuine dead-end at the wall, not a passer-by'.",
+        "The matched ring edge must be at least 5 m long (n.edgeLen < 5 is skipped).",
+        "One cue per part: the termination with the SMALLEST face distance wins.",
+        "t is clamped to [0.18, 0.82] and x/z is recomputed from the clamped t, to keep cues off quoins.",
+        "fromWay IS the ArcGIS OBJECTID — `fromWay: f.attributes.OBJECTID`."
+      ],
+      "importantConsequence": "Because only the CLOSEST termination per part survives, the shipped artefact could never have answered this wave's question. It records that Dodge's winner is edge 20 at 0.91 m; it is silent on whether other terminations exist elsewhere on the building. D2D enumerated ALL of them instead of trusting the winner.",
+      "standardNotLoosened": "The same thresholds were applied to Dodge unchanged. No new, looser rule was invented to let Dodge pass."
+    },
+    "phase3_measurements": {
+      "frontagePlanes": [
+        {
+          "ringEdge": 10,
+          "lengthM": 20.22,
+          "facing": 0.848,
+          "midXZ": [
+            -1826.5,
+            1701.3
+          ]
+        },
+        {
+          "ringEdge": 12,
+          "lengthM": 13.7,
+          "facing": 0.998,
+          "midXZ": [
+            -1835.0,
+            1685.4
+          ]
+        },
+        {
+          "ringEdge": 15,
+          "lengthM": 16.37,
+          "facing": 0.881,
+          "midXZ": [
+            -1844.3,
+            1667.8
+          ]
+        }
+      ],
+      "qualifyingTerminationsOnThosePlanes": 0,
+      "everyQualifyingTerminationAgainstDodgeAnywhere": [
+        {
+          "OBJECTID": 56330,
+          "TYPE": "PWALK-CL",
+          "endpoint": "end",
+          "ringEdge": 20,
+          "faceDistM": 0.91,
+          "t": 0.999,
+          "edgeLenM": 22.52,
+          "note": "This is the EXISTING southeast cue, reproduced bit-for-bit from the live service: edge 20, faceDistM 0.91, edgeLenM 22.52, fromWay 56330. The pipeline is confirmed sound."
+        }
+      ],
+      "nearMissesAndWhyTheyFail": [
+        {
+          "OBJECTID": 72265,
+          "TYPE": "SWALK-CL",
+          "what": "27.16 m public sidewalk, (-1832.91, 1692.04) -> (-1819.93, 1715.90)",
+          "closestApproach": "start endpoint 1.29 m from ring edge 11 — the closest ANY endpoint gets to the quad frontage",
+          "failsBecause": "Three independent reasons. (1) TYPE is SWALK-CL, which the accepted standard excludes from entrance evidence. (2) The matched edge 11 is 1.15 m long, below the 5 m minimum — it is a corner connector, not a facade. (3) Its heading against the facade normal is -0.01, i.e. it runs PARALLEL to the frontage. It is a sidewalk going PAST Dodge, which is precisely the 'passer-by' the 2.0 m rule exists to reject."
+        },
+        {
+          "OBJECTID": 97731,
+          "TYPE": "PWALK-CL",
+          "what": "25.11 m private walk, (-1829.66, 1709.80) -> (-1844.5, 1717.7) -> (-1847.5, 1718.0) -> (-1852.52, 1719.67)",
+          "closestApproach": "start endpoint 6.78 m from ring edge 10, heading +1.00 against that plane's normal",
+          "whyItLookedPromising": "It is the right TYPE, it is the only PWALK-CL anywhere near the quad frontage, and it appears to point straight at edge 10.",
+          "failsBecause": "6.78 m is 3.4x the accepted 2.0 m threshold — stretching to reach it is exactly what the brief forbade. And the decisive fact: it is NOT a dead end. Two public sidewalks, OBJECTID 72312 (start) and 95997 (end), share that endpoint at 0.00 m. It is a path JUNCTION in open quad, and 97731 runs AWAY from it to the northwest. There is no termination against the building at all."
+        }
+      ],
+      "nearestByType": {
+        "nearest PWALK-CL endpoint to any frontage plane": "4.45 m — and that is way 56330, whose actual dead-end is on the far southeast face",
+        "nearest SWALK-CL endpoint to any frontage plane": "1.29 m — way 72265, running parallel"
+      }
+    },
+    "phase5_decision": {
+      "outcome": "B — BROAD APPROACH ONLY",
+      "reading": "A factual centreline network does serve this frontage: a public sidewalk runs along it at 1.29 m, and a private walk starts from a junction 6.78 m off edge 10. That is real circulation evidence and it corroborates that the quad frontage is walked. It is NOT a door anchor, and no reading of it produces one.",
+      "notOutcomeA": "No qualifying termination exists on edges 10, 12 or 15 — the count is zero, not marginal.",
+      "notOutcomeC": "Relevant centrelines DO exist near the frontage, so this is not an empty result.",
+      "notOutcomeD": "No conflict: live and snapshot are identical, and the existing southeast cue reproduces exactly.",
+      "positionalAnchorExists": false,
+      "confidence": "HIGH that no qualifying anchor exists. The test is exhaustive over the envelope, uses the project's own thresholds unmodified, and its instrument is self-validated — the same code reproduces the shipped cue to the centimetre."
+    },
+    "anHonestNoteOnEdge12": {
+      "point": "D2C recorded that edge 12 was the tempting answer — central, most head-on at facing 0.998, closest. D2D is worth reading as a check on that instinct.",
+      "finding": "The only directional evidence that surfaced points at EDGE 10, not edge 12: way 97731 heads at edge 10 with heading +1.00, and the nearest sidewalk junction sits off edge 10. Edge 12's nearest endpoint of any kind is a parallel-running sidewalk on a 1.15 m corner.",
+      "whyThisMatters": "Had D2C placed a door on edge 12 by taste, D2D's weak evidence would have pointed somewhere else. The refusal held up. This is not an argument for placing one on edge 10 either — a junction 6.78 m out in open quad, shared by two sidewalks and running away, is not evidence of a door."
+    },
+    "whatWasNotDone": [
+      "No entrance was added to Dodge on any frontage.",
+      "No ENTRANCE_BY_PART entry for 676668; the table still holds only Ell's 661061.",
+      "No steps, landing, portico, columns, canopy, ramp, lamps, signage or door count were modelled.",
+      "The existing southeast cue was not moved, reinterpreted or deleted. NEU_ENTRANCE_CUES is still 8.",
+      "No new way was shipped into NEU_WALK_ARRIVAL or NEU_WALK_CONTINUATION; the SELECTED list is unchanged.",
+      "The accepted cue standard was not loosened.",
+      "src/ is byte-identical to HEAD. No runtime change."
+    ],
+    "dodgeFinalStatus": "CLOSED FOR THIS PROGRAMME. Dodge's quad-facing entrance is DEFERRED FOR POSITIONAL EVIDENCE. Every source class available to the project has now been exhausted: official Northeastern text (D2C, five sources), official photography (HTTP 418, twice), the accessible-entrance layer (faces away), and now the authoritative PDDL sidewalk centreline (no qualifying termination). Do not open another Dodge entrance research wave. Only genuinely NEW evidence — a published Northeastern floor plan or elevation, or a reachable official image that names the face — should reopen it.",
+    "nextTarget": "337 HUNTINGTON AVENUE — already the standing recommendation in this file: measured-visible at 6.48 per cent of the viewport unoccluded from V3, confidence-B official footprint of 783 m2, 50,023 sq ft implying about 5.9 storeys and 23 m, and a working pipeline in tools/neu-height/footprints.mjs needing one CLUSTER entry.",
+    "qa": {
+      "parsecheck": "OK — all 86 files parse cleanly",
+      "scopecheck": "OK — no undefined references in 109 files",
+      "webgl": "NOT BOOTED. Per the brief's resource policy this was an offline GIS task and produced no runtime geometry, so no WebGL session was required.",
+      "instrumentSelfTest": "The measurement code reproduces the shipped Dodge cue exactly — OBJECTID 56330 end, ring edge 20, 0.91 m, edgeLen 22.52 — which is what makes the zero on edges 10/12/15 admissible rather than a silent no-op."
+    }
   }
 }
