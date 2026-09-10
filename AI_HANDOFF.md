@@ -41,6 +41,29 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
+### Next programme — PEDESTRIAN VISUAL FIDELITY (2026-09-10)
+
+Selected by a four-way shootout after the parked-car closure; evidence in
+`docs/CRITIC_REPORT.md`, top block. **Not yet started.**
+
+- **Why:** nearest pedestrian in a normal street view is **3.8 m and 314 px tall**;
+  peds occupy **4.48%** of that frame across 620 active actors, day and night. They
+  are **676 triangles (near) / 287 (far) on ONE material**, with no faces, no
+  hands, no feet and clothing as a single flat colour block. A parked car at 6.7 m
+  gets 4,928 triangles.
+- **Scope it to the ladder in §"The player character"**: silhouette and proportion,
+  then hands/feet/head, then clothing volumes. **Not a facial rig** — that ladder
+  puts face detail last on purpose. The player already has `buildHeroGeometry`;
+  this is the NPC crowd path. Hold the 620-instance budget; the far tier needs
+  nothing.
+- **Also open, as a small separate bug:** at night, bright cream shapes replace the
+  lower half of each parked-car tyre. Real and reproducible, absent in daylight,
+  and **not** the adjacent street lamp (ablating both nearby PointLights moved the
+  region 1.4%). Ownership unattributed. Do not fold it into the pedestrian work.
+- **Rejected:** parked d1 mid-distance (largest instance 49×40 px — an earlier
+  "124 px" figure was a broadside upper bound and is corrected); dusk sky clipping
+  (sky-only, 0% magenta, never touches buildings or roads).
+
 ### Vehicle appearance — parked-car work CLOSED (2026-09-10, `737f897`)
 
 Full detail: `docs/CRITIC_REPORT.md`, top block. Read it before any vehicle work;

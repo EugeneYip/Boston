@@ -1,5 +1,118 @@
 # CRITIC_REPORT.md
 
+> ## B-LIST SHOOTOUT — NEXT PROGRAMME SELECTED, 2026-09-10
+>
+> Four candidates, one short session, no runtime change. **OUTCOME A: one winner —
+> PEDESTRIAN VISUAL FIDELITY (NPCs).**
+>
+> ### A — Pedestrian visual fidelity — **WINNER**
+>
+> Measured in a normal Back Bay street view at production fov:
+>
+> | | |
+> |---|---|
+> | nearest pedestrian | **3.8 m, 314 px tall × 114 px, 1.72% of screen alone** |
+> | near tier on screen | 8 instances, **4.03%** |
+> | far tier on screen | 90 instances, 0.45% |
+> | **total pedestrian occupancy** | **4.48%** |
+> | active actors | 620 |
+> | geometry | **`peds_near` 676 tris, `peds_far` 287 tris** |
+> | materials | **one — `ped_body` — across both tiers** |
+>
+> Seen at 4–10 m: **no faces** (smooth featureless ovoid heads, no hair geometry),
+> **no hands** (arms end in tapered stumps), **no feet** (legs end in flat blocks),
+> clothing as a single flat colour block with no collar, sleeves or belt, blocky
+> shoulders with no neck definition, and visible build/pose repetition. They read
+> as mannequins, against brick paving, fire escapes, awnings and shopfront signage
+> that are all markedly more detailed.
+>
+> For scale: a parked car at 6.7 m gets **4,928** triangles. A human at 3.8 m,
+> larger on screen and far more salient, gets **676**.
+>
+> ### B — Parked d1 / mid-distance — **C-level, low return**
+>
+> 103 d1 cars on screen totalling **2.36%**, but the largest single instance is
+> **49 × 40 px** at 39.4 m, falling to 19–27 px by 60–90 m. At that size the
+> material collapse is essentially undetectable.
+>
+> **This corrects an earlier figure of mine.** The "124 px at 43.4 m" in the P0B
+> block was a broadside upper bound from width ÷ distance; measured projected boxes
+> are far smaller because kerbside cars recede end-on. d1 stays deferred.
+>
+> ### C — Dusk sky clipping — **MINOR TONAL ISSUE, not a defect**
+>
+> | view | clipped | top band | mid | bottom |
+> |---|---|---|---|---|
+> | sun in frame | 1.65% | 3.65% | 1.30% | **0** |
+> | sun out of frame | 1.51% | 4.47% | 0.06% | **0** |
+> | city-facing | 3.22% | 9.01% | 0.65% | **0** |
+>
+> Clipping is **sky-only** — no building or road pixel clips in any view — and the
+> clipped population is **uniformly warm**: mean RGB **(254, 248, 210)**, warm
+> fraction **1.00**, magenta fraction **0.00**. It persists with the sun outside
+> frame, so it is bright horizon sky rather than the sun disc alone. Some cloud
+> structure is lost in the top band; nothing else is harmed. Physically plausible,
+> and the old "dusk is magenta" claim stays disproven.
+>
+> ### D — Night wheel-arch bright shapes — **REAL, unattributed, small**
+>
+> **Confirmed real, and not plausible lighting.** At 7 m at night, bright cream
+> rounded shapes replace the **lower half of each tyre**, with the dark tyre still
+> visible above them. Absent in daylight at the identical camera (verified twice).
+>
+> **Not the nearby street lamp:** two PointLights sit 2.22 m away at y 8.75
+> (intensities 107.5 and 42.2). Ablating both changed the arch region by **1.4%**
+> (162.5 → 160.2, restored 163.4), so they are not the source.
+>
+> **Ownership NOT established.** A colour-sampling attempt missed the target
+> coordinates and was not worth guessing further in a ranking pass. It is not
+> plausibly the `glassCar` change — wheels are `trimDark → rough`, a different
+> bucket — but that was **not verified against the pre-change build**. Night-only
+> and small at production fov. **Deserves a targeted bug investigation, not a
+> programme.**
+>
+> ### Comparison (0–3 per axis)
+>
+> | axis | A peds | B d1 | C dusk | D arch |
+> |---|---|---|---|---|
+> | normal-gameplay visibility | **3** | 1 | 2 | 1 |
+> | frequency | **3** | 3 | 2 | 2 |
+> | screen area | **3** | 2 | 2 | 1 |
+> | perceptual / realism damage | **3** | 1 | 1 | 2 |
+> | confidence symptom is real | **3** | 3 | 3 | 3 |
+> | root-cause confidence | **3** | 3 | 3 | **0** |
+> | executability | 2 | 2 | 2 | 2 |
+> | performance / structural risk (3 = low) | 1 | 2 | 3 | 3 |
+>
+> **Ranking: A ≫ D > C > B.**
+>
+> ### Symptoms disproven or corrected this pass
+>
+> - **B's screen presence was overstated by me** — 49 px, not 124 px.
+> - **C is not a hue failure** — 0% of clipped pixels are magenta; it never touches
+>   buildings or roads.
+> - **D is not the adjacent street lamp** — ablation moved it 1.4%.
+>
+> ### P0: PEDESTRIAN VISUAL FIDELITY (NPCs)
+>
+> It beats the other three on the axes that matter: it is the only candidate that
+> is large on screen (4.48%), present in every populated view day and night, and
+> attached to the most perceptually salient object class in any frame. B and C are
+> small or defensible; D has real symptom confidence but zero root-cause confidence
+> and is night-only.
+>
+> **Scope it to the existing ladder in `AI_HANDOFF.md` §"The player character":**
+> silhouette and proportion, then hands/feet/head, then clothing volumes. **Not a
+> facial rig** — that ladder puts face detail last, deliberately. The player's own
+> mesh already has hero treatment via `buildHeroGeometry`; this is about the NPC
+> crowd path. Any change must hold the 620-instance budget, and the far tier (287
+> tris, 90 on screen for 0.45%) needs nothing.
+>
+> **Not selected, and why:** no implementation was performed here, and D should be
+> raised as a separate small bug rather than folded into the pedestrian programme.
+
+---
+
 > ## PARKED-CAR CLOSURE — SCOPE AND STRUCTURAL CORRECTIONS, 2026-09-10
 >
 > ### The closure statement, exactly
