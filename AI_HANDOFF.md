@@ -692,9 +692,15 @@ LOD 1's real contact patch. Result: **−0.009…+0.007 m per wheel, tilt ≤ 0.
 cars off-road**, confirmed in the Pages artifact.
 
 **Still open, deliberately:** `L.roadPoint` is used only by parked cars, so Vegetation and
-Decals keep the old chord placement and still drift laterally on curves. And the distant
-car shell genuinely has no wheels modelled — it now *sits* correctly, but close inspection
-at distance shows a body on the road, not tyres.
+Decals keep the old chord placement and still drift laterally on curves.
+
+> **CORRECTED 2026-09-10.** This entry twice says the distant shell "has no tyres at all"
+> and "genuinely has no wheels modelled". That is a bucket/geometry confusion. `bakeWheels`
+> runs for lod 2 (`if (lod === 0) {...} else { bakeWheels }`) and `buildWheel(..., 2)`
+> emits a coarse carcass and rim at seg 6; `REMAP_LOD2` collapses `tire` into `trim`, so
+> there is no separate tyre BUCKET. The 0.045 m datum offset the fix measured is real —
+> the coarse carcass's lowest facet sits above the fine tier's contact patch — so the fix
+> itself stands. Only the explanation was wrong.
 
 ### Outstanding owner checks (cannot be done here)
 The embedded pane refuses `requestFullscreen` and `requestPointerLock` without user

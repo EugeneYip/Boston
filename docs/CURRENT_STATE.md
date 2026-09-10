@@ -366,7 +366,8 @@ The 2026-09-09 rebaseline ranked kerbside parked cars P0/A. Investigation
 - Parked-car **LOD selection is correct**: per-instance `splitNear` gives a clean
   38 m cut — no d1 car nearer than 38.8 m, no d0 beyond 37.9 m, across four
   districts. The reference car at 6.74 m is **d0, 4,928 triangles**.
-- Real figures: **d0 4,632–4,928**, **d1 408–432** (no tyres, no glazing). The old
+- Real figures: **d0 4,632–4,928**, **d1 408–432** (coarse wheels present; no separate
+  tyre or glass bucket after `REMAP_LOD2` — see the 2026-09-10 correction). The old
   "~380 / ~90" source comment was stale and has been corrected. The 43,500-triangle
   cost estimate is withdrawn; a street view is ~200k triangles of parked car.
 - **Mean-gradient is not a valid vehicle-detail metric** — it rates a wheelless

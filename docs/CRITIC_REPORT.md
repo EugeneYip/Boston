@@ -1,5 +1,80 @@
 # CRITIC_REPORT.md
 
+> ## PARKED-CAR CLOSURE — SCOPE AND STRUCTURAL CORRECTIONS, 2026-09-10
+>
+> ### The closure statement, exactly
+>
+> **CLOSE-RANGE PARKED-CAR P0 — CLOSED.** `splitNear` and the 38 m selection are
+> correct; 6–8 m cars receive parked d0 / VehicleModels LOD1; wholesale LOD
+> promotion is not justified; true transparent glazing is the minimum measured
+> perceptual carrier; cabin occlusion makes that path safe in the tested normal
+> views; the B1 implementation stands.
+>
+> **This closes close range only.** It is NOT a claim that every parked-car LOD at
+> every distance is complete.
+>
+> ### Mid-distance d1 — DEFERRED, not closed
+>
+> d1 begins around 38 m and still carries aggressive material collapse: after
+> `REMAP_LOD2` it exposes only `trim` and `paint`, so a car at 43 m (~124 px wide)
+> has no independent tyre, glass, chrome or lamp identity. **That was never the
+> target of B1 and needs no work now.** Reopen it only if a future current-pixels
+> audit ranks it materially — not merely because its representation is coarser.
+>
+> ### Structural correction: bucket absence is not geometry absence
+>
+> This programme has now made the same mistake three times, so it is worth naming.
+> Earlier text here and in source claimed d1 has **"no wheels, no glazing"** and
+> that d0 was **floorless**. Both read a missing material-bucket NAME as missing
+> geometry. Verified from source:
+>
+> - `REMAP_LOD2` maps **`tire → trim`**, **`glass → trim`**, **`glassDark → trim`**
+>   (also chrome, lensRed, under, interior, mirror, gap…).
+> - `getVehicleGeometry` runs `bakeWheels(mb, spec, lod)` for **lod 2** — the guard
+>   is `if (lod === 0) { pillarsAndRails; wipersAndTrim } else { bakeWheels }`.
+> - `buildWheel(..., 2)` emits a coarse tyre carcass and rim disc at `seg = 6`.
+> - Coarse greenhouse surfaces originate as `glass` and are collapsed into `trim`.
+>
+> **Correct durable wording:** *parked d1 / VehicleModels LOD2 exposes only `trim`
+> and `paint` material buckets after remapping. Coarse tyre/wheel and greenhouse
+> geometry still exists, but its material identity is collapsed into `trim`; there
+> is no independent tyre or glass bucket.* This says nothing about d1 being
+> visually adequate — it is a structural correction only. (It also explains what I
+> called "two black stubs" when forcing d1 at 6.8 m: coarse seg-6 wheels, not
+> missing ones. The LOD-datum fix that measured a 0.045 m offset stands; only its
+> stated reason was wrong.)
+>
+> ### Pillars / window-rails — untested, not failed
+>
+> Reclassified: **DEFERRED / NOT NEEDED FOR THIS P0, untested as an isolated
+> carrier.** They are genuinely absent from LOD1, true glass alone delivered a
+> worthwhile improvement, and adding geometry stopped there. No pillars-only
+> variant and no B+C combination was ever built, so nothing about them was tested
+> and no failure should be recorded.
+>
+> ### Next priority
+>
+> **The next Boston-wide priority must be selected from the surviving
+> current-pixels candidates after the parked-car correction.** Candidates already
+> surfaced — none preselected here: pedestrian visual fidelity; dusk sky clipping;
+> mid-distance parked d1 appearance if it proves visible enough; and the logged
+> night wheel-arch lighting observation.
+>
+> ### Unchanged by this hygiene pass
+>
+> The B1 result stands in full: the dedicated `glassCar` / `prop_glass_car` path,
+> d0 gaining one material group, d1 untouched, glass triangle count unchanged
+> because geometry moved buckets, the cabin occluder surviving, no tested
+> see-through or sorting defect, moving vehicles unchanged, the LOD boundary
+> unmoved, and shadow casters at 1.71M below the 2.5M budget. No runtime semantics
+> were altered here; the source edits are comments only.
+>
+> *(The historical rebaseline table further below still carries "~90-tri shells,
+> no glazing, no lamps" in its A1 row. That row is superseded by everything above
+> and is left as the record of what was originally claimed.)*
+
+---
+
 > ## P0B — SUPERSEDES THE VERDICT-E BLOCK BELOW, 2026-09-10 (`737f897`)
 >
 > **The "Verdict E / root cause closed" conclusion below was wrong on two source
@@ -76,9 +151,13 @@
 > pre-existing night-lighting phenomenon. **Not compared against the pre-change
 > build**, so it is logged rather than claimed.
 >
-> **Parked-car work is now closed.** The remaining gap is pillars/window-rails,
-> which is LOD0-only mid-frequency detail and did not survive the minimum-carrier
-> test.
+> **CLOSE-RANGE parked-car work is closed.** The remaining known gap is
+> pillars/window-rails, which is LOD0-only. It is **DEFERRED / NOT NEEDED FOR
+> THIS P0 — untested as an isolated carrier.** True glass alone produced a
+> worthwhile visible improvement, so there was no reason to keep adding geometry;
+> no matched pillars-only variant was built and no B+C combination was tested.
+> "Did not survive the minimum-carrier test" would misdescribe that as a tested
+> failure, and it was not tested.
 
 ---
 
@@ -121,7 +200,7 @@
 > | state | gradient | edge density |
 > |---|---|---|
 > | d0 — 4,928 tris | 3.77 | 10.47% |
-> | d1 — 408 tris, **no wheels, no glazing** | 3.49 | 9.65% |
+> | d1 — 408 tris, coarse wheels, no separate glass bucket | 3.49 | 9.65% |
 >
 > A 12× geometry cut scores **8% worse** — while the d1 car at 6.8 m is
 > *visually* a faceted wedge with two black stubs for wheels. The metric is

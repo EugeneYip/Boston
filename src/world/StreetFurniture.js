@@ -1818,9 +1818,18 @@ function buildSnowBank() {
 //   d0 = level(1) = VehicleModels LOD1   4,632-4,928 tris   near 38 m
 //   d1 = level(2) = VehicleModels LOD2     408-432 tris     far 155 m
 //
-// d0 carries paint, glass, chrome, trimDark (tyres) and lensRed but NOT `under`,
-// so it has no floor. d1 carries only trim and paint -- no tyres and no glazing
-// at all, which is why it must stay beyond ~38 m.
+// d0 exposes paint, glass, chrome, trimDark and lensRed buckets. It is NOT
+// floorless: `REMAP_LOD1` folds `under` and `interior` into `trimDark`, and
+// `cabinShell` runs for every `lod < 2`.
+//
+// d1 exposes only `trim` and `paint` AFTER remapping, which is a statement about
+// MATERIAL BUCKETS, not about geometry. `bakeWheels` still runs for lod 2 -- the
+// guard is `if (lod === 0) { pillars; wipers } else { bakeWheels }` -- and
+// `buildWheel(..., 2)` emits a coarse carcass and rim disc at seg 6. Coarse
+// greenhouse surfaces survive too. `REMAP_LOD2` simply collapses `tire`, `glass`,
+// `glassDark`, `chrome`, `lensRed` and the rest into `trim`, so there is no
+// independent tyre or glass identity at that tier -- the geometry is there, its
+// material distinctions are not. Coarse is not absent.
 //
 // A street view is therefore ~200k triangles of parked car, not "a few tens of
 // thousands": measured at the Back Bay street viewpoint, 20 instances on d0 and
@@ -1910,11 +1919,17 @@ function buildCarFromVehicle(type, bodyHex) {
   const d0 = level(1);
   const d1 = level(2);
   if (!d0) return null;
-  // Put both LODs on the same ground datum. LOD 1 carries `trimDark`, which is
-  // where the tyres live, so its lowest vertex IS the contact patch and sits at
-  // local y = 0. The distant shell is built from `lods[2]`, which holds only
-  // `trim` and `paint` -- no tyres at all -- so its lowest vertex is the sill,
-  // measured 0.045 m higher. Placing both at the road then left every distant
+  // Put both LODs on the same ground datum. LOD 1's lowest vertex IS the contact
+  // patch and sits at local y = 0. The distant shell from `lods[2]` measures
+  // 0.045 m higher.
+  //
+  // CORRECTED 2026-09-10: the reason is NOT "no tyres at all" as this comment
+  // previously said. `bakeWheels` runs for lod 2 as well, at seg 6; what LOD2
+  // lacks is a separate `tire` BUCKET, because `REMAP_LOD2` collapses it into
+  // `trim`. The offset is real but comes from the coarse carcass's lowest facet
+  // sitting above the fine tier's contact patch, not from missing wheels. The
+  // correction below is measured off the two meshes, so it was always right
+  // regardless of the explanation. Placing both at the road then left every distant
   // parked car hovering that far above it, with no wheel to anchor it visually.
   // The correction is taken from the two meshes rather than typed in, so it
   // stays right if either bake changes.
