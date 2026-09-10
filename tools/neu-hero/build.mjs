@@ -59,9 +59,13 @@ const DEFAULT_COURSE_M = 3.8;
  * It matters here because the derived path would have reached 5 anyway
  * (18.46 / 3.8 rounds to 5) and labelled it DERIVED. The number is the same; the
  * provenance is not, and a rhythm that happens to agree with the evidence should
- * not be recorded as though arithmetic produced it. It also retires the
- * inventory's `impliedFromGrossArea` of 5.9, which is explained by 50,023 sq ft
- * over a 783 m2 footprint counting a basement the exterior does not show.
+ * not be recorded as though arithmetic produced it. It also supersedes the
+ * inventory's `impliedFromGrossArea` of 5.9, which was never a storey count:
+ * that figure is an INDIRECT implication from 50,023 sq ft of gross area over a
+ * 783 m2 footprint. Direct owner evidence outranks it. Why the arithmetic lands
+ * near 5.9 is NOT established by any evidence this project accepts — basement
+ * area, differing footprint definitions and gross-area accounting conventions
+ * would each account for it, and none of them is evidenced, so none is recorded.
  */
 const OFFICIAL_STOREYS = {
   '337 Huntington Avenue': { n: 5, basis: 'owner-published: Northeastern Housing, "This 5-story apartment complex"' },

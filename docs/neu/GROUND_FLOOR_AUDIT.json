@@ -615,7 +615,7 @@
       "metresPerStorey": 3.692,
       "neighbours": "Dodge 3.69, Hayden 3.71, Richards 3.73, Mugar 3.78",
       "derivedPipelineAlreadyGave5": "YES — round(18.46 / 3.8) = 5, so the value was retained and only its provenance changed, from DERIVED to owner-published confidence B.",
-      "grossAreaImplicationExplained": "50,023 sq ft over a 783 m2 footprint is 5.94 floors of gross area. Five above-grade storeys plus a basement accounts for it exactly, so the old 5.9 implication and the official 5 are not in conflict — the implication counted a basement the exterior does not show."
+      "grossAreaImplicationSuperseded": "The inventory's ~5.9 was never a storey count. It is an INDIRECT implication from 50,023 sq ft of gross area over a 783 m2 footprint. Owner-published Northeastern evidence states 5 stories directly, and direct evidence supersedes the implication, so the two are not in conflict. WHY the gross-area arithmetic evaluates to about 5.9 is NOT established by any currently accepted evidence: basement area, footprint-definition differences and gross-area accounting conventions would each account for the gap, none of them is evidenced here, and none is promoted to fact. CORRECTION: an earlier version of this entry asserted the basement explanation outright. That went beyond the evidence and is withdrawn."
     },
     "typology": {
       "assigned": "collegiate",

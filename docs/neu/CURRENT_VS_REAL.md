@@ -508,8 +508,11 @@ away, outside the 24 m radius, and a swept-in 335A would need ~1,224 m².
 (18.46 / 3.8 rounds to 5), so the number did not move — but a rhythm that happens
 to agree with the evidence should not be recorded as though arithmetic produced
 it. 18.46 m over 5 storeys is **3.69 m each: Dodge's 3.69 exactly**. That also
-retires the old 5.9 gross-area implication, which counted a basement the exterior
-does not show.
+supersedes the old ~5.9 figure, which was never a storey count but an indirect
+gross-area-over-footprint implication. **Why that arithmetic lands near 5.9 is
+not established by the accepted evidence** — basement area, footprint-definition
+differences and gross-area accounting would each account for it, and none is
+evidenced, so no explanation is recorded as fact.
 
 **337 is NOT in `NEU_HISTORIC`.** It takes the generic `collegiate` fallback,
 which is a statement about the absence of building-specific evidence, not a claim
