@@ -14,7 +14,7 @@
  * 111 Clarendon 240.2 m against a true 241 m.
  *
  * This layer SUPERSEDES the Boston 3D heights in docs/neu/HEIGHT_MEASUREMENTS.json,
- * which run a median +6.6 m high and imply
+ * which run a median +6.4 m high and imply
  * 4.9-5.9 m per storey on this quadrangle against this layer's 3.7-4.3.
  * **Do not reintroduce the ~24-25 m Krentzman values.**
  *
@@ -28,7 +28,7 @@
  * extrude those twice.
  */
 
-/** Parts worth runtime geometry: 19 of 23, 643 ring vertices. */
+/** Parts worth runtime geometry: 21 of 25, 674 ring vertices. */
 export const NEU_HERO_PARTS = [
   {
     id: 661048, tier: 'PRIMARY', heightM: 11.61, areaM2: 7926,
@@ -122,11 +122,25 @@ export const NEU_HERO_PARTS = [
     outline: [[-2002.07,1974.73], [-2002.3,1976.06], [-2002.6,1977.39], [-2002.95,1978.69], [-2003.37,1979.98], [-2003.84,1981.25], [-2004.38,1982.5], [-2004.97,1983.71], [-2005.62,1984.9], [-2006.32,1986.06], [-2007.07,1987.18], [-2007.88,1988.27], [-2007.99,1988.41], [-2008.73,1989.32], [-2009.64,1990.33], [-2010.58,1991.29], [-2011.58,1992.21], [-2012.61,1993.08], [-2013.68,1993.9], [-2014.79,1994.67], [-2015.79,1995.29], [-2015.94,1995.39], [-2017.12,1996.05], [-2018.32,1996.66], [-2019.56,1997.21], [-2020.81,1997.7], [-2022.09,1998.14], [-2023.39,1998.51], [-2024.71,1998.82], [-2026.03,1999.07], [-2027.37,1999.26], [-2028.71,1999.38], [-2030.06,1999.44], [-2031.41,1999.44], [-2032.23,1999.4], [-2032.76,1999.37], [-2034.1,1999.24], [-2035.61,1999.13], [-2035.36,1995.86], [-2037.36,1995.73], [-2036.04,1978.75], [-2028.74,1979.25], [-2027.06,1977.68], [-2027.51,1977.2], [-2027.45,1975.22], [-2026.09,1973.95], [-2023.98,1974.14], [-2023.44,1974.73], [-2021.71,1973.12], [-2021.1,1965.95], [-2004.27,1967.28], [-2004.4,1969], [-2001.37,1969.17], [-2001.49,1970.76], [-2001.67,1972.15], [-2001.72,1972.5], [-2001.88,1973.57], [-2002.07,1974.73]],
   },
   {
+    id: 668573, tier: 'PRIMARY', heightM: 18.46, areaM2: 428,
+    landUse: "RC", gndElevM: 2.74,
+    buildings: ["337 Huntington Avenue"],
+    dominantOf: ["337 Huntington Avenue"],
+    outline: [[-1888.12,1628.45], [-1883.71,1636.76], [-1911.38,1651.53], [-1917.7,1639.62], [-1912.52,1636.86], [-1914.85,1632.87], [-1909.23,1629.92], [-1906.24,1635.55], [-1901.29,1632.91], [-1901.87,1631.83], [-1893.58,1627.4], [-1893.01,1628.46], [-1889.2,1626.42], [-1888.12,1628.45]],
+  },
+  {
     id: 666437, tier: 'SECONDARY', heightM: 2.21, areaM2: 394,
     landUse: "E", gndElevM: 3.66,
     buildings: ["Richards Hall","Hayden Hall"],
     dominantOf: [],
     outline: [[-1879.14,1747.82], [-1876.54,1752.71], [-1875.25,1755.13], [-1875.21,1755.2], [-1904.85,1771.1], [-1906.33,1768.32], [-1908.76,1763.76], [-1910.36,1760.75], [-1880.71,1744.88], [-1879.14,1747.82]],
+  },
+  {
+    id: 668576, tier: 'SECONDARY', heightM: 18.41, areaM2: 385,
+    landUse: "RC", gndElevM: 2.74,
+    buildings: ["337 Huntington Avenue"],
+    dominantOf: [],
+    outline: [[-1900.7,1610.84], [-1896.86,1618.08], [-1894.95,1621.69], [-1905.88,1627.53], [-1906.48,1626.4], [-1910.07,1628.32], [-1909.23,1629.92], [-1914.85,1632.87], [-1912.52,1636.86], [-1917.7,1639.62], [-1926.18,1623.6], [-1925.81,1623.4], [-1924.65,1622.78], [-1924.41,1623.24], [-1916.38,1618.96], [-1900.8,1610.64], [-1900.7,1610.84]],
   },
   {
     id: 677274, tier: 'SECONDARY', heightM: 13.39, areaM2: 196,
@@ -346,6 +360,17 @@ export const NEU_HERO_BUILDINGS = [
     yearBuilt: 1968,
     storeys: 5, courseM: 3.91, storeyConfidence: 'DERIVED',
     storeyBasis: "dominant mass / 3.8 m; gross-area implication was 5",
+    statusWhy: "footprint agrees to within 10%",
+  },
+  {
+    name: "337 Huntington Avenue", status: 'CONFIRMED',
+    headlineHeightM: 18.46, dominantPart: 668573,
+    dominantHeightM: 18.46,
+    parts: [668573, 668576],
+    sourceFootprintM2: 813, officialFootprintM2: 783,
+    yearBuilt: 1923,
+    storeys: 5, courseM: 3.69, storeyConfidence: 'B',
+    storeyBasis: "owner-published: Northeastern Housing, \"This 5-story apartment complex\"",
     statusWhy: "footprint agrees to within 10%",
   },
 ];

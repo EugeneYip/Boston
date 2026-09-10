@@ -383,6 +383,21 @@ const GROUND = {
 };
 
 const _cross = (o, a, b) => (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
+/**
+ * Does the straight segment a->b cross this polyline? Used to ask whether a hero
+ * part sits on the other side of an arterial from the quadrangle. Proper segment
+ * intersection, not a side-of-nearest-segment sign, which is unreliable far from
+ * a curving centreline.
+ */
+function crossesPath(a, b, path) {
+  const side = (p, q, r) => Math.sign((q.x - p.x) * (r.z - p.z) - (q.z - p.z) * (r.x - p.x));
+  for (let i = 1; i < path.length; i++) {
+    const c = path[i - 1], d = path[i];
+    if (side(a, b, c) !== side(a, b, d) && side(c, d, a) !== side(c, d, b)) return true;
+  }
+  return false;
+}
+
 function convexHull(pts) {
   const p = pts.slice().sort((a, b) => a.x - b.x || a.z - b.z);
   const lo = [], up = [];
@@ -464,9 +479,10 @@ const ENTRANCE = {
  * Northeastern sources, independent of each other and of the PDDL cue:
  *
  *   news.northeastern.edu/2013/02/06/earle-brown/ — "When you enter Ell Hall from
- *   Krentzman Quad, you'll hear music echoing throughout the lobby." An ordinary
- *   entrance from the quad, and it opens into a LOBBY, so it is a principal door
- *   rather than a service one.
+ *   Krentzman Quad, you'll hear music echoing throughout the lobby." A quad-facing
+ *   ORDINARY entrance, opening into a lobby. It establishes existence and use, not
+ *   rank: no authoritative source calls this Ell's main or principal entrance, and
+ *   "lobby entrance" on its own does not imply one.
  *
  *   news.northeastern.edu/2025/01/22/steps-in-frame/ — students "framed by windows
  *   in Ell Hall, walking toward Krentzman Quad", which puts substantial glazing at
@@ -804,11 +820,30 @@ export default class NeuHero {
   _buildGround(ctx, groundAt) {
     const K = NEU_WALK_SOURCE.krentzman;
     // -- contour: the dilated hull of the opening cluster's footprints ---------
+    // `GROUND.near` is a radius, and a radius knows nothing about roads. 337
+    // Huntington Avenue is the first hero part on the FAR side of the arterial:
+    // its two masses sit 74.5 and 87.9 m from the quad centre, so the radius
+    // admits them, the hull then reaches across Huntington, and 3,612 m2 of
+    // maintained campus lawn appears around a residential parcel on the other
+    // side of the road. The keep-out below stops lawn ON the carriageway; it has
+    // nothing to say about ground BEYOND it.
+    //
+    // The contour means "the continuous public realm of the Krentzman opening",
+    // so the test is continuity rather than distance: a part reachable from the
+    // quad centre only by crossing Huntington is a different piece of ground and
+    // does not get to define this one. Measured: this restores the emitted
+    // surface to exactly what it was before 337 existed — 0 cells added, 0
+    // removed — and it changes nothing for the nine parts already selected, none
+    // of which crosses. 337 keeps its massing, its collision and its procedural
+    // suppression; it simply does not own quad lawn.
+    const arterial = (STREETS.find((r) => r.name === 'Huntington Avenue')?.path || [])
+      .map(([la, lo]) => geo(la, lo));
     const near = NEU_HERO_PARTS.filter((p) => {
       const n = p.outline.length;
       let cx = 0, cz = 0;
       for (const [x, z] of p.outline) { cx += x / n; cz += z / n; }
-      return Math.hypot(cx - K.x, cz - K.z) < GROUND.near;
+      if (Math.hypot(cx - K.x, cz - K.z) >= GROUND.near) return false;
+      return !crossesPath(K, { x: cx, z: cz }, arterial);
     });
     if (!near.length) return null;
     const pts = [];
