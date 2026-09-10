@@ -41,32 +41,29 @@ git status -sb
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
 
-### NPC pedestrians — attribution PARTIAL, not started (2026-09-10)
+### NPC pedestrians — P0 PREMISE UNVERIFIED, do not start (2026-09-10)
 
-Evidence: `docs/CRITIC_REPORT.md` top block. **Read it before touching the crowd
-mesh — the shootout's stated reasons were wrong and are retracted there.**
+Evidence: `docs/CRITIC_REPORT.md` top block. **The P0 rested on an observation
+that did not survive the geometry, so do not begin work.**
 
-- **The crowd already has** hair (`Z_HAIR`, pushed back with `phiMax 0.70π` so it
-  does not cover the face), hands (0.060 × 0.100 × 0.042 m), shoes (0.232 m,
-  tapered), a neck tube, joint volumes, and **six colour zones**. One `ped_body`
-  material is one *draw*, not one colour. Only **facial features** are genuinely
-  absent.
-- **Do NOT add anatomy.** Measured on a median 1.732 m NPC at 5 m / fov 62 /
-  1920×1080: silhouette 69 × 224 px, head **24 × 30 px**, hand 7.7 × 12.8 px, and
-  **a nose would be 2.6 px**. Faces and hand detail cannot read at gameplay range.
-- **The live carrier is a colour break at the head.** A vertical profile through
-  the head is ~20 px of uniform skin tone with **no hair band at the crown**, even
-  from behind — every NPC reads bald. At 24 × 30 px a tonal edge survives where
-  geometry does not. **Why `Z_HAIR` fails to read is not yet established** (aspect
-  coverage vs per-instance colour); that ablation is the next step.
-- **Heights are fine** — near median 1.710 m, far 1.672. An earlier "1.30 m" note
-  was the population minimum sampled as n=1.
-- `buildHeroGeometry`'s docstring describes the crowd as a plank with no neck and
-  no feet in profile. That predates the hero and is **stale**: current crowd
-  side/front ≈ 0.635 vs hero ≈ 0.672.
-- Preserve the architecture: near cap 72, far cap 560, pool 620, two crowd draws,
-  one material, shared animation texture. Crowd lod0 is 676 tris, lod1 287, hero
-  1,474.
+- **Hair is present, correctly coloured, and depth-visible.** `Z_HAIR` covers
+  **76.1%** of the rear-facing skull surface and **0.0%** of the front
+  (solid-angle weighted), staying 31 mm inside the skull at the face. Its colour
+  for seed 0.9216 is sRGB **(108, 84, 56)** — a dark brown, nowhere near skin.
+  **Do not call hair absent, do not call it occluded, do not darken the palette.**
+- **Faces are bald front-on BY DESIGN** — the source says an ellipsoid centred on
+  the head would "paint the whole face brown".
+- **My "every pedestrian reads bald" claim was aspect-specific and is withdrawn
+  as unproven.** The one profile behind it is consistent with a front view: its
+  lower head band measured (113,74,55), within 11 RGB of the predicted hair colour.
+- **The single remaining question:** one rendered rear / rear-3/4 view of a
+  known-yaw NPC with a `Z_HAIR` debug-colour ownership pass. If it does not
+  reproduce a bald read, **drop the pedestrian programme and re-run the B-list.**
+- Parameter levers are weak regardless: rear coverage moves 76.1 -> 84.3% only by
+  spending 12 mm of the 31 mm face margin, and a 10 px rim would need 78 mm.
+- Unchanged and not to be reopened: hands, feet, torso, zones, heights, faces,
+  animation, crowd LOD. Crowd lod0 676 tris, lod1 287, hero 1,474; near cap 72,
+  far cap 560, pool 620, two draws, one material.
 
 ### Vehicle appearance — parked-car work CLOSED (2026-09-10, `737f897`)
 

@@ -1,5 +1,92 @@
 # CRITIC_REPORT.md
 
+> ## NPC P0A — THE BALD PREMISE IS IN DOUBT, 2026-09-10 (static only)
+>
+> **Resource gate stopped this before WebGL** — memory 37% -> 31% free and
+> falling, swap free 830 -> 784 MB, load 3.59 -> 5.03, with a competing Codex
+> renderer at 35.3% CPU beside WindowServer at 36.9%. Static analysis only, no
+> runtime change. It was enough to refute both of the mission's hypotheses **and
+> my own premise.**
+>
+> ### H2 (colour) is refuted by arithmetic
+>
+> `Character.js` zone 4 mixes `(0.016, 0.011, 0.008)` -> `(0.155, 0.092, 0.040)`
+> by `fract(aAnim.w * 4.31)`. For the reference actor's seed **0.9216078**:
+> `t = 0.9721`, linear **(0.1511, 0.0897, 0.0391)**, sRGB **(108, 84, 56)** — a
+> medium-dark brown. **`Z_HAIR` is nowhere near skin.** Do not touch the palette.
+>
+> ### H1 (occlusion) is refuted by coverage
+>
+> Protrusions are small — rear **23.0 mm (2.95 px at 5 m)**, crown 11.0 mm
+> (1.41 px), temple 6.5 mm (0.83 px) — which is what my earlier "3.0 px hair
+> offset" measured, and it is why I assumed the hair could not win. **That was the
+> wrong test.** `phiMax = 0.70pi` sweeps polar angle from the **top** pole, so the
+> hair is a cap reaching down to y 1.521 over a skull spanning 1.469-1.701, and the
+> question is not rim thickness but how much of the skull surface it *encloses*.
+> Solid-angle weighted, over the skull surface:
+>
+> | | current |
+> |---|---|
+> | total skull surface covered by hair | **40.8%** |
+> | **rear-facing** surface covered | **76.1%** |
+> | **front-facing** surface covered | **0.0%** |
+> | hair front stays inside the skull front by | **31.0 mm** |
+>
+> So the hair is not almost-entirely occluded. It covers three quarters of the back
+> of the head and, by deliberate design, none of the face.
+>
+> ### Therefore H4: my "every pedestrian reads bald" was aspect-specific
+>
+> A **front** view of this head is bald — that is the authored intent, and the
+> source says so: an ellipsoid centred on the head "would simply paint the whole
+> face brown and every character would read as a featureless egg". I generalised
+> from frames whose aspect I did not record.
+>
+> The one raster profile I took is consistent with a front aspect rather than
+> contradicting it: dy 0-2 dark (lum 55) = the 2-4 px crown rim, dy 4-14 light
+> (170,136,111) = forehead and face, dy 16-24 falling to **(113,74,55)** — which is
+> within **11** RGB units of the predicted hair colour **(108,84,56)**. I read that
+> band as "uniform skin" and it is not uniform.
+>
+> **H4 is the leading explanation and it is NOT confirmed.** Confirming it needs one
+> rendered rear / rear-3/4 view of a known-yaw NPC with a `Z_HAIR` debug-colour
+> ownership pass — the Phase 1 test resources did not permit. That single test is
+> the whole remaining question.
+>
+> ### The parameter lever is weak anyway
+>
+> Even if a deficiency were confirmed, the zero-triangle levers barely move it while
+> spending the face margin the design depends on:
+>
+> | variant | rear% | face margin |
+> |---|---|---|
+> | A current | 76.1 | 31.0 mm |
+> | B `rz` .100 -> .112 | 76.1 | 19.0 mm |
+> | C B + `ry` .120 -> .126 | 76.1 | 19.0 mm |
+> | D C + `rx` .101, `phiMax` .76 | **84.3** | 19.0 mm |
+>
+> Rear coverage moves 76.1 -> 84.3% for a 12 mm loss of face clearance, and 10 px of
+> rim protrusion would need **78 mm** — helmet territory, which Phase 4 forbids.
+> **No variant was rendered, so none is recorded as tested.**
+>
+> ### Verdict: PARTIAL — and the P0 premise needs re-testing before any work
+>
+> Nothing implemented. `src/` untouched. The durable position:
+>
+> - `Z_HAIR` geometry is **present and depth-visible over the rear of the head**
+>   (76.1% of rear-facing surface) — do **not** call it absent or occluded.
+> - Hair colour is correct at (108, 84, 56) — do **not** darken the palette.
+> - Faces are bald **by design**, front-on only.
+> - **Whether NPCs actually read bald in normal play is now UNVERIFIED.** The
+>   shootout's P0 rested on my aspect-specific observation, and that observation did
+>   not survive contact with the geometry.
+>
+> **NPC P0 cannot close, and cannot proceed, until one rear-view debug-ownership
+> capture either reproduces the bald read or retires it.** If it is retired, the
+> pedestrian programme should be dropped and the B-list re-run.
+
+---
+
 > ## P0 NPC ATTRIBUTION — PARTIAL, NO IMPLEMENTATION, 2026-09-10
 >
 > **The shootout's ranking survives; its stated reasons do not.** Three of its
