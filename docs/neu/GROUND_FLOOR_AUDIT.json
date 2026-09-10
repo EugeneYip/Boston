@@ -127,7 +127,7 @@
         "source": "news.northeastern.edu/2013/02/06/earle-brown/",
         "type": "official Northeastern news",
         "quote": "When you enter Ell Hall from Krentzman Quad, you'll hear music echoing throughout the lobby.",
-        "establishes": "an ordinary entrance from the quad, opening into a LOBBY - a principal door, not a service one",
+        "establishes": "a quad-facing ORDINARY entrance into the lobby. It does NOT establish rank: no official source calls this Ell's main or principal entrance, and \"lobby entrance\" alone does not imply one.",
         "confidence": "HIGH"
       },
       {
@@ -146,7 +146,8 @@
     ],
     "confidenceTable": {
       "entrance exists on the Krentzman frontage": "HIGH - two independent official sources plus the PDDL cue agree",
-      "it is a principal entrance into a lobby": "HIGH - stated",
+      "it is a quad-facing ordinary entrance into the lobby": "HIGH - stated in those words",
+      "it is Ell's PRINCIPAL or MAIN entrance": "NOT ESTABLISHED - no authoritative source ranks it. Earlier wording here claimed \"principal\" and overstated the source; corrected.",
       "substantial ground-floor glazing there": "MEDIUM-HIGH - photo caption",
       "exact width": "UNKNOWN",
       "recessed vs flush": "UNKNOWN - DRS photo pages return HTTP 418 to automated fetch",
@@ -193,5 +194,202 @@
       "regression": "canonical spawn (-1883, 3.155, 1677) and surfaceHeight 3.0953 unchanged, districtAt northeastern, starter SUV at (-1856.163, 1649.221), Green Line 2 platforms / 6,680 tris / 6 colliders, road triangles 388,729 - all identical"
     },
     "cost": "ZERO. Same quad count so neu_hero_opaque stays 96,996 and neu_hero_glass 10,934; no new material, no new draw call, no collider change."
+  },
+  "waveD2cResult": {
+    "date": "2026-09-09",
+    "question": "Can a Krentzman-frontage entrance / steps be evidenced for DODGE HALL the way one was for Ell in D2B?",
+    "verdict": "NO. GATE FAILED — DOCS ONLY. No door was created, no runtime line changed.",
+    "headline": "Dodge's quad frontage is real, measured and highly visible. What is missing is not visibility and not the existence of a door — it is POSITION. Every positional anchor that made D2B legitimate is absent here, and the brief's own instruction for that case is to fail cleanly.",
+    "sourcesVerifiedDirectly": [
+      {
+        "n": 1,
+        "source": "graduate.northeastern.edu/knowledge-hub/siddhant-bansal/",
+        "type": "official Northeastern student profile",
+        "quote": "Krentzman Quad in front of Dodge Hall and the Bloomberg lab for me.",
+        "establishes": "Dodge Hall FRONTS Krentzman Quad.",
+        "givesPosition": false
+      },
+      {
+        "n": 2,
+        "source": "damore-mckim.northeastern.edu/events/time-capsule-reveal-and-birthday-celebration/",
+        "type": "official D'Amore-McKim event listing",
+        "quotes": [
+          "Krentzman Quad, Northeastern University",
+          "in front of Dodge Hall",
+          "If there's inclement weather, the time capsule opening will be held in the Dodge Hall lobby."
+        ],
+        "establishes": "The quad is the space in front of Dodge; Dodge has a lobby; that lobby is the rain fallback for an event held on the quad.",
+        "inference": "A rain fallback implies convenient access between the quad and the lobby. That is an INFERENCE about existence, and still says nothing about where.",
+        "givesPosition": false
+      },
+      {
+        "n": 3,
+        "source": "news.northeastern.edu/2024/04/08/solar-eclipse-viewing/",
+        "type": "official Northeastern news",
+        "quotes": [
+          "Thousands of students, faculty and staff packed Krentzman Quad and Centennial Common on the Boston campus.",
+          "Montano said, as she stood on the steps of Dodge Hall.",
+          "Meanwhile, Mohan Manjunatha was watching the crowd from a perch on the stairs of Ell Hall"
+        ],
+        "establishes": "Dodge Hall HAS EXTERIOR STEPS. This is the single most valuable new fact in the wave.",
+        "doesNotEstablish": "WHICH FACE those steps are on. Re-read against the full article: it never says. The Ell clause is parallel but is about Ell, and cannot be transferred to Dodge.",
+        "givesPosition": false
+      },
+      {
+        "n": 4,
+        "source": "spaces.northeastern.edu/open-spaces/",
+        "type": "official campus open-space listing",
+        "quote": "Dodge Hall — First floor — Lobby — 10 open seats; Building access is consistent with Classroom schedule",
+        "establishes": "A first-floor lobby exists and is publicly accessible, corroborating source 2 independently.",
+        "doesNotEstablish": "Anything exterior. The page contains no doors, entrances or steps for any building.",
+        "givesPosition": false
+      },
+      {
+        "n": 5,
+        "source": "archivesspace.library.northeastern.edu/repositories/2/archival_objects/262882",
+        "type": "finding aid, Northeastern University Photograph collection A103",
+        "facts": [
+          "Title 'Dodge Hall', dates n.d., 1903-2003",
+          "Collection is UNRESTRICTED",
+          "Series note: some photographs have been digitized"
+        ],
+        "outcome": "No digitized Dodge EXTERIOR image is linked from this object, and the DRS file pages that would carry one return HTTP 418 to automated fetch — re-confirmed this wave on repository.library.northeastern.edu/files/neu:198539 (an aerial of the Krentzman Quadrangle, which is exactly the evidence that would have settled this).",
+        "givesPosition": false
+      }
+    ],
+    "additionalFactsFound": {
+      "source": "damore-mckim.northeastern.edu/explore/school-history/",
+      "quotes": [
+        "Dodge had served as Northeastern's library since it was erected in 1954 until the Snell Library was opened in 1990.",
+        "CBA expansion into Dodge Hall",
+        "During Dodge Hall construction, a time capsule was buried with hopes that it would be opened on our 100th anniversary.",
+        "Today, Dodge Hall houses our Graduate and Undergraduate programs offices, Graduate and Undergraduate lounge space, other faculty and staff offices, and classroom space."
+      ],
+      "whyItMatters": "Dodge is a 1954 LIBRARY later converted to a business school. A 1954 library's entrance arrangement and a 2020s business-school lobby entrance are not required to be the same opening, and the building was renovated in 1993. This actively WEAKENS any attempt to reason a doorway position from massing alone.",
+      "correctionToAvoidPropagating": "A web-search summary asserted that Dodge is 'one of three buildings in the Krentzman Quadrangle, on the left, with Richards on the right and Ell in the center'. Fetching the cited page directly shows it contains NO such sentence and never mentions Krentzman Quadrangle or Ell Hall at all. That claim is a search-engine synthesis and is NOT recorded here as sourced text. The three-building enclosure is independently supported by this project's own PDDL-derived ring (see FRONT_QUAD.json ownerPerVertex: Ell 7, Dodge 8, Richards 9) and needs no borrowed sentence."
+    },
+    "confidenceTable": {
+      "A. Dodge Hall fronts Krentzman Quad": "HIGH — stated by two independent official sources, and corroborated by this project's derived ring, where Dodge owns 8 of the 24 enclosing bearings",
+      "B. Dodge has a publicly accessible first-floor lobby": "HIGH — two independent official sources",
+      "C. Dodge has exterior steps somewhere": "HIGH — official news, verbatim",
+      "D. Krentzman Quad is a major gathering space in front of Dodge": "HIGH — official news, 'thousands ... packed Krentzman Quad'",
+      "E. There is SOME ordinary entrance on the quad frontage": "MEDIUM — a strong inference from A+B+D and the rain-fallback clause, but NO source states it. Contrast Ell, where a source says literally 'When you enter Ell Hall from Krentzman Quad'.",
+      "F. WHICH face Dodge's steps are on": "UNKNOWN — the decisive gap",
+      "G. Doorway position along the frontage": "UNKNOWN — no walk termination, no plan, no reachable image",
+      "H. Door count, riser count, canopy, lettering, lamps, street number": "UNKNOWN — and all are on the brief's prohibited-invention list",
+      "I. The one official accessible-entrance point for Dodge faces AWAY from the quad": "HIGH — delta 63.9 deg, on the 2.9 deg north face, quad at 299 deg (FRONT_QUAD.json). Per the D2 principle this does NOT prove there is no ordinary quad-facing door; it only means the accessible layer does not record one.",
+      "J. That any Dodge entrance is 'principal' or 'main'": "NOT ESTABLISHED — no authoritative source ranks any Dodge entrance."
+    },
+    "measuredGeometry": {
+      "part": 676668,
+      "outlineVertices": 29,
+      "heightM": 18.47,
+      "gndElevM": 3.35,
+      "method": "Outward face normal per outline edge (disambiguated against the part centroid), compared with the bearing to the recorded Krentzman centre (-1864.9, 1698.7). Facing = dot product; > 0.5 counted as quad-facing.",
+      "quadFacingEdges": 11,
+      "quadFacingTotalLengthM": 61.5,
+      "structure": "Eleven edges, but only THREE substantial planes carrying 50.3 m of the 61.5 m. The remaining eight are short connectors of 0.19 to 2.08 m.",
+      "threePlanes": [
+        {
+          "edge": 10,
+          "lengthM": 20.22,
+          "facing": 0.848,
+          "midXZ": [
+            -1826.5,
+            1701.3
+          ],
+          "distToQuadCentreM": 38.5
+        },
+        {
+          "edge": 12,
+          "lengthM": 13.7,
+          "facing": 0.998,
+          "midXZ": [
+            -1835.0,
+            1685.4
+          ],
+          "distToQuadCentreM": 32.7,
+          "note": "CENTRAL, most head-on, and closest"
+        },
+        {
+          "edge": 15,
+          "lengthM": 16.37,
+          "facing": 0.881,
+          "midXZ": [
+            -1844.3,
+            1667.8
+          ],
+          "distToQuadCentreM": 37.1
+        }
+      ],
+      "existingCueProtected": {
+        "edge": 20,
+        "xz": [
+          -1830.82,
+          1648.32
+        ],
+        "facing": -0.52,
+        "verdict": "Faces AWAY from the quad. UNTOUCHED — not moved, not reinterpreted, not deleted. Still the sole Dodge cue; NEU_ENTRANCE_CUES is still 8 entries."
+      }
+    },
+    "screenSpaceImportance": {
+      "why": "To answer the Wave-D question 'does a player actually see this frontage' with occlusion rather than bearing.",
+      "method": "Live engine, runtime camera (fov 62, 1920x1080). 45 samples per plane (9 across x 5 up). Frustum test, then a ray from the eye to each sample against all 303 visible scene meshes with a 0.75 m epsilon. Samples with camera-space z < 2 are rejected so near-plane leakage cannot fabricate a bbox — the failure mode that produced a screen-x of -720909 in D0.",
+      "results": {
+        "V1 canonical opening (-1883,1677) bearing 65": {
+          "edge12 ground storey": "40/45 unoccluded (0.89), 296 x 91 px, 1.30 % of screen",
+          "edge12 full height": "28/45 (0.62), 4.44 %",
+          "edge15 ground storey": "45/45 unoccluded (1.00), 374 x 93 px, 1.68 %",
+          "edge10 ground storey": "12/20 in-frustum unoccluded, 159 x 89 px, 0.34 %",
+          "reading": "Dodge's quad frontage IS seen from the canonical opening, and is mostly unoccluded."
+        },
+        "V3 Krentzman centre bearing 205": {
+          "all three planes": "0/45 in frustum. Verified explicitly: all 135 samples across the three planes have NEGATIVE camera-space z, ranging -7.8 to -41.6, so every one is behind the camera rather than merely off-screen",
+          "reading": "V3 looks out to Huntington, directly away from Dodge. Dodge contributes nothing here, and any claim resting on V3 would be false."
+        },
+        "V5 quad walk (-1858,1712) bearing 30": {
+          "edge12 ground storey": "34/45 (0.76), 307 x 110 px, 1.63 %",
+          "edge10 ground storey": "18/30 (0.60), 520 x 114 px, 2.86 %"
+        },
+        "VC close approach, 12 m off edge 12": {
+          "edge12 ground storey": "40/45 (0.89), 1029 x 299 px, 14.83 % of screen",
+          "edge12 full height": "33.3 % of screen",
+          "reading": "On approach this frontage dominates the view."
+        }
+      },
+      "conclusion": "Visibility is NOT the blocker. By the D0/D2 bar this frontage clears comfortably — better at the canonical opening than several things already acted on. That is precisely why the failure below is about evidence and nothing else."
+    },
+    "whyTheGateFailed": {
+      "theShortVersion": "D2B was legitimate because POSITION came from data and only SIZE was authored. For Dodge's quad frontage there is no positional datum at all, so implementing would mean authoring the position too — that is inventing a door, which the brief forbids.",
+      "d2bHadThreeAnchorsDodgeHasNone": [
+        "1. An official sentence stating entry from the quad — Ell: 'When you enter Ell Hall from Krentzman Quad'. Dodge: NO equivalent sentence exists in any of the five sources.",
+        "2. A factual PDDL walk cue ON that frontage — Ell: part 661061 edge 80, a real sidewalk dead-end against the facade. Dodge: the only cue is edge 20 on the north face, facing away (-0.52).",
+        "3. Therefore D2B only RESIZED an existing factual opening and never chose where it went. For Dodge there is nothing to resize; a new opening would have to be placed."
+      ],
+      "theWalkDataWasCheckedAndIsEmpty": "NEU_WALK_REJECTED is [] — nothing was discarded that could help. The nearest shipped walk, id 13932, dead-ends at (-1855.08, 1689.15), which is 19.48 m off the edge-12 plane. It terminates in open quad, not against Dodge. So the 'refetch the walk set' route recorded in FRONT_QUAD.json is genuinely still open, but it has not been done and nothing currently in the repo substitutes for it.",
+      "whyEdge12WouldHaveBeenTaste": "Edge 12 is the tempting answer: central of three planes, most head-on at facing 0.998, and the closest. But 'most head-on plane' is a GEOMETRIC property, not evidence of a door. Placing an opening on edge 12 rather than edge 10 or edge 15 would be three unfalsifiable choices across 61.5 m of frontage, and there is no source that discriminates between them. In D2B it was possible to write 'the edge chose the number, not taste' because a factual cue fixed the position and the edge length bounded the width. Here nothing fixes the position, so the honest sentence would have been 'I chose it', which is the sentence the brief exists to prevent.",
+      "theBriefsOwnTest": "'If exact coordinates cannot be supported but a broad central facade zone is VISUALLY UNAMBIGUOUS ...' — nothing was visually observed. Every reachable source is TEXT. The one class of evidence that could have made the zone visually unambiguous, official photography, returns HTTP 418, re-confirmed this wave. The condition is not met, so the fallback clause applies: FAIL cleanly. Do not create a door.",
+      "aggravatingFact": "Dodge is a 1954 library converted to a business school and renovated in 1993. Even a confident architectural intuition about a 1950s library frontage would not transfer to the current building with any reliability."
+    },
+    "whatWasNotDone": [
+      "No entrance was added to Dodge on any frontage.",
+      "No ENTRANCE_BY_PART entry for 676668. The table still has exactly one row, Ell's 661061.",
+      "No steps, landing, portico, columns, pediment, canopy, ramp, lamps, lettering or street number were modelled anywhere.",
+      "The existing southeast cue was not moved, reinterpreted or deleted.",
+      "No runtime line changed. src/ is byte-identical to HEAD."
+    ],
+    "whatWouldUnblockThis": [
+      "Re-fetch the City of Boston Sidewalk Centerline layer (PDDL, layer 5) across Dodge's quad frontage and look for a private-walk dead-end against edges 10, 12 or 15. This is the SAME class of evidence already accepted for all 8 existing cues and would settle position without authoring anything. It is the single highest-value next step.",
+      "An official Northeastern floor plan or elevation for Dodge published under terms permitting factual reference.",
+      "A DRS image page reachable without the 418, or any official caption that names the face — for example 'the Krentzman Quad entrance to Dodge Hall'.",
+      "NOT acceptable: Northeastern ArcGIS coordinates (audit-reference only), ODbL OSM as runtime geometry, or tracing proprietary imagery."
+    ],
+    "qa": {
+      "parsecheck": "OK — all 86 files parse cleanly",
+      "scopecheck": "OK — no undefined references in 109 files",
+      "boot": "validate ok, 0 problems, errors 0, glFaults 0",
+      "cues": "NEU_ENTRANCE_CUES still 8; the Dodge entry is unchanged at edge 20, t 0.82, (-1830.82, 1648.32)",
+      "regression": "Not required and not claimed: src/ is byte-identical to HEAD, so runtime behaviour cannot have changed. Boot health above was measured on that unchanged tree."
+    }
   }
 }

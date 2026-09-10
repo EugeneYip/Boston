@@ -489,6 +489,67 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D2C — DODGE'S QUAD DOOR CANNOT BE PLACED, AND SO IT WAS NOT (2026-09-09)
+
+**Audit only. The gate failed and no door was created.** Dodge Hall's Krentzman
+frontage is real, measured, and one of the more visible pieces of facade in the
+opening. It still does not get an entrance, because visibility was never the
+question — **position** was.
+
+**What Northeastern's own words do establish.** Dodge fronts the quad: *"Krentzman
+Quad in front of Dodge Hall"*. It has a lobby, and that lobby is the wet-weather
+fallback for an event held *"in front of Dodge Hall"* on the quad. And it has
+steps — *"as she stood on the steps of Dodge Hall"*, from the 2024 eclipse
+coverage, on a day when *"thousands ... packed Krentzman Quad"*. Five official
+sources were read directly, and the steps are the most valuable fact of the wave.
+
+**What none of them establishes is which face those steps are on.** The eclipse
+article never says. The spaces listing is interior only. The ArchivesSpace object
+is unrestricted but links no digitized exterior, and the DRS file page that would
+carry one — an aerial of the Krentzman Quadrangle, exactly the settling evidence —
+returns **HTTP 418** to automated fetch, as D2B already found.
+
+**Measured, so the failure is not a shrug.** Dodge's quad frontage is 61.5 m over
+11 outline edges, but really **three planes** carrying 50.3 m: edge 10 (20.22 m),
+**edge 12 (13.70 m, facing 0.998, closest at 32.7 m)**, and edge 15 (16.37 m).
+Against 303 scene meshes with true ray occlusion, edge 12's ground storey is
+**89% unoccluded from the canonical opening at 296 × 91 px**, and **14.8% of the
+screen on approach**. From V3 it is not visible at all — all 45 samples fall
+*behind* the camera, which looks out to Huntington. By the D0/D2 bar this frontage
+clears comfortably.
+
+**Why it failed anyway.** D2B was legitimate because position came from data and
+only *size* was authored: an official sentence said *"When you enter Ell Hall from
+Krentzman Quad"*, and a factual PDDL walk cue already sat on that facade, so the
+wave only resized an opening it did not choose. Dodge has **neither**. No source
+says anyone enters Dodge from the quad, and the only Dodge cue is on the north
+face at facing −0.52 — pointing away. `NEU_WALK_REJECTED` is empty, and the
+nearest shipped walk dead-ends **19.48 m off** the edge-12 plane, in open quad.
+
+Edge 12 was the tempting answer — central, most head-on, closest. But *most
+head-on plane* is a geometric property, not evidence of a door, and choosing it
+over edge 10 or edge 15 is three unfalsifiable choices across 61.5 m. In D2B it
+was possible to write *the edge chose the number, not taste*. Here the honest
+sentence would have been *I chose it* — which is the sentence the gate exists to
+prevent. Dodge is also a **1954 library** converted to a business school and
+renovated in 1993, so architectural intuition about its massing transfers poorly.
+
+The brief's condition was a *visually unambiguous* zone. Nothing was visually
+observed; every reachable source is text. So the fallback clause applies.
+
+**Unchanged:** no entrance added, no `ENTRANCE_BY_PART` row for 676668, no steps,
+portico, canopy, ramp, lamps or lettering. The southeast cue was not moved,
+reinterpreted or deleted; `NEU_ENTRANCE_CUES` is still 8. `src/` is byte-identical
+to HEAD. The unblocking step is recorded: re-fetch the PDDL Sidewalk Centerline
+layer across this frontage and look for a dead-end — the same evidence class all
+eight existing cues already rest on.
+
+**Also corrected here:** D2B's audit recorded Ell's opening as *"a principal
+entrance into a lobby"*. The source supports **a quad-facing ordinary entrance
+into the lobby** and nothing about rank. No authoritative source calls it Ell's
+main or principal entrance. Fixed in `GROUND_FLOOR_AUDIT.json`; the runtime
+comment in `NeuHero.js` already said the right thing.
+
 ### WAVE D2B — ELL'S QUAD DOOR, ON NORTHEASTERN'S OWN EVIDENCE (2026-09-09, `5c3472f`)
 
 D2 concluded no ordinary-entrance evidence was reachable. For **Ell** that is no
