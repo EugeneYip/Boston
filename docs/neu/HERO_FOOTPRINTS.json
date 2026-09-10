@@ -22,7 +22,7 @@
   "reason": "Boston 3D Height_Ft is systematically high — +5.6 m on the Prudential, and it implies 4.9-5.9 m per storey on the Krentzman quadrangle against this layer's 3.7-4.3.",
   "excessOverThisLayerM": {
    "min": -2.7,
-   "median": 6.6,
+   "median": 6.4,
    "max": 8.8
   }
  },
@@ -30,8 +30,8 @@
   "cabot": "CONFIRMED at 11.61 m. Roof-break part 661048 sits 1 m from the inventory centroid and measures 7,926 m2 against an official 7,851 m2 — a 1% agreement. The taller parts nearby (18-19.6 m) are 88-105 m away and belong to Richards, Hayden and Mugar. Cabot is a wide large-span athletic building; it reads low against the word \"arena\", not against the evidence. NOT raised.",
   "hastings": "CONFIRMED for height, COMPLEX for footprint. Part 677308 is 27.83 m over 7 assessor storeys = 3.98 m/storey, which is right, and its RC land use matches a residence hall. But it measures 1,681 m2 against an official 1,046 m2, so the part covers Hastings plus an adjoining structure. This is why Roof Breaks reads HIGHER than Boston 3D here: Hastings really is taller than the 5-storey quadrangle around it."
  },
- "clusterCount": 13,
- "resolved": 13,
+ "clusterCount": 14,
+ "resolved": 14,
  "buildings": [
   {
    "name": "Ell Hall",
@@ -3668,6 +3668,170 @@
    "boston3dHeightM": null,
    "boston3dExcessM": null,
    "boston3dConfidence": null
+  },
+  {
+   "name": "337 Huntington Avenue",
+   "priority": "HERO_A",
+   "status": "CONFIRMED",
+   "statusWhy": "footprint agrees to within 10%",
+   "heightM": 18.46,
+   "dominantMass": {
+    "objectId": 668573,
+    "heightM": 18.46,
+    "areaM2": 428
+   },
+   "tiers": [
+    {
+     "objectId": 668573,
+     "heightM": 18.46,
+     "areaM2": 428,
+     "landUse": "RC",
+     "gndElevM": 2.74,
+     "outlineWorld": [
+      [
+       -1888.12,
+       1628.45
+      ],
+      [
+       -1883.71,
+       1636.76
+      ],
+      [
+       -1911.38,
+       1651.53
+      ],
+      [
+       -1917.7,
+       1639.62
+      ],
+      [
+       -1912.52,
+       1636.86
+      ],
+      [
+       -1914.85,
+       1632.87
+      ],
+      [
+       -1909.23,
+       1629.92
+      ],
+      [
+       -1906.24,
+       1635.55
+      ],
+      [
+       -1901.29,
+       1632.91
+      ],
+      [
+       -1901.87,
+       1631.83
+      ],
+      [
+       -1893.58,
+       1627.4
+      ],
+      [
+       -1893.01,
+       1628.46
+      ],
+      [
+       -1889.2,
+       1626.42
+      ],
+      [
+       -1888.12,
+       1628.45
+      ]
+     ]
+    },
+    {
+     "objectId": 668576,
+     "heightM": 18.41,
+     "areaM2": 385,
+     "landUse": "RC",
+     "gndElevM": 2.74,
+     "outlineWorld": [
+      [
+       -1900.7,
+       1610.84
+      ],
+      [
+       -1896.86,
+       1618.08
+      ],
+      [
+       -1894.95,
+       1621.69
+      ],
+      [
+       -1905.88,
+       1627.53
+      ],
+      [
+       -1906.48,
+       1626.4
+      ],
+      [
+       -1910.07,
+       1628.32
+      ],
+      [
+       -1909.23,
+       1629.92
+      ],
+      [
+       -1914.85,
+       1632.87
+      ],
+      [
+       -1912.52,
+       1636.86
+      ],
+      [
+       -1917.7,
+       1639.62
+      ],
+      [
+       -1926.18,
+       1623.6
+      ],
+      [
+       -1925.81,
+       1623.4
+      ],
+      [
+       -1924.65,
+       1622.78
+      ],
+      [
+       -1924.41,
+       1623.24
+      ],
+      [
+       -1916.38,
+       1618.96
+      ],
+      [
+       -1900.8,
+       1610.64
+      ],
+      [
+       -1900.7,
+       1610.84
+      ]
+     ]
+    }
+   ],
+   "partCount": 2,
+   "totalFootprintM2": 813,
+   "officialFootprintM2": 783,
+   "storeysCrossCheck": null,
+   "metresPerStorey": null,
+   "boston3dHeightM": 19,
+   "boston3dExcessM": 0.5,
+   "boston3dConfidence": "COMPLEX"
   }
  ]
 }

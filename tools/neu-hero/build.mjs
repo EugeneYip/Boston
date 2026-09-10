@@ -50,9 +50,31 @@ const invByName = new Map(inv.buildings.map(b => [b.name, b]));
 const ASSESSOR_STOREYS = { 'Hastings Hall': 7 };
 const DEFAULT_COURSE_M = 3.8;
 
+/**
+ * Storey counts the building's OWNER publishes, which outrank every derivation
+ * below. Northeastern Housing describes 337 Huntington Avenue verbatim as
+ * "This 5-story apartment complex" — a direct statement about the building,
+ * not a count inferred from mass or gross area.
+ *
+ * It matters here because the derived path would have reached 5 anyway
+ * (18.46 / 3.8 rounds to 5) and labelled it DERIVED. The number is the same; the
+ * provenance is not, and a rhythm that happens to agree with the evidence should
+ * not be recorded as though arithmetic produced it. It also retires the
+ * inventory's `impliedFromGrossArea` of 5.9, which is explained by 50,023 sq ft
+ * over a 783 m2 footprint counting a basement the exterior does not show.
+ */
+const OFFICIAL_STOREYS = {
+  '337 Huntington Avenue': { n: 5, basis: 'owner-published: Northeastern Housing, "This 5-story apartment complex"' },
+};
+
 function storeyEvidence(b) {
   const iv = invByName.get(b.name);
   const dom = b.dominantMass.heightM;
+  const off = OFFICIAL_STOREYS[b.name];
+  if (off) {
+    return { storeys: off.n, courseM: +(dom / off.n).toFixed(2),
+             confidence: 'B', basis: off.basis };
+  }
   if (b.storeysCrossCheck) {
     return { storeys: b.storeysCrossCheck, courseM: +(dom / b.storeysCrossCheck).toFixed(2),
              confidence: 'C', basis: 'OSM levels, corroborated by the factual height' };

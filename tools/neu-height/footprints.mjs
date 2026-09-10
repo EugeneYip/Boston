@@ -86,7 +86,7 @@ const measBy = new Map(meas.measurements.map(m => [m.name, m]));
 const CLUSTER = ['Ell Hall', 'Richards Hall', 'Hayden Hall', 'Dodge Hall', 'Curry Student Center',
   'Cabot Center (& Barletta Natatorium)', 'Mugar Life Sciences Building', 'Ryder Hall',
   'Egan Engineering/Science Research Center', 'Shillman Hall', 'Hastings Hall', 'Dana Research Center',
-  'Hurtig Hall'];
+  'Hurtig Hall', '337 Huntington Avenue'];
 
 /**
  * Footprint AREA agreement is the decisive match test, not centroid distance.
