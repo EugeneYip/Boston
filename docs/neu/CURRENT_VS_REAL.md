@@ -489,6 +489,86 @@ surface station on a local station section that widens the reservation to 11.20 
 and suspends kerbside parking for 169 m. The cross-section is the MBTA's own
 criteria, not authored guesses. See `docs/neu/GREEN_LINE_E.json`.
 
+### WAVE D4 — THE SEAL LEDGE IS WELL EVIDENCED AND STILL CANNOT BE BUILT (2026-09-09)
+
+**Audit only. Two independent gates fail.** The brick Northeastern sign at
+Krentzman is among the best-evidenced objects in this programme. That turned out
+not to be enough, and for two separate reasons.
+
+**The evidence is unambiguous.** Northeastern's own words, three sources:
+
+> *"Flanked by Dodge, Richards, and Ell halls, Krentzman Quad is one of the
+> campus' primary gateways. The brick ledge at the entrance to the quad—emblazoned
+> with the university's seal—is a popular spot for new graduates to pose for
+> photos."* — [2016](https://news.northeastern.edu/2016/09/07/a-helpful-guide-to-navigating-campus/)
+
+> *"photos sitting on the Northeastern sign in front of Krentzman along Huntington
+> Avenue"* — [2025](https://news.northeastern.edu/2025/05/02/best-commencement-photo-spots-boston-campus/)
+
+> *"the iconic brick Northeastern sign located along Huntington Avenue"* —
+> [2026](https://news.northeastern.edu/2026/04/24/northeastern-graduation-photos-2026/)
+
+Existence, brick, the quad entrance, Huntington, the seal, and — unusually useful
+— that people **sit on it**, which bounds its height. All HIGH. This was already a
+known gap here: `SOURCES.md` cited the 2016 article and the scoring row already
+listed the missing ledge. *(Correction while passing: that row says "at the quad
+head". The sources put it at the entrance, along Huntington — the mouth, not the
+head.)*
+
+**Gate 1, position: FAIL.** The quad's open sector spans **61.5 m** between ring
+vertices 8 and 9. "At the entrance, along Huntington" pins the *depth* very well —
+campus ground about 20 m off the centreline, 5.24 m clear of the road keep-out,
+flat at 3.095, and 3.5–4.0 m off the factual arrival walk — and pins the lateral
+position **not at all**. Nothing in the PDDL Roof Breaks layer captures it (it
+holds one sub-250 m² part within 70 m, and that is a 26.7 m building); a
+half-metre garden wall is not a building and never will be in a buildings layer.
+The DRS file pages still return **418**, and the one reachable record —
+`neu:183404`, *"…sign in front of Krentzman Quad and Ell Hall"* — has a title for
+a description and is marked **"Copyright Not Evaluated"**, which is not a grant.
+Northeastern's ArcGIS remains audit-only.
+
+This is the D2C standard applied unchanged. Dodge's frontage was also 61.5 m and
+that wave refused to pick a plane. Here the fallback would be centring the ledge
+on the quad axis — precisely the aesthetic symmetry the gate names as
+insufficient. There is also an awkward tell: the most natural-looking position
+lands **2.3 m from the canonical spawn**.
+
+**Gate 2, screen value: FAIL, and independently of position.** An envelope probe
+— 10 m × 0.50 m, no geometry added, ray-tested against every visible mesh:
+
+| view | size | % screen | unoccluded |
+|---|---|---|---|
+| **V1 canonical opening** | — | — | **not in frustum at any position** |
+| V3 Krentzman → Huntington | 308–337 × **14 px** | **0.21–0.23 %** | 0.00 – 0.97 |
+| V4 Huntington → campus | 293–353 × 15 px | 0.21–0.26 % | 0.55–0.67 (unocc. box 7 px tall) |
+| V2 Huntington turn | 61 × 14 px → 672 × 114 px | 0.04 % → 3.69 % | 1.00 |
+
+337 Huntington measures **6.1 %** at V3. This is **0.21 %** — about **27×
+smaller**, and fourteen pixels tall. The wall would read as a thin line; the part
+that makes it worth having does not resolve at all. A 0.50 m face is 20 px at
+25 m, so cap height lands at **8 px**; the seal is 14 px. It becomes legible at
+about 8 m — standing next to it. Existing `veg_shrub2` planting accounts for 23
+of 25 blocked samples and is about as tall as the whole object.
+
+And at the canonical opening it is simply **not in frame**: the player spawns
+facing into the quad, putting the entire Huntington-side band 54–130° off a 46.9°
+half-FOV. The gateway cue is absent from the gateway view.
+
+**So it fails the brief's own test** — *do not implement merely because it is
+iconic in reality*. This is the station-name-blade failure mode, and the honest
+answer to "does it outperform tiny station lettering" is no.
+
+**Recorded for later, not exercised:** the project's de facto policy for real
+marks is `Landmarks._makeCitgo`, which draws Citgo from two canvas triangles and
+Helvetica — generic primitives, no imported artwork. There is no written
+trademark policy anywhere, so that precedent is now written down. Factual
+existence of the seal and a right to reproduce its artwork are different things,
+and the only reachable image is rights-unevaluated.
+
+`src/` is byte-identical to HEAD: no ledge, no medallion, no lettering, and no
+change to Krentzman, the ground, Huntington, the Green Line, the spawn, the SUV,
+337, Ell or Dodge.
+
 ### WAVE D3 — 337 HUNTINGTON CLOSES THE FRONTAGE (2026-09-09, `ed0c68e`, `beea8c5`)
 
 The first building added since Hurtig, and the first one D0's occlusion ranking

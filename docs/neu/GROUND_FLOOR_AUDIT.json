@@ -774,5 +774,102 @@
       "bootMissing": "Missions.js — pre-existing, the file does not exist in src/ and is optional"
     },
     "nextScope": "The Huntington frontage is now closed at its most-seen gap. The remaining D0 coverage candidates were all measured as fully occluded from every gameplay viewpoint, so coverage is no longer the dominant defect there. The most valuable next target is eye-level fidelity on what the player DOES see from the opening: the collegiate stoneGround treatment now visible on 337 is the clearest evidence-thin detail this wave exposed, and 335A Huntington (441 m2, leased, adjacent) is the only remaining unmodelled parcel on the same frontage."
+  },
+  "waveD4Result": {
+    "date": "2026-09-09",
+    "what": "Krentzman Huntington gateway — the brick Northeastern sign / seal ledge",
+    "verdict": "BLOCKED. Docs only, no runtime change. TWO independent gates fail: position and screen value.",
+    "headline": "The object is one of the best-evidenced things in this whole programme — three official sources, unambiguous. What cannot be defended is WHERE it goes, and separately, whether a player would ever see the thing that makes it worth having.",
+    "officialEvidenceVerified": [
+      {
+        "n": 1,
+        "source": "news.northeastern.edu/2016/09/07/a-helpful-guide-to-navigating-campus/",
+        "quote": "Flanked by Dodge, Richards, and Ell halls, Krentzman Quad is one of the campus' primary gateways. The brick ledge at the entrance to the quad—emblazoned with the university's seal—is a popular spot for new graduates to pose for photos in celebration of their academic achievements.",
+        "establishes": "existence; brick; at the quad entrance; the university seal; the flanking halls; the photo tradition"
+      },
+      {
+        "n": 2,
+        "source": "news.northeastern.edu/2025/05/02/best-commencement-photo-spots-boston-campus/",
+        "quote": "Beware, the line is often long, but photos sitting on the Northeastern sign in front of Krentzman along Huntington Avenue are a must for any grad.",
+        "establishes": "along Huntington Avenue, in front of Krentzman — and, unusually useful, that people SIT ON IT, which is a real constraint on height"
+      },
+      {
+        "n": 3,
+        "source": "news.northeastern.edu/2026/04/24/northeastern-graduation-photos-2026/",
+        "quote": "the iconic brick Northeastern sign located along Huntington Avenue",
+        "establishes": "brick and Huntington-side, independently of source 2"
+      }
+    ],
+    "alreadyKnownHere": "Not a new discovery: docs/neu/SOURCES.md already cited the 2016 article, SPAWN_CANDIDATES.json already called the ledge 'the graduation photo spot', and CURRENT_VS_REAL.md's scoring row already listed its absence as a defect. D4 is the first wave to test whether it can actually be built.",
+    "correctionToEarlierProjectWording": "An earlier scoring row describes it as 'no seal ledge at the quad head'. The three sources place it at the ENTRANCE, along Huntington — the mouth of the quad, not its head. Recorded here rather than by rewriting a dated audit row.",
+    "confidenceTable": {
+      "A. brick ledge / sign exists": "HIGH — three independent official sources",
+      "B. belongs to the Krentzman Quad entrance": "HIGH — 'at the entrance to the quad', 'in front of Krentzman'",
+      "C. lies along Huntington Avenue": "HIGH — sources 2 and 3 independently",
+      "D. carries Northeastern identity": "HIGH — 'the Northeastern sign'",
+      "E. university seal on it": "HIGH — 'emblazoned with the university's seal'",
+      "F. exact position": "UNKNOWN — the decisive gap",
+      "G. exact orientation": "UNKNOWN",
+      "H. exact length": "UNKNOWN",
+      "I. exact height": "LOW — not stated. Bounded only by the fact that graduates sit on it, which implies roughly seat height. That is an inference about scale, not a dimension.",
+      "J. brick colour / material": "MEDIUM for 'brick', stated twice. UNKNOWN for colour, bond or coping.",
+      "K. seal dimensions / artwork": "UNKNOWN",
+      "L. lettering / wordmark treatment": "UNKNOWN — no source describes any lettering at all"
+    },
+    "gate1_position": {
+      "verdict": "FAIL",
+      "theZone": "The quad's open sector runs 110 degrees between ring vertices 8 (-1901.9, 1692.1) and 9 (-1846.0, 1666.5) — a mouth chord of 61.5 m. 'At the entrance, along Huntington' constrains DEPTH well and lateral position not at all.",
+      "depthIsDefensible": "The usable band is campus ground about 20 m off the Huntington centreline: 5.24 m clear of the 14.76 m road keep-out, flat at surfaceHeight 3.095-3.097, district northeastern, and 3.5-4.0 m from the factual PDDL arrival walk. That much IS pinned by accepted geometry.",
+      "lateralIsNot": "Along the 61.5 m mouth there is no factual datum whatsoever. Every position from t=0.2 to t=0.8 satisfies all three official statements equally.",
+      "noSurveyFeatureCapturesIt": "Checked. The cached PDDL Roof Breaks layer holds exactly one part under 250 m2 within 70 m of the quad centre, and it is a 26.74 m building mass, not a ledge. Roof Breaks is a BUILDINGS layer; a half-metre garden wall is not a building and will never appear in it.",
+      "photographsCannotConstrainIt": {
+        "drsFilePages": "HTTP 418 to automated fetch, as recorded twice before",
+        "nuhistoryItemPage": "reachable (200) — neu:183404, 'Northeastern University sign in front of Krentzman Quad and Ell Hall', [ca. 1903-2009], photographer Joshua D. Levine",
+        "butTheMetadataIsSilent": "The title is the whole description. It gives no side, no orientation, and no relationship to Huntington. A title naming Ell in the background does not discriminate between positions along a 61.5 m mouth.",
+        "andTheRightsAreNotCleared": "Rights statement verbatim: 'Copyright Not Evaluated. The copyright and related rights status of this Item has not been evaluated.' By this project's own standing discipline, absence of a stated restriction is not a grant."
+      },
+      "northeasternArcgis": "Not consulted for coordinates. It is audit-reference-only under the project's source policy, and hand-copying its coordinates would be the same act with worse provenance.",
+      "whyThisIsNotJustCaution": "This is the D2C standard applied unchanged. Dodge's quad frontage was also 61.5 m, and the wave refused to pick a plane because 'most head-on' is geometry, not evidence. Here the fallback would be centring the ledge on the quad axis — which is exactly the aesthetic symmetry the brief names as insufficient. Placing it by symmetry and labelling it project-authored would not make the choice any more falsifiable.",
+      "oneAwkwardConsequence": "The most 'natural' looking positions are also where the player spawns: the t=0.35 candidate lands 2.3 m from the canonical spawn. Any authored placement would have to dodge the spawn, which is a further authored decision on top of an already authored one."
+    },
+    "gate2_screenValue": {
+      "verdict": "FAIL — independently of position",
+      "method": "Envelope probe, no geometry added: a 10 m x 0.50 m ledge at each of five candidate positions, sampled 11 x 3 and ray-tested against every visible scene mesh from the live world. Analytic projection cross-checked it. Raycasts are CPU-side, so the hidden-pane compositing problem noted below does not touch these numbers.",
+      "results": {
+        "V1 canonical opening": "NOT IN FRUSTUM at any candidate. The player spawns facing INTO the quad (yaw -2.007, 25 degrees off the quad centre), so the whole Huntington-side band sits 54 to 130 degrees off axis against a 46.9 degree half-HFOV. The eastern candidates miss the frustum edge by about 7 degrees.",
+        "V3 Krentzman centre -> Huntington": "308-337 px wide by 14 px TALL, 0.21-0.23 per cent of screen. Unoccluded fraction 0.00 / 0.18 / 0.73 / 0.97 / 0.82 across the five positions — the western end is entirely hidden.",
+        "V4 Huntington sidewalk -> campus": "293-353 x 15 px, 0.21-0.26 per cent, unoccluded 0.55-0.67, and the UNOCCLUDED box is only 7 px tall: half the ledge is behind something at every position.",
+        "V2 Huntington turn": "fully unoccluded but 61 x 14 px (0.04 per cent) at the far end, reaching 672 x 114 px (3.69 per cent) only at the candidate 13 m from the eye."
+      },
+      "occluders": "prop:veg_shrub2 (23 of 25 blocked samples) and an American elm. Existing planting in the band is roughly the height of the whole object.",
+      "versusTheBriefsBenchmarks": "337 Huntington measures 6.1 per cent of screen at V3. This ledge measures 0.21-0.23 per cent at the same viewpoint — about 27x smaller, and 14 px tall.",
+      "theIdentityIsTheProblem": "The wall itself would read as a thin horizontal line. The thing that makes it worth building — the seal and any lettering — does not resolve: a 0.50 m face is 20 px at 25 m and 33 px at 15 m, so cap height lands at 8 and 13 px. A 0.35 m seal is 14 px at 25 m. It becomes legible at about 8 m, standing next to it.",
+      "theBriefsOwnTest": "'If it is effectively sub-pixel / fully hidden: do not implement merely because it is iconic in reality.' It is not literally sub-pixel, but its identity content is unresolvable at every gameplay viewpoint, and it is absent from the canonical opening entirely. That is the same failure mode as the station-name blade the brief cites as the negative benchmark, and the honest answer to 'does it outperform tiny station lettering' is no."
+    },
+    "gate3_brandingRecordedNotExercised": {
+      "status": "Not reached — position and screen value fail first. Recorded so a future wave does not re-derive it.",
+      "existingPrecedent": "Landmarks._makeCitgo draws the Citgo sign from GENERIC canvas primitives — two triangles and Helvetica text — with no imported artwork. That is the project's de facto policy for real-world marks, and it is a good one: procedural approximation from ordinary primitives, never a downloaded asset.",
+      "noWrittenPolicy": "There is no trademark or logo section in AGENTS.md, CONTRACTS.md or SOURCES.md. The Citgo code is the only precedent, so it is worth writing down.",
+      "theSealSpecifically": "Factual existence of the seal is HIGH. That is entirely separate from a right to reproduce the seal artwork. The only reachable image of the object carries 'Copyright Not Evaluated', which is not a grant, and tracing artwork out of a photograph would be worse provenance than using it directly.",
+      "ifEverBuilt": "Brick architecture first; a plain textual treatment only if ordinary nominative naming is acceptable; a clearly project-authored non-logo medallion at most. Never a downloaded seal, never a traced wordmark."
+    },
+    "whatWasNotDone": [
+      "No ledge, wall, sign, medallion or lettering was created.",
+      "No geometry was added anywhere. src/ is byte-identical to HEAD.",
+      "No Krentzman ring, campus ground, Huntington, Green Line, spawn, SUV, 337, Ell or Dodge change.",
+      "No seal or wordmark artwork was downloaded, traced or approximated.",
+      "Northeastern ArcGIS was not consulted for coordinates."
+    ],
+    "whatWouldUnblockIt": [
+      "A licence-clean survey or City feature that captures the ledge itself — it is not in Roof Breaks and is unlikely to be in any buildings layer, so this probably means a structures or street-furniture dataset if one exists under acceptable terms.",
+      "An official Northeastern source that states which side of the quad mouth it stands on, or a rights-cleared image whose metadata does.",
+      "NOTE that even with position solved, gate 2 still fails at 0.21-0.23 per cent of screen with unresolvable identity. Position alone does not make this worth building; it would also need a reason a player ever sees it, which at the canonical opening they do not."
+    ],
+    "instrumentNote": "One screenshot came back part-composited and a second attempt timed out on requestAnimationFrame: document.hidden was true, and rAF does not fire in a hidden pane. Only the visual channel was affected. Every number above comes from CPU-side raycasting and analytic projection. The engine was verified still running afterwards, with 0 errors, 0 glFaults and validate ok.",
+    "qa": {
+      "boot": "errors 0, glFaults 0, validate ok",
+      "runtimeChanged": false,
+      "regression": "Not required and not claimed: no file under src/ was touched, so runtime behaviour cannot have changed."
+    }
   }
 }
