@@ -1,0 +1,678 @@
+{
+ "baseline": {
+  "totalPlots": 10951,
+  "inBoxPlots": 389
+ },
+ "candidate": {
+  "totalPlots": 10942,
+  "inBoxPlots": 379
+ },
+ "ledger": {
+  "candidates": 110,
+  "replaced": 14,
+  "fallback": 96,
+  "fallbackReasons": {
+   "no-procedural-parcel-claimed": 77,
+   "suppressed-parcel-not-covered-by-candidate": 13,
+   "unsuppressed-parcel-overlaps-candidate": 6
+  },
+  "suppressedPlots": 23
+ },
+ "reconciliation": {
+  "candidatesAccountedFor": true,
+  "everySuppressedHasReplacement": true,
+  "plotDelta": -9,
+  "expectedPlotDelta": -9,
+  "noDuplicateSuppression": true
+ },
+ "geometry": {
+  "ringVertices": {
+   "min": 7,
+   "max": 80,
+   "median": 12
+  },
+  "quads": 0,
+  "areaM2": {
+   "min": 114.32,
+   "max": 1279.93
+  }
+ },
+ "suppressedPerReplacement": {
+  "1": 10,
+  "2": 3,
+  "7": 1
+ },
+ "replaced": [
+  {
+   "id": "bb-Bos_0501364000_B0",
+   "localId": "Bos_0501364000_B0",
+   "donorPlotId": 4179,
+   "suppressedPlotIds": [
+    4179
+   ],
+   "areaM2": 137.88,
+   "ringVertices": 27
+  },
+  {
+   "id": "bb-Bos_0501365000_B0",
+   "localId": "Bos_0501365000_B0",
+   "donorPlotId": 4219,
+   "suppressedPlotIds": [
+    4219
+   ],
+   "areaM2": 146.66,
+   "ringVertices": 25
+  },
+  {
+   "id": "bb-Bos_0501367000_B0",
+   "localId": "Bos_0501367000_B0",
+   "donorPlotId": 4294,
+   "suppressedPlotIds": [
+    4294
+   ],
+   "areaM2": 125.87,
+   "ringVertices": 20
+  },
+  {
+   "id": "bb-Bos_0501368000_B0",
+   "localId": "Bos_0501368000_B0",
+   "donorPlotId": 4335,
+   "suppressedPlotIds": [
+    4335
+   ],
+   "areaM2": 114.32,
+   "ringVertices": 10
+  },
+  {
+   "id": "bb-Bos_0501369000_B0",
+   "localId": "Bos_0501369000_B0",
+   "donorPlotId": 4377,
+   "suppressedPlotIds": [
+    4377
+   ],
+   "areaM2": 119.89,
+   "ringVertices": 12
+  },
+  {
+   "id": "bb-Bos_0501371000_B0",
+   "localId": "Bos_0501371000_B0",
+   "donorPlotId": 4419,
+   "suppressedPlotIds": [
+    4419
+   ],
+   "areaM2": 138.58,
+   "ringVertices": 7
+  },
+  {
+   "id": "bb-Bos_0501373000_B0",
+   "localId": "Bos_0501373000_B0",
+   "donorPlotId": 4499,
+   "suppressedPlotIds": [
+    4499
+   ],
+   "areaM2": 129.91,
+   "ringVertices": 27
+  },
+  {
+   "id": "bb-Bos_0503129000_B0",
+   "localId": "Bos_0503129000_B0",
+   "donorPlotId": 6678,
+   "suppressedPlotIds": [
+    6678,
+    6717
+   ],
+   "areaM2": 269.16,
+   "ringVertices": 7
+  },
+  {
+   "id": "bb-Bos_0503130000_B0",
+   "localId": "Bos_0503130000_B0",
+   "donorPlotId": 6757,
+   "suppressedPlotIds": [
+    6757
+   ],
+   "areaM2": 460.23,
+   "ringVertices": 7
+  },
+  {
+   "id": "bb-Bos_0503202000_B0",
+   "localId": "Bos_0503202000_B0",
+   "donorPlotId": 5173,
+   "suppressedPlotIds": [
+    5173,
+    5249
+   ],
+   "areaM2": 649.13,
+   "ringVertices": 10
+  },
+  {
+   "id": "bb-Bos_0503203000_B0",
+   "localId": "Bos_0503203000_B0",
+   "donorPlotId": 5319,
+   "suppressedPlotIds": [
+    5319
+   ],
+   "areaM2": 240.58,
+   "ringVertices": 7
+  },
+  {
+   "id": "bb-Bos_0503213000_B0",
+   "localId": "Bos_0503213000_B0",
+   "donorPlotId": 6469,
+   "suppressedPlotIds": [
+    6430,
+    6469
+   ],
+   "areaM2": 458.04,
+   "ringVertices": 11
+  },
+  {
+   "id": "bb-Bos_0503228000_B0",
+   "localId": "Bos_0503228000_B0",
+   "donorPlotId": 5029,
+   "suppressedPlotIds": [
+    5029,
+    5086,
+    5174,
+    5252,
+    5320,
+    5399,
+    5463
+   ],
+   "areaM2": 1279.93,
+   "ringVertices": 80
+  },
+  {
+   "id": "bb-Bos_0503385000_B0",
+   "localId": "Bos_0503385000_B0",
+   "donorPlotId": 6255,
+   "suppressedPlotIds": [
+    6255
+   ],
+   "areaM2": 186.3,
+   "ringVertices": 24
+  }
+ ],
+ "fallback": [
+  {
+   "id": "bb-Bos_0401037010_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0401037050_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501341000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 4
+  },
+  {
+   "id": "bb-Bos_0501366000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 1
+  },
+  {
+   "id": "bb-Bos_0501370000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501372000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 3
+  },
+  {
+   "id": "bb-Bos_0501375000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501377000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 4
+  },
+  {
+   "id": "bb-Bos_0501382000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501382100_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 2
+  },
+  {
+   "id": "bb-Bos_0501382200_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501382300_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501382400_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501383000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501387000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501389000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501390000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501391000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501392000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501393000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501394000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 4
+  },
+  {
+   "id": "bb-Bos_0501395000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501400000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501401000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 2
+  },
+  {
+   "id": "bb-Bos_0501402000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501403000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501404000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501405000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501406000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501407000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0501409000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503126000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503127000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503160000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503161000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503162000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503164000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503165000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503166000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503207200_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 7
+  },
+  {
+   "id": "bb-Bos_0503212000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 5
+  },
+  {
+   "id": "bb-Bos_0503214000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 3
+  },
+  {
+   "id": "bb-Bos_0503215000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503221002_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503222000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503223000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503224000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503225000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503229000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503230000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503231000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503232000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503233000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503234000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503235000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 1
+  },
+  {
+   "id": "bb-Bos_0503236000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503237000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503238000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503239000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503240000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503241000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503242000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503243000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503244000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503247000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503248000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503249000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 2
+  },
+  {
+   "id": "bb-Bos_0503250000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503251000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503252000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503253000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503254000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503255000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503256000_B0",
+   "reason": "suppressed-parcel-not-covered-by-candidate",
+   "claimed": 2
+  },
+  {
+   "id": "bb-Bos_0503257000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503258000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503259000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503260000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503261000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503262000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503263000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503264000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503268000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503269000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503270000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503381000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503382000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503383000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503384000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0503386000_B0",
+   "reason": "no-procedural-parcel-claimed",
+   "claimed": 0
+  },
+  {
+   "id": "bb-Bos_0401038000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 3
+  },
+  {
+   "id": "bb-Bos_0501343000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 1
+  },
+  {
+   "id": "bb-Bos_0501374000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 1
+  },
+  {
+   "id": "bb-Bos_0501397000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 4
+  },
+  {
+   "id": "bb-Bos_0503210000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 1
+  },
+  {
+   "id": "bb-Bos_0503211000_B0",
+   "reason": "unsuppressed-parcel-overlaps-candidate",
+   "claimed": 1
+  }
+ ]
+}

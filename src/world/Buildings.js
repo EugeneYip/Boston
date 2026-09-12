@@ -9,6 +9,7 @@ import { makeSpec, buildBuilding, towerCoreAt } from './Facades.js';
 import { corridorHalf } from './RoadNetwork.js';
 import { isReserved } from '../data/landmarks.js';
 import { NEU_HERO_PARTS } from '../data/neu-hero.js';
+import { isEnabled as gisEnabled, apply as gisApply } from './GisBackBay.js';
 import { GROUP, groups } from '../physics/PhysicsWorld.js';
 
 const CHUNK = 170;        // metres — LOD 0/1 streaming granularity
@@ -708,6 +709,34 @@ export default class Buildings {
       this._usedFallback = true;
     }
     this._indexRoads(city);
+    // Stage 1B prototype seam — DEFAULT OFF. Without `?gisBackBay=1`
+    // `gisApply` is never called and `this.plots` is the array built above,
+    // by identity. See `src/world/GisBackBay.js`; it swaps `plot.polygon` on a
+    // small verified Back Bay subset and touches nothing else.
+    this.gisLedger = null;
+    if (gisEnabled()) {
+      // The predicate runs the same two rejections the spec loop runs: the
+      // corridor clip, and `makeSpec`'s own footprint minimums. A candidate
+      // that fails either would suppress parcels and render nothing.
+      const survives = (poly) => {
+        const cut = this._clipParcel(poly);
+        if (!cut) return false;
+        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+        for (const p of cut.poly) {
+          if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
+          if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z;
+        }
+        if (x1 - x0 < 3.2 || z1 - z0 < 3.2) return false;
+        if (Math.abs(polyArea2(cut.poly)) * 0.5 < 24) return false;
+        const c = polyCentroid(cut.poly);
+        return !isReserved(c.x, c.z);
+      };
+      const r = gisApply(this.plots, survives);
+      this.plots = r.plots;
+      this.gisLedger = r.ledger;
+      console.info(`[gis-backbay] ${r.ledger.replaced.length} replaced, ` +
+        `${r.ledger.fallback.length} fallback, ${r.ledger.suppressedPlotIds.length} parcels suppressed`);
+    }
     // `districtAt` is nullable BY CONTRACT and in two distinct ways — outside the
     // baked raster, and inside it on ground no neighbourhood claims (41% of
     // cells). `_districtOf` below is the only place that decides what to do
