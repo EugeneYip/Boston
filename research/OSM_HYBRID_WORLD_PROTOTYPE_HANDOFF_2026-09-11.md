@@ -1,18 +1,29 @@
 # Prototype handoff — GIS hybrid world, stage 1
 
 **Companion to** `research/OSM_HYBRID_WORLD_FEASIBILITY_2026-09-11.md` (read §N and §O before starting).
-**Status** NOT AUTHORISED. This describes what stage 1 *would* be, so a successor AI can start in one sitting
+**Status** NOT AUTHORISED. This describes what Stage 1A *would* be, so a successor AI can start in one sitting
 without re-deriving the study. **Do not build it without explicit Owner authorisation.**
+
+> ### CORRECTED 2026-09-12 — read `research/GIS_HYBRID_WORLD_RESEARCH_ACCEPTANCE_2026-09-11.md` first
+>
+> That note is **canonical** where it disagrees with this file or with the study. Affecting this page:
+> **Stage 1 is now split** into Stage 1A (data only, no `src/`) and Stage 1B (runtime overlay, **not
+> authorised**) — only 1A is described below; the **GEO-1 8 m / 20 m gate is withdrawn** and replaced by the
+> M1–M4 baseline; the Boston 3D layer **was already mined and superseded**; and the no-ODbL-geometry rule is
+> **project policy, not a licence requirement**.
 
 ---
 
 ## The one-paragraph version
 
-Boston's world is generated from 98,932 bytes of hand-authored geography that sits a **median 24.7 m** from
-reality. The proposed fix is not a rewrite: it is to feed the existing procedural systems better factual input,
-offline, exactly the way `src/data/neu-hero.js` is already fed from City of Boston PDDL data. Stage 1 does not
-generate anything — it draws imported footprint outlines beside the existing city and measures how far apart
-they are. **If that distance is > 20 m, the whole programme stops.**
+Boston's world is generated from 98,932 bytes of hand-authored geography. Measured against OSM inside the one
+district where it has been checked, the streets fed from **authoritative GIS** sit a median **2.4–6.0 m** off,
+while the **hand-traced** streets sit a median **37.5–95.3 m** off (`docs/neu/GAPS.json`) — the same system,
+6x to 40x more accurate where it is fed from real data. The proposed fix is not a rewrite: it is to feed the
+existing procedural systems better factual input, offline, exactly the way `src/data/neu-hero.js` is already
+fed from City of Boston PDDL data. **Stage 1A generates nothing and renders nothing** — it imports one block's
+footprints, converts them through the game's own `geo()`, and reports how far they sit from the world Boston
+already builds there. That distance has never been measured outside Northeastern.
 
 ---
 
@@ -36,16 +47,17 @@ every existing feature by up to 6.5 m, including frozen Northeastern.
 
 ```
 tools/osm-prototype/          # name per the brief; the SOURCES are City of Boston + MassGIS, not OSM
-  README.md  config.mjs  fetch.mjs  manifest.mjs  normalize.mjs  validate.mjs  build.mjs
+  README.md  config.mjs  fetch.mjs  manifest.mjs  normalize.mjs  validate.mjs  build.mjs  measure.mjs
   .gitignore                  # .cache/    ← raw extracts NEVER committed
   fixtures/backbay.canonical.json          # the only committed data, ~20 KiB
-src/world/GisProbe.js         # opt-in, default OFF, behind ?gisProbe=1
 ```
 
-`GisProbe` draws the imported outlines as flat ribbons at `groundHeight() + 0.05`. **It generates no buildings,
-no parcels, no colliders, and modifies no existing file.** Removal is `rm -rf tools/osm-prototype
-src/world/GisProbe.js` — a pure deletion; `src/main.js` auto-loads systems via `import.meta.glob` and a missing
-file degrades gracefully (`AGENTS.md` rule 3).
+**NO `src/` file. No runtime consumer. No WebGL, browser, Vite or build. No new dependency.** Removal is
+`rm -rf tools/osm-prototype` — a pure deletion, nothing to revert.
+
+`src/world/GisProbe.js` — the opt-in, default-off overlay behind `?gisProbe=1` — belongs to **Stage 1B and is
+NOT authorised.** Do not create it in this stage even though it is small; it is the first change to `src/` and
+needs its own Owner review after Stage 1A reports.
 
 **Area:** Back Bay, 400 m square, bbox `42.347703,-71.082431,42.351297,-71.077569`
 (world ≈ x ∈ [−1450, −1050], z ∈ [−600, −200]). 154 buildings, median 5 corners.
@@ -62,10 +74,14 @@ representative neighbourhood — the North End is the real difficulty test, and 
 | footprints + heights | City of Boston **Buildings with Roof Breaks** — `gis.bostonplans.org/hosting/rest/services/Boston_Buildings/FeatureServer/9` | **PDDL** |
 | parks | City of Boston **Open Space** (Analyze Boston) | PDDL |
 | road comparison | **MassGIS-MassDOT Roads** (read-only, for measurement) | public record, redistributable |
-| citywide massing, later | **Boston 3D Buildings (Existing)** — authoritative, updated June 2026, **not yet mined** | PDDL |
-| **cross-check only** | OpenStreetMap via Overpass | **ODbL — geometry must never be committed** |
+| height cross-check / post-2011 gap-fill | **Boston 3D Buildings (Existing)** — item `d01bebadca584c249960f1eb6080f88c`. **Already mined** (4,616 buildings) and **superseded** for named-building heights: `Height_Ft` runs high (Prudential 233.6 vs a known 228). Upper bound only. | PDDL, via the `data.boston.gov` record naming that exact service |
+| **cross-check only (this stage)** | OpenStreetMap via Overpass | ODbL — geometry not committed. **This is project policy, not a licence prohibition** (acceptance §4). OSM is PRIMARY on merit for footway, crossing, rail, landuse, POI and hero-candidacy signals (acceptance §1) |
 
-`Districts.isReserved` → `inHeroFootprint` is the existing keep-out hand-off. Reuse it. Do not invent a second.
+`Districts.isReserved` → `inHeroFootprint` is the existing keep-out hand-off. Reuse the **pattern**; do not
+invent a second. But see acceptance §10: the NEU implementation is campus-specific — the *part-not-building*
+unit, `MICRO_M2 = 100`, the campus-polygon envelope and `crossesPath` against the Huntington arterial do
+**not** generalise. `src/world/NeuHero.js` and `src/data/neu-hero.js` are read-only reference, never a
+template to edit. Northeastern stays frozen.
 
 ---
 
@@ -91,19 +107,28 @@ representative neighbourhood — the North End is the real difficulty test, and 
 
 ---
 
-## Gates — the one that decides everything
+## Metrics — what Stage 1A actually produces
 
-Full table in study §O. The decision gate:
+**The old GEO-1 gate (≤ 8 m PASS / > 20 m FAIL) is WITHDRAWN as arbitrary.** It was one number doing three
+jobs, calibrated against a landmark statistic that measures something else. Four separated metrics replace it
+(acceptance §7):
 
-> **GEO-1 — median offset between imported footprints and the existing streetwall over the block.**
-> **PASS ≤ 8 m · PARTIAL 8–20 m · FAIL > 20 m.**
+| id | measures | definition |
+|---|---|---|
+| **M1** | source consistency | Roof Breaks footprint centroid vs the independently produced OSM centroid for the same building. **Not accuracy** — no survey reference exists |
+| **M2** | current-world displacement | perpendicular distance from each imported footprint's street-facing edge to the `frontage` polyline of the generated parcels on the owning road edge. Exclude parcels whose building has `frontDirs.length > 1` (corner/setback) and report them separately |
+| **M3** | translation-removed residual | fit the best rigid **translation** over the block, report it, re-report M2 on the residual. Report fitted rotation and scale separately and **do not** remove them |
+| **M4** | prototype improvement | **Stage 1B only** — not measurable here |
 
-Context: the existing world is median 24.7 m from reality, so the two frames landing within 8 m of each other
-means they are compatible and everything downstream is tractable. A FAIL means factual footprints and the
-hand-authored street grid cannot coexist without moving the roads — which means moving everything — and the
-honest response is to stop.
+Report full distributions (min / median / p90 / max, n, histogram), not a verdict. Decision bands, anchored to
+in-project precedent rather than invented:
+
+- **≤ 6 m** — as good as the MassGIS-sourced streets already achieve (Huntington 6.0, Columbus 2.4).
+- **6–37 m** — informative; needs judgement.
+- **≥ 37 m** — no better than Tremont Street, the worst hand-traced street already shipped. **STOP signal.**
 
 Hard stops, no retry: any `GAME-*` change · `PERF-4` (a second WebGL context) · any `LEG-*` failure.
+Note `LEG-2` is **project policy, not a licence requirement** (acceptance §4).
 
 Determinism (`STR-1`) is byte-identical output across two runs from the same cache. Ship it as a fixture test —
 the Northeastern pipeline has none, and a successor currently cannot verify a regeneration is correct.
@@ -112,7 +137,8 @@ the Northeastern pipeline has none, and a successor currently cannot verify a re
 
 ## What comes after, and in what order
 
-`0 freeze → 1 Back Bay probe → 2 North End probe → 3 coordinate contract (no numeric change) →
+`0 freeze → 1A Back Bay data probe → 1B default-off overlay (separate authorisation) → 2 North End probe →
+3 coordinate contract (no numeric change) →
 4 footprints, shell tier only → 5 footprints gain facades + collision → 6 parks/water/rail →
 7 hero registry → 8 terrain DEM → 9 roads → 10 district-by-district`
 
