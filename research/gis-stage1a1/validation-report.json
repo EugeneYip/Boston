@@ -1,0 +1,18 @@
+{
+ "failures": [],
+ "warnings": [],
+ "checks": {
+  "units": 147,
+  "partsInput": 218,
+  "partsPreserved": 218,
+  "everyPartAssignedToExactlyOneUnit": true,
+  "singletons": 126,
+  "multiPart": 21,
+  "multipartGeometry": 5,
+  "nonFiniteBoundaryCoords": 0,
+  "zeroAreaUnits": 0,
+  "unitsWithOpenBoundary": 0,
+  "areaConserved": true
+ },
+ "result": "PASS"
+}

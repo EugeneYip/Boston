@@ -5,6 +5,10 @@
 **Canonical where documents disagree** `research/GIS_HYBRID_WORLD_RESEARCH_ACCEPTANCE_2026-09-11.md`.
 **Stage 1B is NOT authorised and was not begun.**
 
+> **SUPERSEDED IN PART, 2026-09-12 — see `research/GIS_HYBRID_WORLD_STAGE1A1_BUILDING_RECONSTRUCTION_2026-09-12.md`.**
+> Stage 1A.1 answers this report's main open question (R1, the roof-break part vs building unit) and
+> narrows the datum wording in §F. Where the two disagree, Stage 1A.1 is canonical.
+
 ---
 
 ## A. Executive result
@@ -151,11 +155,23 @@ shared vertices** of the native EPSG:6492 fetch and compared against the server'
 | radial residual | min **0.9708 m**, median **0.9709 m**, max **0.9710 m** |
 | standard deviation | **0.00003 m** north, **0.00004 m** east |
 | mean component | dNorth **−0.9698 m**, dEast **+0.0464 m** |
+| transformation ArcGIS used | **NOT PINNED** — see the correction below |
 
-The 0.03 mm scatter **verifies the server reprojection** rather than trusting it. The constant 0.971 m is the
-**NAD83 → WGS84 datum difference**, which the check deliberately omits so that it is isolated instead of
-hidden. It is present in every fixture coordinate, is essentially all northing, and is **smaller than every
-other quantity Stage 1A measured**.
+The 0.03 mm scatter **verifies the server reprojection** rather than trusting it.
+
+**[CORRECTED 2026-09-12 — Stage 1A.1]** The constant 0.971 m was described here as isolating the
+"NAD83 → WGS84 datum shift". **That is too strong and is withdrawn.** A constant difference between the
+ArcGIS `outSR=4326` result and an independent inverse projection does not establish *which* geographic
+transformation ArcGIS applied; the service publishes no transformation metadata, and Stage 1A.1 did not pin
+it. The durable wording is:
+
+> **Observed constant offset between the ArcGIS EPSG:4326 transformation and the independent
+> inverse-projection result; likely attributable to datum / geographic-transformation choice, exact
+> transformation not yet pinned.**
+
+What remains established: the offset is constant to 0.03 mm across 4,575 vertices, is essentially all
+northing, is present in every fixture coordinate, and is **smaller than every other quantity Stage 1A
+measured**. No coordinate system was changed.
 
 ---
 
@@ -322,9 +338,10 @@ Fields carry more than geometry: `SWK_ID`, `MATERIAL`, `SWK_WIDTH`, `SWK_SLOPE`,
 `curb_type`, `SIDE`, `SEG_ID`, `SWK_AREA`, `INSP_DATE`. A separate **`Curbs`** polyline layer exists in the
 same service.
 
-**This resolves the one feature class the accepted precedence matrix recorded as having no identified
-source.** It was not normalized in Stage 1A — that was not in scope — and its geometry quality is
-**unassessed**. MassGIS and OSM were not needed for this class.
+**This moves the one feature class the accepted precedence matrix recorded as having no identified source
+to: AUTHORITATIVE CANDIDATE FOUND — QUALITY / VINTAGE FITNESS UNVALIDATED.** It was not normalized — that
+was not in scope — its geometry quality is **unassessed**, and its 2014 survey vintage is **not**, by itself,
+a reason to promote it to canonical production input. MassGIS and OSM were not needed for this class.
 
 ---
 

@@ -1,0 +1,1547 @@
+{
+ "generated": "2026-09-12",
+ "level": "BUILDING",
+ "m1RoofPart": {
+  "level": "ROOF_PART",
+  "tripletPresent": 193,
+  "identityHolds": 192,
+  "identityFails": 1,
+  "failures": [
+   {
+    "id": "bos-rb-676270",
+    "deltaFt": 8.259
+   }
+  ],
+  "rate": 99.48
+ },
+ "m1Building": {
+  "level": "BUILDING",
+  "definition": "a building is consistent when EVERY constituent part satisfies roof-ground=height. The identity is a part-level property; at building level it is an all-parts conjunction, which is why the two rates differ.",
+  "unitsWithElevations": 142,
+  "allPartsConsistent": 141,
+  "unitsWithAnInconsistentPart": 1,
+  "failures": [
+   {
+    "unit": "ms-Bos_0401037050_B0",
+    "badParts": 1,
+    "of": 1
+   }
+  ],
+  "rate": 99.3
+ },
+ "m2": {
+  "buckets": {
+   "UNMATCHED": 57,
+   "OUTSIDE_BOX": 14,
+   "CORNER": 32,
+   "PRIMARY": 44
+  },
+  "unmatchedReasons": {
+   "no-parcel-frontage": 43,
+   "no-street-facing-edge": 14
+  },
+  "primarySigned": {
+   "n": 44,
+   "min": -8.39,
+   "p10": -5.75,
+   "p25": -3.26,
+   "median": 12.77,
+   "p75": 17.34,
+   "p90": 19.56,
+   "max": 43.42,
+   "mean": 9.42,
+   "rms": 15.23
+  },
+  "primaryAbs": {
+   "n": 44,
+   "min": 0.19,
+   "p10": 3.26,
+   "p25": 5.33,
+   "median": 12.77,
+   "p75": 17.34,
+   "p90": 19.56,
+   "max": 43.42,
+   "mean": 12.52,
+   "rms": 15.23
+  },
+  "primaryExclCommonwealthSigned": {
+   "n": 26,
+   "min": -8.39,
+   "p10": -5.96,
+   "p25": -5.33,
+   "median": -2.93,
+   "p75": 6.99,
+   "p90": 17.25,
+   "max": 43.42,
+   "mean": 4.24,
+   "rms": 13.85
+  },
+  "primaryExclCommonwealthAbs": {
+   "n": 26,
+   "min": 0.19,
+   "p10": 2.93,
+   "p25": 4.66,
+   "median": 5.68,
+   "p75": 8.3,
+   "p90": 17.25,
+   "max": 43.42,
+   "mean": 9.49,
+   "rms": 13.85
+  },
+  "commonwealthOnlySigned": {
+   "n": 18,
+   "min": 12.77,
+   "p10": 13.18,
+   "p25": 14.3,
+   "median": 17.32,
+   "p75": 17.97,
+   "p90": 19.56,
+   "max": 20.79,
+   "mean": 16.89,
+   "rms": 17.03
+  },
+  "cornerAbs": {
+   "n": 32,
+   "min": 0.97,
+   "p10": 2.6,
+   "p25": 3.72,
+   "median": 7.81,
+   "p75": 8.66,
+   "p90": 17.89,
+   "max": 42.17,
+   "mean": 9.12,
+   "rms": 12.11
+  },
+  "byStreet": {
+   "Newbury Street": {
+    "n": 12,
+    "min": -5.96,
+    "p10": -5.87,
+    "p25": -5.68,
+    "median": -4.66,
+    "p75": -3.03,
+    "p90": -2.93,
+    "max": 17.25,
+    "mean": -1.71,
+    "rms": 7.05
+   },
+   "Commonwealth Avenue Outbound": {
+    "n": 18,
+    "min": 12.77,
+    "p10": 13.18,
+    "p25": 14.3,
+    "median": 17.32,
+    "p75": 17.97,
+    "p90": 19.56,
+    "max": 20.79,
+    "mean": 16.89,
+    "rms": 17.03
+   },
+   "Boylston Street": {
+    "n": 4,
+    "min": 4.69,
+    "p10": 4.69,
+    "p25": 4.69,
+    "median": 5.67,
+    "p75": 6.99,
+    "p90": 6.99,
+    "max": 8.3,
+    "mean": 6.41,
+    "rms": 6.56
+   },
+   "Fairfield Street": {
+    "n": 7,
+    "min": -7.78,
+    "p10": -7.78,
+    "p25": -5.75,
+    "median": 4.86,
+    "p75": 13.29,
+    "p90": 30.73,
+    "max": 43.42,
+    "mean": 11.28,
+    "rms": 21.12
+   },
+   "Ring Road": {
+    "n": 2,
+    "min": 2.78,
+    "p10": 2.78,
+    "p25": 2.78,
+    "median": 2.78,
+    "p75": 2.78,
+    "p90": 2.78,
+    "max": 31.92,
+    "mean": 17.35,
+    "rms": 22.66
+   },
+   "Exeter Street": {
+    "n": 1,
+    "min": -8.39,
+    "p10": -8.39,
+    "p25": -8.39,
+    "median": -8.39,
+    "p75": -8.39,
+    "p90": -8.39,
+    "max": -8.39,
+    "mean": -8.39,
+    "rms": 8.39
+   }
+  }
+ },
+ "m3": {
+  "bestFit": {
+   "dx": -6.232,
+   "dz": -7.188,
+   "magnitudeM": 9.514
+  },
+  "frontRankN": 39,
+  "residualSigned": {
+   "n": 39,
+   "min": -11.8,
+   "p10": -2.26,
+   "p25": 3.82,
+   "median": 7.15,
+   "p75": 9.12,
+   "p90": 14.58,
+   "max": 31.69,
+   "mean": 6.95,
+   "rms": 10.15
+  },
+  "residualAbs": {
+   "n": 39,
+   "min": 2.26,
+   "p10": 3.19,
+   "p25": 4.36,
+   "median": 8.36,
+   "p75": 9.38,
+   "p90": 14.58,
+   "max": 31.69,
+   "mean": 8.56,
+   "rms": 10.15
+  }
+ },
+ "rows": [
+  {
+   "id": "ms- ",
+   "bucket": "UNMATCHED",
+   "parts": 28,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0400985000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0401037010_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0401037050_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0401038000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": -8.022,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0401052000_B0",
+   "bucket": "CORNER",
+   "parts": 8,
+   "basis": "massgis-local-id",
+   "street": "Exeter Street",
+   "m2": -9.427,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0401053010_B0",
+   "bucket": "CORNER",
+   "parts": 8,
+   "basis": "massgis-local-id",
+   "street": "Huntington Avenue",
+   "m2": -20.961,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0401067000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 4,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501341000_B0",
+   "bucket": "CORNER",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -2.544,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501343000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501364000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -2.93,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501365000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -3.027,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501366000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -3.264,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501367000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -4.662,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501368000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -3.717,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501369000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -5.679,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501370000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -5.866,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501371000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -4.523,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501372000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -5.957,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501373000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -4.978,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501374000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -5.329,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501375000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Exeter Street",
+   "m2": -8.095,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501376000_B0",
+   "bucket": "CORNER",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -7.572,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501377000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 14.305,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501380000_B0",
+   "bucket": "CORNER",
+   "parts": 5,
+   "basis": "massgis-local-id",
+   "street": "Exeter Street",
+   "m2": -8.489,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501382000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 435",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501382100_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 13.18,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501382200_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 12.774,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501382300_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 14.245,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501382400_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 13.964,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501383000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 10.106,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501387000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501389000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501390000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501391000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501392000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501393000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501394000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501395000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501397000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501398000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501400000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501401000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501402000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501403000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501404000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501405000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501406000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501407000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": 17.249,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0501408000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501409000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501410000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 3,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501411000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 3,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0501412000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 4,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503126000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503127000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503129000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503130000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503160000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503161000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503162000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503164000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503165000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503166000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503201000_B0",
+   "bucket": "CORNER",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": 20.244,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503202000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": 8.299,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503203000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": 6.786,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503206000_B0",
+   "bucket": "PRIMARY",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": 5.672,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503207100_B0",
+   "bucket": "UNMATCHED",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503207200_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503210000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -3.03,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503211000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503212000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": 3.588,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503213000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Boylston Street",
+   "m2": 4.688,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503214000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 13.288,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503215000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503216000_B0",
+   "bucket": "CORNER",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -8.551,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503218000_B0",
+   "bucket": "CORNER",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -5.232,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503220000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503221002_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503222000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503223000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503224000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503225000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503226000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 4,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503228000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -8.664,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503229000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -2.603,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503230000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": 8.476,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503231000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 43.418,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503232000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503233000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 30.726,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503234000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503235000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503236000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503237000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 0.187,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503238000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -7.782,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503239000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503240000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -5.752,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503241000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 4.86,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503242000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503243000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503244000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Newbury Street",
+   "m2": -5.04,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503245000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 2,
+   "basis": "massgis-local-id",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "ms-Bos_0503247000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 21.166,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503248000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 435",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503249000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 19.77,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503250000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 5.479,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503251000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 20.786,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503252000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -8.489,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503253000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 435",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503254000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -2.964,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503255000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 4.588,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503256000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": 13.719,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503257000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 19.564,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503258000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 18.234,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503259000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 18.012,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503260000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.794,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503261000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.323,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503262000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.341,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503263000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.93,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503264000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.969,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503266010_B0",
+   "bucket": "PRIMARY",
+   "parts": 3,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 16.115,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503268000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.316,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503269000_B0",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.311,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503270000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 435",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503381000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503382000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503383000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -5.913,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503384000_B0",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Fairfield Street",
+   "m2": -7.806,
+   "reason": null
+  },
+  {
+   "id": "ms-Bos_0503385000_B0",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "massgis-local-id",
+   "street": "Public Alley 428",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "ms-Bos_0503386000_B0",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-652539",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Boylston Street",
+   "m2": 6.99,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-671261",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Ring Road",
+   "m2": 2.78,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-671745",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Ring Road",
+   "m2": 31.921,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-675389",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Huntington Avenue",
+   "m2": 42.172,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-675391",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "solo-bos-rb-675418",
+   "bucket": "PRIMARY",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Exeter Street",
+   "m2": -8.392,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-675419",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Exeter Street",
+   "m2": -8.427,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-675487",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Public Alley 442",
+   "m2": null,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "solo-bos-rb-675690",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-676269",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Boylston Street",
+   "m2": 7.888,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-677086",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Boylston Street",
+   "m2": -1.706,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-677088",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Boylston Street",
+   "m2": -0.975,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-677667",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-677668",
+   "bucket": "OUTSIDE_BOX",
+   "parts": 1,
+   "basis": null,
+   "street": null,
+   "m2": null,
+   "reason": null
+  },
+  {
+   "id": "solo-bos-rb-677681",
+   "bucket": "UNMATCHED",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": null,
+   "m2": null,
+   "reason": "no-street-facing-edge"
+  },
+  {
+   "id": "solo-bos-rb-677938",
+   "bucket": "CORNER",
+   "parts": 1,
+   "basis": "ungrouped-ambiguous",
+   "street": "Fairfield Street",
+   "m2": 17.888,
+   "reason": null
+  }
+ ]
+}

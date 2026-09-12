@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "boston-gis-stage1a1/schema-v0.1-building-candidate/0.1.0",
+  "title": "Boston canonical geospatial — BUILDING unit, Stage 1A.1 candidate",
+  "description": "NOT the production schema. Extends the Stage 1A part-level candidate with a BUILDING level. A BUILDING is a DERIVED grouping over PRESERVED factual ROOF PARTS: parts are never discarded, merged away, or rewritten. Geometry stays PDDL (City of Boston Buildings with Roof Breaks); identity is DERIVED from an authoritative external identifier (MassGIS Building Structures LOCAL_ID), never from a geometric heuristic.",
+  "type": "object",
+  "required": ["schemaVersion", "identity", "geometry", "cases"],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "description": "Where building identity comes from. If this block is absent, there is no defensible building level and consumers must fall back to the roof-part unit.",
+      "required": ["source", "service", "licence", "tier"],
+      "properties": {
+        "source": { "type": "string" },
+        "service": { "type": "string" },
+        "licence": { "type": "string" },
+        "attribution": { "type": "string" },
+        "tier": { "enum": ["DERIVED", "INFERRED"], "description": "DERIVED = an authoritative identifier supplied the grouping. INFERRED = a heuristic did. Stage 1A.1 emits only DERIVED; a heuristic path was tested and rejected." }
+      }
+    },
+    "geometry": { "type": "object", "required": ["source", "licence", "frame"] },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "basis", "confidence", "partCount", "partIds", "parts"],
+        "properties": {
+          "id": { "type": "string", "description": "ms-<LOCAL_ID> when grouped; solo-<partId> when not" },
+          "localId": { "type": ["string", "null"], "description": "MassGIS LOCAL_ID — the authoritative building identifier" },
+          "basis": {
+            "enum": ["massgis-local-id", "ungrouped-ambiguous", "ungrouped-no-parent"],
+            "description": "ungrouped-ambiguous = the part straddles two parent structures and was deliberately NOT grouped; ungrouped-no-parent = no parent structure covers it"
+          },
+          "confidence": { "enum": ["HIGH", "MEDIUM", "LOW", "AMBIGUOUS", "UNASSIGNED"] },
+          "areaM2": { "type": "number", "description": "DERIVED: sum of constituent part areas" },
+          "centroid": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+          "heightM": {
+            "type": ["object", "null"],
+            "description": "DERIVED range over constituent parts. Deliberately a RANGE, never a single collapsed height: a stepped building must not become a box in the data model.",
+            "properties": { "min": { "type": "number" }, "max": { "type": "number" }, "n": { "type": "integer" } }
+          },
+          "heightsByPartFt": {
+            "type": "array",
+            "description": "FACT, in source feet: every constituent part's own height and base/roof elevations, preserved so stepped massing survives.",
+            "items": { "type": "object", "required": ["part", "heightFt", "groundElevFt", "roofElevFt"] }
+          },
+          "assignment": {
+            "type": "array",
+            "description": "How each part was attached: overlap coverage against its parent structure and the margin over the runner-up. A low margin is what marks AMBIGUOUS.",
+            "items": { "type": "object", "required": ["part", "coverage", "margin", "confidence"] }
+          },
+          "boundaryEdgeCount": { "type": "integer", "description": "DERIVED: constituent edges surviving the dissolve (edges shared by two siblings of the same building are removed; party walls and courtyards are not)." },
+          "partIds": { "type": "array", "items": { "type": "string" } },
+          "parts": {
+            "type": "array",
+            "description": "The PRESERVED factual roof parts, verbatim from the Stage 1A PDDL fixture. A building never replaces its parts.",
+            "items": { "type": "object", "required": ["id", "sourceId", "rings", "fact"] }
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "FACT: part rings, part elevations in source feet, part attributes. All from the PDDL layer.",
+    "DERIVED: the grouping itself (from MassGIS LOCAL_ID), the dissolved boundary, areaM2, heightM range, centroid.",
+    "INFERRED: nothing. A geometric fallback was tested against authoritative ground truth and rejected — see the Stage 1A.1 report.",
+    "Vertical: elevations remain in source feet and are NOT converted to the game's vertical frame. The City's DOIT_buildings service documents BASE_ELEVATION / TOP_SEA_LEVEL as NAVD88, but those fields are not in the PDDL layer, and the PDDL layer's own *_2010 fields carry no stated vertical reference.",
+    "A consumer that cannot honour the AMBIGUOUS basis must fall back to the roof-part unit rather than guessing."
+  ]
+}
