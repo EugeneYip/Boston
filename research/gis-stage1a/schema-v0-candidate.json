@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "boston-gis-stage1a/schema-v0-candidate/0.1.0",
+  "title": "Boston canonical geospatial — Stage 1A SCHEMA CANDIDATE",
+  "description": "NOT the production canonical schema. A candidate proposed by Stage 1A for Owner review. File-level invariants live in `source`; per-feature records carry only what varies. FACT = supplied by the source. DERIVED = computed deterministically from FACT. INFERRED = not supplied by any source; Stage 1A emits NONE, by design.",
+  "type": "object",
+  "required": ["schemaVersion", "adapterVersion", "source", "area", "coordinates", "counts", "features"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "adapterVersion": { "type": "string", "description": "path@semver of the normalizer that produced this file" },
+    "source": {
+      "type": "object",
+      "description": "Invariant for every feature in the file. Hoisted rather than repeated per feature.",
+      "required": ["sourceFamily", "dataset", "featureClass", "licence", "sourceCrs", "transform"],
+      "properties": {
+        "sourceFamily": { "enum": ["city-of-boston", "massgis", "mbta", "usgs", "openstreetmap"] },
+        "dataset": { "type": "string" },
+        "featureClass": { "enum": ["BUILDING", "BUILDING_PART", "ROAD", "SIDEWALK", "WATER", "PARK", "RAIL", "STOP", "LANDUSE", "POI"] },
+        "licence": { "type": "string", "description": "SPDX-style identifier, e.g. ODC-PDDL-1.0" },
+        "sourceCrs": { "type": "string", "description": "EPSG code of the SOURCE, before any transform" },
+        "sourceLinearUnit": { "enum": ["m", "ftUS", "ft", "deg"] },
+        "elevationUnit": { "enum": ["m", "ft", "ftUS", "none"] },
+        "transform": { "type": "string", "description": "the exact transform chain, ending in the production geo()" }
+      }
+    },
+    "area": { "type": "object", "required": ["bboxWgs84", "bboxWorld"] },
+    "coordinates": {
+      "type": "object",
+      "description": "The world frame. `projection` MUST name src/core/Geo.js and MUST record that it is unchanged.",
+      "required": ["frame", "units", "axes", "decimals", "projection"]
+    },
+    "counts": { "type": "object", "required": ["source", "normalized", "rejected"] },
+    "rejected": {
+      "type": "array",
+      "description": "Every source feature not emitted, with a machine-readable reason. Never silently dropped.",
+      "items": { "type": "object", "required": ["id", "reason"] }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sourceId", "fact", "derived", "confidence"],
+        "properties": {
+          "id": { "type": "string", "description": "stable, namespaced: <family>-<dataset-abbrev>-<sourceId>" },
+          "sourceId": { "type": "string", "description": "the source's own identifier, verbatim" },
+          "sourceTimestamp": { "type": ["string", "number", "null"], "description": "per-feature edit date if the source supplies one; null otherwise. NEVER the retrieval date." },
+          "fact": {
+            "type": "object",
+            "description": "Supplied by the source, in the SOURCE's own units. Nothing here is converted, so a successor can re-derive independently.",
+            "properties": {
+              "heightFt": { "type": ["number", "null"] },
+              "groundElevFt": { "type": ["number", "null"] },
+              "roofElevFt": { "type": ["number", "null"] },
+              "partUse": { "type": ["string", "null"] },
+              "landUse": { "type": ["string", "null"] },
+              "braLandUse": { "type": ["string", "null"] },
+              "ielType": { "type": ["string", "null"] },
+              "shapeAreaFt2": { "type": ["number", "null"] }
+            }
+          },
+          "derived": {
+            "type": "object",
+            "description": "Computed from FACT by the adapter. Reproducible from FACT plus adapterVersion.",
+            "required": ["rings"],
+            "properties": {
+              "rings": {
+                "type": "array",
+                "description": "Outer ring first, holes after. [x, z] in Boston local metres, 2 dp. Closing vertex NOT repeated. Outer CCW, holes CW, normalized by signed area so source winding is irrelevant.",
+                "items": { "type": "array", "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } }
+              },
+              "areaM2": { "type": "number" },
+              "heightM": { "type": ["number", "null"] },
+              "heightBasis": { "type": ["string", "null"], "description": "the exact arithmetic, e.g. 'BLDG_HGT_2010 x 0.3048'. Null when no height was supplied." }
+            }
+          },
+          "confidence": {
+            "enum": ["FACT_IF_PRESENT", "FACT_GEOMETRY_ONLY", "DERIVED", "INFERRED"],
+            "description": "FACT_IF_PRESENT = source supplied a height. FACT_GEOMETRY_ONLY = footprint only, no height; downstream must NOT invent one. INFERRED is reserved and unused in Stage 1A."
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "featureClass BUILDING_PART is deliberate: the Roof Breaks layer partitions roofs, not buildings. 95.0% of parts in the Stage 1A fixture share an edge with a sibling. A production schema needs a separate BUILDING level, produced by a dissolve step that Stage 1A did not attempt.",
+    "No facade, window, cornice, material or architectural attribute appears anywhere in this schema. The source supplies none, and inventing them is what INFERRED exists to forbid.",
+    "Elevations are kept in source feet and NOT converted to the game's vertical frame. The source's vertical datum is unresolved; converting would manufacture a false absolute."
+  ]
+}

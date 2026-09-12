@@ -1,0 +1,29 @@
+{
+ "schemaVersion": "boston-gis-stage1a/schema-v0-candidate/0.1.0",
+ "checks": {
+  "features": 218,
+  "sourceFeatures": 218,
+  "rejected": 0,
+  "uniqueIds": 218,
+  "uniqueSourceIds": 218,
+  "ringVertices": 4348,
+  "outerRingVertices": {
+   "min": 4,
+   "max": 316,
+   "mean": 19.94
+  },
+  "multiRingFeatures": 7,
+  "nonFiniteCoords": 0,
+  "ringsUnder3Vertices": 0,
+  "ringsUnder1m2": 0,
+  "outerRingsWrongWinding": 0,
+  "holeRingsWrongWinding": 0,
+  "selfIntersectingRings": 0,
+  "selfIntersectionChecksSkipped": 0
+ },
+ "failures": [],
+ "warnings": [
+  "source-height-identity: bos-rb-676270 roof-ground=276.848 vs height=268.589 — see M1"
+ ],
+ "result": "PASS_WITH_WARNINGS"
+}

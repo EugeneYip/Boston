@@ -60,7 +60,10 @@ NOT authorised.** Do not create it in this stage even though it is small; it is 
 needs its own Owner review after Stage 1A reports.
 
 **Area:** Back Bay, 400 m square, bbox `42.347703,-71.082431,42.351297,-71.077569`
-(world ≈ x ∈ [−1450, −1050], z ∈ [−600, −200]). 154 buildings, median 5 corners.
+(world **x ∈ [−1380.46, −980.50], z ∈ [+454.52, +854.60]**, 399.96 × 400.08 m).
+**[CORRECTED 2026-09-12 by Stage 1A]** the earlier annotation `x ∈ [−1450, −1050], z ∈ [−600, −200]` was
+wrong in magnitude and in the sign of z; the WGS84 bbox is authoritative and reconstructs from centre ± 200 m
+to 4e-7 deg. OSM reports 154 buildings here; the authoritative City layer reports **218 roof-break parts**.
 Chosen because Back Bay is generated from an exact surveyed frame (`bb()`, `BB_BEARING` 251.5°), so any
 mismatch is attributable to the import rather than to authoring scatter. It is also Boston's *least*
 representative neighbourhood — the North End is the real difficulty test, and is stage 2.

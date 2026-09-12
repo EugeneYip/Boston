@@ -1,0 +1,2004 @@
+{
+ "generated": "2026-09-12",
+ "m1": {
+  "definition": "source-internal consistency of the authoritative extract",
+  "checks": {
+   "features": 218,
+   "duplicateSourceIds": 0,
+   "elevationTripletPresent": 193,
+   "elevationTripletAbsent": 25,
+   "elevationPartial": 0,
+   "heightIdentityHolds": 192,
+   "heightIdentityFails": 1,
+   "identityFailures": [
+    {
+     "id": "bos-rb-676270",
+     "deltaFt": 8.259
+    }
+   ],
+   "heightIdentityRate": 99.48,
+   "areaAgreementPct": {
+    "n": 218,
+    "min": -0.17,
+    "p10": 0.02,
+    "p25": 0.04,
+    "median": 0.06,
+    "p75": 0.09,
+    "p90": 0.12,
+    "max": 109.04,
+    "mean": 2.26,
+    "rms": 13.8
+   },
+   "multiRingFeatures": 7
+  },
+  "result": "USABLE"
+ },
+ "m2": {
+  "frontRankBandM": 4,
+  "frontRankSigned": {
+   "n": 59,
+   "min": -12.81,
+   "p10": -5.96,
+   "p25": -3.09,
+   "median": 12.77,
+   "p75": 17.32,
+   "p90": 18.01,
+   "max": 53.95,
+   "mean": 9.48,
+   "rms": 15.92
+  },
+  "frontRankAbs": {
+   "n": 59,
+   "min": 2.78,
+   "p10": 3.91,
+   "p25": 5.73,
+   "median": 12.81,
+   "p75": 17.32,
+   "p90": 18.01,
+   "max": 53.95,
+   "mean": 12.75,
+   "rms": 15.92
+  },
+  "frontRankN": 59,
+  "definition": "signed perpendicular distance, authoritative street-facing edge -> current parcel frontage polyline; + = building inland of Boston streetwall",
+  "buckets": {
+   "primary": 67,
+   "corner": 45,
+   "unmatched": 89,
+   "outsideBox": 17
+  },
+  "unmatchedReasons": {
+   "no-parcel-frontage": 64,
+   "no-street-exposed-edge": 25
+  },
+  "primarySigned": {
+   "n": 67,
+   "min": -12.81,
+   "p10": -6.01,
+   "p25": -3.09,
+   "median": 12.77,
+   "p75": 17.32,
+   "p90": 19.56,
+   "max": 53.95,
+   "mean": 9.77,
+   "rms": 16.63
+  },
+  "primaryAbs": {
+   "n": 67,
+   "min": 0.19,
+   "p10": 3.26,
+   "p25": 5.73,
+   "median": 12.81,
+   "p75": 17.32,
+   "p90": 19.56,
+   "max": 53.95,
+   "mean": 13.1,
+   "rms": 16.63
+  },
+  "cornerSigned": {
+   "n": 45,
+   "min": -112.86,
+   "p10": -10.61,
+   "p25": -8.49,
+   "median": -3.72,
+   "p75": 5.48,
+   "p90": 13.72,
+   "max": 52.62,
+   "mean": -1.63,
+   "rms": 22.15
+  },
+  "cornerAbs": {
+   "n": 45,
+   "min": 0.97,
+   "p10": 2.96,
+   "p25": 4.98,
+   "median": 8.41,
+   "p75": 10.61,
+   "p90": 20.96,
+   "max": 112.86,
+   "mean": 12.68,
+   "rms": 22.15
+  },
+  "byStreet": {
+   "Fairfield Street": {
+    "n": 4,
+    "min": -7.78,
+    "p10": -7.78,
+    "p25": -7.78,
+    "median": -5.75,
+    "p75": 4.86,
+    "p90": 4.86,
+    "max": 30.73,
+    "mean": 5.51,
+    "rms": 16.29
+   },
+   "Newbury Street": {
+    "n": 18,
+    "min": -6.52,
+    "p10": -5.96,
+    "p25": -5.33,
+    "median": -3.26,
+    "p75": 15.09,
+    "p90": 16.57,
+    "max": 17.64,
+    "mean": 2.94,
+    "rms": 10.34
+   },
+   "Boylston Street": {
+    "n": 9,
+    "min": -3.09,
+    "p10": -3.09,
+    "p25": 5.67,
+    "median": 6.38,
+    "p75": 6.99,
+    "p90": 8.3,
+    "max": 17.99,
+    "mean": 6.6,
+    "rms": 8.33
+   },
+   "Commonwealth Avenue Outbound": {
+    "n": 20,
+    "min": 12.77,
+    "p10": 13.18,
+    "p25": 14.3,
+    "median": 17.32,
+    "p75": 17.93,
+    "p90": 18.23,
+    "max": 20.79,
+    "mean": 16.68,
+    "rms": 16.81
+   },
+   "Dartmouth Street": {
+    "n": 1,
+    "min": 49.14,
+    "p10": 49.14,
+    "p25": 49.14,
+    "median": 49.14,
+    "p75": 49.14,
+    "p90": 49.14,
+    "max": 49.14,
+    "mean": 49.14,
+    "rms": 49.14
+   },
+   "Huntington Avenue": {
+    "n": 2,
+    "min": -12.81,
+    "p10": -12.81,
+    "p25": -12.81,
+    "median": -12.81,
+    "p75": -12.81,
+    "p90": -12.81,
+    "max": 3.91,
+    "mean": -4.45,
+    "rms": 9.47
+   },
+   "Ring Road": {
+    "n": 2,
+    "min": -6.01,
+    "p10": -6.01,
+    "p25": -6.01,
+    "median": -6.01,
+    "p75": -6.01,
+    "p90": -6.01,
+    "max": 2.78,
+    "mean": -1.61,
+    "rms": 4.68
+   },
+   "Exeter Street": {
+    "n": 3,
+    "min": -8.39,
+    "p10": -8.39,
+    "p25": -8.39,
+    "median": 8.57,
+    "p75": 8.57,
+    "p90": 8.57,
+    "max": 53.95,
+    "mean": 18.04,
+    "rms": 31.91
+   }
+  },
+  "byStreetNote": "front rank only"
+ },
+ "m3": {
+  "definition": "residual after ONE best-fit rigid 2D translation. No rotation, no scale, no warp.",
+  "bestFit": {
+   "dx": 6.65,
+   "dz": -11.304,
+   "magnitudeM": 13.115
+  },
+  "conditioning": {
+   "n": 59,
+   "det": 400.622
+  },
+  "residualSigned": {
+   "n": 59,
+   "min": -21.1,
+   "p10": -4.43,
+   "p25": 3.39,
+   "median": 8.02,
+   "p75": 9.8,
+   "p90": 15.29,
+   "max": 43.83,
+   "mean": 7.98,
+   "rms": 13.35
+  },
+  "residualAbs": {
+   "n": 59,
+   "min": 1.72,
+   "p10": 2.48,
+   "p25": 5.14,
+   "median": 8.59,
+   "p75": 11.62,
+   "p90": 16.6,
+   "max": 43.83,
+   "mean": 10.13,
+   "rms": 13.35
+  }
+ },
+ "rows": [
+  {
+   "id": "bos-rb-652070",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652071",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652072",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652073",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652074",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652075",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652076",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652513",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": 4.86,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652514",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652515",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652516",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -2.603,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652517",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 8.476,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652518",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": 43.418,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652519",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -8.664,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652520",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -5.04,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652521",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652522",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652523",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652524",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": 0.187,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652525",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": -7.782,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652526",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652527",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": -5.752,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652528",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -3.028,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652529",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652530",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -8.551,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652531",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": 3.588,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652532",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652533",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": 13.288,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652534",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652535",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 4.688,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652536",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652537",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652538",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": 6.786,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652539",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 6.99,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652540",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652541",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652542",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652543",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652544",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652545",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652546",
+   "bucket": "PRIMARY",
+   "street": "Fairfield Street",
+   "m2": 30.726,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652547",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -3.03,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652548",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652549",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652550",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652551",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-652552",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 5.734,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652553",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 6.379,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652554",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652555",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 6.777,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652556",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652557",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 5.672,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652560",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652561",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652562",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652722",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652906",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.341,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652907",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.323,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652908",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.794,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652909",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 18.012,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652910",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 18.234,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652912",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 19.564,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652913",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": 13.719,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652914",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652930",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 16.115,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652932",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 16.309,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652942",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-652943",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.311,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652945",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.316,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652947",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.885,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652948",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.969,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-652949",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 17.93,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653154",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -7.806,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653156",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 428",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-653159",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653167",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653168",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -5.913,
+   "fronts": 5,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653171",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": 5.479,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-653180",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670442",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 8.299,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670466",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670467",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670468",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670469",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670470",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670471",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670472",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670473",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670474",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-670484",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -3.027,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670485",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -5.329,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670486",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -2.93,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670487",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -5.957,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670488",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -4.978,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670489",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -4.662,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670490",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -5.679,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670491",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -3.264,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670492",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -5.866,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670493",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -3.717,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670509",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 12.774,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670510",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 13.18,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670511",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 14.245,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670512",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 13.964,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670532",
+   "bucket": "CORNER",
+   "street": "Dartmouth Street",
+   "m2": 3.138,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670533",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670534",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-670538",
+   "bucket": "CORNER",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 10.106,
+   "fronts": 5,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671001",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 4,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671002",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671003",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671004",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671005",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671006",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671007",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671008",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671224",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -8.406,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671230",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -8.69,
+   "fronts": 5,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671238",
+   "bucket": "PRIMARY",
+   "street": "Dartmouth Street",
+   "m2": 49.137,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671239",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671240",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 16.573,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671241",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671242",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671243",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 15.093,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671244",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671245",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671246",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 15.201,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671247",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671248",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 15.566,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671249",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 17.249,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671250",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671251",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671252",
+   "bucket": "PRIMARY",
+   "street": "Huntington Avenue",
+   "m2": -6.934,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671253",
+   "bucket": "PRIMARY",
+   "street": "Huntington Avenue",
+   "m2": 1.637,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671254",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671255",
+   "bucket": "CORNER",
+   "street": "Huntington Avenue",
+   "m2": -20.961,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671256",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671257",
+   "bucket": "PRIMARY",
+   "street": "Huntington Avenue",
+   "m2": -12.811,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671258",
+   "bucket": "CORNER",
+   "street": "Huntington Avenue",
+   "m2": -12.811,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671259",
+   "bucket": "PRIMARY",
+   "street": "Ring Road",
+   "m2": -6.009,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671260",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671261",
+   "bucket": "PRIMARY",
+   "street": "Ring Road",
+   "m2": 2.78,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671262",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": -8.022,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671266",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671367",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -4.523,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671368",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -8.095,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671369",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 4,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671370",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -8.642,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671371",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -7.774,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671372",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -7.774,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671423",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671443",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": 17.994,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671444",
+   "bucket": "CORNER",
+   "street": "Ring Road",
+   "m2": -6.009,
+   "fronts": 4,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671457",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671458",
+   "bucket": "CORNER",
+   "street": "Ring Road",
+   "m2": -112.858,
+   "fronts": 6,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671459",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": 1.331,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671460",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -9.427,
+   "fronts": 5,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671465",
+   "bucket": "CORNER",
+   "street": "Ring Road",
+   "m2": 36.081,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671466",
+   "bucket": "CORNER",
+   "street": "Huntington Avenue",
+   "m2": 52.619,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671474",
+   "bucket": "CORNER",
+   "street": "Huntington Avenue",
+   "m2": 10.183,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671744",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671745",
+   "bucket": "PRIMARY",
+   "street": "Ring Road",
+   "m2": 31.921,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-671908",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671909",
+   "bucket": "UNMATCHED",
+   "street": "Huntington Avenue",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671910",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-671922",
+   "bucket": "UNMATCHED",
+   "street": "Blagden Street",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-671923",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-673684",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-673685",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-673698",
+   "bucket": "CORNER",
+   "street": "Newbury Street",
+   "m2": -8.736,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-673699",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675317",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": -10.606,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675318",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": -12.217,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675326",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 3,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675330",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": -6.521,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675385",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675386",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675387",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675388",
+   "bucket": "PRIMARY",
+   "street": "Newbury Street",
+   "m2": 17.64,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675389",
+   "bucket": "CORNER",
+   "street": "Huntington Avenue",
+   "m2": 42.172,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675390",
+   "bucket": "PRIMARY",
+   "street": "Huntington Avenue",
+   "m2": -8.004,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675391",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-675417",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-675418",
+   "bucket": "PRIMARY",
+   "street": "Exeter Street",
+   "m2": -8.392,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675419",
+   "bucket": "CORNER",
+   "street": "Exeter Street",
+   "m2": -8.427,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675420",
+   "bucket": "PRIMARY",
+   "street": "Exeter Street",
+   "m2": 8.572,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675443",
+   "bucket": "PRIMARY",
+   "street": "Huntington Avenue",
+   "m2": 3.908,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675486",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": 12.005,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675487",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675543",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -8.489,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675544",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": -2.964,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675545",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-675690",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-675691",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-676269",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": 7.888,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-676270",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-676280",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-676281",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-676288",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-677086",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": -1.706,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677087",
+   "bucket": "PRIMARY",
+   "street": "Boylston Street",
+   "m2": -3.094,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677088",
+   "bucket": "CORNER",
+   "street": "Boylston Street",
+   "m2": -0.975,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677667",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677668",
+   "bucket": "OUTSIDE_BOX",
+   "street": null,
+   "m2": null,
+   "fronts": null,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677681",
+   "bucket": "UNMATCHED",
+   "street": null,
+   "m2": null,
+   "fronts": 0,
+   "reason": "no-street-exposed-edge"
+  },
+  {
+   "id": "bos-rb-677746",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-677750",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 20.786,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677751",
+   "bucket": "CORNER",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 21.166,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677752",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": 4.588,
+   "fronts": 2,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677768",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 15.071,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-677938",
+   "bucket": "CORNER",
+   "street": "Fairfield Street",
+   "m2": 17.888,
+   "fronts": 3,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-678004",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-678009",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 19.77,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-678139",
+   "bucket": "PRIMARY",
+   "street": "Commonwealth Avenue Outbound",
+   "m2": 14.305,
+   "fronts": 1,
+   "reason": null
+  },
+  {
+   "id": "bos-rb-678140",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-678339",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-678340",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 442",
+   "m2": null,
+   "fronts": 2,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-678346",
+   "bucket": "UNMATCHED",
+   "street": "Public Alley 435",
+   "m2": null,
+   "fronts": 1,
+   "reason": "no-parcel-frontage"
+  },
+  {
+   "id": "bos-rb-763406",
+   "bucket": "PRIMARY",
+   "street": "Exeter Street",
+   "m2": 53.954,
+   "fronts": 1,
+   "reason": null
+  }
+ ]
+}

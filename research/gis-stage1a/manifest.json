@@ -1,0 +1,90 @@
+{
+ "manifestSchemaVersion": "boston-gis-provenance/0.1.0",
+ "stage": "1A",
+ "generated": "2026-09-12",
+ "area": {
+  "name": "Back Bay — Stage 1A probe",
+  "bboxWgs84": { "s": 42.347703, "w": -71.082431, "n": 42.351297, "e": -71.077569 },
+  "bboxWorldBostonLocal": { "x0": -1380.46, "x1": -980.50, "z0": 454.52, "z1": 854.60 },
+  "spanM": { "ew": 399.96, "ns": 400.08 },
+  "centreWgs84": { "lat": 42.34950, "lon": -71.08000 },
+  "centreWorld": { "x": -1180.48, "z": 654.56 }
+ },
+ "sources": [
+  {
+   "role": "PRIMARY — building footprint + height",
+   "sourceFamily": "city-of-boston",
+   "datasetTitle": "Boston Buildings with Roof Breaks",
+   "publisher": "Boston Maps (City of Boston)",
+   "authoritativeRecord": "https://data.boston.gov/dataset/boston-buildings-with-roof-breaks",
+   "ckanDatasetId": "08fd5249-2d75-42ef-ac23-951f3e0ec259",
+   "service": "https://gis.bostonplans.org/hosting/rest/services/Boston_Buildings/FeatureServer/9",
+   "retrievedUtc": "2026-09-12",
+   "recordModified": "2026-04-29",
+   "recordReleased": "2023-01-10",
+   "dataVintage": "outlines from a 2011 flyover, updated periodically from aerial imagery and LiDAR; elevation fields are named *_2010",
+   "licence": "ODC-PDDL-1.0",
+   "licenceEvidence": "The Analyze Boston record for this dataset states the licence verbatim as 'Open Data Commons Public Domain Dedication and License (PDDL)' AND lists this exact FeatureServer URL as one of its resources. The service's OWN metadata is empty: copyrightText '', serviceDescription '', description '', no licenseInfo. The licence therefore attaches by the City's own naming of the resource, not by publisher identity.",
+   "crs": "EPSG:6492 (NAD83(2011) / Massachusetts Mainland, ftUS); service reports wkid 103072 / latestWkid 6492, xyUnits 3048.0060960121928",
+   "verticalDatum": "UNRESOLVED — elevation fields are in feet and the vertical reference is not stated by the service",
+   "selectionQuery": "geometry=-71.082431,42.347703,-71.077569,42.351297&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&where=1=1&outFields=*&returnGeometry=true&outSR=4326&f=json",
+   "sourceFeatureCount": 218,
+   "rawSha256": "6d0e737fac9e0eabf4c4956c3baed180178bd69c72d43b93796c9b62f3996e7f",
+   "adapterVersion": "research/gis-stage1a/normalize.mjs@0.1.0",
+   "knownLimitations": [
+    "The unit is the ROOF-BREAK PART, not the building: 207 of 218 parts (95.0%) share an edge with another part, and the median part is 146.66 m2. A dissolve step is required before this can feed any building-level consumer.",
+    "returnCountOnly reports 220 for the same envelope while outSR=4326 returns 218. The two extra features lie marginally outside the box and are admitted only when the spatial test runs in the native CRS. Boundary tangency, not data loss.",
+    "Per-feature edit dates are effectively absent: the Added field is populated on 1 of 218 features."
+   ]
+  },
+  {
+   "role": "SIDEWALK POLYGON — source-gap resolution (Phase 3)",
+   "sourceFamily": "city-of-boston",
+   "datasetTitle": "Sidewalk Inventory",
+   "publisher": "Boston Maps (City of Boston); survey by Boston Public Works Department",
+   "authoritativeRecord": "https://data.boston.gov/dataset/sidewalk-inventory",
+   "ckanDatasetId": "57b57bc6-6344-48ca-9316-95961213a38e",
+   "service": "https://gisportal.boston.gov/arcgis/rest/services/Infrastructure/OpenData/MapServer/0",
+   "retrievedUtc": "2026-09-12",
+   "recordModified": "2023-12-18",
+   "recordReleased": "2015-06-04",
+   "dataVintage": "survey completed by Boston PWD in 2014",
+   "licence": "ODC-PDDL-1.0",
+   "licenceEvidence": "Analyze Boston record states PDDL verbatim and lists this exact MapServer layer URL as a resource. The layer's own copyrightText is empty.",
+   "crs": "EPSG:2249 (NAD83 / Massachusetts Mainland, ftUS); service reports wkid 102686 / latestWkid 2249",
+   "featureCountInBbox": 68,
+   "relevantFields": ["SWK_ID", "MATERIAL", "SWK_WIDTH", "SWK_SLOPE", "SCI", "curb_type", "SIDE", "SEG_ID", "SWK_AREA", "INSP_DATE"],
+   "status": "FOUND-AUTHORITATIVE — identified and licence-pinned, NOT normalized in Stage 1A",
+   "knownLimitations": ["2014 survey vintage.", "Not fetched beyond a bounded count; geometry quality unassessed."]
+  },
+  {
+   "role": "COMPARISON ONLY — never canonical, never committed as geometry",
+   "sourceFamily": "openstreetmap",
+   "datasetTitle": "OpenStreetMap via Overpass API",
+   "publisher": "OpenStreetMap contributors",
+   "authoritativeRecord": "https://www.openstreetmap.org/copyright",
+   "service": "https://overpass-api.de/api/interpreter",
+   "retrievedUtc": "2026-09-12",
+   "licence": "ODbL-1.0",
+   "attribution": "(c) OpenStreetMap contributors, ODbL 1.0",
+   "selectionQuery": "make count over bbox 42.347703,-71.082431,42.351297,-71.077569 — COUNTS ONLY, no geometry retrieved",
+   "policy": "Boston project policy (see GIS_HYBRID_WORLD_RESEARCH_ACCEPTANCE_2026-09-11.md §4): ODbL-derived geometry may be used for research and comparison but must not enter production canonical datasets, src/ or dist/ without a separate Owner review. No OSM geometry was downloaded, normalized or committed in Stage 1A.",
+   "knownLimitations": ["Counts only. No geometry was retrieved, so no ODbL derived database exists in this repository."]
+  }
+ ],
+ "transform": {
+  "canonicalPath": "EPSG:6492 --[ArcGIS query outSR=4326]--> WGS84 lat/lon --[src/core/Geo.js geo()]--> Boston local X/Z",
+  "geoUnchanged": true,
+  "verification": "An independent inverse Lambert Conformal Conic implemented in research/gis-stage1a/transform.mjs was run over all 4,575 shared vertices of the native EPSG:6492 fetch and compared against the server's own outSR=4326 output. Radial residual: min 0.9708 m, median 0.9709 m, max 0.9710 m; sd 0.00003 m north / 0.00004 m east. The near-zero scatter verifies the server reprojection; the constant 0.971 m (mean dNorth -0.9698, dEast +0.0464) is the NAD83-to-WGS84 datum difference, which the check deliberately omits so that it is isolated rather than hidden.",
+  "knownSystematic": "A ~0.97 m NAD83/WGS84 datum offset, essentially all in northing, is present in every coordinate in the fixture and is smaller than every other quantity measured in Stage 1A."
+ },
+ "outputs": {
+  "fixture": "research/gis-stage1a/fixture.json",
+  "fixtureSha256": "1c9cf1dc2e6f31a45b48b640c18a6c0ad4fac7f7d9b5c0e531e121bca3e7d32f",
+  "fixtureBytes":   153339,
+  "schemaVersion": "boston-gis-stage1a/schema-v0-candidate/0.1.0",
+  "normalizedFeatureCount": 218,
+  "rejectedFeatureCount": 0,
+  "deterministic": "byte-identical across three consecutive runs"
+ }
+}
