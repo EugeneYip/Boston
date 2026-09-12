@@ -2,6 +2,11 @@
 
 **Date** 2026-09-12 · **Baseline** `c673135f3bf9e12b93fbc00edc83d28aa713470e` (HEAD == origin/main, clean, 0/0)
 **Scope** Data only. No `src/` change, no runtime consumer, no WebGL, no dependency. **Stage 1B not begun.**
+
+> **EXTENDED 2026-09-12 — see `research/GIS_HYBRID_WORLD_STAGE1A2_COVERAGE_SAFE_TRANSFER_2026-09-12.md`.**
+> Stage 1A.2 closes B7, corrects the false-merge attribution and the `LOCAL_ID` documentation status,
+> narrows the M3 vector claim, eliminates the four false merges, and transfers the method to the North End.
+> Where the two disagree, Stage 1A.2 is canonical.
 **Canonical on architecture** `research/GIS_HYBRID_WORLD_RESEARCH_ACCEPTANCE_2026-09-11.md`.
 
 ---
@@ -118,7 +123,14 @@ service `services1.arcgis.com/hGdibHYSPO59RG1h/.../Building_Structures/FeatureSe
 | `LOCAL_ID`s carried by >1 structure | 2 (max **34** roofprints under one City building) |
 | multi-ring features | 3 |
 
-**`LOCAL_ID` *is* the City's `BUILDING_ID`, preserved by MassGIS.** That converts the identity from
+**`LOCAL_ID` carries the City's `BUILDING_ID` in the current Boston features.**
+**[CORRECTED 2026-09-12 — Stage 1A.2]** stated here as though it were documented semantics. It is not: the
+field's only published description is its alias, "Local ID". The durable form separates the two —
+*Current Boston features were observed to preserve City `BUILDING_ID` in MassGIS `LOCAL_ID` for 134/140
+audited Back Bay buildings and 462/462 audited North End buildings; this Boston-specific behaviour is
+empirically verified in the current layer but is not established by the general MassGIS field-description
+text.* Also undocumented and found only by defect: `LOCAL_ID` is **whitespace-only** on 34/169 Back Bay and
+149/643 North End structures. That converts the identity from
 LEGAL-UNKNOWN to a public record that is *"a matter of public record… may be freely redistributed and
 integrated into commercial products and applications, including any derivative works"*, credit requested as
 **"MassGIS (Bureau of Geographic Information), Commonwealth of Massachusetts EOTSS"**. The MassGIS
@@ -200,11 +212,19 @@ Scored against the authoritative `BUILDING_ID`, with an **independent** cross-ch
 The four false merges are adjacent Back Bay rowhouses: `230+232 NEWBURY`, `208+214 NEWBURY`,
 `226+228 NEWBURY`, and one Boylston pair.
 
-**Attribution — and this is the important part.** For `230 NEWBURY`, `226 NEWBURY` and `208 NEWBURY`, the
-City has a distinct `BUILDING_ID` but **MassGIS holds no structure carrying it**: 6 of 140 City building ids
-have no MassGIS counterpart. The parts of a missing building necessarily fall into the neighbour's
-structure. **The residual false merges are a parent-layer coverage gap, not a defect in the containment
-rule.** With complete parent coverage the method would be essentially correct.
+**Attribution.** For `230 NEWBURY`, `226 NEWBURY` and `208 NEWBURY`, the City has a distinct `BUILDING_ID`
+but **MassGIS holds no structure carrying it**: 6 of 140 City building ids have no MassGIS counterpart, so
+the parts of a missing building fall into the neighbour's structure.
+
+**[CORRECTED 2026-09-12 — Stage 1A.2]** This section called that "a parent-layer coverage gap, not a defect
+in the containment rule", and concluded that "with complete parent coverage the method would be essentially
+correct". **Both are too strong and are narrowed.** Measured in Stage 1A.2: for all three cases the MassGIS
+structure area equals the **sum** of the two City buildings' part areas to a ratio of **exactly 1.00** —
+MassGIS draws one roofprint over two City buildings. The correct classification is a
+**SOURCE-LEVEL BUILDING-DELINEATION DISAGREEMENT**, surfacing as a
+**source-coverage-triggered grouping failure mode**. It is not recoverable from either source, and North End
+shows the same disagreement running the other way as false splits. See
+`GIS_HYBRID_WORLD_STAGE1A2_COVERAGE_SAFE_TRANSFER_2026-09-12.md` §D.
 
 No case merged an entire row: the largest false merge joins two houses. The brief's explicit FAIL trigger is
 not met.
@@ -325,10 +345,13 @@ Translation only. No rotation, no scale, no warp.
 | residual abs median | **8.59 m** | **8.36 m** |
 
 **The systematic result survives.** A single rigid translation still absorbs only about a third of the
-displacement (12.77 → 8.36 abs median), so the block remains **not merely offset**. The fitted vector
-changes direction between levels, which is expected given a different population (44 units vs 67 parts) and
-is a reason to treat the vector itself as weakly determined — the *residual*, which barely moves, is the
-durable quantity.
+displacement (12.77 → 8.36 abs median), so the block remains **not merely offset**.
+
+**[CORRECTED 2026-09-12 — Stage 1A.2]** The fitted vector reverses sign in x between the two levels. It is
+**sensitive to match population and unit definition and must not be presented as a stable physical offset.**
+The durable conclusion is narrower: *removing one rigid translation leaves a residual median of about
+8.4–8.6 m in the measured Back Bay samples, so the discrepancy is not explained solely by one block-wide
+translation.*
 
 ---
 
@@ -438,7 +461,7 @@ fields actually consumed · and the unmatched population barely moved.
 | B4 | **57 units remain unmatched, 43 for no-parcel-frontage** — a current-world property (`buildPlots` grants no frontage to alleys), not fixable by grouping | Medium |
 | B5 | Containment coverage is noisy (median 0.47) because the two layers are different geometry lineages | Medium |
 | B6 | 9 duplicate `PART_ID`s and 29 parts with no `BUILDING_ID` in the audit source | Low |
-| B7 | MassGIS internal-use licence exception not separately confirmed **for this layer** | Low |
+| B7 | MassGIS internal-use licence exception not separately confirmed **for this layer** | Low — **CLOSED 2026-09-12 (Stage 1A.2 §B)**: layer published by MassGIS with download links, no layer-specific override found; residual is that the layer credits the contractor Rolta and mass.gov blocks automated retrieval |
 
 ---
 

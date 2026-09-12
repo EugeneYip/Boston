@@ -286,10 +286,15 @@ the translation only along its own outward normal, so this is a 2×2 least-squar
 
 | | |
 |---|---|
-| best-fit translation | **dx +6.650 m, dz −11.304 m, magnitude 13.115 m** |
+| best-fit translation | **dx +6.650 m, dz −11.304 m, magnitude 13.115 m** — **[CORRECTED 2026-09-12]** population- and unit-sensitive; see below |
 | conditioning | n = 59, det = 400.6 (well conditioned) |
 | residual signed | min −21.10, p25 +3.39, median **+8.02**, p75 9.80, max 43.83 |
 | residual abs | min 1.72, p25 5.14, median **8.59**, p75 11.62, p90 16.60, max 43.83, RMS 13.35 |
+
+**[CORRECTED 2026-09-12 — Stage 1A.2]** The fitted vector is **not a stable physical offset**: recomputed at
+building level in Stage 1A.1 it becomes (−6.232, −7.188), reversing sign in x. Quote the residual, not the
+vector. The durable form: *removing one rigid translation leaves a residual median of about 8.4–8.6 m in the
+measured Back Bay samples, so the discrepancy is not explained solely by one block-wide translation.*
 
 **A single rigid translation absorbs about a third of the displacement** (abs median 12.81 → 8.59 m) and
 leaves 8.59 m. **The block is therefore not merely offset.** There is genuine per-street placement and width
