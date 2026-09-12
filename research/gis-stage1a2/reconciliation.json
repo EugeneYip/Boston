@@ -1,0 +1,209 @@
+{
+ "schemaVersion": "boston-gis-stage1a2/reconciliation/0.1.0",
+ "backBay": {
+  "recordLevel": {
+   "assigned": 114,
+   "auditUnknown": 0,
+   "auditable": 114,
+   "CORRECT_PARENT": 113,
+   "WRONG_PARENT_IN_MERGE": 0,
+   "WRONG_PARENT_IN_SPLIT": 0,
+   "WRONG_PARENT_ISOLATED": 1,
+   "wrongTotal": 1,
+   "reconciles": true,
+   "precisionPct": 99.12
+  },
+  "eventLevel": {
+   "assignedGroups": 112,
+   "auditedBuildings": 112,
+   "FALSE_MERGE": 0,
+   "FALSE_SPLIT": 0,
+   "cleanGroups": 112,
+   "cleanBuildings": 112
+  },
+  "detail": {
+   "wrongInMerge": [],
+   "wrongInSplit": [],
+   "wrongIsolated": [
+    {
+     "part": "bos-rb-671423",
+     "assigned": "Bos_0400985000_B0",
+     "truth": "Bos_0400985000_B1",
+     "coverage": 0.714,
+     "margin": 1.214
+    }
+   ],
+   "splitBuildings": []
+  }
+ },
+ "northEnd": {
+  "recordLevel": {
+   "assigned": 464,
+   "auditUnknown": 20,
+   "auditable": 444,
+   "CORRECT_PARENT": 432,
+   "WRONG_PARENT_IN_MERGE": 0,
+   "WRONG_PARENT_IN_SPLIT": 11,
+   "WRONG_PARENT_ISOLATED": 1,
+   "wrongTotal": 12,
+   "reconciles": true,
+   "precisionPct": 97.3
+  },
+  "eventLevel": {
+   "assignedGroups": 407,
+   "auditedBuildings": 396,
+   "FALSE_MERGE": 0,
+   "FALSE_SPLIT": 11,
+   "cleanGroups": 407,
+   "cleanBuildings": 385
+  },
+  "detail": {
+   "wrongInMerge": [],
+   "wrongInSplit": [
+    {
+     "part": "bos-rb-655311",
+     "assigned": "Bos_0302361000_B0",
+     "truth": "Bos_0302360000_B0"
+    },
+    {
+     "part": "bos-rb-655327",
+     "assigned": "Bos_0303286000_B0",
+     "truth": "Bos_0303285000_B0"
+    },
+    {
+     "part": "bos-rb-655616",
+     "assigned": "Bos_0301342000_B0",
+     "truth": "Bos_0301343000_B0"
+    },
+    {
+     "part": "bos-rb-655649",
+     "assigned": "Bos_0303194000_B0",
+     "truth": "Bos_0303193000_B0"
+    },
+    {
+     "part": "bos-rb-655800",
+     "assigned": "Bos_0302293000_B0",
+     "truth": "Bos_0302292000_B0"
+    },
+    {
+     "part": "bos-rb-655939",
+     "assigned": "Bos_0301411000_B0",
+     "truth": "Bos_0301410000_B0"
+    },
+    {
+     "part": "bos-rb-655957",
+     "assigned": "Bos_0302267000_B0",
+     "truth": "Bos_0302253000_B0"
+    },
+    {
+     "part": "bos-rb-676452",
+     "assigned": "Bos_0303249000_B0",
+     "truth": "Bos_0303254000_B0"
+    },
+    {
+     "part": "bos-rb-676530",
+     "assigned": "Bos_0302149000_B0",
+     "truth": "Bos_0302148000_B0"
+    },
+    {
+     "part": "bos-rb-677846",
+     "assigned": "Bos_0301348000_B0",
+     "truth": "Bos_0301347000_B0"
+    },
+    {
+     "part": "bos-rb-677863",
+     "assigned": "Bos_0302083000_B0",
+     "truth": "Bos_0302082000_B0"
+    }
+   ],
+   "wrongIsolated": [
+    {
+     "part": "bos-rb-655614",
+     "assigned": "Bos_0301346000_B0",
+     "truth": "Bos_0301291000_B0",
+     "coverage": 0.636,
+     "margin": 1.136
+    }
+   ],
+   "splitBuildings": [
+    {
+     "building": "Bos_0302360000_B0",
+     "groups": [
+      "Bos_0302361000_B0",
+      "Bos_0302360000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0303285000_B0",
+     "groups": [
+      "Bos_0303285000_B0",
+      "Bos_0303286000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0301343000_B0",
+     "groups": [
+      "Bos_0301343000_B0",
+      "Bos_0301342000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0303193000_B0",
+     "groups": [
+      "Bos_0303194000_B0",
+      "Bos_0303193000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0302292000_B0",
+     "groups": [
+      "Bos_0302293000_B0",
+      "Bos_0302292000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0302253000_B0",
+     "groups": [
+      "Bos_0302253000_B0",
+      "Bos_0302267000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0301410000_B0",
+     "groups": [
+      "Bos_0301410000_B0",
+      "Bos_0301411000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0302148000_B0",
+     "groups": [
+      "Bos_0302148000_B0",
+      "Bos_0302149000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0303254000_B0",
+     "groups": [
+      "Bos_0303249000_B0",
+      "Bos_0303254000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0301347000_B0",
+     "groups": [
+      "Bos_0301348000_B0",
+      "Bos_0301347000_B0"
+     ]
+    },
+    {
+     "building": "Bos_0302082000_B0",
+     "groups": [
+      "Bos_0302083000_B0",
+      "Bos_0302082000_B0"
+     ]
+    }
+   ]
+  }
+ }
+}

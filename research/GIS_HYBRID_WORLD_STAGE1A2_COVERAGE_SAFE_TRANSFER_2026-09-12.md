@@ -2,6 +2,14 @@
 
 **Date** 2026-09-12 · **Baseline** `0cc2258edfc66c5609341bed8b6a061313b55ff5` (HEAD == origin/main, clean, 0/0)
 **Scope** Data only. No `src/` change, no runtime consumer, no WebGL, no dependency. **Stage 1B not begun.**
+
+> **CORRECTED 2026-09-12 — see `research/GIS_HYBRID_WORLD_STAGE1A2_ACCEPTANCE_2026-09-12.md`, canonical where
+> the two disagree.** Four corrections: (1) **"zero known false merges" is NOT "zero known wrong"** — the
+> reconciled accounting exposes one `WRONG_PARENT_ISOLATED` record per area; gate v1.1 removes the Back Bay
+> one, the North End one is provably undetectable; (2) the **2026-05-22 date is a layer publication date, not
+> the Boston subset's vintage** — all 812 Boston features carry `SOURCE = "City of Boston"` and no date at
+> all; (3) the mass.gov **403 is a retrieval note, not licence uncertainty** — B7 is closed for this layer;
+> (4) the **0.01 ft threshold is a source-value agreement tolerance**, not a ground-height tolerance.
 **Canonical on architecture** `research/GIS_HYBRID_WORLD_RESEARCH_ACCEPTANCE_2026-09-11.md`.
 
 ---
@@ -12,6 +20,10 @@
 
 A gate that **refuses to assert identity it cannot support** reaches **zero known false merges in both
 areas**, and it was frozen before the second area was queried.
+
+**[CORRECTED]** Zero false *merges* is not zero *wrong*. Reconciled: Back Bay **0 wrong of 113** under gate
+v1.1; North End **12 wrong of 444 (2.7%)** — 11 split-related plus one isolated label conflict that no signal
+over these two sources can catch. Acceptance note §E–§G.
 
 | | Back Bay | North End |
 |---|---|---|
@@ -36,7 +48,7 @@ in opposite directions, and both are now understood rather than merely counted.
 | exact resource | **Building Structures (2-D)**, hosted feature layer, item **`607d9827695341deb11b44a686b45fa4`** |
 | service | `services1.arcgis.com/hGdibHYSPO59RG1h/arcgis/rest/services/Building_Structures/FeatureServer/0` |
 | retrieved | **2026-09-12** |
-| layer last updated | **2026-05-22** (publisher's own description: *"This layer was last updated on May 22, 2026"*) |
+| layer publication / maintenance date | **2026-05-22** — **[CORRECTED]** a **layer-level** date, **not** evidence for the Boston subset's vintage: all 812 Boston features sampled carry `SOURCE = "City of Boston"` and **no** `SOURCEDATE`/`EDIT_DATE`. Acceptance §C |
 | item `licenseInfo` | **empty** |
 | item `accessInformation` | **"MassGIS, City of Boston"** |
 | layer `copyrightText` | **"Rolta, MassGIS, City of Boston"** |
@@ -46,10 +58,14 @@ in opposite directions, and both are now understood rather than merely counted.
 **Conclusion: B7 closed, with one residual noted.** The internal-use exception concerns datasets MassGIS
 licenses *in* and therefore cannot redistribute; this layer is published by MassGIS with statewide download
 links, so the exception does not appear to apply. **Residual, and deliberately not waved away:** the layer
-credits **Rolta**, the contractor who produced the original interpretation. Contractor terms were not
-inspected, and the mass.gov layer page blocks automated retrieval (HTTP 403), so the layer-specific page was
-not read directly — the general policy and the item/service metadata are what this rests on. That is enough
-to proceed with research and to commit derived identity; it is **not** a legal opinion.
+credits **Rolta**, the contractor who produced the original interpretation, and contractor terms were not
+inspected.
+
+**[CORRECTED]** This paragraph also cited the mass.gov **HTTP 403** as part of the licence residual. That was
+wrong in kind: an automated-access failure is not licence uncertainty when the authoritative policy is
+established by other means, and it is. The 403 is a retrieval note only, and **B7 is CLOSED for this
+MassGIS-published downloadable layer** (acceptance §B) — not generalised to every dataset MassGIS may
+internally possess. Still not a legal opinion.
 
 ---
 
@@ -167,6 +183,12 @@ stage1a2-gate/1.0.0
 **Mixed-ground demotion:** if a MassGIS structure's assigned parts disagree on `GRND_ELEV_2010` beyond
 0.01 ft, **the whole structure is demoted to `AMBIGUOUS_MIXED_GROUND`**. Singletons are untouched — with one
 part there is nothing to mix.
+
+**[CORRECTED]** 0.01 ft is **not a ground-height tolerance** — it is 3 mm, and no survey separates buildings
+at that scale. It is a **source-value agreement tolerance**, one order of magnitude above the field's own
+0.001 ft recording precision, and it is the **largest value in the sweep at which Back Bay has zero false
+merges** (0.1 ft admits one). 201 of the inter-value gaps fall below it, so it is not a pure equality
+sentinel either. Acceptance §I.
 
 `GRND_ELEV_2010` is surveyed per part, so parts of one structure that disagree on it may be separately
 founded buildings. **As a classifier this is poor: measured 100% recall at 15% precision on Back Bay.** As a
@@ -302,7 +324,8 @@ Stage 1A and Stage 1A.1 fixtures are **unchanged**.
 
 - MassGIS redistribution **pinned** to the exact resource, with the Rolta residual stated (§B).
 - `LOCAL_ID` semantics recorded **as observed, explicitly not as documented** (§C).
-- Back Bay false merges **eliminated**, 4 → **0**, by demotion rather than by forcing (§G, §H).
+- Back Bay false merges **eliminated**, 4 → **0**, by demotion rather than by forcing (§G, §H) — and under
+  gate v1.1 Back Bay reaches **zero wrong parent assignments of any kind**, 0/113 (acceptance §G, §H).
 - **No false splits introduced in Back Bay**; 11 in North End at 2.4%, the safe direction (§I).
 - High-confidence coverage remains useful: **52.3% / 69.9%** of parts, at 99.1% / 97.3% precision.
 - Rule **frozen and checksummed before** the second-area test.
@@ -325,7 +348,7 @@ are the Owner's to weigh.
 | B8 | **Blank `LOCAL_ID` on 20–23% of MassGIS structures** (34/169, 149/643) — a hard ceiling on coverage | **Medium** | undocumented; found only by defect |
 | B9 | **11 North End false splits (2.4%)** | Medium | safe direction; would under-merge a building into two |
 | B10 | Audit ground truth itself has defects: 9 duplicate `PART_ID`s, 29 parts with no `BUILDING_ID` (Back Bay) | Low | audit-unknown now counted separately |
-| B7 | MassGIS layer page unreadable by automation (403); Rolta contractor terms not inspected | Low | general policy is affirmative and sufficient for research |
+| B7 | Rolta contractor terms not inspected | Low — **CLOSED for this layer, acceptance §B.** The 403 is withdrawn as a licence concern |
 
 **What would justify Stage 1B:** an Owner decision on B2, plus acceptance that a first prototype covers
 roughly half to two-thirds of parts factually and lets the rest fall back procedurally.

@@ -1,0 +1,260 @@
+{
+ "schemaVersion": "boston-gis-stage1a2/sensitivity/0.1.0",
+ "groundToleranceSweep": [
+  {
+   "groundToleranceFt": 0,
+   "backBay": {
+    "coveragePct": 52.3,
+    "assigned": 114,
+    "correct": 113,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.6,
+    "assigned": 462,
+    "correct": 430,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "groundToleranceFt": 0.01,
+   "backBay": {
+    "coveragePct": 52.3,
+    "assigned": 114,
+    "correct": 113,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "groundToleranceFt": 0.1,
+   "backBay": {
+    "coveragePct": 53.2,
+    "assigned": 116,
+    "correct": 114,
+    "wrongIsolated": 1,
+    "wrongInMerge": 1,
+    "wrongInSplit": 0,
+    "falseMerge": 1,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 70.8,
+    "assigned": 470,
+    "correct": 438,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "groundToleranceFt": 0.5,
+   "backBay": {
+    "coveragePct": 61,
+    "assigned": 133,
+    "correct": 129,
+    "wrongIsolated": 1,
+    "wrongInMerge": 3,
+    "wrongInSplit": 0,
+    "falseMerge": 3,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 73.6,
+    "assigned": 489,
+    "correct": 457,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "groundToleranceFt": 1,
+   "backBay": {
+    "coveragePct": 62.8,
+    "assigned": 137,
+    "correct": 133,
+    "wrongIsolated": 1,
+    "wrongInMerge": 3,
+    "wrongInSplit": 0,
+    "falseMerge": 3,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 74.4,
+    "assigned": 494,
+    "correct": 462,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  }
+ ],
+ "underFillSweep": [
+  {
+   "minFill": 0,
+   "backBay": {
+    "coveragePct": 52.3,
+    "assigned": 114,
+    "correct": 113,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "minFill": 0.1,
+   "backBay": {
+    "coveragePct": 51.8,
+    "assigned": 113,
+    "correct": 113,
+    "wrongIsolated": 0,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "minFill": 0.2,
+   "backBay": {
+    "coveragePct": 51.8,
+    "assigned": 113,
+    "correct": 113,
+    "wrongIsolated": 0,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "minFill": 0.3,
+   "backBay": {
+    "coveragePct": 51.8,
+    "assigned": 113,
+    "correct": 113,
+    "wrongIsolated": 0,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "minFill": 0.4,
+   "backBay": {
+    "coveragePct": 51.8,
+    "assigned": 113,
+    "correct": 113,
+    "wrongIsolated": 0,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.9,
+    "assigned": 464,
+    "correct": 432,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  },
+  {
+   "minFill": 0.5,
+   "backBay": {
+    "coveragePct": 51.4,
+    "assigned": 112,
+    "correct": 112,
+    "wrongIsolated": 0,
+    "wrongInMerge": 0,
+    "wrongInSplit": 0,
+    "falseMerge": 0,
+    "falseSplit": 0
+   },
+   "northEnd": {
+    "coveragePct": 69.6,
+    "assigned": 462,
+    "correct": 430,
+    "wrongIsolated": 1,
+    "wrongInMerge": 0,
+    "wrongInSplit": 11,
+    "falseMerge": 0,
+    "falseSplit": 11
+   }
+  }
+ ]
+}

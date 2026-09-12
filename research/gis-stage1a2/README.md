@@ -4,6 +4,8 @@
 Additive to `../gis-stage1a/` and `../gis-stage1a1/`, both unchanged except for documented corrections.
 
 Findings: `../GIS_HYBRID_WORLD_STAGE1A2_COVERAGE_SAFE_TRANSFER_2026-09-12.md`.
+**Acceptance closeout, canonical where the two disagree:**
+`../GIS_HYBRID_WORLD_STAGE1A2_ACCEPTANCE_2026-09-12.md`.
 
 ## The one-paragraph answer
 
@@ -17,16 +19,24 @@ the rest falling back to procedural. The rule was frozen and checksummed before 
 ## Reproduce
 
 ```bash
-node research/gis-stage1a2/northend.mjs   # transfer test
-node research/gis-stage1a2/emit.mjs       # results.json (deterministic)
+node research/gis-stage1a2/northend.mjs      # transfer test
+node research/gis-stage1a2/reconcile.mjs     # reconciliation.json — exact audit accounting
+node research/gis-stage1a2/sensitivity.mjs   # sensitivity.json — threshold sweeps
+node research/gis-stage1a2/emit.mjs          # results.json
 ```
 Three consecutive runs produce a byte-identical `results.json`.
 
-## The frozen gate
+## The gates
 
 `stage1a2-gate/1.0.0` — `minMargin 0.35`, `groundToleranceFt 0.01`, **no coverage floor** (coverage is
 confounded by the two layers' geometry lineages and is not the discriminator). Whole structures are demoted,
 never individual parts: which member is the intruder is exactly what the parent layer cannot say.
+`groundToleranceFt` is a **source-value agreement tolerance**, not a ground-height tolerance.
+
+`stage1a2-gate/1.1.0` — v1.0 **plus `minParentFill 0.10`**: demote parts that fill under 10% of their parent
+structure. Derived on Back Bay from a single wrong-parent record; **measured neutral on North End**, so the
+v1.0 transfer result stands and is reported separately. Back Bay then reaches **zero wrong parent
+assignments of any kind**.
 
 ## Licence boundary
 

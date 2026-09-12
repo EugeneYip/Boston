@@ -187,6 +187,29 @@ export const FROZEN_GATE = {
   minCoverage: 0.0, minMargin: 0.35, requireCentroidInside: false,
   groundToleranceFt: 0.01, version: 'stage1a2-gate/1.0.0',
 };
+
+/**
+ * GATE v1.1 — adds an UNDER-FILL demotion on top of v1.0.
+ *
+ * Derived from the single Back Bay WRONG_PARENT_ISOLATED record found during
+ * acceptance: a 1,645 m2 part assigned to a 24,507 m2 structure, filling 6.7% of
+ * it, whose true City building has no MassGIS structure at all. A parent that
+ * a part barely fills is weak evidence for that part's identity.
+ *
+ * Generic and evidence-based: no address, id or building is named anywhere.
+ * Derived on Back Bay only. Measured NEUTRAL on North End (464 assigned before
+ * and after), so the frozen-v1.0 transfer result remains valid and is reported
+ * separately rather than replaced.
+ *
+ * `groundToleranceFt` is NOT a physical ground-height tolerance — 0.01 ft is
+ * 3 mm and no survey separates buildings at that scale. It is a SOURCE-VALUE
+ * AGREEMENT TOLERANCE, set one order of magnitude above the field's own 0.001 ft
+ * recording precision. Sensitivity measured: 0.1 ft admits a Back Bay false
+ * merge, so (0, 0.01] is the safe band.
+ */
+export const GATE_V11 = {
+  ...FROZEN_GATE, minParentFill: 0.10, version: 'stage1a2-gate/1.1.0',
+};
 export function mixedGroundFilter(assigned, parts, toleranceFt) {
   const byId = new Map(parts.map((p) => [p.id, p]));
   const byStruct = new Map();
@@ -209,4 +232,25 @@ export function mixedGroundFilter(assigned, parts, toleranceFt) {
 export function runFrozenGate(parts, structs) {
   const base = assign(parts, structs, FROZEN_GATE);
   return mixedGroundFilter(base, parts, FROZEN_GATE.groundToleranceFt);
+}
+
+const FT2_ = 0.3048 * 0.3048;
+/** Demote parts whose assigned parent structure they barely fill. See GATE_V11. */
+export function underFill(assigned, parts, structs, minFill) {
+  if (!(minFill > 0)) return assigned;
+  const area = new Map(parts.map((p) => [p.id, p.derived.areaM2]));
+  const sArea = new Map(structs.filter((s) => s.areaSqFt != null).map((s) => [s.structId, s.areaSqFt * FT2_]));
+  const sum = new Map();
+  for (const a of assigned) if (a.state === 'ASSIGNED') sum.set(a.structId, (sum.get(a.structId) || 0) + (area.get(a.partId) || 0));
+  return assigned.map((a) => {
+    if (a.state !== 'ASSIGNED') return a;
+    const sa = sArea.get(a.structId);
+    if (!sa || sa <= 0) return a;
+    return (sum.get(a.structId) / sa) < minFill
+      ? { ...a, state: 'AMBIGUOUS_UNDERFILLED_PARENT', localId: null, structId: null }
+      : a;
+  });
+}
+export function runGateV11(parts, structs) {
+  return underFill(runFrozenGate(parts, structs), parts, structs, GATE_V11.minParentFill);
 }

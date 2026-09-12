@@ -1,6 +1,7 @@
 /** Stage 1A.2 — emit deterministic results for both areas. */
 import { writeFileSync } from 'node:fs';
-import { loadParts, loadStructures, runFrozenGate, assign, score, FROZEN_GATE } from './gate.mjs';
+import { loadParts, loadStructures, runFrozenGate, runGateV11, assign, score, FROZEN_GATE, GATE_V11 } from './gate.mjs';
+import { reconcile } from './reconcile.mjs';
 import { joinGroundTruth } from '../gis-stage1a1/join.mjs';
 import { loadNorthEnd, loadAuditTruth } from './northend.mjs';
 import { BBOX_WGS84 as NE_BBOX, BBOX_WORLD as NE_WORLD } from './bbox-northend.mjs';
@@ -34,9 +35,13 @@ const msIds = new Set(ne.structs.map(s => s.localId).filter(Boolean));
 const neCity = new Set([...neT.truth.values()]);
 let inter = 0; for (const x of neCity) if (msIds.has(x)) inter++;
 
+const bbV11 = reconcile(runGateV11(bbParts, bbStructs), bbTruth);
+const neV11 = reconcile(runGateV11(ne.parts, ne.structs), neT.truth);
 const out = {
-  schemaVersion: 'boston-gis-stage1a2/results/0.1.0',
+  schemaVersion: 'boston-gis-stage1a2/results/0.2.0',
   frozenGate: FROZEN_GATE,
+  gateV11: GATE_V11,
+  reconciledV11: { backBay: bbV11, northEnd: neV11 },
   fallbackStates: ['FACTUAL_PARENT_CONFIRMED', 'FACTUAL_PARENT_AMBIGUOUS', 'FACTUAL_PARENT_MISSING', 'PROCEDURAL_FALLBACK_REQUIRED'],
   backBay: { area: 'Back Bay 400 m box (Stage 1A bbox)', ...bbS },
   northEnd: { area: 'North End 400 m box', bboxWgs84: NE_BBOX, bboxWorld: NE_WORLD,
