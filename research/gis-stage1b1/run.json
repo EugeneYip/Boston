@@ -1,0 +1,884 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/run/0.1.0",
+ "gate": {
+  "version": "stage1b1-assoc/1.0.0",
+  "minParcelShare": 0.3,
+  "minOwnerMargin": 0.35,
+  "minFactualExplained": 0.25,
+  "streetBandM": 4,
+  "maxStreetBareM2": 12,
+  "minRun": 2,
+  "maxAuditRounds": 256
+ },
+ "baselineBoxSpecs": 361,
+ "baselineCitySpecs": 10278,
+ "candidateBoxSpecs": 361,
+ "candidateCitySpecs": 10278,
+ "boxVertexHistogram": {
+  "4": 353,
+  "5": 1,
+  "7": 1,
+  "8": 5,
+  "13": 1
+ },
+ "nonQuadInBox": 8,
+ "candidates": 110,
+ "replaced": 8,
+ "materialized": 8,
+ "singleParcel": 8,
+ "multiParcel": 0,
+ "parcelsPerReplacement": [
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1,
+  1
+ ],
+ "suppressedParcels": 8,
+ "suppressedVisuals": 8,
+ "fallbackReasons": {
+  "no-procedural-support": 32,
+  "disconnected-run": 6,
+  "contended": 2,
+  "weak-overlap": 49,
+  "incidental-overlap": 2,
+  "streetwall-void": 9,
+  "run-too-short": 2
+ },
+ "contendedParcels": 5,
+ "audit": {
+  "rounds": 12,
+  "suppressedAreaM2": 1381.8,
+  "factualAreaM2": 726.5,
+  "bareM2": 659.3,
+  "streetBareM2": 26.8,
+  "longestRun": 5,
+  "reconciles": true
+ },
+ "identity": {
+  "expected": 361,
+  "observed": 361,
+  "holds": true
+ },
+ "ledger": {
+  "enabled": true,
+  "source": "stage1a2-gate/1.1.0",
+  "gate": {
+   "version": "stage1b1-assoc/1.0.0",
+   "minParcelShare": 0.3,
+   "minOwnerMargin": 0.35,
+   "minFactualExplained": 0.25,
+   "streetBandM": 4,
+   "maxStreetBareM2": 12,
+   "minRun": 2,
+   "maxAuditRounds": 256
+  },
+  "candidates": 110,
+  "replaced": [
+   {
+    "id": "bb-Bos_0501364000_B0",
+    "localId": "Bos_0501364000_B0",
+    "donorPlotId": 4179,
+    "suppressedPlotIds": [
+     4179
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.659,
+    "areaM2": 137.88,
+    "ringVertices": 27,
+    "specVertices": 8,
+    "bareM2": 90.3,
+    "streetBareM2": 7.5,
+    "cx": -1061.5,
+    "cz": 492.1,
+    "heightM": 14.3,
+    "storeys": 4
+   },
+   {
+    "id": "bb-Bos_0501365000_B0",
+    "localId": "Bos_0501365000_B0",
+    "donorPlotId": 4219,
+    "suppressedPlotIds": [
+     4219
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.75,
+    "areaM2": 146.66,
+    "ringVertices": 25,
+    "specVertices": 7,
+    "bareM2": 51,
+    "streetBareM2": 0,
+    "cx": -1070.7,
+    "cz": 495.8,
+    "heightM": 18,
+    "storeys": 5
+   },
+   {
+    "id": "bb-Bos_0501366000_B0",
+    "localId": "Bos_0501366000_B0",
+    "donorPlotId": 4256,
+    "suppressedPlotIds": [
+     4256
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.76,
+    "areaM2": 118.13,
+    "ringVertices": 26,
+    "specVertices": 8,
+    "bareM2": 78.5,
+    "streetBareM2": 0,
+    "cx": -1076.5,
+    "cz": 498.6,
+    "heightM": 24.5,
+    "storeys": 7
+   },
+   {
+    "id": "bb-Bos_0501367000_B0",
+    "localId": "Bos_0501367000_B0",
+    "donorPlotId": 4294,
+    "suppressedPlotIds": [
+     4294
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.682,
+    "areaM2": 125.87,
+    "ringVertices": 20,
+    "specVertices": 8,
+    "bareM2": 81,
+    "streetBareM2": 0,
+    "cx": -1083.2,
+    "cz": 501,
+    "heightM": 17.1,
+    "storeys": 5
+   },
+   {
+    "id": "bb-Bos_0501368000_B0",
+    "localId": "Bos_0501368000_B0",
+    "donorPlotId": 4335,
+    "suppressedPlotIds": [
+     4335
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.623,
+    "areaM2": 114.32,
+    "ringVertices": 10,
+    "specVertices": 8,
+    "bareM2": 110,
+    "streetBareM2": 8,
+    "cx": -1090,
+    "cz": 503.6,
+    "heightM": 17.2,
+    "storeys": 5
+   },
+   {
+    "id": "bb-Bos_0501372000_B0",
+    "localId": "Bos_0501372000_B0",
+    "donorPlotId": 4459,
+    "suppressedPlotIds": [
+     4459
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.511,
+    "areaM2": 132.9,
+    "ringVertices": 22,
+    "specVertices": 13,
+    "bareM2": 113.5,
+    "streetBareM2": 10.5,
+    "cx": -1118.7,
+    "cz": 511.2,
+    "heightM": 17.8,
+    "storeys": 5
+   },
+   {
+    "id": "bb-Bos_0501373000_B0",
+    "localId": "Bos_0501373000_B0",
+    "donorPlotId": 4499,
+    "suppressedPlotIds": [
+     4499
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.602,
+    "areaM2": 129.91,
+    "ringVertices": 27,
+    "specVertices": 8,
+    "bareM2": 79.5,
+    "streetBareM2": 0.3,
+    "cx": -1123.7,
+    "cz": 514.7,
+    "heightM": 13.9,
+    "storeys": 4
+   },
+   {
+    "id": "bb-Bos_0501374000_B0",
+    "localId": "Bos_0501374000_B0",
+    "donorPlotId": 4550,
+    "suppressedPlotIds": [
+     4550
+    ],
+    "multiParcel": false,
+    "parcels": 1,
+    "factualExplained": 0.634,
+    "areaM2": 145.02,
+    "ringVertices": 27,
+    "specVertices": 5,
+    "bareM2": 58.5,
+    "streetBareM2": 0.3,
+    "cx": -1130.1,
+    "cz": 518.1,
+    "heightM": 17.7,
+    "storeys": 5
+   }
+  ],
+  "fallback": [
+   {
+    "id": "bb-Bos_0401037010_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0401037050_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0501341000_B0",
+    "reason": "disconnected-run",
+    "claimed": 4
+   },
+   {
+    "id": "bb-Bos_0501343000_B0",
+    "reason": "contended",
+    "overlapping": 3
+   },
+   {
+    "id": "bb-Bos_0501369000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.297
+   },
+   {
+    "id": "bb-Bos_0501370000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.224
+   },
+   {
+    "id": "bb-Bos_0501371000_B0",
+    "reason": "contended",
+    "overlapping": 4
+   },
+   {
+    "id": "bb-Bos_0501375000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0501377000_B0",
+    "reason": "disconnected-run",
+    "claimed": 3
+   },
+   {
+    "id": "bb-Bos_0501382000_B0",
+    "reason": "disconnected-run",
+    "claimed": 2
+   },
+   {
+    "id": "bb-Bos_0501382100_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.239
+   },
+   {
+    "id": "bb-Bos_0501382200_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.267
+   },
+   {
+    "id": "bb-Bos_0501382300_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.073
+   },
+   {
+    "id": "bb-Bos_0501382400_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0501383000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0501387000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 8,
+    "bestShare": 0.221
+   },
+   {
+    "id": "bb-Bos_0501389000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.154
+   },
+   {
+    "id": "bb-Bos_0501390000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.131
+   },
+   {
+    "id": "bb-Bos_0501391000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.171
+   },
+   {
+    "id": "bb-Bos_0501392000_B0",
+    "reason": "incidental-overlap",
+    "claimed": 1,
+    "factualExplained": 0.239
+   },
+   {
+    "id": "bb-Bos_0501393000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 6,
+    "bestShare": 0.244
+   },
+   {
+    "id": "bb-Bos_0501394000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 5,
+    "bestShare": 0.262
+   },
+   {
+    "id": "bb-Bos_0501395000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 6,
+    "bestShare": 0.275
+   },
+   {
+    "id": "bb-Bos_0501397000_B0",
+    "reason": "disconnected-run",
+    "claimed": 7
+   },
+   {
+    "id": "bb-Bos_0501400000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 6,
+    "bestShare": 0.22
+   },
+   {
+    "id": "bb-Bos_0501401000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 5,
+    "bestShare": 0.229
+   },
+   {
+    "id": "bb-Bos_0501402000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 6,
+    "bestShare": 0.229
+   },
+   {
+    "id": "bb-Bos_0501403000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 6,
+    "bestShare": 0.107
+   },
+   {
+    "id": "bb-Bos_0501404000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.083
+   },
+   {
+    "id": "bb-Bos_0501405000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.135
+   },
+   {
+    "id": "bb-Bos_0501406000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.14
+   },
+   {
+    "id": "bb-Bos_0501407000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.143
+   },
+   {
+    "id": "bb-Bos_0501409000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503126000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503127000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503160000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503161000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503162000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503164000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503165000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503166000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503207200_B0",
+    "reason": "disconnected-run",
+    "claimed": 7
+   },
+   {
+    "id": "bb-Bos_0503211000_B0",
+    "reason": "incidental-overlap",
+    "claimed": 1,
+    "factualExplained": 0.173
+   },
+   {
+    "id": "bb-Bos_0503213000_B0",
+    "reason": "disconnected-run",
+    "claimed": 4
+   },
+   {
+    "id": "bb-Bos_0503215000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.219
+   },
+   {
+    "id": "bb-Bos_0503221002_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.191
+   },
+   {
+    "id": "bb-Bos_0503222000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 5,
+    "bestShare": 0.222
+   },
+   {
+    "id": "bb-Bos_0503223000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.087
+   },
+   {
+    "id": "bb-Bos_0503224000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503225000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 1,
+    "bestShare": 0
+   },
+   {
+    "id": "bb-Bos_0503230000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.265
+   },
+   {
+    "id": "bb-Bos_0503231000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.23
+   },
+   {
+    "id": "bb-Bos_0503232000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.149
+   },
+   {
+    "id": "bb-Bos_0503233000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.119
+   },
+   {
+    "id": "bb-Bos_0503234000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.154
+   },
+   {
+    "id": "bb-Bos_0503235000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.165
+   },
+   {
+    "id": "bb-Bos_0503236000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.137
+   },
+   {
+    "id": "bb-Bos_0503237000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.156
+   },
+   {
+    "id": "bb-Bos_0503238000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 2,
+    "bestShare": 0.003
+   },
+   {
+    "id": "bb-Bos_0503239000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503240000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.167
+   },
+   {
+    "id": "bb-Bos_0503241000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.069
+   },
+   {
+    "id": "bb-Bos_0503242000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.079
+   },
+   {
+    "id": "bb-Bos_0503243000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503244000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.114
+   },
+   {
+    "id": "bb-Bos_0503247000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.204
+   },
+   {
+    "id": "bb-Bos_0503248000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.262
+   },
+   {
+    "id": "bb-Bos_0503249000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.185
+   },
+   {
+    "id": "bb-Bos_0503250000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.209
+   },
+   {
+    "id": "bb-Bos_0503251000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.148
+   },
+   {
+    "id": "bb-Bos_0503252000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503253000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503254000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.124
+   },
+   {
+    "id": "bb-Bos_0503255000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.229
+   },
+   {
+    "id": "bb-Bos_0503256000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 4,
+    "bestShare": 0.221
+   },
+   {
+    "id": "bb-Bos_0503257000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.221
+   },
+   {
+    "id": "bb-Bos_0503258000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 3,
+    "bestShare": 0.205
+   },
+   {
+    "id": "bb-Bos_0503259000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503260000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503261000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503262000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503263000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503264000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503268000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503269000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503270000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503381000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503382000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503383000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503384000_B0",
+    "reason": "weak-overlap",
+    "overlapping": 1,
+    "bestShare": 0.222
+   },
+   {
+    "id": "bb-Bos_0503386000_B0",
+    "reason": "no-procedural-support",
+    "overlapping": 0
+   },
+   {
+    "id": "bb-Bos_0503214000_B0",
+    "reason": "streetwall-void",
+    "claimed": 3,
+    "streetBareM2": 62.8
+   },
+   {
+    "id": "bb-Bos_0503202000_B0",
+    "reason": "streetwall-void",
+    "claimed": 2,
+    "streetBareM2": 49.8
+   },
+   {
+    "id": "bb-Bos_0503129000_B0",
+    "reason": "streetwall-void",
+    "claimed": 1,
+    "streetBareM2": 30.5
+   },
+   {
+    "id": "bb-Bos_0503130000_B0",
+    "reason": "streetwall-void",
+    "claimed": 1,
+    "streetBareM2": 29.8
+   },
+   {
+    "id": "bb-Bos_0503212000_B0",
+    "reason": "streetwall-void",
+    "claimed": 1,
+    "streetBareM2": 30
+   },
+   {
+    "id": "bb-Bos_0503203000_B0",
+    "reason": "streetwall-void",
+    "claimed": 1,
+    "streetBareM2": 28
+   },
+   {
+    "id": "bb-Bos_0503210000_B0",
+    "reason": "streetwall-void",
+    "claimed": 1,
+    "streetBareM2": 23.5
+   },
+   {
+    "id": "bb-Bos_0503228000_B0",
+    "reason": "streetwall-void",
+    "claimed": 7,
+    "streetBareM2": 22.3
+   },
+   {
+    "id": "bb-Bos_0401038000_B0",
+    "reason": "streetwall-void",
+    "claimed": 4,
+    "streetBareM2": 18.5
+   },
+   {
+    "id": "bb-Bos_0503229000_B0",
+    "reason": "run-too-short",
+    "claimed": 1,
+    "runLength": 1
+   },
+   {
+    "id": "bb-Bos_0503385000_B0",
+    "reason": "run-too-short",
+    "claimed": 1,
+    "runLength": 1
+   }
+  ],
+  "suppressedPlotIds": [
+   4179,
+   4219,
+   4256,
+   4294,
+   4335,
+   4459,
+   4499,
+   4550
+  ],
+  "suppressedVisuals": 8,
+  "contendedParcels": [
+   {
+    "plotId": 3707,
+    "s1": 0.305,
+    "s2": 0.214,
+    "between": [
+     "bb-Bos_0501343000_B0",
+     "bb-Bos_0501341000_B0"
+    ]
+   },
+   {
+    "plotId": 4419,
+    "s1": 0.338,
+    "s2": 0.224,
+    "between": [
+     "bb-Bos_0501371000_B0",
+     "bb-Bos_0501370000_B0"
+    ]
+   },
+   {
+    "plotId": 6717,
+    "s1": 0.424,
+    "s2": 0.34,
+    "between": [
+     "bb-Bos_0503129000_B0",
+     "bb-Bos_0503130000_B0"
+    ]
+   },
+   {
+    "plotId": 6309,
+    "s1": 0.371,
+    "s2": 0.244,
+    "between": [
+     "bb-Bos_0503213000_B0",
+     "bb-Bos_0503211000_B0"
+    ]
+   },
+   {
+    "plotId": 6342,
+    "s1": 0.349,
+    "s2": 0.238,
+    "between": [
+     "bb-Bos_0503213000_B0",
+     "bb-Bos_0503211000_B0"
+    ]
+   }
+  ],
+  "audit": {
+   "rounds": 12,
+   "suppressedAreaM2": 1381.8,
+   "factualAreaM2": 726.5,
+   "bareM2": 659.3,
+   "streetBareM2": 26.8,
+   "longestRun": 5,
+   "reconciles": true
+  }
+ }
+}

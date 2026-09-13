@@ -1,0 +1,85 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/validate/0.1.0",
+ "control": {
+  "flag": "absent",
+  "gisLedger": null,
+  "citySpecs": 10278,
+  "boxSpecs": 361,
+  "boxVertexHistogram": {
+   "4": 361
+  },
+  "fingerprint": "d11b7b148b2b5112",
+  "clipStats": {
+   "clipped": 15,
+   "dropped": 1,
+   "trimmed": 778,
+   "superblocks": 26
+  }
+ },
+ "candidate": {
+  "flag": "?gisBackBay=1",
+  "citySpecs": 10278,
+  "boxSpecs": 361,
+  "boxVertexHistogram": {
+   "4": 353,
+   "5": 1,
+   "7": 1,
+   "8": 5,
+   "13": 1
+  },
+  "nonQuadInBox": 8,
+  "fingerprint": "a914c97853649c2e",
+  "clipStats": {
+   "clipped": 15,
+   "dropped": 1,
+   "trimmed": 852,
+   "superblocks": 26
+  },
+  "replaced": 8,
+  "suppressedParcels": 8,
+  "suppressedVisuals": 8,
+  "audit": {
+   "rounds": 12,
+   "suppressedAreaM2": 1381.8,
+   "factualAreaM2": 726.5,
+   "bareM2": 659.3,
+   "streetBareM2": 26.8,
+   "longestRun": 5,
+   "reconciles": true
+  }
+ },
+ "candidateKeys": [
+  "areaM2",
+  "id",
+  "localId",
+  "parts",
+  "ring"
+ ],
+ "checks": {
+  "flag absent ⇒ ledger null": true,
+  "unrelated flag ⇒ ledger null": true,
+  "flag absent ⇒ citywide spec count unchanged": true,
+  "flag absent ⇒ city fingerprint matches no-location build": true,
+  "flag absent ⇒ every in-box building is a procedural quad": true,
+  "?gisBackBay=true is accepted too": true,
+  "every accepted replacement materialised a spec": true,
+  "no suppression without a replacement": true,
+  "no parcel suppressed by two replacements": true,
+  "no duplicate factual replacement": true,
+  "every candidate lands in exactly one bucket": true,
+  "no candidate appears in both buckets": true,
+  "ledger self-reconciles": true,
+  "building-count identity holds": true,
+  "zero materialization failures after the gate": true,
+  "factual buildings are the only non-quads in the box": true,
+  "every non-quad carries a ledger id": true,
+  "no factual building rendered outside the prototype box": true,
+  "nothing outside Back Bay changed": true,
+  "no network call in the runtime GIS path": true,
+  "candidate records carry geometry and identity only": true,
+  "no GIS height, elevation or assessing attribute exists to consume": true,
+  "factual buildings take height from makeSpec like every other building": true
+ },
+ "failed": [],
+ "pass": true
+}

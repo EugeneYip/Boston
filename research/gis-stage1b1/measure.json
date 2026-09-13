@@ -1,0 +1,5148 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/measure/0.1.0",
+ "gate": "stage1a2-gate/1.1.0",
+ "world": {
+  "parcelsCity": 10944,
+  "parcelsAfterSuperblocks": 10793,
+  "superblocksMade": 26,
+  "plotIdsUniqueAfterFuse": true
+ },
+ "box": {
+  "proceduralUnits": 389,
+  "ofWhichRender": 361
+ },
+ "candidates": {
+  "total": 110,
+  "withAnyOverlap": 78,
+  "withNoOverlap": 32
+ },
+ "overlapCountPerCandidate": {
+  "0": 32,
+  "1": 4,
+  "2": 21,
+  "3": 15,
+  "4": 17,
+  "5": 6,
+  "6": 7,
+  "7": 3,
+  "8": 3,
+  "9": 1,
+  "13": 1
+ },
+ "ofParcelHistogram": {
+  "95-100%": 1,
+  "85-90%": 2,
+  "55-60%": 10,
+  "40-45%": 6,
+  "15-20%": 30,
+  "10-15%": 46,
+  "0-5%": 41,
+  "70-75%": 4,
+  "50-55%": 3,
+  "45-50%": 10,
+  "20-25%": 54,
+  "30-35%": 12,
+  "5-10%": 47,
+  "60-65%": 7,
+  "35-40%": 5,
+  "25-30%": 14,
+  "65-70%": 2,
+  "75-80%": 3,
+  "80-85%": 1
+ },
+ "ofParcelQuantiles": {
+  "p10": 0.039,
+  "p25": 0.083,
+  "p50": 0.169,
+  "p75": 0.264,
+  "p90": 0.548
+ },
+ "factualAreaQuantiles": {
+  "min": 59.095,
+  "p50": 146.002,
+  "max": 2303.943
+ },
+ "parcelAreaQuantiles": {
+  "min": 65.971,
+  "p50": 183.309,
+  "max": 289
+ },
+ "sweep": [
+  {
+   "t": 0.05,
+   "claimedCands": 76,
+   "contiguous": 34,
+   "contended": 70,
+   "meanClaimed": 3.382,
+   "maxClaimed": 13,
+   "factualCoveredMedian": 0.644,
+   "factualCoveredP10": 0.259,
+   "parcelMassOutsideMedian": 0.816,
+   "parcelMassOutsideP90": 0.904
+  },
+  {
+   "t": 0.1,
+   "claimedCands": 71,
+   "contiguous": 39,
+   "contended": 50,
+   "meanClaimed": 2.958,
+   "maxClaimed": 12,
+   "factualCoveredMedian": 0.598,
+   "factualCoveredP10": 0.187,
+   "parcelMassOutsideMedian": 0.794,
+   "parcelMassOutsideP90": 0.873
+  },
+  {
+   "t": 0.15,
+   "claimedCands": 60,
+   "contiguous": 37,
+   "contended": 34,
+   "meanClaimed": 2.733,
+   "maxClaimed": 12,
+   "factualCoveredMedian": 0.613,
+   "factualCoveredP10": 0.239,
+   "parcelMassOutsideMedian": 0.767,
+   "parcelMassOutsideP90": 0.819
+  },
+  {
+   "t": 0.2,
+   "claimedCands": 52,
+   "contiguous": 37,
+   "contended": 27,
+   "meanClaimed": 2.577,
+   "maxClaimed": 12,
+   "factualCoveredMedian": 0.634,
+   "factualCoveredP10": 0.234,
+   "parcelMassOutsideMedian": 0.708,
+   "parcelMassOutsideP90": 0.786
+  },
+  {
+   "t": 0.25,
+   "claimedCands": 35,
+   "contiguous": 27,
+   "contended": 6,
+   "meanClaimed": 2.286,
+   "maxClaimed": 9,
+   "factualCoveredMedian": 0.556,
+   "factualCoveredP10": 0.233,
+   "parcelMassOutsideMedian": 0.573,
+   "parcelMassOutsideP90": 0.733
+  },
+  {
+   "t": 0.3,
+   "claimedCands": 29,
+   "contiguous": 23,
+   "contended": 1,
+   "meanClaimed": 2.276,
+   "maxClaimed": 7,
+   "factualCoveredMedian": 0.567,
+   "factualCoveredP10": 0.287,
+   "parcelMassOutsideMedian": 0.51,
+   "parcelMassOutsideP90": 0.669
+  },
+  {
+   "t": 0.35,
+   "claimedCands": 24,
+   "contiguous": 20,
+   "contended": 0,
+   "meanClaimed": 2.25,
+   "maxClaimed": 7,
+   "factualCoveredMedian": 0.602,
+   "factualCoveredP10": 0.282,
+   "parcelMassOutsideMedian": 0.449,
+   "parcelMassOutsideP90": 0.595
+  },
+  {
+   "t": 0.4,
+   "claimedCands": 22,
+   "contiguous": 19,
+   "contended": 0,
+   "meanClaimed": 2.227,
+   "maxClaimed": 7,
+   "factualCoveredMedian": 0.602,
+   "factualCoveredP10": 0.256,
+   "parcelMassOutsideMedian": 0.431,
+   "parcelMassOutsideP90": 0.573
+  },
+  {
+   "t": 0.45,
+   "claimedCands": 19,
+   "contiguous": 16,
+   "contended": 0,
+   "meanClaimed": 2.263,
+   "maxClaimed": 7,
+   "factualCoveredMedian": 0.598,
+   "factualCoveredP10": 0.287,
+   "parcelMassOutsideMedian": 0.404,
+   "parcelMassOutsideP90": 0.509
+  },
+  {
+   "t": 0.5,
+   "claimedCands": 15,
+   "contiguous": 13,
+   "contended": 0,
+   "meanClaimed": 2.2,
+   "maxClaimed": 7,
+   "factualCoveredMedian": 0.459,
+   "factualCoveredP10": 0.256,
+   "parcelMassOutsideMedian": 0.307,
+   "parcelMassOutsideP90": 0.431
+  },
+  {
+   "t": 0.6,
+   "claimedCands": 13,
+   "contiguous": 12,
+   "contended": 0,
+   "meanClaimed": 1.538,
+   "maxClaimed": 2,
+   "factualCoveredMedian": 0.371,
+   "factualCoveredP10": 0.186,
+   "parcelMassOutsideMedian": 0.287,
+   "parcelMassOutsideP90": 0.395
+  },
+  {
+   "t": 0.7,
+   "claimedCands": 9,
+   "contiguous": 9,
+   "contended": 0,
+   "meanClaimed": 1.222,
+   "maxClaimed": 2,
+   "factualCoveredMedian": 0.318,
+   "factualCoveredP10": 0.205,
+   "parcelMassOutsideMedian": 0.219,
+   "parcelMassOutsideP90": 0.279
+  }
+ ],
+ "perCandidate": [
+  {
+   "id": "bb-Bos_0401037010_B0",
+   "factualArea": 576.2,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0401037050_B0",
+   "factualArea": 1163.6,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0401038000_B0",
+   "factualArea": 1168.8,
+   "overlapping": 9,
+   "ofFactualTotal": 0.780719265776127,
+   "topOfParcel": [
+    1,
+    0.8766100720148994,
+    0.587985400277752,
+    0.4094373056233739,
+    0.18257127286501584,
+    0.177308375529935,
+    0.13153810959279333,
+    0.12527692785092853,
+    0.043223573096169046
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501341000_B0",
+   "factualArea": 385.2,
+   "overlapping": 5,
+   "ofFactualTotal": 1.6464170276545806,
+   "topOfParcel": [
+    0.89119042426604,
+    0.705535309995914,
+    0.5475566796099289,
+    0.48194288657285317,
+    0.21362171889347806
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501343000_B0",
+   "factualArea": 140.1,
+   "overlapping": 3,
+   "ofFactualTotal": 0.8666530967893201,
+   "topOfParcel": [
+    0.30505215354534543,
+    0.10880957573380123,
+    0.08493487258591002
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501364000_B0",
+   "factualArea": 137.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.8156045889836121,
+   "topOfParcel": [
+    0.49545838373979667,
+    0.11801647006616454
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501365000_B0",
+   "factualArea": 146.7,
+   "overlapping": 2,
+   "ofFactualTotal": 0.8111593438574893,
+   "topOfParcel": [
+    0.600332664660117,
+    0.048673105834898596
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501366000_B0",
+   "factualArea": 118.1,
+   "overlapping": 1,
+   "ofFactualTotal": 0.759655802575624,
+   "topOfParcel": [
+    0.489561678359492
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501367000_B0",
+   "factualArea": 125.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.7399557561420943,
+   "topOfParcel": [
+    0.46836209098547965,
+    0.039740373066511764
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501368000_B0",
+   "factualArea": 114.3,
+   "overlapping": 2,
+   "ofFactualTotal": 0.7659703559135183,
+   "topOfParcel": [
+    0.3886025908273734,
+    0.08908701586211368
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501369000_B0",
+   "factualArea": 119.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.6767365546525138,
+   "topOfParcel": [
+    0.2973911402910233,
+    0.1452147348380205
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501370000_B0",
+   "factualArea": 118,
+   "overlapping": 4,
+   "ofFactualTotal": 1.1608786550186303,
+   "topOfParcel": [
+    0.2244638608494392,
+    0.21226857115755463,
+    0.15450487132185137,
+    0.05624945317724424
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501371000_B0",
+   "factualArea": 138.6,
+   "overlapping": 4,
+   "ofFactualTotal": 1.5168201344915948,
+   "topOfParcel": [
+    0.33815143711550183,
+    0.23514676176580931,
+    0.21915705896659946,
+    0.1664269589417157
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501372000_B0",
+   "factualArea": 132.9,
+   "overlapping": 4,
+   "ofFactualTotal": 1.3998341566201398,
+   "topOfParcel": [
+    0.37079988176023776,
+    0.21140427820402438,
+    0.13659142428876428,
+    0.13085160763850714
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501373000_B0",
+   "factualArea": 129.9,
+   "overlapping": 4,
+   "ofFactualTotal": 1.3816984069319846,
+   "topOfParcel": [
+    0.4265495292149205,
+    0.21529322906958673,
+    0.11557328373460168,
+    0.06702184283546411
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501374000_B0",
+   "factualArea": 145,
+   "overlapping": 3,
+   "ofFactualTotal": 1.2682627568423825,
+   "topOfParcel": [
+    0.533798605175002,
+    0.19964056243771902,
+    0.1381184151607087
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501375000_B0",
+   "factualArea": 120.4,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501377000_B0",
+   "factualArea": 342.4,
+   "overlapping": 5,
+   "ofFactualTotal": 0.7757499751146373,
+   "topOfParcel": [
+    0.31152049855108016,
+    0.30602384925811205,
+    0.30075196031032747,
+    0.2333885944050832,
+    0.054497858368496487
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501382000_B0",
+   "factualArea": 438.6,
+   "overlapping": 5,
+   "ofFactualTotal": 0.7273659778412889,
+   "topOfParcel": [
+    0.4210112475364326,
+    0.39624438177127375,
+    0.269113842427445,
+    0.2555556265185299,
+    0.0761763242191227
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501382100_B0",
+   "factualArea": 169.1,
+   "overlapping": 4,
+   "ofFactualTotal": 0.6524244480218622,
+   "topOfParcel": [
+    0.23941608342003973,
+    0.17046984327733733,
+    0.09418385681620588,
+    0.05990747987607783
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501382200_B0",
+   "factualArea": 188.3,
+   "overlapping": 4,
+   "ofFactualTotal": 0.644010996577612,
+   "topOfParcel": [
+    0.2665080064970265,
+    0.18353505957369065,
+    0.11487131680646576,
+    0.0542643184472995
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501382300_B0",
+   "factualArea": 147.3,
+   "overlapping": 4,
+   "ofFactualTotal": 0.2382120486024208,
+   "topOfParcel": [
+    0.07306466254579418,
+    0.06388874068737335,
+    0.02364237406146194,
+    0.021878206501727848
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501382400_B0",
+   "factualArea": 140.4,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501383000_B0",
+   "factualArea": 2303.9,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501387000_B0",
+   "factualArea": 1555.8,
+   "overlapping": 8,
+   "ofFactualTotal": 0.13819342259351955,
+   "topOfParcel": [
+    0.22056647736636495,
+    0.21204636872041902,
+    0.20885294877685964,
+    0.17561075422021974,
+    0.16986726374857075,
+    0.16194040977941315,
+    0.12794256857338723,
+    0.038316193351110125
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501389000_B0",
+   "factualArea": 200.3,
+   "overlapping": 2,
+   "ofFactualTotal": 0.22606158361415324,
+   "topOfParcel": [
+    0.153781944394617,
+    0.12312386597241981
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501390000_B0",
+   "factualArea": 139.3,
+   "overlapping": 2,
+   "ofFactualTotal": 0.25895241754057147,
+   "topOfParcel": [
+    0.13115104473687245,
+    0.08955595811555932
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501391000_B0",
+   "factualArea": 210.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.18922725065468943,
+   "topOfParcel": [
+    0.171179375434582,
+    0.07295015075608438
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501392000_B0",
+   "factualArea": 226.4,
+   "overlapping": 7,
+   "ofFactualTotal": 0.6798004971990846,
+   "topOfParcel": [
+    0.33138829394769975,
+    0.09763212438466008,
+    0.09220465271726633,
+    0.08524027496313566,
+    0.0765447607758507,
+    0.0649938730954177,
+    0.007651782777376265
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501393000_B0",
+   "factualArea": 205.7,
+   "overlapping": 6,
+   "ofFactualTotal": 1.1697692466439558,
+   "topOfParcel": [
+    0.2437654187621931,
+    0.21864609124893972,
+    0.2186157697771765,
+    0.21859213967949379,
+    0.14466646469356734,
+    0.014944711910489579
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501394000_B0",
+   "factualArea": 193.5,
+   "overlapping": 5,
+   "ofFactualTotal": 1.1939269131519774,
+   "topOfParcel": [
+    0.2623477193591056,
+    0.2034932374141242,
+    0.20348663832062616,
+    0.20347817055159123,
+    0.1471570773480708
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501395000_B0",
+   "factualArea": 213.9,
+   "overlapping": 6,
+   "ofFactualTotal": 1.2199558104741097,
+   "topOfParcel": [
+    0.27540250034338953,
+    0.22298992977139218,
+    0.2218394266967884,
+    0.22094161329388334,
+    0.17615254901034594,
+    0.03777531274601459
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501397000_B0",
+   "factualArea": 1272.4,
+   "overlapping": 13,
+   "ofFactualTotal": 0.7960794273122181,
+   "topOfParcel": [
+    0.6527806481824766,
+    0.6458555757960182,
+    0.4973543716658186,
+    0.37072564312268586,
+    0.34791183335800674,
+    0.3397190295451044,
+    0.3168608396124419,
+    0.26964553346494124,
+    0.26385351248772937,
+    0.24097308790058056,
+    0.212426792805538,
+    0.203846748078223,
+    0.05859064660676641
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501400000_B0",
+   "factualArea": 212.3,
+   "overlapping": 6,
+   "ofFactualTotal": 1.0624329880439203,
+   "topOfParcel": [
+    0.22013029130873504,
+    0.2198523890531095,
+    0.21898860146772683,
+    0.15562715709633834,
+    0.15147696613064587,
+    0.0003771286266493672
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501401000_B0",
+   "factualArea": 137.8,
+   "overlapping": 5,
+   "ofFactualTotal": 1.1921781410357024,
+   "topOfParcel": [
+    0.22866737281183758,
+    0.15579565238513382,
+    0.13608994082953624,
+    0.11317521010083666,
+    0.011680696073125534
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501402000_B0",
+   "factualArea": 178.6,
+   "overlapping": 6,
+   "ofFactualTotal": 1.15812682735906,
+   "topOfParcel": [
+    0.2286236998940993,
+    0.22665835068199552,
+    0.16063731948857393,
+    0.13375820662221302,
+    0.05282696206944683,
+    0.023839589790311422
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501403000_B0",
+   "factualArea": 159.5,
+   "overlapping": 6,
+   "ofFactualTotal": 0.604311106582496,
+   "topOfParcel": [
+    0.10656636566107584,
+    0.08918020340692152,
+    0.0825055421308084,
+    0.07309378019953805,
+    0.03987741064799706,
+    0.015410823944986702
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0501404000_B0",
+   "factualArea": 151.3,
+   "overlapping": 2,
+   "ofFactualTotal": 0.18952123699048445,
+   "topOfParcel": [
+    0.082654176031673,
+    0.07738461840507954
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501405000_B0",
+   "factualArea": 152.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.2828645726523908,
+   "topOfParcel": [
+    0.1348787966117954,
+    0.10653680881936994
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501406000_B0",
+   "factualArea": 133.9,
+   "overlapping": 2,
+   "ofFactualTotal": 0.2607734856350113,
+   "topOfParcel": [
+    0.13954497788127748,
+    0.05528692886565467
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501407000_B0",
+   "factualArea": 134.1,
+   "overlapping": 2,
+   "ofFactualTotal": 0.2504296166056206,
+   "topOfParcel": [
+    0.14331924848562005,
+    0.04407333051480667
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0501409000_B0",
+   "factualArea": 59.1,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503126000_B0",
+   "factualArea": 106.2,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503127000_B0",
+   "factualArea": 88.3,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503129000_B0",
+   "factualArea": 269.2,
+   "overlapping": 2,
+   "ofFactualTotal": 0.5557082323418219,
+   "topOfParcel": [
+    0.4909234142327922,
+    0.4239887832342017
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503130000_B0",
+   "factualArea": 460.2,
+   "overlapping": 2,
+   "ofFactualTotal": 0.37676959669766724,
+   "topOfParcel": [
+    0.7208117025971462,
+    0.33985591549603766
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503160000_B0",
+   "factualArea": 104,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503161000_B0",
+   "factualArea": 95.9,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503162000_B0",
+   "factualArea": 93.3,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503164000_B0",
+   "factualArea": 89.9,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503165000_B0",
+   "factualArea": 92.9,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503166000_B0",
+   "factualArea": 92.4,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503202000_B0",
+   "factualArea": 649.1,
+   "overlapping": 4,
+   "ofFactualTotal": 0.3736376535750149,
+   "topOfParcel": [
+    0.575808811425487,
+    0.5631516711422535,
+    0.2155299983140013,
+    0.12909896442927585
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503203000_B0",
+   "factualArea": 240.6,
+   "overlapping": 2,
+   "ofFactualTotal": 0.41520671478970633,
+   "topOfParcel": [
+    0.41529933234260447,
+    0.19572443894798308
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503207200_B0",
+   "factualArea": 627.9,
+   "overlapping": 8,
+   "ofFactualTotal": 1.4780741285873082,
+   "topOfParcel": [
+    0.788754152129158,
+    0.6379912528307988,
+    0.5793947330018367,
+    0.5784428814008304,
+    0.577491029800357,
+    0.4717050253441872,
+    0.40945588085845347,
+    0.0391160345958023
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503210000_B0",
+   "factualArea": 376.9,
+   "overlapping": 7,
+   "ofFactualTotal": 1.122649025781528,
+   "topOfParcel": [
+    0.7810239769467023,
+    0.2658119363672337,
+    0.25935738703093075,
+    0.24951567983085446,
+    0.22742844350204874,
+    0.1274322025314308,
+    0.0000284253745842666
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503211000_B0",
+   "factualArea": 724.4,
+   "overlapping": 6,
+   "ofFactualTotal": 0.5923763662210602,
+   "topOfParcel": [
+    0.813436131491324,
+    0.2691742560584027,
+    0.26384405382047643,
+    0.24404914809493894,
+    0.23771107750063158,
+    0.11144326889158902
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503212000_B0",
+   "factualArea": 260.7,
+   "overlapping": 6,
+   "ofFactualTotal": 1.5209856783094964,
+   "topOfParcel": [
+    0.7063701947162991,
+    0.24557359599168124,
+    0.24301192951056086,
+    0.23048007039227306,
+    0.20641125501892738,
+    0.12449134573455949
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503213000_B0",
+   "factualArea": 458,
+   "overlapping": 7,
+   "ofFactualTotal": 1.4991183959173378,
+   "topOfParcel": [
+    0.7470719405205428,
+    0.6456409345085187,
+    0.45462408381283675,
+    0.45090422706391475,
+    0.3710964381797901,
+    0.3492938614904146,
+    0.0057137706104357444
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503214000_B0",
+   "factualArea": 566,
+   "overlapping": 4,
+   "ofFactualTotal": 0.7338545865212446,
+   "topOfParcel": [
+    0.6051292547984328,
+    0.6043844390655401,
+    0.46725878387441566,
+    0.16770208711865486
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503215000_B0",
+   "factualArea": 136,
+   "overlapping": 4,
+   "ofFactualTotal": 0.999999999999572,
+   "topOfParcel": [
+    0.21865320917591027,
+    0.20728395202208325,
+    0.11679856048809044,
+    0.000984038842028711
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503221002_B0",
+   "factualArea": 109.8,
+   "overlapping": 4,
+   "ofFactualTotal": 1.0042702144904363,
+   "topOfParcel": [
+    0.19091435442762267,
+    0.17862563332616918,
+    0.027070332166292014,
+    0.0026168818570957313
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503222000_B0",
+   "factualArea": 146,
+   "overlapping": 5,
+   "ofFactualTotal": 1.013102162523652,
+   "topOfParcel": [
+    0.2222808657232424,
+    0.2088430953926343,
+    0.0972833216170391,
+    0.04263690999610216,
+    0.010676168737259704
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503223000_B0",
+   "factualArea": 131.6,
+   "overlapping": 4,
+   "ofFactualTotal": 0.4144476105338596,
+   "topOfParcel": [
+    0.0865464890581655,
+    0.07599974491610949,
+    0.034395949382569166,
+    0.015504742401719241
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503224000_B0",
+   "factualArea": 138.5,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503225000_B0",
+   "factualArea": 121.4,
+   "overlapping": 1,
+   "ofFactualTotal": 0.0002447774560727052,
+   "topOfParcel": [
+    0.00016585855457404119
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503228000_B0",
+   "factualArea": 1279.9,
+   "overlapping": 8,
+   "ofFactualTotal": 0.6052787099066794,
+   "topOfParcel": [
+    0.6717953313205333,
+    0.6236667037896341,
+    0.597953766432973,
+    0.5913713338231289,
+    0.5849658667037796,
+    0.5753592766272807,
+    0.5287707312932795,
+    0.05239248007341253
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503229000_B0",
+   "factualArea": 152,
+   "overlapping": 2,
+   "ofFactualTotal": 0.4612279617924587,
+   "topOfParcel": [
+    0.3026352251697624,
+    0.07985621381229599
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503230000_B0",
+   "factualArea": 128.5,
+   "overlapping": 2,
+   "ofFactualTotal": 0.43859912023283676,
+   "topOfParcel": [
+    0.2650782133675162,
+    0.04237870361037539
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503231000_B0",
+   "factualArea": 125.6,
+   "overlapping": 2,
+   "ofFactualTotal": 0.4325305735910457,
+   "topOfParcel": [
+    0.23005492422351453,
+    0.06620325584551225
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503232000_B0",
+   "factualArea": 114.6,
+   "overlapping": 2,
+   "ofFactualTotal": 0.38077480048965084,
+   "topOfParcel": [
+    0.14905277196425343,
+    0.08890253255556929
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503233000_B0",
+   "factualArea": 118.4,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6156014274759919,
+   "topOfParcel": [
+    0.11865299298985864,
+    0.11614082249073915,
+    0.1124026655074551
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503234000_B0",
+   "factualArea": 116,
+   "overlapping": 3,
+   "ofFactualTotal": 0.7038467599629046,
+   "topOfParcel": [
+    0.1537008163044843,
+    0.14159040879309465,
+    0.08106638709053231
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503235000_B0",
+   "factualArea": 117.1,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6820094356991043,
+   "topOfParcel": [
+    0.16510126063346012,
+    0.15029842557384962,
+    0.052623208630932936
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503236000_B0",
+   "factualArea": 102.7,
+   "overlapping": 3,
+   "ofFactualTotal": 0.5269915156296759,
+   "topOfParcel": [
+    0.13728192541125284,
+    0.10185437078130909,
+    0.010885706838597476
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503237000_B0",
+   "factualArea": 104.1,
+   "overlapping": 2,
+   "ofFactualTotal": 0.515458536591454,
+   "topOfParcel": [
+    0.15566031408044656,
+    0.10102436222934372
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503238000_B0",
+   "factualArea": 97,
+   "overlapping": 2,
+   "ofFactualTotal": 0.009373197674970753,
+   "topOfParcel": [
+    0.0026572629262412114,
+    0.0016982294796307593
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503239000_B0",
+   "factualArea": 96.9,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503240000_B0",
+   "factualArea": 161.6,
+   "overlapping": 4,
+   "ofFactualTotal": 0.35617652378237125,
+   "topOfParcel": [
+    0.16716732064260229,
+    0.053107487228988906,
+    0.046832886706856806,
+    0.0048152526857659925
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503241000_B0",
+   "factualArea": 126.3,
+   "overlapping": 3,
+   "ofFactualTotal": 0.2781134867840461,
+   "topOfParcel": [
+    0.06925212841271469,
+    0.06613097252641051,
+    0.03064261687581564
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503242000_B0",
+   "factualArea": 102.6,
+   "overlapping": 3,
+   "ofFactualTotal": 0.31902527199687075,
+   "topOfParcel": [
+    0.0785320614152352,
+    0.06163887390126405,
+    0.010691617511577075
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503243000_B0",
+   "factualArea": 129.1,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503244000_B0",
+   "factualArea": 119.6,
+   "overlapping": 4,
+   "ofFactualTotal": 0.5090282134269278,
+   "topOfParcel": [
+    0.11385302245323602,
+    0.07776415650875344,
+    0.07395710828535354,
+    0.015357106451120778
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503247000_B0",
+   "factualArea": 223.9,
+   "overlapping": 4,
+   "ofFactualTotal": 0.5450924265736911,
+   "topOfParcel": [
+    0.2040123836327687,
+    0.1954168143897231,
+    0.10535275795290637,
+    0.025254943219178448
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503248000_B0",
+   "factualArea": 209.1,
+   "overlapping": 4,
+   "ofFactualTotal": 0.6896266129150371,
+   "topOfParcel": [
+    0.26192790715192216,
+    0.21740708216159285,
+    0.11733931949627943,
+    0.052849606296296245
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503249000_B0",
+   "factualArea": 116.3,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6031897899290796,
+   "topOfParcel": [
+    0.1845916836896115,
+    0.12293847791529589,
+    0.039274777199570746
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503250000_B0",
+   "factualArea": 138.3,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6285486654412051,
+   "topOfParcel": [
+    0.20941480172466528,
+    0.16935198582314173,
+    0.03812969010069835
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503251000_B0",
+   "factualArea": 150.3,
+   "overlapping": 3,
+   "ofFactualTotal": 0.4223098460426399,
+   "topOfParcel": [
+    0.1484707718743136,
+    0.11453857086001172,
+    0.0476788991523171
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503252000_B0",
+   "factualArea": 104.7,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503253000_B0",
+   "factualArea": 125,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503254000_B0",
+   "factualArea": 132.4,
+   "overlapping": 3,
+   "ofFactualTotal": 0.357102190400609,
+   "topOfParcel": [
+    0.12369256088818974,
+    0.08765258005531276,
+    0.019028682844524723
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503255000_B0",
+   "factualArea": 165.8,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6558677952189287,
+   "topOfParcel": [
+    0.2291294841007793,
+    0.20501121637758518,
+    0.09055601690998902
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503256000_B0",
+   "factualArea": 148.8,
+   "overlapping": 4,
+   "ofFactualTotal": 0.6322223806587801,
+   "topOfParcel": [
+    0.22143096121612527,
+    0.15828860720943286,
+    0.0823412102397396,
+    0.0037648779746437423
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503257000_B0",
+   "factualArea": 148.6,
+   "overlapping": 3,
+   "ofFactualTotal": 0.6280307803939451,
+   "topOfParcel": [
+    0.22080129679272345,
+    0.14391651184548768,
+    0.10943167080331684
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503258000_B0",
+   "factualArea": 130.2,
+   "overlapping": 3,
+   "ofFactualTotal": 0.549679124569544,
+   "topOfParcel": [
+    0.2049456970018124,
+    0.12287791370032224,
+    0.06782834307138859
+   ],
+   "contiguousAll": false
+  },
+  {
+   "id": "bb-Bos_0503259000_B0",
+   "factualArea": 130.6,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503260000_B0",
+   "factualArea": 127.4,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503261000_B0",
+   "factualArea": 122.3,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503262000_B0",
+   "factualArea": 139.6,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503263000_B0",
+   "factualArea": 192,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503264000_B0",
+   "factualArea": 167,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503268000_B0",
+   "factualArea": 152.1,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503269000_B0",
+   "factualArea": 168.8,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503270000_B0",
+   "factualArea": 242.7,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503381000_B0",
+   "factualArea": 191.1,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503382000_B0",
+   "factualArea": 186.2,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503383000_B0",
+   "factualArea": 216.6,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503384000_B0",
+   "factualArea": 214.1,
+   "overlapping": 1,
+   "ofFactualTotal": 0.08198564799461183,
+   "topOfParcel": [
+    0.22179969240418035
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503385000_B0",
+   "factualArea": 186.3,
+   "overlapping": 1,
+   "ofFactualTotal": 0.3305027298412234,
+   "topOfParcel": [
+    0.7782003075958196
+   ],
+   "contiguousAll": true
+  },
+  {
+   "id": "bb-Bos_0503386000_B0",
+   "factualArea": 193.2,
+   "overlapping": 0,
+   "ofFactualTotal": 0,
+   "topOfParcel": [],
+   "contiguousAll": true
+  }
+ ],
+ "graph": [
+  {
+   "id": "bb-Bos_0401037010_B0",
+   "localId": "Bos_0401037010_B0",
+   "factualArea": 576.1782999999705,
+   "ringVertices": 4,
+   "centroid": {
+    "x": -1317.2950000000237,
+    "z": 800.8200000000106
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0401037050_B0",
+   "localId": "Bos_0401037050_B0",
+   "factualArea": 1163.6127999999444,
+   "ringVertices": 9,
+   "centroid": {
+    "x": -1247.8955637398112,
+    "z": 804.9289779572858
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0401038000_B0",
+   "localId": "Bos_0401038000_B0",
+   "factualArea": 1168.776249999879,
+   "ringVertices": 31,
+   "centroid": {
+    "x": -1147.602791300629,
+    "z": 692.886007898741
+   },
+   "edges": [
+    {
+     "plotId": 5217,
+     "parcelArea": 258.069565217942,
+     "interArea": 258.069565217942,
+     "ofFactual": 0.22080322492690002,
+     "ofParcel": 1,
+     "outsideArea": 0
+    },
+    {
+     "plotId": 5297,
+     "parcelArea": 258.0695652181166,
+     "interArea": 226.22638015070697,
+     "ofFactual": 0.19355833090442282,
+     "ofParcel": 0.8766100720148994,
+     "outsideArea": 31.84318506740965
+    },
+    {
+     "plotId": 5360,
+     "parcelArea": 258.0695652181166,
+     "interArea": 151.74113660427975,
+     "ofFactual": 0.12982907259134968,
+     "ofParcel": 0.587985400277752,
+     "outsideArea": 106.32842861383688
+    },
+    {
+     "plotId": 5147,
+     "parcelArea": 258.069565217942,
+     "interArea": 105.66330744622974,
+     "ofFactual": 0.09040507748702173,
+     "ofParcel": 0.4094373056233739,
+     "outsideArea": 152.40625777171226
+    },
+    {
+     "plotId": 5377,
+     "parcelArea": 258.8494133106433,
+     "interArea": 47.25846686848672,
+     "ofFactual": 0.04043414371954565,
+     "ofParcel": 0.18257127286501584,
+     "outsideArea": 211.59094644215656
+    },
+    {
+     "plotId": 5448,
+     "parcelArea": 258.8494133109343,
+     "interArea": 45.8961689810385,
+     "ofFactual": 0.039268567427720454,
+     "ofParcel": 0.177308375529935,
+     "outsideArea": 212.95324432989582
+    },
+    {
+     "plotId": 5306,
+     "parcelArea": 258.8494133106433,
+     "interArea": 34.04856249608565,
+     "ofFactual": 0.029131805592464064,
+     "ofParcel": 0.13153810959279333,
+     "outsideArea": 224.80085081455763
+    },
+    {
+     "plotId": 5501,
+     "parcelArea": 258.8494133108761,
+     "interArea": 32.427859275601804,
+     "ofFactual": 0.027745138794191927,
+     "ofParcel": 0.12527692785092853,
+     "outsideArea": 226.4215540352743
+    },
+    {
+     "plotId": 5439,
+     "parcelArea": 258.06956521829125,
+     "interArea": 11.154688716109376,
+     "ofFactual": 0.009543904332510634,
+     "ofParcel": 0.043223573096169046,
+     "outsideArea": 246.91487650218187
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501341000_B0",
+   "localId": "Bos_0501341000_B0",
+   "factualArea": 385.1544500000018,
+   "ringVertices": 62,
+   "centroid": {
+    "x": -983.1644805198705,
+    "z": 468.4007177691938
+   },
+   "edges": [
+    {
+     "plotId": 3750,
+     "parcelArea": 183.3086956528714,
+     "interArea": 163.36295425053686,
+     "ofFactual": 0.42414920624839225,
+     "ofParcel": 0.89119042426604,
+     "outsideArea": 19.945741402334534
+    },
+    {
+     "plotId": 3793,
+     "parcelArea": 183.3086956529878,
+     "interArea": 129.3307574124774,
+     "ofFactual": 0.33578933701136465,
+     "ofParcel": 0.705535309995914,
+     "outsideArea": 53.97793824051041
+    },
+    {
+     "plotId": 3719,
+     "parcelArea": 265.6905714306049,
+     "interArea": 145.48064709620667,
+     "ofFactual": 0.37772028103584415,
+     "ofParcel": 0.5475566796099289,
+     "outsideArea": 120.20992433439824
+    },
+    {
+     "plotId": 3714,
+     "parcelArea": 281.7142857151921,
+     "interArea": 135.77019604638917,
+     "ofFactual": 0.3525084444601082,
+     "ofParcel": 0.48194288657285317,
+     "outsideArea": 145.94408966880292
+    },
+    {
+     "plotId": 3707,
+     "parcelArea": 281.7142857151921,
+     "interArea": 60.18028995132772,
+     "ofFactual": 0.15624975889887144,
+     "ofParcel": 0.21362171889347806,
+     "outsideArea": 221.53399576386437
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501343000_B0",
+   "localId": "Bos_0501343000_B0",
+   "factualArea": 140.13979999994626,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -986.9986368458553,
+    "z": 453.77997453263083
+   },
+   "edges": [
+    {
+     "plotId": 3707,
+     "parcelArea": 281.7142857151921,
+     "interArea": 85.93754954190808,
+     "ofFactual": 0.6132272883359405,
+     "ofParcel": 0.30505215354534543,
+     "outsideArea": 195.776736173284
+    },
+    {
+     "plotId": 3750,
+     "parcelArea": 183.3086956528714,
+     "interArea": 19.94574140230543,
+     "ofFactual": 0.1423274573127197,
+     "ofParcel": 0.10880957573380123,
+     "outsideArea": 163.36295425056596
+    },
+    {
+     "plotId": 3793,
+     "parcelArea": 183.3086956529878,
+     "interArea": 15.569300709175877,
+     "ofFactual": 0.11109835114065988,
+     "ofParcel": 0.08493487258591002,
+     "outsideArea": 167.73939494381193
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501364000_B0",
+   "localId": "Bos_0501364000_B0",
+   "factualArea": 137.87964999995893,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1060.9912833959254,
+    "z": 496.89101395194837
+   },
+   "edges": [
+    {
+     "plotId": 4179,
+     "parcelArea": 183.30869565354078,
+     "interArea": 90.8218300739536,
+     "ofFactual": 0.6587036598510415,
+     "ofParcel": 0.49545838373979667,
+     "outsideArea": 92.48686557958717
+    },
+    {
+     "plotId": 4219,
+     "parcelArea": 183.30869565356988,
+     "interArea": 21.633445193467196,
+     "ofFactual": 0.15690092913257062,
+     "ofParcel": 0.11801647006616454,
+     "outsideArea": 161.6752504601027
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501365000_B0",
+   "localId": "Bos_0501365000_B0",
+   "factualArea": 146.66464999999152,
+   "ringVertices": 25,
+   "centroid": {
+    "x": -1067.929004920434,
+    "z": 499.14840196212367
+   },
+   "edges": [
+    {
+     "plotId": 4219,
+     "parcelArea": 183.30869565356988,
+     "interArea": 110.04619771707803,
+     "ofFactual": 0.7503253014075606,
+     "ofParcel": 0.600332664660117,
+     "outsideArea": 73.26249793649185
+    },
+    {
+     "plotId": 4256,
+     "parcelArea": 183.30869565356988,
+     "interArea": 8.922203544003423,
+     "ofFactual": 0.060834042449928724,
+     "ofParcel": 0.048673105834898596,
+     "outsideArea": 174.38649210956646
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501366000_B0",
+   "localId": "Bos_0501366000_B0",
+   "factualArea": 118.13365000014892,
+   "ringVertices": 26,
+   "centroid": {
+    "x": -1074.3247164442903,
+    "z": 503.13706707169746
+   },
+   "edges": [
+    {
+     "plotId": 4256,
+     "parcelArea": 183.30869565356988,
+     "interArea": 89.74091270205099,
+     "ofFactual": 0.759655802575624,
+     "ofParcel": 0.489561678359492,
+     "outsideArea": 93.5677829515189
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501367000_B0",
+   "localId": "Bos_0501367000_B0",
+   "factualArea": 125.8718499999377,
+   "ringVertices": 20,
+   "centroid": {
+    "x": -1081.0834371044048,
+    "z": 505.6771782849684
+   },
+   "edges": [
+    {
+     "plotId": 4294,
+     "parcelArea": 183.30869565351168,
+     "interArea": 85.85484399209963,
+     "ofFactual": 0.682081370792136,
+     "ofParcel": 0.46836209098547965,
+     "outsideArea": 97.45385166141205
+    },
+    {
+     "plotId": 4256,
+     "parcelArea": 183.30869565356988,
+     "interArea": 7.284755951608531,
+     "ofFactual": 0.05787438534995821,
+     "ofParcel": 0.039740373066511764,
+     "outsideArea": 176.02393970196135
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501368000_B0",
+   "localId": "Bos_0501368000_B0",
+   "factualArea": 114.3185999999987,
+   "ringVertices": 10,
+   "centroid": {
+    "x": -1088.1113543144588,
+    "z": 507.8791021466974
+   },
+   "edges": [
+    {
+     "plotId": 4335,
+     "parcelArea": 183.3086956536281,
+     "interArea": 71.23423405218637,
+     "ofFactual": 0.6231202451061085,
+     "ofParcel": 0.3886025908273734,
+     "outsideArea": 112.07446160144173
+    },
+    {
+     "plotId": 4294,
+     "parcelArea": 183.30869565351168,
+     "interArea": 16.330424677347764,
+     "ofFactual": 0.14285011080740972,
+     "ofParcel": 0.08908701586211368,
+     "outsideArea": 166.9782709761639
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501369000_B0",
+   "localId": "Bos_0501369000_B0",
+   "factualArea": 119.8893500000122,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1094.508616200368,
+    "z": 511.28484070101103
+   },
+   "edges": [
+    {
+     "plotId": 4377,
+     "parcelArea": 183.3086956536281,
+     "interArea": 54.51438202569261,
+     "ofFactual": 0.45470579351449536,
+     "ofParcel": 0.2973911402910233,
+     "outsideArea": 128.79431362793548
+    },
+    {
+     "plotId": 4335,
+     "parcelArea": 183.3086956536281,
+     "interArea": 26.619123632845003,
+     "ofFactual": 0.22203076113801848,
+     "ofParcel": 0.1452147348380205,
+     "outsideArea": 156.6895720207831
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501370000_B0",
+   "localId": "Bos_0501370000_B0",
+   "factualArea": 117.97410000010859,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1101.3524026160055,
+    "z": 513.7524492916854
+   },
+   "edges": [
+    {
+     "plotId": 4419,
+     "parcelArea": 183.3086956536281,
+     "interArea": 41.146177553688176,
+     "ofFactual": 0.3487729726579843,
+     "ofParcel": 0.2244638608494392,
+     "outsideArea": 142.16251809993992
+    },
+    {
+     "plotId": 4377,
+     "parcelArea": 183.3086956536281,
+     "interArea": 38.91067490715068,
+     "ofFactual": 0.32982387580930783,
+     "ofParcel": 0.21226857115755463,
+     "outsideArea": 144.3980207464774
+    },
+    {
+     "plotId": 4601,
+     "parcelArea": 265.6905714321765,
+     "interArea": 41.05048755055759,
+     "ofFactual": 0.34796186239623617,
+     "ofParcel": 0.15450487132185137,
+     "outsideArea": 224.64008388161892
+    },
+    {
+     "plotId": 4594,
+     "parcelArea": 281.71428571635624,
+     "interArea": 15.846274523762986,
+     "ofFactual": 0.13431994415510184,
+     "ofParcel": 0.05624945317724424,
+     "outsideArea": 265.86801119259326
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501371000_B0",
+   "localId": "Bos_0501371000_B0",
+   "factualArea": 138.58159999991767,
+   "ringVertices": 7,
+   "centroid": {
+    "x": -1109.023390046238,
+    "z": 514.2397334206979
+   },
+   "edges": [
+    {
+     "plotId": 4419,
+     "parcelArea": 183.3086956536281,
+     "interArea": 61.986098871042486,
+     "ofFactual": 0.44728953101334745,
+     "ofParcel": 0.33815143711550183,
+     "outsideArea": 121.3225967825856
+    },
+    {
+     "plotId": 4459,
+     "parcelArea": 183.30869565356988,
+     "interArea": 43.10444618645124,
+     "ofFactual": 0.31104018272611117,
+     "ofParcel": 0.23514676176580931,
+     "outsideArea": 140.20424946711864
+    },
+    {
+     "plotId": 4601,
+     "parcelArea": 265.6905714321765,
+     "interArea": 58.22796423023101,
+     "ofFactual": 0.42017096230860085,
+     "ofParcel": 0.21915705896659946,
+     "outsideArea": 207.4626072019455
+    },
+    {
+     "plotId": 4594,
+     "parcelArea": 281.71428571635624,
+     "interArea": 46.88485186221078,
+     "ofFactual": 0.33831945844353534,
+     "ofParcel": 0.1664269589417157,
+     "outsideArea": 234.82943385414546
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501372000_B0",
+   "localId": "Bos_0501372000_B0",
+   "factualArea": 132.9015500000096,
+   "ringVertices": 22,
+   "centroid": {
+    "x": -1115.5753872271164,
+    "z": 517.588197259548
+   },
+   "edges": [
+    {
+     "plotId": 4459,
+     "parcelArea": 183.30869565356988,
+     "interArea": 67.97084267396713,
+     "ofFactual": 0.5114375466197514,
+     "ofParcel": 0.37079988176023776,
+     "outsideArea": 115.33785297960276
+    },
+    {
+     "plotId": 4601,
+     "parcelArea": 265.6905714321765,
+     "interArea": 56.168123479234055,
+     "ofFactual": 0.42262955909265165,
+     "ofParcel": 0.21140427820402438,
+     "outsideArea": 209.52244795294246
+    },
+    {
+     "plotId": 4499,
+     "parcelArea": 183.3086956536863,
+     "interArea": 25.038395823852625,
+     "ofFactual": 0.18839807228622102,
+     "ofParcel": 0.13659142428876428,
+     "outsideArea": 158.27029982983368
+    },
+    {
+     "plotId": 4594,
+     "parcelArea": 281.71428571635624,
+     "interArea": 36.86276718071895,
+     "ofFactual": 0.2773689786215156,
+     "ofParcel": 0.13085160763850714,
+     "outsideArea": 244.8515185356373
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501373000_B0",
+   "localId": "Bos_0501373000_B0",
+   "factualArea": 129.91120000003139,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1122.2823987063352,
+    "z": 520.1554379054722
+   },
+   "edges": [
+    {
+     "plotId": 4499,
+     "parcelArea": 183.3086956536863,
+     "interArea": 78.19023783208104,
+     "ofFactual": 0.6018744945167326,
+     "ofParcel": 0.4265495292149205,
+     "outsideArea": 105.11845782160526
+    },
+    {
+     "plotId": 4601,
+     "parcelArea": 265.6905714321765,
+     "interArea": 57.20138105697697,
+     "ofFactual": 0.4403113900646222,
+     "ofParcel": 0.21529322906958673,
+     "outsideArea": 208.48919037519954
+    },
+    {
+     "plotId": 4594,
+     "parcelArea": 281.71428571635624,
+     "interArea": 32.55864507518709,
+     "ofFactual": 0.25062231027947723,
+     "ofParcel": 0.11557328373460168,
+     "outsideArea": 249.15564064116916
+    },
+    {
+     "plotId": 4550,
+     "parcelArea": 172.2995613052626,
+     "interArea": 11.547834118420724,
+     "ofFactual": 0.0888902120711527,
+     "ofParcel": 0.06702184283546411,
+     "outsideArea": 160.7517271868419
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501374000_B0",
+   "localId": "Bos_0501374000_B0",
+   "factualArea": 145.02185000001919,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1129.5221672365967,
+    "z": 522.0469038343595
+   },
+   "edges": [
+    {
+     "plotId": 4550,
+     "parcelArea": 172.2995613052626,
+     "interArea": 91.97326549701393,
+     "ofFactual": 0.6342028149344513,
+     "ofParcel": 0.533798605175002,
+     "outsideArea": 80.32629580824869
+    },
+    {
+     "plotId": 4601,
+     "parcelArea": 265.6905714321765,
+     "interArea": 53.04261511511868,
+     "ofFactual": 0.3657560230759135,
+     "ofParcel": 0.19964056243771902,
+     "outsideArea": 212.64795631705783
+    },
+    {
+     "plotId": 4594,
+     "parcelArea": 281.71428571635624,
+     "interArea": 38.909930671274196,
+     "ofFactual": 0.2683039188320177,
+     "ofParcel": 0.1381184151607087,
+     "outsideArea": 242.80435504508205
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501375000_B0",
+   "localId": "Bos_0501375000_B0",
+   "factualArea": 120.37570000003325,
+   "ringVertices": 24,
+   "centroid": {
+    "x": -1136.0541433167361,
+    "z": 526.0269730795095
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0501377000_B0",
+   "localId": "Bos_0501377000_B0",
+   "factualArea": 342.4316499999841,
+   "ringVertices": 23,
+   "centroid": {
+    "x": -1180.7532413378635,
+    "z": 498.130909249583
+   },
+   "edges": [
+    {
+     "plotId": 4700,
+     "parcelArea": 157.37628571590176,
+     "interArea": 49.02593898633495,
+     "ofFactual": 0.14316999899494462,
+     "ofParcel": 0.31152049855108016,
+     "outsideArea": 108.35034672956681
+    },
+    {
+     "plotId": 4692,
+     "parcelArea": 164.66200000216486,
+     "interArea": 50.390499067201745,
+     "ofFactual": 0.1471549112566087,
+     "ofParcel": 0.30602384925811205,
+     "outsideArea": 114.27150093496311
+    },
+    {
+     "plotId": 4706,
+     "parcelArea": 281.71428571641445,
+     "interArea": 84.72612367663532,
+     "ofFactual": 0.24742492020419043,
+     "ofParcel": 0.30075196031032747,
+     "outsideArea": 196.98816203977913
+    },
+    {
+     "plotId": 4710,
+     "parcelArea": 281.71428571641445,
+     "interArea": 65.74890116718598,
+     "ofFactual": 0.19200591174089496,
+     "ofParcel": 0.2333885944050832,
+     "outsideArea": 215.96538454922847
+    },
+    {
+     "plotId": 4682,
+     "parcelArea": 289.00000000180444,
+     "interArea": 15.749881068593822,
+     "ofFactual": 0.04599423291799854,
+     "ofParcel": 0.054497858368496487,
+     "outsideArea": 273.2501189332106
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501382000_B0",
+   "localId": "Bos_0501382000_B0",
+   "factualArea": 438.56715000013355,
+   "ringVertices": 23,
+   "centroid": {
+    "x": -1138.6358863098033,
+    "z": 483.4175814900354
+   },
+   "edges": [
+    {
+     "plotId": 4567,
+     "parcelArea": 164.66199999308446,
+     "interArea": 69.32455403893255,
+     "ofFactual": 0.15807055781289464,
+     "ofParcel": 0.4210112475364326,
+     "outsideArea": 95.33744595415192
+    },
+    {
+     "plotId": 4576,
+     "parcelArea": 281.71428571641445,
+     "interArea": 111.62770297983661,
+     "ofFactual": 0.25452819022081935,
+     "ofParcel": 0.39624438177127375,
+     "outsideArea": 170.08658273657784
+    },
+    {
+     "plotId": 4579,
+     "parcelArea": 281.71428571635624,
+     "interArea": 75.81321389583172,
+     "ofFactual": 0.17286569205151056,
+     "ofParcel": 0.269113842427445,
+     "outsideArea": 205.90107182052452
+    },
+    {
+     "plotId": 4573,
+     "parcelArea": 157.37628571671667,
+     "interArea": 40.2183952954947,
+     "ofFactual": 0.09170407609298246,
+     "ofParcel": 0.2555556265185299,
+     "outsideArea": 117.15789042122196
+    },
+    {
+     "plotId": 4564,
+     "parcelArea": 288.9999999933352,
+     "interArea": 22.014957698818762,
+     "ofFactual": 0.05019746166308183,
+     "ofParcel": 0.0761763242191227,
+     "outsideArea": 266.98504229451646
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501382100_B0",
+   "localId": "Bos_0501382100_B0",
+   "factualArea": 169.1331000000646,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1129.923242387053,
+    "z": 473.16570872185247
+   },
+   "edges": [
+    {
+     "plotId": 4567,
+     "parcelArea": 164.66199999308446,
+     "interArea": 39.42273112645489,
+     "ofFactual": 0.233087025108863,
+     "ofParcel": 0.23941608342003973,
+     "outsideArea": 125.23926886662957
+    },
+    {
+     "plotId": 4573,
+     "parcelArea": 157.37628571671667,
+     "interArea": 26.82791076169815,
+     "ofFactual": 0.1586201090247143,
+     "ofParcel": 0.17046984327733733,
+     "outsideArea": 130.54837495501852
+    },
+    {
+     "plotId": 4564,
+     "parcelArea": 288.9999999933352,
+     "interArea": 27.219134619255783,
+     "ofFactual": 0.16093322134606053,
+     "ofParcel": 0.09418385681620588,
+     "outsideArea": 261.78086537407944
+    },
+    {
+     "plotId": 4576,
+     "parcelArea": 281.71428571641445,
+     "interArea": 16.87679290235974,
+     "ofFactual": 0.09978409254222441,
+     "ofParcel": 0.05990747987607783,
+     "outsideArea": 264.8374928140547
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501382200_B0",
+   "localId": "Bos_0501382200_B0",
+   "factualArea": 188.27730000016163,
+   "ringVertices": 23,
+   "centroid": {
+    "x": -1121.3121526985556,
+    "z": 469.8664951110788
+   },
+   "edges": [
+    {
+     "plotId": 4567,
+     "parcelArea": 164.66199999308446,
+     "interArea": 43.88374136397033,
+     "ofFactual": 0.23308036265621324,
+     "ofParcel": 0.2665080064970265,
+     "outsideArea": 120.77825862911413
+    },
+    {
+     "plotId": 4573,
+     "parcelArea": 157.37628571671667,
+     "interArea": 28.884065974503756,
+     "ofFactual": 0.1534123655612172,
+     "ofParcel": 0.18353505957369065,
+     "outsideArea": 128.4922197422129
+    },
+    {
+     "plotId": 4564,
+     "parcelArea": 288.9999999933352,
+     "interArea": 33.19781055630301,
+     "ofFactual": 0.17632402077294773,
+     "ofParcel": 0.11487131680646576,
+     "outsideArea": 255.8021894370322
+    },
+    {
+     "plotId": 4576,
+     "parcelArea": 281.71428571641445,
+     "interArea": 15.287033711269032,
+     "ofFactual": 0.08119424758723387,
+     "ofParcel": 0.0542643184472995,
+     "outsideArea": 266.4272520051454
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501382300_B0",
+   "localId": "Bos_0501382300_B0",
+   "factualArea": 147.2704500000109,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1113.8945372939904,
+    "z": 468.4656860343176
+   },
+   "edges": [
+    {
+     "plotId": 4567,
+     "parcelArea": 164.66199999308446,
+     "interArea": 12.03097346361028,
+     "ofFactual": 0.08169305834000908,
+     "ofParcel": 0.07306466254579418,
+     "outsideArea": 152.63102652947418
+    },
+    {
+     "plotId": 4573,
+     "parcelArea": 157.37628571671667,
+     "interArea": 10.05457270849729,
+     "ofFactual": 0.06827284569644858,
+     "ofParcel": 0.06388874068737335,
+     "outsideArea": 147.32171300821938
+    },
+    {
+     "plotId": 4564,
+     "parcelArea": 288.9999999933352,
+     "interArea": 6.8326461036049295,
+     "ofFactual": 0.046395227987722075,
+     "ofParcel": 0.02364237406146194,
+     "outsideArea": 282.1673538897303
+    },
+    {
+     "plotId": 4576,
+     "parcelArea": 281.71428571641445,
+     "interArea": 6.163403317390475,
+     "ofFactual": 0.04185091657824105,
+     "ofParcel": 0.021878206501727848,
+     "outsideArea": 275.550882399024
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501382400_B0",
+   "localId": "Bos_0501382400_B0",
+   "factualArea": 140.4060500000778,
+   "ringVertices": 26,
+   "centroid": {
+    "x": -1107.8828129127667,
+    "z": 466.3883869557065
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0501383000_B0",
+   "localId": "Bos_0501383000_B0",
+   "factualArea": 2303.9432000001543,
+   "ringVertices": 93,
+   "centroid": {
+    "x": -1067.3007135382534,
+    "z": 456.71184000071815
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0501387000_B0",
+   "localId": "Bos_0501387000_B0",
+   "factualArea": 1555.8121500000125,
+   "ringVertices": 50,
+   "centroid": {
+    "x": -1019.6252971641412,
+    "z": 574.6215464776162
+   },
+   "edges": [
+    {
+     "plotId": 4307,
+     "parcelArea": 163.4826086963294,
+     "interArea": 36.05878311081324,
+     "ofFactual": 0.02317682318576375,
+     "ofParcel": 0.22056647736636495,
+     "outsideArea": 127.42382558551617
+    },
+    {
+     "plotId": 4265,
+     "parcelArea": 163.48260869644582,
+     "interArea": 34.66589352302253,
+     "ofFactual": 0.02228154184489577,
+     "ofParcel": 0.21204636872041902,
+     "outsideArea": 128.8167151734233
+    },
+    {
+     "plotId": 4231,
+     "parcelArea": 163.48260869667865,
+     "interArea": 34.143824900034815,
+     "ofFactual": 0.021945981653398543,
+     "ofParcel": 0.20885294877685964,
+     "outsideArea": 129.33878379664384
+    },
+    {
+     "plotId": 4158,
+     "parcelArea": 163.48260869691148,
+     "interArea": 28.70930421515368,
+     "ofFactual": 0.01845293740324206,
+     "ofParcel": 0.17561075422021974,
+     "outsideArea": 134.7733044817578
+    },
+    {
+     "plotId": 4191,
+     "parcelArea": 163.48260869673686,
+     "interArea": 27.770343409792986,
+     "ofFactual": 0.017849419295120406,
+     "ofParcel": 0.16986726374857075,
+     "outsideArea": 135.71226528694388
+    },
+    {
+     "plotId": 4121,
+     "parcelArea": 163.4826086970279,
+     "interArea": 26.47444064420415,
+     "ofFactual": 0.0170164763427281,
+     "ofParcel": 0.16194040977941315,
+     "outsideArea": 137.00816805282375
+    },
+    {
+     "plotId": 4344,
+     "parcelArea": 163.4826086962712,
+     "interArea": 20.916384873678908,
+     "ofFactual": 0.013444029778067192,
+     "ofParcel": 0.12794256857338723,
+     "outsideArea": 142.5662238225923
+    },
+    {
+     "plotId": 4087,
+     "parcelArea": 163.48260869714431,
+     "interArea": 6.264031244383659,
+     "ofFactual": 0.004026213090303742,
+     "ofParcel": 0.038316193351110125,
+     "outsideArea": 157.21857745276066
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501389000_B0",
+   "localId": "Bos_0501389000_B0",
+   "factualArea": 200.2520000002114,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1051.2313415509193,
+    "z": 587.3282065154114
+   },
+   "edges": [
+    {
+     "plotId": 4384,
+     "parcelArea": 163.482608696213,
+     "interArea": 25.14067344000796,
+     "ofFactual": 0.1255451802727634,
+     "ofParcel": 0.153781944394617,
+     "outsideArea": 138.34193525620503
+    },
+    {
+     "plotId": 4344,
+     "parcelArea": 163.4826086962712,
+     "interArea": 20.12861080194125,
+     "ofFactual": 0.10051640334138985,
+     "ofParcel": 0.12312386597241981,
+     "outsideArea": 143.35399789432995
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501390000_B0",
+   "localId": "Bos_0501390000_B0",
+   "factualArea": 139.33740000001853,
+   "ringVertices": 8,
+   "centroid": {
+    "x": -1057.0468694645283,
+    "z": 592.3247555764835
+   },
+   "edges": [
+    {
+     "plotId": 4384,
+     "parcelArea": 163.482608696213,
+     "interArea": 21.44091492681764,
+     "ofFactual": 0.153877673379974,
+     "ofParcel": 0.13115104473687245,
+     "outsideArea": 142.04169376939535
+    },
+    {
+     "plotId": 4426,
+     "parcelArea": 163.48260869603837,
+     "interArea": 14.640841657004785,
+     "ofFactual": 0.10507474416059749,
+     "ofParcel": 0.08955595811555932,
+     "outsideArea": 148.84176703903358
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501391000_B0",
+   "localId": "Bos_0501391000_B0",
+   "factualArea": 210.91534999996657,
+   "ringVertices": 8,
+   "centroid": {
+    "x": -1065.371220282676,
+    "z": 590.9584547458188
+   },
+   "edges": [
+    {
+     "plotId": 4426,
+     "parcelArea": 163.48260869603837,
+     "interArea": 27.984850851004012,
+     "ofFactual": 0.13268285523556464,
+     "ofParcel": 0.171179375434582,
+     "outsideArea": 135.49775784503436
+    },
+    {
+     "plotId": 4467,
+     "parcelArea": 163.48260869586375,
+     "interArea": 11.92608095036121,
+     "ofFactual": 0.05654439541912479,
+     "ofParcel": 0.07295015075608438,
+     "outsideArea": 151.55652774550254
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501392000_B0",
+   "localId": "Bos_0501392000_B0",
+   "factualArea": 226.35275000002002,
+   "ringVertices": 8,
+   "centroid": {
+    "x": -1071.7771241413616,
+    "z": 595.1856892129498
+   },
+   "edges": [
+    {
+     "plotId": 4467,
+     "parcelArea": 163.48260869586375,
+     "interArea": 54.176222785841674,
+     "ofFactual": 0.23934422173283462,
+     "ofParcel": 0.33138829394769975,
+     "outsideArea": 109.30638591002207
+    },
+    {
+     "plotId": 4663,
+     "parcelArea": 157.37628571374808,
+     "interArea": 15.364981102000456,
+     "ofFactual": 0.06788069109829281,
+     "ofParcel": 0.09763212438466008,
+     "outsideArea": 142.01130461174762
+    },
+    {
+     "plotId": 4672,
+     "parcelArea": 281.7142857137369,
+     "interArea": 25.975367879727855,
+     "ofFactual": 0.11475614005010126,
+     "ofParcel": 0.09220465271726633,
+     "outsideArea": 255.73891783400904
+    },
+    {
+     "plotId": 4686,
+     "parcelArea": 281.7142857137369,
+     "interArea": 24.013403175282292,
+     "ofFactual": 0.10608840924300751,
+     "ofParcel": 0.08524027496313566,
+     "outsideArea": 257.7008825384546
+    },
+    {
+     "plotId": 4704,
+     "parcelArea": 281.7142857136787,
+     "interArea": 21.563752607093193,
+     "ofFactual": 0.0952661392763785,
+     "ofParcel": 0.0765447607758507,
+     "outsideArea": 260.1505331065855
+    },
+    {
+     "plotId": 4507,
+     "parcelArea": 163.48260869580554,
+     "interArea": 10.625367922883015,
+     "ofFactual": 0.046941633900547154,
+     "ofParcel": 0.0649938730954177,
+     "outsideArea": 152.85724077292252
+    },
+    {
+     "plotId": 4716,
+     "parcelArea": 281.7142857137369,
+     "interArea": 2.1556165195652284,
+     "ofFactual": 0.009523261897922767,
+     "ofParcel": 0.007651782777376265,
+     "outsideArea": 279.55866919417167
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501393000_B0",
+   "localId": "Bos_0501393000_B0",
+   "factualArea": 205.7101000000257,
+   "ringVertices": 6,
+   "centroid": {
+    "x": -1079.2501211980325,
+    "z": 596.0826225531042
+   },
+   "edges": [
+    {
+     "plotId": 4507,
+     "parcelArea": 163.48260869580554,
+     "interArea": 39.851406569068786,
+     "ofFactual": 0.1937260570534155,
+     "ofParcel": 0.2437654187621931,
+     "outsideArea": 123.63120212673675
+    },
+    {
+     "plotId": 4686,
+     "parcelArea": 281.7142857137369,
+     "interArea": 61.59572742029559,
+     "ofFactual": 0.29942976752375255,
+     "ofParcel": 0.21864609124893972,
+     "outsideArea": 220.1185582934413
+    },
+    {
+     "plotId": 4672,
+     "parcelArea": 281.7142857137369,
+     "interArea": 61.58718542853603,
+     "ofFactual": 0.29938824310779266,
+     "ofParcel": 0.2186157697771765,
+     "outsideArea": 220.12710028520087
+    },
+    {
+     "plotId": 4663,
+     "parcelArea": 157.37628571374808,
+     "interArea": 34.40121902897954,
+     "ofFactual": 0.1672315507550443,
+     "ofParcel": 0.21859213967949379,
+     "outsideArea": 122.97506668476854
+    },
+    {
+     "plotId": 4704,
+     "parcelArea": 281.7142857136787,
+     "interArea": 40.75460976787144,
+     "ofFactual": 0.19811671749644938,
+     "ofParcel": 0.14466646469356734,
+     "outsideArea": 240.95967594580725
+    },
+    {
+     "plotId": 4558,
+     "parcelArea": 163.48260869563092,
+     "interArea": 2.4432004893315025,
+     "ofFactual": 0.011876910707501465,
+     "ofParcel": 0.014944711910489579,
+     "outsideArea": 161.0394082062994
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501394000_B0",
+   "localId": "Bos_0501394000_B0",
+   "factualArea": 193.49454999994487,
+   "ringVertices": 5,
+   "centroid": {
+    "x": -1085.930334811423,
+    "z": 598.6997849793611
+   },
+   "edges": [
+    {
+     "plotId": 4558,
+     "parcelArea": 163.48260869563092,
+     "interArea": 42.88928954617586,
+     "ofFactual": 0.22165631820735043,
+     "ofParcel": 0.2623477193591056,
+     "outsideArea": 120.59331914945506
+    },
+    {
+     "plotId": 4663,
+     "parcelArea": 157.37628571374808,
+     "interArea": 32.02500987210078,
+     "ofFactual": 0.16550858859905826,
+     "ofParcel": 0.2034932374141242,
+     "outsideArea": 125.3512758416473
+    },
+    {
+     "plotId": 4672,
+     "parcelArea": 281.7142857137369,
+     "interArea": 57.32509296678472,
+     "ofFactual": 0.2962620547545192,
+     "ofParcel": 0.20348663832062616,
+     "outsideArea": 224.38919274695218
+    },
+    {
+     "plotId": 4686,
+     "parcelArea": 281.7142857137369,
+     "interArea": 57.32270747527946,
+     "ofFactual": 0.29624972628580903,
+     "ofParcel": 0.20347817055159123,
+     "outsideArea": 224.39157823845744
+    },
+    {
+     "plotId": 4704,
+     "parcelArea": 281.7142857136787,
+     "interArea": 41.45625093282433,
+     "ofFactual": 0.2142502253052406,
+     "ofParcel": 0.1471570773480708,
+     "outsideArea": 240.25803478085436
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501395000_B0",
+   "localId": "Bos_0501395000_B0",
+   "factualArea": 213.86804999999003,
+   "ringVertices": 7,
+   "centroid": {
+    "x": -1092.6558758044478,
+    "z": 601.386557634499
+   },
+   "edges": [
+    {
+     "plotId": 4612,
+     "parcelArea": 163.4826086955727,
+     "interArea": 45.02351919742068,
+     "ofFactual": 0.21052008094440838,
+     "ofParcel": 0.27540250034338953,
+     "outsideArea": 118.45908949815203
+    },
+    {
+     "plotId": 4686,
+     "parcelArea": 281.7142857137369,
+     "interArea": 62.819448786904104,
+     "ofFactual": 0.2937299366918389,
+     "ofParcel": 0.22298992977139218,
+     "outsideArea": 218.8948369268328
+    },
+    {
+     "plotId": 4672,
+     "parcelArea": 281.7142857137369,
+     "interArea": 62.49533563503064,
+     "ofFactual": 0.29221445482405417,
+     "ofParcel": 0.2218394266967884,
+     "outsideArea": 219.21895007870626
+    },
+    {
+     "plotId": 4663,
+     "parcelArea": 157.37628571374808,
+     "interArea": 34.770970459794626,
+     "ofFactual": 0.16258141625079692,
+     "ofParcel": 0.22094161329388334,
+     "outsideArea": 122.60531525395345
+    },
+    {
+     "plotId": 4704,
+     "parcelArea": 281.7142857136787,
+     "interArea": 49.62468952109339,
+     "ofFactual": 0.23203414217829965,
+     "ofParcel": 0.17615254901034594,
+     "outsideArea": 232.0895961925853
+    },
+    {
+     "plotId": 4558,
+     "parcelArea": 163.48260869563092,
+     "interArea": 6.1756066720117815,
+     "ofFactual": 0.02887577958471155,
+     "ofParcel": 0.03777531274601459,
+     "outsideArea": 157.30700202361913
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501397000_B0",
+   "localId": "Bos_0501397000_B0",
+   "factualArea": 1272.4323000001023,
+   "ringVertices": 31,
+   "centroid": {
+    "x": -1118.6961824712623,
+    "z": 611.2240427084512
+   },
+   "edges": [
+    {
+     "plotId": 4823,
+     "parcelArea": 281.7142857138533,
+     "interArea": 183.89763403055258,
+     "ofFactual": 0.14452449378292095,
+     "ofParcel": 0.6527806481824766,
+     "outsideArea": 97.81665168330073
+    },
+    {
+     "plotId": 4834,
+     "parcelArea": 281.7142857139115,
+     "interArea": 181.9467422097223,
+     "ofFactual": 0.14299129486866033,
+     "ofParcel": 0.6458555757960182,
+     "outsideArea": 99.76754350418923
+    },
+    {
+     "plotId": 4840,
+     "parcelArea": 281.71428571396973,
+     "interArea": 140.1118315605563,
+     "ofFactual": 0.11011338800543263,
+     "ofParcel": 0.4973543716658186,
+     "outsideArea": 141.60245415341342
+    },
+    {
+     "plotId": 4811,
+     "parcelArea": 157.3762857139227,
+     "interArea": 58.34342473355355,
+     "ofFactual": 0.045851889120976305,
+     "ofParcel": 0.37072564312268586,
+     "outsideArea": 99.03286098036915
+    },
+    {
+     "plotId": 4865,
+     "parcelArea": 153.66418739093933,
+     "interArea": 53.46158915665001,
+     "ofFactual": 0.0420152719768633,
+     "ofParcel": 0.34791183335800674,
+     "outsideArea": 100.20259823428933
+    },
+    {
+     "plotId": 4659,
+     "parcelArea": 153.66418739280198,
+     "interArea": 52.20264861691976,
+     "ofFactual": 0.04102587510307273,
+     "ofParcel": 0.3397190295451044,
+     "outsideArea": 101.46153877588222
+    },
+    {
+     "plotId": 4913,
+     "parcelArea": 163.4826086955145,
+     "interArea": 51.80123665329302,
+     "ofFactual": 0.04071040687452594,
+     "ofParcel": 0.3168608396124419,
+     "outsideArea": 111.68137204222148
+    },
+    {
+     "plotId": 4686,
+     "parcelArea": 281.7142857137369,
+     "interArea": 75.96299885597546,
+     "ofFactual": 0.05969904949439695,
+     "ofParcel": 0.26964553346494124,
+     "outsideArea": 205.75128685776144
+    },
+    {
+     "plotId": 4672,
+     "parcelArea": 281.7142857137369,
+     "interArea": 74.33130380354123,
+     "ofFactual": 0.05841670618038795,
+     "ofParcel": 0.26385351248772937,
+     "outsideArea": 207.38298191019567
+    },
+    {
+     "plotId": 4980,
+     "parcelArea": 163.4826086955727,
+     "interArea": 39.39490903541446,
+     "ofFactual": 0.030960318309595954,
+     "ofParcel": 0.24097308790058056,
+     "outsideArea": 124.08769966015825
+    },
+    {
+     "plotId": 4704,
+     "parcelArea": 281.7142857136787,
+     "interArea": 59.843662201659754,
+     "ofFactual": 0.04703092038897075,
+     "ofParcel": 0.212426792805538,
+     "outsideArea": 221.87062351201894
+    },
+    {
+     "plotId": 4663,
+     "parcelArea": 157.37628571374808,
+     "interArea": 32.08064406737685,
+     "ofFactual": 0.02521206359456159,
+     "ofParcel": 0.203846748078223,
+     "outsideArea": 125.29564164637122
+    },
+    {
+     "plotId": 4612,
+     "parcelArea": 163.4826086955727,
+     "interArea": 9.578551752434578,
+     "ofFactual": 0.007527749611852676,
+     "ofParcel": 0.05859064660676641,
+     "outsideArea": 153.90405694313813
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501400000_B0",
+   "localId": "Bos_0501400000_B0",
+   "factualArea": 212.2521499999566,
+   "ringVertices": 20,
+   "centroid": {
+    "x": -1104.1684657109383,
+    "z": 570.1448253763642
+   },
+   "edges": [
+    {
+     "plotId": 4639,
+     "parcelArea": 276.85714285535505,
+     "interArea": 60.94464350765338,
+     "ofFactual": 0.28713322106591543,
+     "ofParcel": 0.22013029130873504,
+     "outsideArea": 215.91249934770167
+    },
+    {
+     "plotId": 4649,
+     "parcelArea": 276.85714285529684,
+     "interArea": 60.867704283155035,
+     "ofFactual": 0.2867707313361371,
+     "ofParcel": 0.2198523890531095,
+     "outsideArea": 215.9894385721418
+    },
+    {
+     "plotId": 4654,
+     "parcelArea": 152.51914285530802,
+     "interArea": 33.399953790940344,
+     "ofFactual": 0.15735979018797772,
+     "ofParcel": 0.21898860146772683,
+     "outsideArea": 119.11918906436767
+    },
+    {
+     "plotId": 4630,
+     "parcelArea": 276.85714285535505,
+     "interArea": 43.08649006439373,
+     "ofFactual": 0.2029967190645774,
+     "ofParcel": 0.15562715709633834,
+     "outsideArea": 233.77065279096132
+    },
+    {
+     "plotId": 4515,
+     "parcelArea": 179.17826086789137,
+     "interArea": 27.14137935283361,
+     "ofFactual": 0.12787328351132915,
+     "ofParcel": 0.15147696613064587,
+     "outsideArea": 152.03688151505776
+    },
+    {
+     "plotId": 4565,
+     "parcelArea": 168.4171917376225,
+     "interArea": 0.06351494422415271,
+     "ofFactual": 0.00029924287798340654,
+     "ofParcel": 0.0003771286266493672,
+     "outsideArea": 168.35367679339834
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501401000_B0",
+   "localId": "Bos_0501401000_B0",
+   "factualArea": 137.77469999995083,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1098.6248964712158,
+    "z": 562.9068383008117
+   },
+   "edges": [
+    {
+     "plotId": 4639,
+     "parcelArea": 276.85714285535505,
+     "interArea": 63.30819550092565,
+     "ofFactual": 0.45950523209956723,
+     "ofParcel": 0.22866737281183758,
+     "outsideArea": 213.5489473544294
+    },
+    {
+     "plotId": 4630,
+     "parcelArea": 276.85714285535505,
+     "interArea": 43.13313918863423,
+     "ofFactual": 0.31307010059647833,
+     "ofParcel": 0.15579565238513382,
+     "outsideArea": 233.72400366672082
+    },
+    {
+     "plotId": 4472,
+     "parcelArea": 179.17826086794958,
+     "interArea": 24.384358919458464,
+     "ofFactual": 0.1769872038877034,
+     "ofParcel": 0.13608994082953624,
+     "outsideArea": 154.7939019484911
+    },
+    {
+     "plotId": 4649,
+     "parcelArea": 276.85714285529684,
+     "interArea": 31.33336531056557,
+     "ofFactual": 0.22742466730522187,
+     "ofParcel": 0.11317521010083666,
+     "outsideArea": 245.52377754473127
+    },
+    {
+     "plotId": 4515,
+     "parcelArea": 179.17826086789137,
+     "interArea": 2.0929268081090413,
+     "ofFactual": 0.0151909371467315,
+     "ofParcel": 0.011680696073125534,
+     "outsideArea": 177.08533405978233
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501402000_B0",
+   "localId": "Bos_0501402000_B0",
+   "factualArea": 178.57880000007572,
+   "ringVertices": 23,
+   "centroid": {
+    "x": -1090.5407155700314,
+    "z": 562.8039586463751
+   },
+   "edges": [
+    {
+     "plotId": 4649,
+     "parcelArea": 276.85714285529684,
+     "interArea": 63.29610434168717,
+     "ofFactual": 0.3544435528834348,
+     "ofParcel": 0.2286236998940993,
+     "outsideArea": 213.56103851360967
+    },
+    {
+     "plotId": 4639,
+     "parcelArea": 276.85714285535505,
+     "interArea": 62.75198337412439,
+     "ofFactual": 0.3513966012432483,
+     "ofParcel": 0.22665835068199552,
+     "outsideArea": 214.10515948123066
+    },
+    {
+     "plotId": 4630,
+     "parcelArea": 276.85714285535505,
+     "interArea": 44.473589309549425,
+     "ofFactual": 0.2490418196870545,
+     "ofParcel": 0.16063731948857393,
+     "outsideArea": 232.38355354580563
+    },
+    {
+     "plotId": 4434,
+     "parcelArea": 179.178260868066,
+     "interArea": 23.966562839399558,
+     "ofFactual": 0.1342072118268764,
+     "ofParcel": 0.13375820662221302,
+     "outsideArea": 155.21169802866643
+    },
+    {
+     "plotId": 4654,
+     "parcelArea": 152.51914285530802,
+     "interArea": 8.0571229744819,
+     "ofFactual": 0.04511802618495859,
+     "ofParcel": 0.05282696206944683,
+     "outsideArea": 144.46201988082612
+    },
+    {
+     "plotId": 4472,
+     "parcelArea": 179.17826086794958,
+     "interArea": 4.2715362384333275,
+     "ofFactual": 0.02391961553348727,
+     "ofParcel": 0.023839589790311422,
+     "outsideArea": 174.90672462951625
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501403000_B0",
+   "localId": "Bos_0501403000_B0",
+   "factualArea": 159.45254999998724,
+   "ringVertices": 18,
+   "centroid": {
+    "x": -1083.653785663332,
+    "z": 560.289383601383
+   },
+   "edges": [
+    {
+     "plotId": 4390,
+     "parcelArea": 179.17826086800778,
+     "interArea": 19.094376066175755,
+     "ofFactual": 0.1197495810896551,
+     "ofParcel": 0.10656636566107584,
+     "outsideArea": 160.08388480183203
+    },
+    {
+     "plotId": 4639,
+     "parcelArea": 276.85714285535505,
+     "interArea": 24.690176314499695,
+     "ofFactual": 0.15484340836506955,
+     "ofParcel": 0.08918020340692152,
+     "outsideArea": 252.16696654085536
+    },
+    {
+     "plotId": 4649,
+     "parcelArea": 276.85714285529684,
+     "interArea": 22.842248664062936,
+     "ofFactual": 0.14325420737432398,
+     "ofParcel": 0.0825055421308084,
+     "outsideArea": 254.0148941912339
+    },
+    {
+     "plotId": 4630,
+     "parcelArea": 276.85714285535505,
+     "interArea": 20.236535146541428,
+     "ofFactual": 0.12691258400410058,
+     "ofParcel": 0.07309378019953805,
+     "outsideArea": 256.6206077088136
+    },
+    {
+     "plotId": 4434,
+     "parcelArea": 179.178260868066,
+     "interArea": 7.14516508782981,
+     "ofFactual": 0.04481060408146738,
+     "ofParcel": 0.03987741064799706,
+     "outsideArea": 172.03309578023618
+    },
+    {
+     "plotId": 4654,
+     "parcelArea": 152.51914285530802,
+     "interArea": 2.3504456587834284,
+     "ofFactual": 0.014740721667879356,
+     "ofParcel": 0.015410823944986702,
+     "outsideArea": 150.1686971965246
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501404000_B0",
+   "localId": "Bos_0501404000_B0",
+   "factualArea": 151.30479999998352,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -1076.8380197720412,
+    "z": 557.2696588938506
+   },
+   "edges": [
+    {
+     "plotId": 4349,
+     "parcelArea": 179.178260868066,
+     "interArea": 14.809831514838152,
+     "ofFactual": 0.09788077783943248,
+     "ofParcel": 0.082654176031673,
+     "outsideArea": 164.36842935322784
+    },
+    {
+     "plotId": 4390,
+     "parcelArea": 179.17826086800778,
+     "interArea": 13.865641343756579,
+     "ofFactual": 0.09164045915105198,
+     "ofParcel": 0.07738461840507954,
+     "outsideArea": 165.3126195242512
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501405000_B0",
+   "localId": "Bos_0501405000_B0",
+   "factualArea": 152.922750000027,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1071.0931018373205,
+    "z": 552.5118635291162
+   },
+   "edges": [
+    {
+     "plotId": 4349,
+     "parcelArea": 179.178260868066,
+     "interArea": 24.16734820487909,
+     "ofFactual": 0.15803631706122745,
+     "ofParcel": 0.1348787966117954,
+     "outsideArea": 155.0109126631869
+    },
+    {
+     "plotId": 4310,
+     "parcelArea": 179.1782608682406,
+     "interArea": 19.089080122706946,
+     "ofFactual": 0.12482825559116334,
+     "ofParcel": 0.10653680881936994,
+     "outsideArea": 160.08918074553367
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501406000_B0",
+   "localId": "Bos_0501406000_B0",
+   "factualArea": 133.86959999997634,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1064.0504407548428,
+    "z": 550.3499807574138
+   },
+   "edges": [
+    {
+     "plotId": 4310,
+     "parcelArea": 179.1782608682406,
+     "interArea": 25.003426449664403,
+     "ofFactual": 0.18677449136823313,
+     "ofParcel": 0.13954497788127748,
+     "outsideArea": 154.1748344185762
+    },
+    {
+     "plotId": 4268,
+     "parcelArea": 179.1782608682406,
+     "interArea": 9.906215762894135,
+     "ofFactual": 0.07399899426677815,
+     "ofParcel": 0.05528692886565467,
+     "outsideArea": 169.27204510534648
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501407000_B0",
+   "localId": "Bos_0501407000_B0",
+   "factualArea": 134.0763000000734,
+   "ringVertices": 6,
+   "centroid": {
+    "x": -1056.975235685255,
+    "z": 547.8211685658634
+   },
+   "edges": [
+    {
+     "plotId": 4268,
+     "parcelArea": 179.1782608682406,
+     "interArea": 25.67969369259663,
+     "ofFactual": 0.19153044716018097,
+     "ofParcel": 0.14331924848562005,
+     "outsideArea": 153.49856717564398
+    },
+    {
+     "plotId": 4233,
+     "parcelArea": 179.17826086841524,
+     "interArea": 7.896982712321915,
+     "ofFactual": 0.05889916944543959,
+     "ofParcel": 0.04407333051480667,
+     "outsideArea": 171.28127815609332
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0501409000_B0",
+   "localId": "Bos_0501409000_B0",
+   "factualArea": 59.09545000013895,
+   "ringVertices": 5,
+   "centroid": {
+    "x": -1041.795555314073,
+    "z": 547.0089821941972
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503126000_B0",
+   "localId": "Bos_0503126000_B0",
+   "factualArea": 106.20849999994971,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1365.9168652589528,
+    "z": 657.0109728805035
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503127000_B0",
+   "localId": "Bos_0503127000_B0",
+   "factualArea": 88.2795000001206,
+   "ringVertices": 17,
+   "centroid": {
+    "x": -1360.427962748366,
+    "z": 672.7772498991598
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503129000_B0",
+   "localId": "Bos_0503129000_B0",
+   "factualArea": 269.1560499999323,
+   "ringVertices": 7,
+   "centroid": {
+    "x": -1368.6224327548973,
+    "z": 703.1663097380897
+   },
+   "edges": [
+    {
+     "plotId": 6678,
+     "parcelArea": 163.48260869586375,
+     "interArea": 80.25744042865699,
+     "ofFactual": 0.2981818184234654,
+     "ofParcel": 0.4909234142327922,
+     "outsideArea": 83.22516826720675
+    },
+    {
+     "plotId": 6717,
+     "parcelArea": 163.48260869586375,
+     "interArea": 69.31479234091239,
+     "ofFactual": 0.2575264139183564,
+     "ofParcel": 0.4239887832342017,
+     "outsideArea": 94.16781635495136
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503130000_B0",
+   "localId": "Bos_0503130000_B0",
+   "factualArea": 460.23010000004433,
+   "ringVertices": 7,
+   "centroid": {
+    "x": -1381.3400692522703,
+    "z": 706.4325593820472
+   },
+   "edges": [
+    {
+     "plotId": 6757,
+     "parcelArea": 163.48260869592195,
+     "interArea": 117.84017751913052,
+     "ofFactual": 0.25604622018229395,
+     "ofParcel": 0.7208117025971462,
+     "outsideArea": 45.64243117679143
+    },
+    {
+     "plotId": 6717,
+     "parcelArea": 163.48260869586375,
+     "interArea": 55.56053164601326,
+     "ofFactual": 0.1207233765153733,
+     "ofParcel": 0.33985591549603766,
+     "outsideArea": 107.92207704985049
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503160000_B0",
+   "localId": "Bos_0503160000_B0",
+   "factualArea": 103.95549999992363,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1383.6329786338563,
+    "z": 666.2213004893198
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503161000_B0",
+   "localId": "Bos_0503161000_B0",
+   "factualArea": 95.94025000010151,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1378.3276909147482,
+    "z": 662.7485816968892
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503162000_B0",
+   "localId": "Bos_0503162000_B0",
+   "factualArea": 93.28535000002012,
+   "ringVertices": 11,
+   "centroid": {
+    "x": -1372.1647263083146,
+    "z": 660.6986266278176
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503164000_B0",
+   "localId": "Bos_0503164000_B0",
+   "factualArea": 89.88265000004321,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -1386.8358512013222,
+    "z": 607.0711420909181
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503165000_B0",
+   "localId": "Bos_0503165000_B0",
+   "factualArea": 92.88764999998966,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -1384.4579201864399,
+    "z": 613.6735799610458
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503166000_B0",
+   "localId": "Bos_0503166000_B0",
+   "factualArea": 92.41194999986328,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -1381.7582293061616,
+    "z": 620.1535180247581
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503202000_B0",
+   "localId": "Bos_0503202000_B0",
+   "factualArea": 649.1344500000705,
+   "ringVertices": 10,
+   "centroid": {
+    "x": -1167.362645996999,
+    "z": 629.9341154062679
+   },
+   "edges": [
+    {
+     "plotId": 5249,
+     "parcelArea": 163.48260869563092,
+     "interArea": 94.13472660176922,
+     "ofFactual": 0.1450157615294628,
+     "ofParcel": 0.575808811425487,
+     "outsideArea": 69.3478820938617
+    },
+    {
+     "plotId": 5173,
+     "parcelArea": 163.48260869563092,
+     "interArea": 92.06550428963965,
+     "ofFactual": 0.1418280978457231,
+     "ofParcel": 0.5631516711422535,
+     "outsideArea": 71.41710440599127
+    },
+    {
+     "plotId": 5319,
+     "parcelArea": 163.48260869563092,
+     "interArea": 35.23540637653787,
+     "ofFactual": 0.054280598382252,
+     "ofParcel": 0.2155299983140013,
+     "outsideArea": 128.24720231909305
+    },
+    {
+     "plotId": 5088,
+     "parcelArea": 163.4826086955145,
+     "interArea": 21.10543548478745,
+     "ofFactual": 0.032513195817577015,
+     "ofParcel": 0.12909896442927585,
+     "outsideArea": 142.37717321072705
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503203000_B0",
+   "localId": "Bos_0503203000_B0",
+   "factualArea": 240.58320000005187,
+   "ringVertices": 7,
+   "centroid": {
+    "x": -1181.0874667633216,
+    "z": 635.7960208020464
+   },
+   "edges": [
+    {
+     "plotId": 5319,
+     "parcelArea": 163.48260869563092,
+     "interArea": 67.89421824092278,
+     "ofFactual": 0.28220681344710746,
+     "ofParcel": 0.41529933234260447,
+     "outsideArea": 95.58839045470813
+    },
+    {
+     "plotId": 5394,
+     "parcelArea": 163.4826086955727,
+     "interArea": 31.99754186469363,
+     "ofFactual": 0.13299990134259887,
+     "ofParcel": 0.19572443894798308,
+     "outsideArea": 131.48506683087908
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503207200_B0",
+   "localId": "Bos_0503207200_B0",
+   "factualArea": 627.9088500000071,
+   "ringVertices": 14,
+   "centroid": {
+    "x": -1265.1510351505124,
+    "z": 666.1335038381709
+   },
+   "edges": [
+    {
+     "plotId": 5988,
+     "parcelArea": 163.48260869568912,
+     "interArea": 128.94758640963119,
+     "ofFactual": 0.20536035829026733,
+     "ofParcel": 0.788754152129158,
+     "outsideArea": 34.53502228605794
+    },
+    {
+     "plotId": 6081,
+     "parcelArea": 163.48260869580554,
+     "interArea": 104.30047433788422,
+     "ofFactual": 0.16610766727986562,
+     "ofParcel": 0.6379912528307988,
+     "outsideArea": 59.18213435792131
+    },
+    {
+     "plotId": 6194,
+     "parcelArea": 281.71428571402794,
+     "interArea": 163.22377335408237,
+     "ofFactual": 0.2599481968666002,
+     "ofParcel": 0.5793947330018367,
+     "outsideArea": 118.49051235994557
+    },
+    {
+     "plotId": 6180,
+     "parcelArea": 281.71428571408615,
+     "interArea": 162.9556231602328,
+     "ofFactual": 0.25952114412821375,
+     "ofParcel": 0.5784428814008304,
+     "outsideArea": 118.75866255385336
+    },
+    {
+     "plotId": 6171,
+     "parcelArea": 281.71428571408615,
+     "interArea": 162.68747296649963,
+     "ofFactual": 0.2590940913900127,
+     "ofParcel": 0.577491029800357,
+     "outsideArea": 119.02681274758652
+    },
+    {
+     "plotId": 6215,
+     "parcelArea": 281.71428571408615,
+     "interArea": 132.8860442825826,
+     "ofFactual": 0.21163269841248628,
+     "ofParcel": 0.4717050253441872,
+     "outsideArea": 148.82824143150356
+    },
+    {
+     "plotId": 5920,
+     "parcelArea": 163.48260869574733,
+     "interArea": 66.93891554855509,
+     "ofFactual": 0.10660610301726808,
+     "ofParcel": 0.40945588085845347,
+     "outsideArea": 96.54369314719224
+    },
+    {
+     "plotId": 6166,
+     "parcelArea": 157.37628571409732,
+     "interArea": 6.155936236551497,
+     "ofFactual": 0.009803869202594339,
+     "ofParcel": 0.0391160345958023,
+     "outsideArea": 151.22034947754582
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503210000_B0",
+   "localId": "Bos_0503210000_B0",
+   "factualArea": 376.9321499999496,
+   "ringVertices": 10,
+   "centroid": {
+    "x": -1280.0579360366355,
+    "z": 671.3350024237665
+   },
+   "edges": [
+    {
+     "plotId": 6160,
+     "parcelArea": 153.6641873921617,
+     "interArea": 120.01541475130944,
+     "ofFactual": 0.31840057886101114,
+     "ofParcel": 0.7810239769467023,
+     "outsideArea": 33.64877264085226
+    },
+    {
+     "plotId": 6194,
+     "parcelArea": 281.71428571402794,
+     "interArea": 74.88301978795789,
+     "ofFactual": 0.19866445403494476,
+     "ofParcel": 0.2658119363672337,
+     "outsideArea": 206.83126592607005
+    },
+    {
+     "plotId": 6180,
+     "parcelArea": 281.71428571408615,
+     "interArea": 73.06468103209045,
+     "ofFactual": 0.19384040611049022,
+     "ofParcel": 0.25935738703093075,
+     "outsideArea": 208.6496046819957
+    },
+    {
+     "plotId": 6171,
+     "parcelArea": 281.71428571408615,
+     "interArea": 70.29213151801378,
+     "ofFactual": 0.1864848395607092,
+     "ofParcel": 0.24951567983085446,
+     "outsideArea": 211.42215419607237
+    },
+    {
+     "plotId": 6215,
+     "parcelArea": 281.71428571408615,
+     "interArea": 64.06984151224606,
+     "ofFactual": 0.1699771205832525,
+     "ofParcel": 0.22742844350204874,
+     "outsideArea": 217.6444442018401
+    },
+    {
+     "plotId": 6081,
+     "parcelArea": 163.48260869580554,
+     "interArea": 20.832948901690543,
+     "ofFactual": 0.05526975850081593,
+     "ofParcel": 0.1274322025314308,
+     "outsideArea": 142.649659794115
+    },
+    {
+     "plotId": 6166,
+     "parcelArea": 157.37628571409732,
+     "interArea": 0.0044734798721037805,
+     "ofFactual": 0.0000118681303043648,
+     "ofParcel": 0.0000284253745842666,
+     "outsideArea": 157.37181223422522
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503211000_B0",
+   "localId": "Bos_0503211000_B0",
+   "factualArea": 724.3581500000437,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1296.916259989136,
+    "z": 677.2650666703905
+   },
+   "edges": [
+    {
+     "plotId": 6345,
+     "parcelArea": 153.66418739123037,
+     "interArea": 124.99600214028032,
+     "ofFactual": 0.17256104889587118,
+     "ofParcel": 0.813436131491324,
+     "outsideArea": 28.668185250950046
+    },
+    {
+     "plotId": 6320,
+     "parcelArea": 281.71428571426077,
+     "interArea": 75.83023327816045,
+     "ofFactual": 0.1046861049028797,
+     "ofParcel": 0.2691742560584027,
+     "outsideArea": 205.88405243610032
+    },
+    {
+     "plotId": 6334,
+     "parcelArea": 281.714285714319,
+     "interArea": 74.32863916200586,
+     "ofFactual": 0.10261310535679259,
+     "ofParcel": 0.26384405382047643,
+     "outsideArea": 207.38564655231312
+    },
+    {
+     "plotId": 6309,
+     "parcelArea": 281.71428571426077,
+     "interArea": 68.75213143473957,
+     "ofFactual": 0.09491455495425215,
+     "ofParcel": 0.24404914809493894,
+     "outsideArea": 212.9621542795212
+    },
+    {
+     "plotId": 6342,
+     "parcelArea": 281.71428571426077,
+     "interArea": 66.9666064044577,
+     "ofFactual": 0.09244957954080267,
+     "ofParcel": 0.23771107750063158,
+     "outsideArea": 214.74767930980306
+    },
+    {
+     "plotId": 6384,
+     "parcelArea": 163.48260869586375,
+     "interArea": 18.219036319991574,
+     "ofFactual": 0.02515197257046183,
+     "ofParcel": 0.11144326889158902,
+     "outsideArea": 145.26357237587217
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503212000_B0",
+   "localId": "Bos_0503212000_B0",
+   "factualArea": 260.72005000000354,
+   "ringVertices": 8,
+   "centroid": {
+    "x": -1311.6457554044412,
+    "z": 683.0717846415441
+   },
+   "edges": [
+    {
+     "plotId": 6384,
+     "parcelArea": 163.48260869586375,
+     "interArea": 115.47924213722581,
+     "ofFactual": 0.44292428655649707,
+     "ofParcel": 0.7063701947162991,
+     "outsideArea": 48.003366558637936
+    },
+    {
+     "plotId": 6334,
+     "parcelArea": 281.714285714319,
+     "interArea": 69.18159018509323,
+     "ofFactual": 0.26534817780639536,
+     "ofParcel": 0.24557359599168124,
+     "outsideArea": 212.53269552922575
+    },
+    {
+     "plotId": 6320,
+     "parcelArea": 281.71428571426077,
+     "interArea": 68.45993214211194,
+     "ofFactual": 0.26258023555193016,
+     "ofParcel": 0.24301192951056086,
+     "outsideArea": 213.25435357214883
+    },
+    {
+     "plotId": 6342,
+     "parcelArea": 281.71428571426077,
+     "interArea": 64.92952840193175,
+     "ofFactual": 0.24903926031745877,
+     "ofParcel": 0.23048007039227306,
+     "outsideArea": 216.78475731232902
+    },
+    {
+     "plotId": 6309,
+     "parcelArea": 281.71428571426077,
+     "interArea": 58.14899927104125,
+     "ofFactual": 0.22303232632488548,
+     "ofParcel": 0.20641125501892738,
+     "outsideArea": 223.56528644321952
+    },
+    {
+     "plotId": 6430,
+     "parcelArea": 163.48260869580554,
+     "interArea": 20.35216996073723,
+     "ofFactual": 0.07806139175232957,
+     "ofParcel": 0.12449134573455949,
+     "outsideArea": 143.1304387350683
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503213000_B0",
+   "localId": "Bos_0503213000_B0",
+   "factualArea": 458.04449999995995,
+   "ringVertices": 11,
+   "centroid": {
+    "x": -1323.0294146355188,
+    "z": 686.2531138266592
+   },
+   "edges": [
+    {
+     "plotId": 6469,
+     "parcelArea": 163.48260869586375,
+     "interArea": 122.13326971977949,
+     "ofFactual": 0.2666406205506019,
+     "ofParcel": 0.7470719405205428,
+     "outsideArea": 41.349338976084255
+    },
+    {
+     "plotId": 6430,
+     "parcelArea": 163.48260869580554,
+     "interArea": 105.55106425425038,
+     "ofFactual": 0.23043844922111192,
+     "ofParcel": 0.6456409345085187,
+     "outsideArea": 57.93154444155516
+    },
+    {
+     "plotId": 6320,
+     "parcelArea": 281.71428571426077,
+     "interArea": 128.07409903983353,
+     "ofFactual": 0.27961060342356414,
+     "ofParcel": 0.45462408381283675,
+     "outsideArea": 153.64018667442724
+    },
+    {
+     "plotId": 6334,
+     "parcelArea": 281.714285714319,
+     "interArea": 127.02616225287784,
+     "ofFactual": 0.2773227541273587,
+     "ofParcel": 0.45090422706391475,
+     "outsideArea": 154.68812346144114
+    },
+    {
+     "plotId": 6309,
+     "parcelArea": 281.71428571426077,
+     "interArea": 104.54316801292589,
+     "ofFactual": 0.22823801620352396,
+     "ofParcel": 0.3710964381797901,
+     "outsideArea": 177.17111770133488
+    },
+    {
+     "plotId": 6342,
+     "parcelArea": 281.71428571426077,
+     "interArea": 98.40107069414807,
+     "ofFactual": 0.214828626245172,
+     "ofParcel": 0.3492938614904146,
+     "outsideArea": 183.3132150201127
+    },
+    {
+     "plotId": 6508,
+     "parcelArea": 163.48260869586375,
+     "interArea": 0.9341021248837933,
+     "ofFactual": 0.0020393261460051916,
+     "ofParcel": 0.0057137706104357444,
+     "outsideArea": 162.54850657097995
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503214000_B0",
+   "localId": "Bos_0503214000_B0",
+   "factualArea": 566.0225000000792,
+   "ringVertices": 9,
+   "centroid": {
+    "x": -1332.2020646793449,
+    "z": 654.0150994262274
+   },
+   "edges": [
+    {
+     "plotId": 6296,
+     "parcelArea": 152.51914285536623,
+     "interArea": 92.29379525856348,
+     "ofFactual": 0.1630567605679113,
+     "ofParcel": 0.6051292547984328,
+     "outsideArea": 60.22534759680275
+    },
+    {
+     "plotId": 6290,
+     "parcelArea": 276.85714285535505,
+     "interArea": 167.32814898592187,
+     "ofFactual": 0.2956210203408848,
+     "ofParcel": 0.6043844390655401,
+     "outsideArea": 109.52899386943318
+    },
+    {
+     "plotId": 6284,
+     "parcelArea": 276.85714285535505,
+     "interArea": 129.36393187753856,
+     "ofFactual": 0.22854909809684326,
+     "ofParcel": 0.46725878387441566,
+     "outsideArea": 147.4932109778165
+    },
+    {
+     "plotId": 6302,
+     "parcelArea": 157.37628571421374,
+     "interArea": 26.39233157725539,
+     "ofFactual": 0.0466277075156053,
+     "ofParcel": 0.16770208711865486,
+     "outsideArea": 130.98395413695835
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503215000_B0",
+   "localId": "Bos_0503215000_B0",
+   "factualArea": 136.0101999999024,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1320.9671548264346,
+    "z": 643.8878749058603
+   },
+   "edges": [
+    {
+     "plotId": 6290,
+     "parcelArea": 276.85714285535505,
+     "interArea": 60.53570276859682,
+     "ofFactual": 0.4450820803780912,
+     "ofParcel": 0.21865320917591027,
+     "outsideArea": 216.32144008675823
+    },
+    {
+     "plotId": 6284,
+     "parcelArea": 276.85714285535505,
+     "interArea": 57.38804271660047,
+     "ofFactual": 0.4219392568839811,
+     "ofParcel": 0.20728395202208325,
+     "outsideArea": 219.46910013875458
+    },
+    {
+     "plotId": 6296,
+     "parcelArea": 152.51914285536623,
+     "interArea": 17.8140163323842,
+     "ofFactual": 0.13097559103947337,
+     "ofParcel": 0.11679856048809044,
+     "outsideArea": 134.70512652298203
+    },
+    {
+     "plotId": 6273,
+     "parcelArea": 276.85714285529684,
+     "interArea": 0.2724381822627038,
+     "ofFactual": 0.0020030716980263194,
+     "ofParcel": 0.000984038842028711,
+     "outsideArea": 276.58470467303414
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503221002_B0",
+   "localId": "Bos_0503221002_B0",
+   "factualArea": 109.80440000008093,
+   "ringVertices": 12,
+   "centroid": {
+    "x": -1276.397779804806,
+    "z": 626.5989830642827
+   },
+   "edges": [
+    {
+     "plotId": 6137,
+     "parcelArea": 276.85714285535505,
+     "interArea": 52.856002696906216,
+     "ofFactual": 0.4813650700415216,
+     "ofParcel": 0.19091435442762267,
+     "outsideArea": 224.00114015844883
+    },
+    {
+     "plotId": 6147,
+     "parcelArea": 276.85714285535505,
+     "interArea": 49.45378248341149,
+     "ofFactual": 0.4503806995291176,
+     "ofParcel": 0.17862563332616918,
+     "outsideArea": 227.40336037194356
+    },
+    {
+     "plotId": 6128,
+     "parcelArea": 276.85714285535505,
+     "interArea": 7.494614819705021,
+     "ofFactual": 0.06825423042883069,
+     "ofParcel": 0.027070332166292014,
+     "outsideArea": 269.36252803565003
+    },
+    {
+     "plotId": 5861,
+     "parcelArea": 179.17826086829882,
+     "interArea": 0.46888834005221725,
+     "ofFactual": 0.004270214490966406,
+     "ofParcel": 0.0026168818570957313,
+     "outsideArea": 178.7093725282466
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503222000_B0",
+   "localId": "Bos_0503222000_B0",
+   "factualArea": 146.00164999993285,
+   "ringVertices": 18,
+   "centroid": {
+    "x": -1269.5489138823255,
+    "z": 625.5126182638819
+   },
+   "edges": [
+    {
+     "plotId": 6147,
+     "parcelArea": 276.85714285535505,
+     "interArea": 61.540045395551715,
+     "ofFactual": 0.42150239668921563,
+     "ofParcel": 0.2222808657232424,
+     "outsideArea": 215.31709745980334
+    },
+    {
+     "plotId": 6137,
+     "parcelArea": 276.85714285535505,
+     "interArea": 57.8197026954731,
+     "ofFactual": 0.39602088534958124,
+     "ofParcel": 0.2088430953926343,
+     "outsideArea": 219.03744015988195
+    },
+    {
+     "plotId": 6154,
+     "parcelArea": 152.51914285530802,
+     "interArea": 14.837568827148061,
+     "ofFactual": 0.10162603523422431,
+     "ofParcel": 0.0972833216170391,
+     "outsideArea": 137.68157402815996
+    },
+    {
+     "plotId": 6128,
+     "parcelArea": 276.85714285535505,
+     "interArea": 11.80433308170177,
+     "ofFactual": 0.08085068272658014,
+     "ofParcel": 0.04263690999610216,
+     "outsideArea": 265.0528097736533
+    },
+    {
+     "plotId": 5806,
+     "parcelArea": 179.17826086829882,
+     "interArea": 1.912937347078696,
+     "ofFactual": 0.01310216252405076,
+     "ofParcel": 0.010676168737259704,
+     "outsideArea": 177.26532352122013
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503223000_B0",
+   "localId": "Bos_0503223000_B0",
+   "factualArea": 131.59859999996843,
+   "ringVertices": 22,
+   "centroid": {
+    "x": -1262.8018228500348,
+    "z": 623.0764860302932
+   },
+   "edges": [
+    {
+     "plotId": 6137,
+     "parcelArea": 276.85714285535505,
+     "interArea": 23.96101368480595,
+     "ofFactual": 0.18207650905717612,
+     "ofParcel": 0.0865464890581655,
+     "outsideArea": 252.8961291705491
+    },
+    {
+     "plotId": 6147,
+     "parcelArea": 276.85714285535505,
+     "interArea": 21.041072235209867,
+     "ofFactual": 0.15988826807591353,
+     "ofParcel": 0.07599974491610949,
+     "outsideArea": 255.81607062014518
+    },
+    {
+     "plotId": 6154,
+     "parcelArea": 152.51914285530802,
+     "interArea": 5.246040717524011,
+     "ofFactual": 0.03986395537281756,
+     "ofParcel": 0.034395949382569166,
+     "outsideArea": 147.273102137784
+    },
+    {
+     "plotId": 6128,
+     "parcelArea": 276.85714285535505,
+     "interArea": 4.292598682048265,
+     "ofFactual": 0.03261887802795239,
+     "ofParcel": 0.015504742401719241,
+     "outsideArea": 272.5645441733068
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503224000_B0",
+   "localId": "Bos_0503224000_B0",
+   "factualArea": 138.46509999979753,
+   "ringVertices": 25,
+   "centroid": {
+    "x": -1255.9888941467523,
+    "z": 620.9148829166533
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503225000_B0",
+   "localId": "Bos_0503225000_B0",
+   "factualArea": 121.40924999996787,
+   "ringVertices": 24,
+   "centroid": {
+    "x": -1249.6617205183857,
+    "z": 618.2622233053858
+   },
+   "edges": [
+    {
+     "plotId": 5689,
+     "parcelArea": 179.1782608681824,
+     "interArea": 0.029718247358687222,
+     "ofFactual": 0.0002447774560727052,
+     "ofParcel": 0.00016585855457404119,
+     "outsideArea": 179.14854262082372
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503228000_B0",
+   "localId": "Bos_0503228000_B0",
+   "factualArea": 1279.9277999998885,
+   "ringVertices": 80,
+   "centroid": {
+    "x": -1215.7969140983657,
+    "z": 552.5093776686917
+   },
+   "edges": [
+    {
+     "plotId": 5086,
+     "parcelArea": 183.30869565391913,
+     "interArea": 123.1459259307594,
+     "ofFactual": 0.09621318165819207,
+     "ofParcel": 0.6717953313205333,
+     "outsideArea": 60.16276972315973
+    },
+    {
+     "plotId": 5463,
+     "parcelArea": 183.3086956537445,
+     "interArea": 114.32352999434806,
+     "ofFactual": 0.0893202960310402,
+     "ofParcel": 0.6236667037896341,
+     "outsideArea": 68.98516565939644
+    },
+    {
+     "plotId": 5174,
+     "parcelArea": 183.30869565397734,
+     "interArea": 109.6101249862113,
+     "ofFactual": 0.08563774064929354,
+     "ofParcel": 0.597953766432973,
+     "outsideArea": 73.69857066776603
+    },
+    {
+     "plotId": 5399,
+     "parcelArea": 183.3086956537445,
+     "interArea": 108.40350785013288,
+     "ofFactual": 0.08469501783627352,
+     "ofParcel": 0.5913713338231289,
+     "outsideArea": 74.90518780361162
+    },
+    {
+     "plotId": 5252,
+     "parcelArea": 183.30869565391913,
+     "interArea": 107.22933002753416,
+     "ofFactual": 0.0837776396665058,
+     "ofParcel": 0.5849658667037796,
+     "outsideArea": 76.07936562638497
+    },
+    {
+     "plotId": 5320,
+     "parcelArea": 183.30869565386092,
+     "interArea": 105.46835853089578,
+     "ofFactual": 0.08240180307897443,
+     "ofParcel": 0.5753592766272807,
+     "outsideArea": 77.84033712296514
+    },
+    {
+     "plotId": 5029,
+     "parcelArea": 183.30869565409375,
+     "interArea": 96.92827305343235,
+     "ofFactual": 0.07572948493926047,
+     "ofParcel": 0.5287707312932795,
+     "outsideArea": 86.3804226006614
+    },
+    {
+     "plotId": 5517,
+     "parcelArea": 183.30869565356988,
+     "interArea": 9.603997184312902,
+     "ofFactual": 0.00750354604713933,
+     "ofParcel": 0.05239248007341253,
+     "outsideArea": 173.70469846925698
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503229000_B0",
+   "localId": "Bos_0503229000_B0",
+   "factualArea": 152.01595000003,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1251.458739908461,
+    "z": 567.761044072432
+   },
+   "edges": [
+    {
+     "plotId": 5572,
+     "parcelArea": 183.30869565356988,
+     "interArea": 55.47566838469356,
+     "ofFactual": 0.3649332085526724,
+     "ofParcel": 0.3026352251697624,
+     "outsideArea": 127.83302726887632
+    },
+    {
+     "plotId": 5517,
+     "parcelArea": 183.30869565356988,
+     "interArea": 14.63833839376457,
+     "ofFactual": 0.09629475323978624,
+     "ofParcel": 0.07985621381229599,
+     "outsideArea": 168.67035725980531
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503230000_B0",
+   "localId": "Bos_0503230000_B0",
+   "factualArea": 128.49895000009565,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1259.1005772184112,
+    "z": 570.5817535706057
+   },
+   "edges": [
+    {
+     "plotId": 5624,
+     "parcelArea": 183.30869565356988,
+     "interArea": 48.591141538578086,
+     "ofFactual": 0.3781442691830705,
+     "ofParcel": 0.2650782133675162,
+     "outsideArea": 134.7175541149918
+    },
+    {
+     "plotId": 5572,
+     "parcelArea": 183.30869565356988,
+     "interArea": 7.768384882307146,
+     "ofFactual": 0.06045485104976627,
+     "ofParcel": 0.04237870361037539,
+     "outsideArea": 175.54031077126274
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503231000_B0",
+   "localId": "Bos_0503231000_B0",
+   "factualArea": 125.55574999999953,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1266.2630566634036,
+    "z": 573.1273351293471
+   },
+   "edges": [
+    {
+     "plotId": 5680,
+     "parcelArea": 183.30869565356988,
+     "interArea": 42.17106808809331,
+     "ofFactual": 0.33587524337271263,
+     "ofParcel": 0.23005492422351453,
+     "outsideArea": 141.13762756547658
+    },
+    {
+     "plotId": 5624,
+     "parcelArea": 183.30869565356988,
+     "interArea": 12.135632477060426,
+     "ofFactual": 0.09665533021833306,
+     "ofParcel": 0.06620325584551225,
+     "outsideArea": 171.17306317650946
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503232000_B0",
+   "localId": "Bos_0503232000_B0",
+   "factualArea": 114.55400000017835,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1272.9203600420576,
+    "z": 576.1764639104708
+   },
+   "edges": [
+    {
+     "plotId": 5739,
+     "parcelArea": 183.30869565345347,
+     "interArea": 27.322669212298933,
+     "ofFactual": 0.23851344529441482,
+     "ofParcel": 0.14905277196425343,
+     "outsideArea": 155.98602644115454
+    },
+    {
+     "plotId": 5680,
+     "parcelArea": 183.30869565356988,
+     "interArea": 16.29660728306044,
+     "ofFactual": 0.14226135519523603,
+     "ofParcel": 0.08890253255556929,
+     "outsideArea": 167.01208837050945
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503233000_B0",
+   "localId": "Bos_0503233000_B0",
+   "factualArea": 118.42740000004414,
+   "ringVertices": 10,
+   "centroid": {
+    "x": -1279.7534953944764,
+    "z": 578.71705933473
+   },
+   "edges": [
+    {
+     "plotId": 5739,
+     "parcelArea": 183.30869565345347,
+     "interArea": 21.750125380349346,
+     "ofFactual": 0.18365788137155117,
+     "ofParcel": 0.11865299298985864,
+     "outsideArea": 161.55857027310412
+    },
+    {
+     "plotId": 5794,
+     "parcelArea": 183.30869565351168,
+     "interArea": 21.289622682903428,
+     "ofFactual": 0.17976940034903655,
+     "ofParcel": 0.11614082249073915,
+     "outsideArea": 162.01907297060825
+    },
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 29.86432842904469,
+     "ofFactual": 0.2521741457554042,
+     "ofParcel": 0.1124026655074551,
+     "outsideArea": 235.82624300196767
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503234000_B0",
+   "localId": "Bos_0503234000_B0",
+   "factualArea": 116.00790000008419,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1286.6669707376107,
+    "z": 581.2300143940092
+   },
+   "edges": [
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 40.83685771335149,
+     "ofFactual": 0.35201790320591836,
+     "ofParcel": 0.1537008163044843,
+     "outsideArea": 224.85371371766087
+    },
+    {
+     "plotId": 5794,
+     "parcelArea": 183.30869565351168,
+     "interArea": 25.95475315290969,
+     "ofFactual": 0.22373263504374144,
+     "ofParcel": 0.14159040879309465,
+     "outsideArea": 157.353942500602
+    },
+    {
+     "plotId": 5849,
+     "parcelArea": 183.30869565339526,
+     "interArea": 14.860173678898718,
+     "ofFactual": 0.1280962217132448,
+     "ofParcel": 0.08106638709053231,
+     "outsideArea": 168.44852197449654
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503235000_B0",
+   "localId": "Bos_0503235000_B0",
+   "factualArea": 117.07119999994757,
+   "ringVertices": 13,
+   "centroid": {
+    "x": -1293.568136322372,
+    "z": 583.7243538121234
+   },
+   "edges": [
+    {
+     "plotId": 5849,
+     "parcelArea": 183.30869565339526,
+     "interArea": 30.264496737450827,
+     "ofFactual": 0.25851359461135087,
+     "ofParcel": 0.16510126063346012,
+     "outsideArea": 153.04419891594443
+    },
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 39.932874575897586,
+     "ofFactual": 0.34109904550321063,
+     "ofParcel": 0.15029842557384962,
+     "outsideArea": 225.75769685511477
+    },
+    {
+     "plotId": 5929,
+     "parcelArea": 183.30869565339526,
+     "interArea": 9.646291735232808,
+     "ofFactual": 0.08239679558454281,
+     "ofParcel": 0.052623208630932936,
+     "outsideArea": 173.66240391816245
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503236000_B0",
+   "localId": "Bos_0503236000_B0",
+   "factualArea": 102.66259999974864,
+   "ringVertices": 20,
+   "centroid": {
+    "x": -1300.137877743298,
+    "z": 586.8731452321944
+   },
+   "edges": [
+    {
+     "plotId": 5929,
+     "parcelArea": 183.30869565339526,
+     "interArea": 25.164970683923457,
+     "ofFactual": 0.24512306023795494,
+     "ofParcel": 0.13728192541125284,
+     "outsideArea": 158.1437249694718
+    },
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 27.06174597563222,
+     "ofFactual": 0.26359887608241445,
+     "ofParcel": 0.10185437078130909,
+     "outsideArea": 238.62882545538014
+    },
+    {
+     "plotId": 5995,
+     "parcelArea": 172.2995613059029,
+     "interArea": 1.8756025127950124,
+     "ofFactual": 0.018269579309306453,
+     "ofParcel": 0.010885706838597476,
+     "outsideArea": 170.4239587931079
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503237000_B0",
+   "localId": "Bos_0503237000_B0",
+   "factualArea": 104.10425000003306,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1306.7581045264917,
+    "z": 589.2646294875326
+   },
+   "edges": [
+    {
+     "plotId": 5995,
+     "parcelArea": 172.2995613059029,
+     "interArea": 26.820203828800004,
+     "ofFactual": 0.25762832765032634,
+     "ofParcel": 0.15566031408044656,
+     "outsideArea": 145.4793574771029
+    },
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 26.841220529167913,
+     "ofFactual": 0.2578302089411277,
+     "ofParcel": 0.10102436222934372,
+     "outsideArea": 238.84935090184445
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503238000_B0",
+   "localId": "Bos_0503238000_B0",
+   "factualArea": 96.98385000001872,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1313.179324031691,
+    "z": 591.8814984487574
+   },
+   "edges": [
+    {
+     "plotId": 5995,
+     "parcelArea": 172.2995613059029,
+     "interArea": 0.45784523646580055,
+     "ofFactual": 0.004720839979704994,
+     "ofParcel": 0.0026572629262412114,
+     "outsideArea": 171.8417160694371
+    },
+    {
+     "plotId": 6082,
+     "parcelArea": 265.69057143101236,
+     "interArea": 0.4512035608640872,
+     "ofFactual": 0.004652357695265759,
+     "ofParcel": 0.0016982294796307593,
+     "outsideArea": 265.23936787014827
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503239000_B0",
+   "localId": "Bos_0503239000_B0",
+   "factualArea": 96.92350000003353,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1319.7403495486944,
+    "z": 594.2410472072705
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503240000_B0",
+   "localId": "Bos_0503240000_B0",
+   "factualArea": 161.61530000000494,
+   "ringVertices": 18,
+   "centroid": {
+    "x": -1327.9441808273414,
+    "z": 590.6618914525206
+   },
+   "edges": [
+    {
+     "plotId": 6248,
+     "parcelArea": 172.29956130572828,
+     "interArea": 28.802856011374388,
+     "ofFactual": 0.1782186216984005,
+     "ofParcel": 0.16716732064260229,
+     "outsideArea": 143.4967052943539
+    },
+    {
+     "plotId": 6238,
+     "parcelArea": 281.71428571554134,
+     "interArea": 14.961137830861844,
+     "ofFactual": 0.09257253385577595,
+     "ofParcel": 0.053107487228988906,
+     "outsideArea": 266.7531478846795
+    },
+    {
+     "plotId": 6244,
+     "parcelArea": 265.69057143083774,
+     "interArea": 12.44305643090047,
+     "ofFactual": 0.07699182212884603,
+     "ofParcel": 0.046832886706856806,
+     "outsideArea": 253.24751499993727
+    },
+    {
+     "plotId": 6235,
+     "parcelArea": 281.71428571548313,
+     "interArea": 1.3565254709101282,
+     "ofFactual": 0.008393546099348803,
+     "ofParcel": 0.0048152526857659925,
+     "outsideArea": 280.357760244573
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503241000_B0",
+   "localId": "Bos_0503241000_B0",
+   "factualArea": 126.27774999995017,
+   "ringVertices": 17,
+   "centroid": {
+    "x": -1331.844754968233,
+    "z": 600.7843523780789
+   },
+   "edges": [
+    {
+     "plotId": 6248,
+     "parcelArea": 172.29956130572828,
+     "interArea": 11.932111344998702,
+     "ofFactual": 0.09449100372000142,
+     "ofParcel": 0.06925212841271469,
+     "outsideArea": 160.36744996072957
+    },
+    {
+     "plotId": 6244,
+     "parcelArea": 265.69057143083774,
+     "interArea": 17.57037587981904,
+     "ofFactual": 0.13914071069389478,
+     "ofParcel": 0.06613097252641051,
+     "outsideArea": 248.1201955510187
+    },
+    {
+     "plotId": 6298,
+     "parcelArea": 183.30869565339526,
+     "interArea": 5.617058130912483,
+     "ofFactual": 0.04448177237014992,
+     "ofParcel": 0.03064261687581564,
+     "outsideArea": 177.69163752248278
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503242000_B0",
+   "localId": "Bos_0503242000_B0",
+   "factualArea": 102.60109999991255,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1339.1627684031348,
+    "z": 601.4337523592327
+   },
+   "edges": [
+    {
+     "plotId": 6298,
+     "parcelArea": 183.30869565339526,
+     "interArea": 14.395609744999092,
+     "ofFactual": 0.14030658292173634,
+     "ofParcel": 0.0785320614152352,
+     "outsideArea": 168.91308590839617
+    },
+    {
+     "plotId": 6244,
+     "parcelArea": 265.69057143083774,
+     "interArea": 16.376867629180197,
+     "ofFactual": 0.15961688158503326,
+     "ofParcel": 0.06163887390126405,
+     "outsideArea": 249.31370380165754
+    },
+    {
+     "plotId": 6352,
+     "parcelArea": 183.30869565327885,
+     "interArea": 1.9598664604709484,
+     "ofFactual": 0.019101807490101166,
+     "ofParcel": 0.010691617511577075,
+     "outsideArea": 181.3488291928079
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503243000_B0",
+   "localId": "Bos_0503243000_B0",
+   "factualArea": 129.06575000024168,
+   "ringVertices": 31,
+   "centroid": {
+    "x": -1349.4685794531663,
+    "z": 608.9994877180943
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503244000_B0",
+   "localId": "Bos_0503244000_B0",
+   "factualArea": 119.59375000005821,
+   "ringVertices": 13,
+   "centroid": {
+    "x": -1351.8947722642067,
+    "z": 602.2980823620658
+   },
+   "edges": [
+    {
+     "plotId": 6244,
+     "parcelArea": 265.69057143083774,
+     "interArea": 30.249674594728276,
+     "ofFactual": 0.2529369184820574,
+     "ofParcel": 0.11385302245323602,
+     "outsideArea": 235.44089683610946
+    },
+    {
+     "plotId": 6397,
+     "parcelArea": 183.30869565322064,
+     "interArea": 14.254846098192502,
+     "ofFactual": 0.11919390518472382,
+     "ofParcel": 0.07776415650875344,
+     "outsideArea": 169.05384955502814
+    },
+    {
+     "plotId": 6352,
+     "parcelArea": 183.30869565327885,
+     "interArea": 13.55698105407646,
+     "ofFactual": 0.11335860823889092,
+     "ofParcel": 0.07395710828535354,
+     "outsideArea": 169.7517145992024
+    },
+    {
+     "plotId": 6440,
+     "parcelArea": 183.3086956529878,
+     "interArea": 2.8150911525590345,
+     "ofFactual": 0.02353878152125562,
+     "ofParcel": 0.015357106451120778,
+     "outsideArea": 180.49360450042877
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503247000_B0",
+   "localId": "Bos_0503247000_B0",
+   "factualArea": 223.93465000012657,
+   "ringVertices": 33,
+   "centroid": {
+    "x": -1371.0986206002724,
+    "z": 563.8701000707646
+   },
+   "edges": [
+    {
+     "plotId": 6223,
+     "parcelArea": 281.71428571548313,
+     "interArea": 57.473202932218555,
+     "ofFactual": 0.2566516746389452,
+     "ofParcel": 0.2040123836327687,
+     "outsideArea": 224.24108278326457
+    },
+    {
+     "plotId": 6220,
+     "parcelArea": 157.3762857154361,
+     "interArea": 30.753972414997406,
+     "ofFactual": 0.13733458584895203,
+     "ofParcel": 0.1954168143897231,
+     "outsideArea": 126.62231330043869
+    },
+    {
+     "plotId": 6228,
+     "parcelArea": 281.7142857154249,
+     "interArea": 29.67937695485307,
+     "ofFactual": 0.13253588470938416,
+     "ofParcel": 0.10535275795290637,
+     "outsideArea": 252.03490876057185
+    },
+    {
+     "plotId": 6214,
+     "parcelArea": 164.66200000292156,
+     "interArea": 4.158529460430145,
+     "ofFactual": 0.018570281376409568,
+     "ofParcel": 0.025254943219178448,
+     "outsideArea": 160.5034705424914
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503248000_B0",
+   "localId": "Bos_0503248000_B0",
+   "factualArea": 209.13694999984,
+   "ringVertices": 33,
+   "centroid": {
+    "x": -1363.179361435532,
+    "z": 560.4466931438712
+   },
+   "edges": [
+    {
+     "plotId": 6220,
+     "parcelArea": 157.3762857154361,
+     "interArea": 41.221241152787115,
+     "ofFactual": 0.19710166545327668,
+     "ofParcel": 0.26192790715192216,
+     "outsideArea": 116.15504456264898
+    },
+    {
+     "plotId": 6223,
+     "parcelArea": 281.71428571548313,
+     "interArea": 61.24668086064048,
+     "ofFactual": 0.29285442319344973,
+     "ofParcel": 0.21740708216159285,
+     "outsideArea": 220.46760485484265
+    },
+    {
+     "plotId": 6228,
+     "parcelArea": 281.7142857154249,
+     "interArea": 33.056162578228395,
+     "ofFactual": 0.15805988649185945,
+     "ofParcel": 0.11733931949627943,
+     "outsideArea": 248.65812313719653
+    },
+    {
+     "plotId": 6214,
+     "parcelArea": 164.66200000292156,
+     "interArea": 8.702321872115135,
+     "ofFactual": 0.041610637776451236,
+     "ofParcel": 0.052849606296296245,
+     "outsideArea": 155.95967813080642
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503249000_B0",
+   "localId": "Bos_0503249000_B0",
+   "factualArea": 116.29994999995688,
+   "ringVertices": 18,
+   "centroid": {
+    "x": -1356.7560189337164,
+    "z": 555.0594313698529
+   },
+   "edges": [
+    {
+     "plotId": 6220,
+     "parcelArea": 157.3762857154361,
+     "interArea": 29.05035355302971,
+     "ofFactual": 0.24978818609157166,
+     "ofParcel": 0.1845916836896115,
+     "outsideArea": 128.3259321624064
+    },
+    {
+     "plotId": 6223,
+     "parcelArea": 281.71428571548313,
+     "interArea": 34.63352549285628,
+     "ofFactual": 0.2977948442184981,
+     "ofParcel": 0.12293847791529589,
+     "outsideArea": 247.08076022262685
+    },
+    {
+     "plotId": 6214,
+     "parcelArea": 164.66200000292156,
+     "interArea": 6.467063363350462,
+     "ofFactual": 0.05560675961900981,
+     "ofParcel": 0.039274777199570746,
+     "outsideArea": 158.1949366395711
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503250000_B0",
+   "localId": "Bos_0503250000_B0",
+   "factualArea": 138.32549999986077,
+   "ringVertices": 27,
+   "centroid": {
+    "x": -1350.1433904996818,
+    "z": 553.621630286478
+   },
+   "edges": [
+    {
+     "plotId": 6220,
+     "parcelArea": 157.3762857154361,
+     "interArea": 32.95692366926232,
+     "ofFactual": 0.23825631332831254,
+     "ofParcel": 0.20941480172466528,
+     "outsideArea": 124.41936204617377
+    },
+    {
+     "plotId": 6223,
+     "parcelArea": 281.71428571548313,
+     "interArea": 47.708873720665,
+     "ofFactual": 0.34490295513634883,
+     "ofParcel": 0.16935198582314173,
+     "outsideArea": 234.00541199481813
+    },
+    {
+     "plotId": 6214,
+     "parcelArea": 164.66200000292156,
+     "interArea": 6.27851103147259,
+     "ofFactual": 0.0453893969765438,
+     "ofParcel": 0.03812969010069835,
+     "outsideArea": 158.38348897144897
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503251000_B0",
+   "localId": "Bos_0503251000_B0",
+   "factualArea": 150.32525000028545,
+   "ringVertices": 37,
+   "centroid": {
+    "x": -1343.3700501903197,
+    "z": 550.8084319419445
+   },
+   "edges": [
+    {
+     "plotId": 6220,
+     "parcelArea": 157.3762857154361,
+     "interArea": 23.36577861488331,
+     "ofFactual": 0.15543482292455155,
+     "ofParcel": 0.1484707718743136,
+     "outsideArea": 134.0105071005528
+    },
+    {
+     "plotId": 6223,
+     "parcelArea": 281.71428571548313,
+     "interArea": 32.26715167670045,
+     "ofFactual": 0.21464891411548745,
+     "ofParcel": 0.11453857086001172,
+     "outsideArea": 249.44713403878268
+    },
+    {
+     "plotId": 6214,
+     "parcelArea": 164.66200000292156,
+     "interArea": 7.850902892358135,
+     "ofFactual": 0.05222610900260088,
+     "ofParcel": 0.0476788991523171,
+     "outsideArea": 156.81109711056342
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503252000_B0",
+   "localId": "Bos_0503252000_B0",
+   "factualArea": 104.68600000004517,
+   "ringVertices": 23,
+   "centroid": {
+    "x": -1337.132084541481,
+    "z": 548.4260488332395
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503253000_B0",
+   "localId": "Bos_0503253000_B0",
+   "factualArea": 124.97514999995474,
+   "ringVertices": 29,
+   "centroid": {
+    "x": -1331.6684693212326,
+    "z": 546.2303467943335
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503254000_B0",
+   "localId": "Bos_0503254000_B0",
+   "factualArea": 132.43424999999115,
+   "ringVertices": 15,
+   "centroid": {
+    "x": -1324.929620659572,
+    "z": 544.7586969244721
+   },
+   "edges": [
+    {
+     "plotId": 6038,
+     "parcelArea": 157.3762857154943,
+     "interArea": 19.466275803220924,
+     "ofFactual": 0.1469882285226233,
+     "ofParcel": 0.12369256088818974,
+     "outsideArea": 137.91000991227338
+    },
+    {
+     "plotId": 6043,
+     "parcelArea": 281.7142857154249,
+     "interArea": 24.692983981396537,
+     "ofFactual": 0.18645466698681185,
+     "ofParcel": 0.08765258005531276,
+     "outsideArea": 257.0213017340284
+    },
+    {
+     "plotId": 6028,
+     "parcelArea": 164.66199999453966,
+     "interArea": 3.1333009744412266,
+     "ofFactual": 0.023659294891173816,
+     "ofParcel": 0.019028682844524723,
+     "outsideArea": 161.52869902009843
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503255000_B0",
+   "localId": "Bos_0503255000_B0",
+   "factualArea": 165.77315000013914,
+   "ringVertices": 19,
+   "centroid": {
+    "x": -1317.8901649972215,
+    "z": 542.5915513236388
+   },
+   "edges": [
+    {
+     "plotId": 6038,
+     "parcelArea": 157.3762857154943,
+     "interArea": 36.05954715568805,
+     "ofFactual": 0.2175234478904321,
+     "ofParcel": 0.2291294841007793,
+     "outsideArea": 121.31673855980625
+    },
+    {
+     "plotId": 6043,
+     "parcelArea": 281.7142857154249,
+     "interArea": 57.75458838546183,
+     "ofFactual": 0.3483953124219052,
+     "ofParcel": 0.20501121637758518,
+     "outsideArea": 223.9596973299631
+    },
+    {
+     "plotId": 6028,
+     "parcelArea": 164.66199999453966,
+     "interArea": 14.911134855938144,
+     "ofFactual": 0.0899490349065915,
+     "ofParcel": 0.09055601690998902,
+     "outsideArea": 149.7508651386015
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503256000_B0",
+   "localId": "Bos_0503256000_B0",
+   "factualArea": 148.77555000025313,
+   "ringVertices": 25,
+   "centroid": {
+    "x": -1310.8379006276289,
+    "z": 539.6436478851641
+   },
+   "edges": [
+    {
+     "plotId": 6038,
+     "parcelArea": 157.3762857154943,
+     "interArea": 34.847982218605466,
+     "ofFactual": 0.23423191659211592,
+     "ofParcel": 0.22143096121612527,
+     "outsideArea": 122.52830349688884
+    },
+    {
+     "plotId": 6043,
+     "parcelArea": 281.7142857154249,
+     "interArea": 44.59216191689484,
+     "ofFactual": 0.29972775712688654,
+     "ofParcel": 0.15828860720943286,
+     "outsideArea": 237.12212379853008
+    },
+    {
+     "plotId": 6028,
+     "parcelArea": 164.66199999453966,
+     "interArea": 13.55846836004639,
+     "ofFactual": 0.09113371357069977,
+     "ofParcel": 0.0823412102397396,
+     "outsideArea": 151.10353163449327
+    },
+    {
+     "plotId": 6052,
+     "parcelArea": 281.71428571548313,
+     "interArea": 1.0606199094327167,
+     "ofFactual": 0.007128993369077863,
+     "ofParcel": 0.0037648779746437423,
+     "outsideArea": 280.6536658060504
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503257000_B0",
+   "localId": "Bos_0503257000_B0",
+   "factualArea": 148.5778500001179,
+   "ringVertices": 38,
+   "centroid": {
+    "x": -1303.9201172188089,
+    "z": 536.6044777500734
+   },
+   "edges": [
+    {
+     "plotId": 6038,
+     "parcelArea": 157.3762857154943,
+     "interArea": 34.7488879704033,
+     "ofFactual": 0.23387663753632004,
+     "ofParcel": 0.22080129679272345,
+     "outsideArea": 122.627397745091
+    },
+    {
+     "plotId": 6043,
+     "parcelArea": 281.7142857154249,
+     "interArea": 40.54333733720705,
+     "ofFactual": 0.2728760534438671,
+     "ofParcel": 0.14391651184548768,
+     "outsideArea": 241.17094837821787
+    },
+    {
+     "plotId": 6028,
+     "parcelArea": 164.66199999453966,
+     "interArea": 18.019237777218223,
+     "ofFactual": 0.12127808941375799,
+     "ofParcel": 0.10943167080331684,
+     "outsideArea": 146.64276221732143
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503258000_B0",
+   "localId": "Bos_0503258000_B0",
+   "factualArea": 130.24895000015385,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1297.3080759225388,
+    "z": 532.8359352440407
+   },
+   "edges": [
+    {
+     "plotId": 6038,
+     "parcelArea": 157.3762857154943,
+     "interArea": 32.25359256751835,
+     "ofFactual": 0.24763034609860773,
+     "ofParcel": 0.2049456970018124,
+     "outsideArea": 125.12269314797595
+    },
+    {
+     "plotId": 6028,
+     "parcelArea": 164.66199999453966,
+     "interArea": 20.233323025051504,
+     "ofFactual": 0.15534346361354626,
+     "ofParcel": 0.12287791370032224,
+     "outsideArea": 144.42867696948815
+    },
+    {
+     "plotId": 6043,
+     "parcelArea": 281.7142857154249,
+     "interArea": 19.108213219617028,
+     "ofFactual": 0.14670531485739008,
+     "ofParcel": 0.06782834307138859,
+     "outsideArea": 262.6060724958079
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503259000_B0",
+   "localId": "Bos_0503259000_B0",
+   "factualArea": 130.63129999995,
+   "ringVertices": 17,
+   "centroid": {
+    "x": -1290.297802434692,
+    "z": 530.158095254932
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503260000_B0",
+   "localId": "Bos_0503260000_B0",
+   "factualArea": 127.44994999998016,
+   "ringVertices": 17,
+   "centroid": {
+    "x": -1283.3267117785488,
+    "z": 527.5866863606924
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503261000_B0",
+   "localId": "Bos_0503261000_B0",
+   "factualArea": 122.28920000005746,
+   "ringVertices": 16,
+   "centroid": {
+    "x": -1276.6579455665485,
+    "z": 525.0489621091513
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503262000_B0",
+   "localId": "Bos_0503262000_B0",
+   "factualArea": 139.5648499999661,
+   "ringVertices": 11,
+   "centroid": {
+    "x": -1269.4861089797955,
+    "z": 523.0268706184917
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503263000_B0",
+   "localId": "Bos_0503263000_B0",
+   "factualArea": 191.97104999999283,
+   "ringVertices": 33,
+   "centroid": {
+    "x": -1261.2586651815654,
+    "z": 521.7080608968647
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503264000_B0",
+   "localId": "Bos_0503264000_B0",
+   "factualArea": 167.04689999995753,
+   "ringVertices": 25,
+   "centroid": {
+    "x": -1253.543584224046,
+    "z": 519.1226076698975
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503268000_B0",
+   "localId": "Bos_0503268000_B0",
+   "factualArea": 152.1420499999076,
+   "ringVertices": 45,
+   "centroid": {
+    "x": -1224.7814068598536,
+    "z": 507.1099794973356
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503269000_B0",
+   "localId": "Bos_0503269000_B0",
+   "factualArea": 168.83799999993062,
+   "ringVertices": 38,
+   "centroid": {
+    "x": -1216.6171272908368,
+    "z": 506.23313346431206
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503270000_B0",
+   "localId": "Bos_0503270000_B0",
+   "factualArea": 242.67000000015832,
+   "ringVertices": 50,
+   "centroid": {
+    "x": -1208.1193310652332,
+    "z": 504.01509166414564
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503381000_B0",
+   "localId": "Bos_0503381000_B0",
+   "factualArea": 191.05689999990864,
+   "ringVertices": 31,
+   "centroid": {
+    "x": -1347.2864017501443,
+    "z": 452.55883213071223
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503382000_B0",
+   "localId": "Bos_0503382000_B0",
+   "factualArea": 186.21289999998407,
+   "ringVertices": 40,
+   "centroid": {
+    "x": -1354.6405641902554,
+    "z": 454.11942744121643
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503383000_B0",
+   "localId": "Bos_0503383000_B0",
+   "factualArea": 216.59354999987409,
+   "ringVertices": 41,
+   "centroid": {
+    "x": -1361.687670339492,
+    "z": 455.3372429758386
+   },
+   "edges": []
+  },
+  {
+   "id": "bb-Bos_0503384000_B0",
+   "localId": "Bos_0503384000_B0",
+   "factualArea": 214.05439999996452,
+   "ringVertices": 22,
+   "centroid": {
+    "x": -1368.7103768123648,
+    "z": 461.17196597378506
+   },
+   "edges": [
+    {
+     "plotId": 6255,
+     "parcelArea": 79.12269173987443,
+     "interArea": 17.54938869009493,
+     "ofFactual": 0.08198564799461183,
+     "ofParcel": 0.22179969240418035,
+     "outsideArea": 61.5733030497795
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503385000_B0",
+   "localId": "Bos_0503385000_B0",
+   "factualArea": 186.30195000011008,
+   "ringVertices": 24,
+   "centroid": {
+    "x": -1376.9481228230802,
+    "z": 463.682507653934
+   },
+   "edges": [
+    {
+     "plotId": 6255,
+     "parcelArea": 79.12269173987443,
+     "interArea": 61.5733030497795,
+     "ofFactual": 0.3305027298412234,
+     "ofParcel": 0.7782003075958196,
+     "outsideArea": 17.54938869009493
+    }
+   ]
+  },
+  {
+   "id": "bb-Bos_0503386000_B0",
+   "localId": "Bos_0503386000_B0",
+   "factualArea": 193.24560000019846,
+   "ringVertices": 25,
+   "centroid": {
+    "x": -1384.5494362333632,
+    "z": 466.20795422492756
+   },
+   "edges": []
+  }
+ ]
+}

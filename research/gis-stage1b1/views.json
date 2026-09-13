@@ -1,0 +1,92 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/views/0.1.0",
+ "gate": "stage1b1-assoc/1.0.0",
+ "tod": 10.5,
+ "weather": "clear",
+ "quality": "high",
+ "viewport": "800x450",
+ "warmup": 26,
+ "holdActors": true,
+ "runs": [
+  {
+   "n": 5,
+   "ids": [
+    "bb-Bos_0501364000_B0",
+    "bb-Bos_0501365000_B0",
+    "bb-Bos_0501366000_B0",
+    "bb-Bos_0501367000_B0",
+    "bb-Bos_0501368000_B0"
+   ]
+  },
+  {
+   "n": 3,
+   "ids": [
+    "bb-Bos_0501372000_B0",
+    "bb-Bos_0501373000_B0",
+    "bb-Bos_0501374000_B0"
+   ]
+  }
+ ],
+ "views": [
+  {
+   "id": "A_newbury_run5",
+   "note": "5-building factual run, perpendicular",
+   "pos": [
+    -1068.1,
+    5.6,
+    522.9
+   ],
+   "look": [
+    -1076.4,
+    8,
+    498.2
+   ],
+   "fov": 58
+  },
+  {
+   "id": "B_newbury_run3",
+   "note": "3-building factual run, perpendicular",
+   "pos": [
+    -1116.6,
+    5.6,
+    537.4
+   ],
+   "look": [
+    -1124.2,
+    8,
+    514.7
+   ],
+   "fov": 58
+  },
+  {
+   "id": "C_newbury_oblique",
+   "note": "along the run — setback, rhythm, streetwall line",
+   "pos": [
+    -1033.3,
+    6,
+    494.7
+   ],
+   "look": [
+    -1090,
+    9,
+    503.6
+   ],
+   "fov": 55
+  },
+  {
+   "id": "D_block_overview",
+   "note": "block as a whole — footprint and roofscape",
+   "pos": [
+    -1056.7,
+    58,
+    557
+   ],
+   "look": [
+    -1080.2,
+    8,
+    486.8
+   ],
+   "fov": 55
+  }
+ ]
+}

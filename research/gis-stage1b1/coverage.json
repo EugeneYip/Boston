@@ -1,0 +1,118 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/coverage/0.1.0",
+ "gate": "stage1b1-assoc/1.0.0",
+ "blockFaces": [
+  {
+   "street": "Newbury Street",
+   "key": "40|1",
+   "totalFrontageM": 164.7,
+   "factualFrontageM": 65.6,
+   "factualPct": 39.8,
+   "factualBuildings": 8
+  }
+ ],
+ "faceCount": 43,
+ "longestFactualRun": {
+  "metres": 41.3,
+  "buildings": 5,
+  "street": "Newbury Street"
+ },
+ "replaced": [
+  {
+   "id": "bb-Bos_0501364000_B0",
+   "cx": -1061.5,
+   "cz": 492.1,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 14.3,
+   "storeys": 4,
+   "ringVertices": 27,
+   "specVertices": 8,
+   "streetBareM2": 7.5
+  },
+  {
+   "id": "bb-Bos_0501365000_B0",
+   "cx": -1070.7,
+   "cz": 495.8,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 18,
+   "storeys": 5,
+   "ringVertices": 25,
+   "specVertices": 7,
+   "streetBareM2": 0
+  },
+  {
+   "id": "bb-Bos_0501366000_B0",
+   "cx": -1076.5,
+   "cz": 498.6,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 24.5,
+   "storeys": 7,
+   "ringVertices": 26,
+   "specVertices": 8,
+   "streetBareM2": 0
+  },
+  {
+   "id": "bb-Bos_0501367000_B0",
+   "cx": -1083.2,
+   "cz": 501,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 17.1,
+   "storeys": 5,
+   "ringVertices": 20,
+   "specVertices": 8,
+   "streetBareM2": 0
+  },
+  {
+   "id": "bb-Bos_0501368000_B0",
+   "cx": -1090,
+   "cz": 503.6,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 17.2,
+   "storeys": 5,
+   "ringVertices": 10,
+   "specVertices": 8,
+   "streetBareM2": 8
+  },
+  {
+   "id": "bb-Bos_0501372000_B0",
+   "cx": -1118.7,
+   "cz": 511.2,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 17.8,
+   "storeys": 5,
+   "ringVertices": 22,
+   "specVertices": 13,
+   "streetBareM2": 10.5
+  },
+  {
+   "id": "bb-Bos_0501373000_B0",
+   "cx": -1123.7,
+   "cz": 514.7,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 13.9,
+   "storeys": 4,
+   "ringVertices": 27,
+   "specVertices": 8,
+   "streetBareM2": 0.3
+  },
+  {
+   "id": "bb-Bos_0501374000_B0",
+   "cx": -1130.1,
+   "cz": 518.1,
+   "parcels": 1,
+   "street": "Newbury Street",
+   "heightM": 17.7,
+   "storeys": 5,
+   "ringVertices": 27,
+   "specVertices": 5,
+   "streetBareM2": 0.3
+  }
+ ]
+}

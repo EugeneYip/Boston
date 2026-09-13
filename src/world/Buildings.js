@@ -709,34 +709,11 @@ export default class Buildings {
       this._usedFallback = true;
     }
     this._indexRoads(city);
-    // Stage 1B prototype seam — DEFAULT OFF. Without `?gisBackBay=1`
-    // `gisApply` is never called and `this.plots` is the array built above,
-    // by identity. See `src/world/GisBackBay.js`; it swaps `plot.polygon` on a
-    // small verified Back Bay subset and touches nothing else.
-    this.gisLedger = null;
-    if (gisEnabled()) {
-      // The predicate runs the same two rejections the spec loop runs: the
-      // corridor clip, and `makeSpec`'s own footprint minimums. A candidate
-      // that fails either would suppress parcels and render nothing.
-      const survives = (poly) => {
-        const cut = this._clipParcel(poly);
-        if (!cut) return false;
-        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-        for (const p of cut.poly) {
-          if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
-          if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z;
-        }
-        if (x1 - x0 < 3.2 || z1 - z0 < 3.2) return false;
-        if (Math.abs(polyArea2(cut.poly)) * 0.5 < 24) return false;
-        const c = polyCentroid(cut.poly);
-        return !isReserved(c.x, c.z);
-      };
-      const r = gisApply(this.plots, survives);
-      this.plots = r.plots;
-      this.gisLedger = r.ledger;
-      console.info(`[gis-backbay] ${r.ledger.replaced.length} replaced, ` +
-        `${r.ledger.fallback.length} fallback, ${r.ledger.suppressedPlotIds.length} parcels suppressed`);
-    }
+    // The Stage 1B.1 GIS seam is NOT here. It used to be — Stage 1B swapped
+    // `plot.polygon` before `_superblocks` ran — and that was wrong twice over:
+    // it associated against lots rather than against the visual units a run of
+    // lots fuses into, and it had to guess whether the replacement would
+    // survive. Both live in `_buildSpecs` now, where the answer is known.
     // `districtAt` is nullable BY CONTRACT and in two distinct ways — outside the
     // baked raster, and inside it on ground no neighbourhood claims (41% of
     // cells). `_districtOf` below is the only place that decides what to do
@@ -1195,43 +1172,90 @@ export default class Buildings {
     };
   }
 
+  /**
+   * One parcel in, one visual building out — or `null` where the pipeline
+   * refuses it.
+   *
+   * Extracted verbatim from `_buildSpecs`'s loop body so that a caller can ask
+   * **"would this footprint actually become a building?"** and get the real
+   * answer instead of an approximation of it. Stage 1B asked that question with
+   * a hand-written predicate that replayed the corridor clip and `makeSpec`'s
+   * minimums but not `_respec`, `_districtOf` or `_fitOrnament`; two candidates
+   * were rejected by the stages it did not replay, *after* their procedural
+   * parcels had already been suppressed, and the city was left with two holes.
+   * A predicate that lists the ways a pipeline can say no will always be one
+   * refactor behind the pipeline. Running it is not.
+   *
+   * The seed is the caller's so the `plot.id ?? i` fallback keeps its meaning
+   * and every baseline roll stays bit-for-bit what it was.
+   *
+   * @returns {{spec: ?object, clipped: number, dropped: number}}
+   */
+  _specFor(plot, seed) {
+    const r = { spec: null, clipped: 0, dropped: 0 };
+    if (!plot?.polygon || plot.polygon.length < 3) return r;
+    const cut = this._clipParcel(plot.polygon);
+    if (!cut) { r.dropped = 1; return r; }
+    const poly = cut.poly;
+    if (cut.changed) r.clipped = 1;
+    const c = polyCentroid(poly);
+    if (isReserved(c.x, c.z)) return r;
+    // The city publishes a per-parcel ground elevation; prefer it over
+    // sampling the terrain ourselves so a building can never float or sink
+    // relative to the pavement the city laid at the same height.
+    const g = Number.isFinite(plot.y) ? plot.y : this.groundAt(c.x, c.z);
+    const base = g - 0.25;
+    if (!Number.isFinite(base)) return r;
+    const src = this._respec(plot, poly, cut.cutDirs);
+    const dist = this._districtOf(plot, c.x, c.z);
+    const spec = makeSpec(dist === src.district ? src : { ...src, district: dist }, base, seed);
+    if (!spec) return r;
+    this._fitOrnament(spec);
+    spec.cx = c.x; spec.cz = c.z;
+    // Conservative radius for culling and collider streaming.
+    let rad = 0;
+    for (const p of poly) {
+      const d = Math.hypot(p.x - c.x, p.z - c.z);
+      if (d > rad) rad = d;
+    }
+    spec.radius = rad + 2.5;
+    r.spec = spec;
+    return r;
+  }
+
   _buildSpecs() {
     const specs = [];
     this._clipStats = { clipped: 0, dropped: 0, trimmed: 0, superblocks: 0 };
     const parcels = this._superblocks(this.plots);
     const n = Math.min(parcels.length, MAX_BUILDINGS);
     let clipped = 0, dropped = 0;
+    const seedOf = (plot, i) => (plot?.id ?? i) * 2654435761 % 1048573 | 0;
+    // Stage 1B.1 prototype seam — DEFAULT OFF. Association runs here, after
+    // `_superblocks`, because a fused run of lots is ONE procedural visual and
+    // suppression has to operate on the unit the player actually sees.
+    // `gisApply` is handed `_specFor` itself: it materialises a candidate's
+    // spec BEFORE anything is suppressed, and suppresses only what it has
+    // already replaced. See `src/world/GisBackBay.js`.
+    this.gisLedger = null;
+    let gisSpecs = null, gisSuppressed = null;
+    if (gisEnabled()) {
+      const r = gisApply(parcels.slice(0, n), (plot, i) => this._specFor(plot, seedOf(plot, i)));
+      gisSpecs = r.specs; gisSuppressed = r.suppressed; this.gisLedger = r.ledger;
+      console.info(`[gis-backbay] ${r.ledger.replaced.length} replaced, ` +
+        `${r.ledger.fallback.length} fallback, ${r.suppressed.size} parcels suppressed, ` +
+        `${r.specs.length} factual buildings materialised`);
+    }
     for (let i = 0; i < n; i++) {
       const plot = parcels[i];
-      if (!plot?.polygon || plot.polygon.length < 3) continue;
-      const cut = this._clipParcel(plot.polygon);
-      if (!cut) { dropped++; continue; }
-      const poly = cut.poly;
-      if (cut.changed) clipped++;
-      const c = polyCentroid(poly);
-      if (isReserved(c.x, c.z)) continue;
-      // The city publishes a per-parcel ground elevation; prefer it over
-      // sampling the terrain ourselves so a building can never float or sink
-      // relative to the pavement the city laid at the same height.
-      const g = Number.isFinite(plot.y) ? plot.y : this.groundAt(c.x, c.z);
-      const base = g - 0.25;
-      if (!Number.isFinite(base)) continue;
-      const src = this._respec(plot, poly, cut.cutDirs);
-      const dist = this._districtOf(plot, c.x, c.z);
-      const spec = makeSpec(dist === src.district ? src : { ...src, district: dist },
-        base, (plot.id ?? i) * 2654435761 % 1048573 | 0);
-      if (!spec) continue;
-      this._fitOrnament(spec);
-      spec.cx = c.x; spec.cz = c.z;
-      // Conservative radius for culling and collider streaming.
-      let rad = 0;
-      for (const p of poly) {
-        const d = Math.hypot(p.x - c.x, p.z - c.z);
-        if (d > rad) rad = d;
-      }
-      spec.radius = rad + 2.5;
-      specs.push(spec);
+      if (gisSuppressed && gisSuppressed.has(plot?.id)) continue;
+      const r = this._specFor(plot, seedOf(plot, i));
+      clipped += r.clipped; dropped += r.dropped;
+      if (r.spec) specs.push(r.spec);
     }
+    // Appended, not interleaved: the baseline order is `RoadNetwork`'s
+    // distance-from-centre sort and `MAX_BUILDINGS` is a count cap on it, so
+    // inserting here would shift which distant building falls off the end.
+    if (gisSpecs) for (const s of gisSpecs) specs.push(s);
     this.specs = specs;
     this._clipStats.clipped = clipped;
     this._clipStats.dropped = dropped;

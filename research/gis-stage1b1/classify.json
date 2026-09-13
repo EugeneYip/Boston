@@ -1,0 +1,426 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/classify/0.2.0",
+ "cellM": 0.5,
+ "sweep": [
+  {
+   "minShare": 0.2,
+   "minMargin": 0.2,
+   "ownedParcels": 80,
+   "contestedParcels": 12,
+   "candidates": 39,
+   "contiguous": 33,
+   "multi": 11,
+   "maxN": 8,
+   "factExplained": {
+    "p10": 0.197,
+    "p50": 0.447,
+    "p90": 0.75
+   },
+   "bareClaim": {
+    "p10": 0.282,
+    "p50": 0.577,
+    "p90": 0.741
+   }
+  },
+  {
+   "minShare": 0.2,
+   "minMargin": 0.35,
+   "ownedParcels": 72,
+   "contestedParcels": 20,
+   "candidates": 34,
+   "contiguous": 28,
+   "multi": 11,
+   "maxN": 8,
+   "factExplained": {
+    "p10": 0.194,
+    "p50": 0.511,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.535,
+    "p90": 0.741
+   }
+  },
+  {
+   "minShare": 0.2,
+   "minMargin": 0.5,
+   "ownedParcels": 67,
+   "contestedParcels": 25,
+   "candidates": 32,
+   "contiguous": 28,
+   "multi": 11,
+   "maxN": 8,
+   "factExplained": {
+    "p10": 0.194,
+    "p50": 0.443,
+    "p90": 0.75
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.517,
+    "p90": 0.741
+   }
+  },
+  {
+   "minShare": 0.25,
+   "minMargin": 0.2,
+   "ownedParcels": 71,
+   "contestedParcels": 3,
+   "candidates": 34,
+   "contiguous": 28,
+   "multi": 10,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.222,
+    "p50": 0.538,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.539,
+    "p90": 0.725
+   }
+  },
+  {
+   "minShare": 0.25,
+   "minMargin": 0.35,
+   "ownedParcels": 64,
+   "contestedParcels": 10,
+   "candidates": 30,
+   "contiguous": 24,
+   "multi": 10,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.239,
+    "p50": 0.567,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.517,
+    "p90": 0.697
+   }
+  },
+  {
+   "minShare": 0.25,
+   "minMargin": 0.5,
+   "ownedParcels": 59,
+   "contestedParcels": 15,
+   "candidates": 28,
+   "contiguous": 24,
+   "multi": 10,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.239,
+    "p50": 0.538,
+    "p90": 0.75
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.506,
+    "p90": 0.697
+   }
+  },
+  {
+   "minShare": 0.3,
+   "minMargin": 0.2,
+   "ownedParcels": 64,
+   "contestedParcels": 1,
+   "candidates": 29,
+   "contiguous": 23,
+   "multi": 10,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.282,
+    "p50": 0.567,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.51,
+    "p90": 0.655
+   }
+  },
+  {
+   "minShare": 0.3,
+   "minMargin": 0.35,
+   "ownedParcels": 60,
+   "contestedParcels": 5,
+   "candidates": 27,
+   "contiguous": 21,
+   "multi": 10,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.282,
+    "p50": 0.567,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.279,
+    "p50": 0.506,
+    "p90": 0.632
+   }
+  },
+  {
+   "minShare": 0.3,
+   "minMargin": 0.5,
+   "ownedParcels": 55,
+   "contestedParcels": 10,
+   "candidates": 25,
+   "contiguous": 21,
+   "multi": 9,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.255,
+    "p50": 0.567,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.48,
+    "p90": 0.653
+   }
+  },
+  {
+   "minShare": 0.35,
+   "minMargin": 0.2,
+   "ownedParcels": 53,
+   "contestedParcels": 1,
+   "candidates": 24,
+   "contiguous": 20,
+   "multi": 9,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.282,
+    "p50": 0.602,
+    "p90": 1.282
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.48,
+    "p90": 0.595
+   }
+  },
+  {
+   "minShare": 0.35,
+   "minMargin": 0.35,
+   "ownedParcels": 52,
+   "contestedParcels": 2,
+   "candidates": 24,
+   "contiguous": 20,
+   "multi": 9,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.282,
+    "p50": 0.602,
+    "p90": 1.054
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.48,
+    "p90": 0.595
+   }
+  },
+  {
+   "minShare": 0.35,
+   "minMargin": 0.5,
+   "ownedParcels": 47,
+   "contestedParcels": 7,
+   "candidates": 22,
+   "contiguous": 20,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.602,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.449,
+    "p90": 0.577
+   }
+  },
+  {
+   "minShare": 0.4,
+   "minMargin": 0.2,
+   "ownedParcels": 48,
+   "contestedParcels": 1,
+   "candidates": 22,
+   "contiguous": 19,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.602,
+    "p90": 1.054
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.469,
+    "p90": 0.572
+   }
+  },
+  {
+   "minShare": 0.4,
+   "minMargin": 0.35,
+   "ownedParcels": 48,
+   "contestedParcels": 1,
+   "candidates": 22,
+   "contiguous": 19,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.602,
+    "p90": 1.054
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.469,
+    "p90": 0.572
+   }
+  },
+  {
+   "minShare": 0.4,
+   "minMargin": 0.5,
+   "ownedParcels": 44,
+   "contestedParcels": 5,
+   "candidates": 20,
+   "contiguous": 18,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.287,
+    "p50": 0.602,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.217,
+    "p50": 0.428,
+    "p90": 0.517
+   }
+  },
+  {
+   "minShare": 0.45,
+   "minMargin": 0.2,
+   "ownedParcels": 43,
+   "contestedParcels": 0,
+   "candidates": 19,
+   "contiguous": 16,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.287,
+    "p50": 0.598,
+    "p90": 1.054
+   },
+   "bareClaim": {
+    "p10": 0.216,
+    "p50": 0.428,
+    "p90": 0.517
+   }
+  },
+  {
+   "minShare": 0.45,
+   "minMargin": 0.35,
+   "ownedParcels": 43,
+   "contestedParcels": 0,
+   "candidates": 19,
+   "contiguous": 16,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.287,
+    "p50": 0.598,
+    "p90": 1.054
+   },
+   "bareClaim": {
+    "p10": 0.216,
+    "p50": 0.428,
+    "p90": 0.517
+   }
+  },
+  {
+   "minShare": 0.45,
+   "minMargin": 0.5,
+   "ownedParcels": 41,
+   "contestedParcels": 2,
+   "candidates": 19,
+   "contiguous": 17,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.287,
+    "p50": 0.544,
+    "p90": 0.76
+   },
+   "bareClaim": {
+    "p10": 0.216,
+    "p50": 0.404,
+    "p90": 0.51
+   }
+  },
+  {
+   "minShare": 0.5,
+   "minMargin": 0.2,
+   "ownedParcels": 33,
+   "contestedParcels": 0,
+   "candidates": 15,
+   "contiguous": 13,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.459,
+    "p90": 1.138
+   },
+   "bareClaim": {
+    "p10": 0.191,
+    "p50": 0.35,
+    "p90": 0.428
+   }
+  },
+  {
+   "minShare": 0.5,
+   "minMargin": 0.35,
+   "ownedParcels": 33,
+   "contestedParcels": 0,
+   "candidates": 15,
+   "contiguous": 13,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.459,
+    "p90": 1.138
+   },
+   "bareClaim": {
+    "p10": 0.191,
+    "p50": 0.35,
+    "p90": 0.428
+   }
+  },
+  {
+   "minShare": 0.5,
+   "minMargin": 0.5,
+   "ownedParcels": 33,
+   "contestedParcels": 0,
+   "candidates": 15,
+   "contiguous": 13,
+   "multi": 8,
+   "maxN": 7,
+   "factExplained": {
+    "p10": 0.256,
+    "p50": 0.459,
+    "p90": 1.138
+   },
+   "bareClaim": {
+    "p10": 0.191,
+    "p50": 0.35,
+    "p90": 0.428
+   }
+  }
+ ]
+}

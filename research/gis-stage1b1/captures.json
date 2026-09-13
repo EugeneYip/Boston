@@ -1,0 +1,142 @@
+{
+ "schemaVersion": "boston-gis-stage1b1/captures/0.1.0",
+ "gate": "stage1b1-assoc/1.0.0",
+ "server": "npm run verify (HMR-free, port 5290)",
+ "canvas": [
+  1350,
+  840
+ ],
+ "cssViewport": [
+  900,
+  560
+ ],
+ "common": {
+  "tod": 10.5,
+  "weather": "clear",
+  "quality": "high",
+  "warmup": 26,
+  "holdActors": true
+ },
+ "note": "Raw PNGs are local only (gitignored): research/gis-stage1b1/captures/. Camera metadata and hashes are committed so the pair is reproducible.",
+ "aaFloor": {
+  "pair": "A_overview_run5 candidate vs candidate-resettled",
+  "meanAbsDiff": 1.63,
+  "pctPixelsOver32": 0.59,
+  "why": "film grain is re-randomised per frame and actors spawn differently across page loads, so a per-pixel A/B is only meaningful against this A/A floor"
+ },
+ "views": [
+  {
+   "pos": [
+    -1076,
+    66,
+    545
+   ],
+   "look": [
+    -1080,
+    2,
+    498
+   ],
+   "fov": 55,
+   "class": "D higher/overview \u2014 block centred on the 5-building factual run",
+   "id": "A_overview_run5",
+   "files": {
+    "control": {
+     "path": "research/gis-stage1b1/captures/A_overview_run5-control.png",
+     "bytes": 2853696,
+     "sha256": "11c91228289458a5c84b49ed599d0f5bb3caa5594627446afe51f9e586f16b22"
+    },
+    "candidate": {
+     "path": "research/gis-stage1b1/captures/A_overview_run5-candidate.png",
+     "bytes": 2847380,
+     "sha256": "d749020082bb83a0eaf4852672b32c02a20128e2d43ff24e3276efe1b633925a"
+    }
+   }
+  },
+  {
+   "pos": [
+    -1050,
+    13,
+    508.7
+   ],
+   "look": [
+    -1098,
+    6,
+    506
+   ],
+   "fov": 58,
+   "class": "A primary streetwall close \u2014 Newbury carriageway",
+   "id": "B_street_newbury",
+   "files": {
+    "control": {
+     "path": "research/gis-stage1b1/captures/B_street_newbury-control.png",
+     "bytes": 2654262,
+     "sha256": "15bd87ef9553408db820182a9c4dda36edc30045a4f9ca4ebcc15d9ce8af651d"
+    },
+    "candidate": {
+     "path": "research/gis-stage1b1/captures/B_street_newbury-candidate.png",
+     "bytes": 2654380,
+     "sha256": "996d2139d9307a0b432214863fdb67093c54b3825ad920006862aed27ec4452c"
+    }
+   }
+  },
+  {
+   "pos": [
+    -1124,
+    66,
+    562
+   ],
+   "look": [
+    -1128,
+    2,
+    515
+   ],
+   "fov": 55,
+   "class": "B second streetwall \u2014 block centred on the 3-building run",
+   "id": "C_overview_run3",
+   "files": {
+    "control": {
+     "path": "research/gis-stage1b1/captures/C_overview_run3-control.png",
+     "bytes": 2877825,
+     "sha256": "4c514d28757c782eaa5779790b2fb1e971505d8c777e1e055819e153dd651e7f"
+    },
+    "candidate": {
+     "path": "research/gis-stage1b1/captures/C_overview_run3-candidate.png",
+     "bytes": 2869841,
+     "sha256": "1d10c3abac6f9634d648fdb2ef7ca51576fdf1d8d3b02a8c65205d18f8ca6e8a"
+    }
+   }
+  },
+  {
+   "pos": [
+    -1030,
+    40,
+    520
+   ],
+   "look": [
+    -1100,
+    4,
+    500
+   ],
+   "fov": 55,
+   "class": "C oblique block \u2014 setback and block rhythm",
+   "id": "D_oblique_block",
+   "files": {
+    "control": {
+     "path": "research/gis-stage1b1/captures/D_oblique_block-control.png",
+     "bytes": 2861517,
+     "sha256": "106fd1e8eaa491f427a26d62c144ab8f2aaae184eb5cac5f622a17d74bb1a892"
+    },
+    "candidate": {
+     "path": "research/gis-stage1b1/captures/D_oblique_block-candidate.png",
+     "bytes": 2854374,
+     "sha256": "b0eb5ef83eb50ef34ad6ae5b05aa01edccc8fb016912f877a274985e619d49c7"
+    }
+   }
+  }
+ ],
+ "stabilityCapture": {
+  "path": "research/gis-stage1b1/captures/A_overview_run5-candidate-resettled.png",
+  "bytes": 2845625,
+  "sha256": "350bbb356b6a39fbc7a4db1b4a5be5b2bbf480a5f2100fec2994eac8cfc6643f"
+ }
+}
