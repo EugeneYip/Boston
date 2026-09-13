@@ -1,9 +1,9 @@
 /**
  * Back Bay factual road centrelines — GENERATED, do not hand-edit.
  *
- *   node research/gis-stage2a1/build-candidate.mjs
+ *   node research/gis-stage2a3/build-candidate.mjs
  *
- * Stage 2A.1 prototype data. DEFAULT OFF: nothing imports this unless
+ * Stage 2A.3 prototype data. DEFAULT OFF: nothing imports this unless
  * `?gisRoads=1` is present. See `src/world/GisRoads.js`.
  *
  * Source      Boston Street Segments (SAM System), Boston Maps, City of Boston
@@ -20,13 +20,22 @@
  * kerb and parking stay procedural, inherited from Boston's own entry for the
  * street of that name.
  *
- * CONTAINMENT (Stage 2A.1). Factual geometry is CLIPPED TO THE CORE so it cannot
- * create junctions outside it, and Boston's own streets are cut at the nearest
- * baseline junction beyond the core — never mid-edge — so every edge outside the
- * seam keeps both endpoints and regenerates bit-identically. Clipped streets
- * carry the matching slice of every per-vertex array (`median`, `y`, `bridge`);
- * Stage 2A kept them whole, which misaligned Huntington's median and caused the
- * `nuniv` station section to be refused.
+ * CONTAINMENT (Stage 2A.3). Factual geometry is CLIPPED TO THE CORE so it cannot
+ * create junctions outside it, and Boston's own streets are cut ON THE LOT GRID
+ * just beyond the core — never mid-edge — so `buildPlots`' per-edge lot phase is
+ * preserved and every lot outside the seam regenerates where the baseline put
+ * it. Clipped streets carry the matching slice of every per-vertex array
+ * (`median`, `y`, `bridge`); Stage 2A kept them whole, which misaligned
+ * Huntington's median and caused the `nuniv` station section to be refused.
+ *
+ * SEAM PORTS. Each factual endpoint on the core boundary is paired with the
+ * hand-authored crossing of the SAME concept, the SAME boundary face and the
+ * same order along that face, and joined by a synthetic `transitionConnector`
+ * to that crossing's lot-grid cut stub. A port with no such counterpart is
+ * TERMINAL and carries `noSnap`, listing the endpoint indices that
+ * `RoadNetwork.build()`'s 21 m dangling-endpoint snap must leave alone —
+ * without it the port is adopted by whatever edge is nearest and splits it
+ * mid-edge, re-phasing that edge's lots for its whole length.
  *
  * EXCLUSIONS. Grade-separated features are dropped, not flattened: the Turnpike
  * runs under Back Bay at ZLEV -1 and its ramps at -2..0. `Exeter PLZ` is a
@@ -50,7 +59,7 @@ export const GIS_ROADS_SOURCE = {
  },
  "surfaceFilter": "F_ZLEV >= 0 AND T_ZLEV >= 0 AND CFCC != A71",
  "excludedFeatures": 8,
- "containment": "factual geometry clipped to the core; Boston streets cut at the nearest baseline junction beyond it",
+ "containment": "factual geometry clipped to the core; Boston streets cut on the lot grid just beyond it; seam ports paired by (concept, boundary face, order along face)",
  "seamMaxBeyondCoreM": 216.15
 };
 
@@ -88,6 +97,9 @@ export const GIS_ROADS = [
   "name": "Dartmouth Street",
   "type": "arterial",
   "lanes": 3,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.3505548,
@@ -136,6 +148,9 @@ export const GIS_ROADS = [
   "name": "Dartmouth Street",
   "type": "arterial",
   "lanes": 3,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.351281,
@@ -161,6 +176,9 @@ export const GIS_ROADS = [
   "type": "street",
   "lanes": 2,
   "oneway": 1,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.350084,
@@ -459,6 +477,9 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 432",
   "type": "alley",
   "lanes": 1,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.350084,
@@ -555,6 +576,9 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 440",
   "type": "alley",
   "lanes": 1,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.350503,
@@ -629,6 +653,9 @@ export const GIS_ROADS = [
   "lanes": 2,
   "oneway": 1,
   "mall": true,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.351297,
@@ -835,6 +862,9 @@ export const GIS_ROADS = [
   "lanes": 2,
   "oneway": 1,
   "mall": true,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.3511294,
@@ -861,6 +891,9 @@ export const GIS_ROADS = [
   "lanes": 2,
   "oneway": 1,
   "mall": true,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.3505507,
@@ -977,6 +1010,9 @@ export const GIS_ROADS = [
   "name": "Stuart ST",
   "type": "arterial",
   "lanes": 4,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.3479285,
@@ -1058,6 +1094,9 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.3487284,
@@ -1146,6 +1185,9 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
+  "noSnap": [
+   0
+  ],
   "path": [
    [
     42.347703,
@@ -1170,6 +1212,9 @@ export const GIS_ROADS = [
   "name": "Ring Road",
   "type": "street",
   "lanes": 2,
+  "noSnap": [
+   1
+  ],
   "path": [
    [
     42.3491606,
@@ -1309,6 +1354,9 @@ export const GIS_ROADS_CLIPPED = [
       42.3511122,
       -71.0824766
      ]
+    ],
+    "noSnap": [
+     1
     ]
    },
    {
@@ -1337,6 +1385,9 @@ export const GIS_ROADS_CLIPPED = [
       42.35389070287522,
       -71.07123934685201
      ]
+    ],
+    "noSnap": [
+     0
     ]
    }
   ]
@@ -1371,6 +1422,9 @@ export const GIS_ROADS_CLIPPED = [
       42.351309,
       -71.0799184
      ]
+    ],
+    "noSnap": [
+     1
     ]
    },
    {
@@ -1569,6 +1623,9 @@ export const GIS_ROADS_CLIPPED = [
       42.348933616304755,
       -71.0882226364101
      ]
+    ],
+    "noSnap": [
+     0
     ]
    }
   ]
@@ -1591,6 +1648,9 @@ export const GIS_ROADS_CLIPPED = [
       42.3504871,
       -71.0775343
      ]
+    ],
+    "noSnap": [
+     1
     ]
    },
    {
@@ -1651,6 +1711,9 @@ export const GIS_ROADS_CLIPPED = [
       42.3513277,
       -71.0822564
      ]
+    ],
+    "noSnap": [
+     1
     ]
    }
   ]
@@ -1701,8 +1764,8 @@ export const GIS_ROADS_CLIPPED = [
    {
     "path": [
      [
-      42.3476796,
-      -71.0795699
+      42.3476508,
+      -71.0795903
      ],
      [
       42.34672,
@@ -1766,142 +1829,12 @@ export const GIS_ROADS_CLIPPED = [
 /** SYNTHETIC seam joins. NOT factual SAM geometry; they exist only in the transition seam. */
 export const GIS_ROADS_CONNECTORS = [
  {
-  "name": "Boylston Street",
-  "type": "arterial",
-  "lanes": 4,
-  "transitionConnector": true,
-  "lengthM": 11.45,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3500356,
-    -71.077569
-   ],
-   [
-    42.3499459,
-    -71.077501
-   ]
-  ]
- },
- {
-  "name": "Newbury Street",
-  "type": "street",
-  "lanes": 2,
-  "oneway": 1,
-  "transitionConnector": true,
-  "lengthM": 8.44,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3510197,
-    -71.0775637
-   ],
-   [
-    42.350944,
-    -71.077569
-   ]
-  ]
- },
- {
-  "name": "Newbury Street",
-  "type": "street",
-  "lanes": 2,
-  "oneway": 1,
-  "transitionConnector": true,
-  "lengthM": 20.03,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3496266,
-    -71.082431
-   ],
-   [
-    42.3497953,
-    -71.0825156
-   ]
-  ]
- },
- {
-  "name": "Public Alley 442",
-  "type": "alley",
-  "lanes": 1,
-  "transitionConnector": true,
-  "lengthM": 9.25,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3491902,
-    -71.082431
-   ],
-   [
-    42.3492626,
-    -71.0824862
-   ]
-  ]
- },
- {
-  "name": "Commonwealth Avenue Outbound",
-  "type": "street",
-  "lanes": 2,
-  "oneway": 1,
-  "transitionConnector": true,
-  "lengthM": 30.29,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3509418,
-    -71.082431
-   ],
-   [
-    42.3506732,
-    -71.0824896
-   ]
-  ]
- },
- {
-  "name": "Commonwealth Avenue Inbound",
-  "type": "street",
-  "lanes": 2,
-  "oneway": 1,
-  "transitionConnector": true,
-  "lengthM": 13.91,
-  "toBaselineNode": true,
-  "path": [
-   [
-    42.351297,
-    -71.079661
-   ],
-   [
-    42.3513325,
-    -71.0798231
-   ]
-  ]
- },
- {
-  "name": "Boylston Street",
-  "type": "arterial",
-  "lanes": 4,
-  "transitionConnector": true,
-  "lengthM": 1.86,
-  "toBaselineNode": false,
-  "path": [
-   [
-    42.3487215,
-    -71.082453
-   ],
-   [
-    42.3487252,
-    -71.082431
-   ]
-  ]
- },
- {
   "name": "Blagden Street",
   "type": "street",
   "lanes": 2,
   "transitionConnector": true,
   "lengthM": 33.55,
-  "toBaselineNode": false,
+  "face": "x1",
   "path": [
    [
     42.3493853,
@@ -1914,12 +1847,86 @@ export const GIS_ROADS_CONNECTORS = [
   ]
  },
  {
+  "name": "Boylston Street",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 1.86,
+  "face": "x0",
+  "path": [
+   [
+    42.3487215,
+    -71.082453
+   ],
+   [
+    42.3487252,
+    -71.082431
+   ]
+  ]
+ },
+ {
+  "name": "Boylston Street",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 11.45,
+  "face": "x1",
+  "path": [
+   [
+    42.3500356,
+    -71.077569
+   ],
+   [
+    42.3499459,
+    -71.077501
+   ]
+  ]
+ },
+ {
+  "name": "Commonwealth Avenue Outbound",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 30.28,
+  "face": "x0",
+  "path": [
+   [
+    42.3509418,
+    -71.082431
+   ],
+   [
+    42.3506732,
+    -71.0824896
+   ]
+  ]
+ },
+ {
+  "name": "Exeter Street",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 45.32,
+  "face": "z0",
+  "path": [
+   [
+    42.3513325,
+    -71.0798231
+   ],
+   [
+    42.351297,
+    -71.0803719
+   ]
+  ]
+ },
+ {
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
   "transitionConnector": true,
-  "lengthM": 28.93,
-  "toBaselineNode": false,
+  "lengthM": 28.92,
+  "face": "x1",
   "path": [
    [
     42.3492151,
@@ -1928,6 +1935,98 @@ export const GIS_ROADS_CONNECTORS = [
    [
     42.348958,
     -71.077569
+   ]
+  ]
+ },
+ {
+  "name": "Huntington Avenue",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 55.89,
+  "face": "z1",
+  "path": [
+   [
+    42.347703,
+    -71.0789146
+   ],
+   [
+    42.3476508,
+    -71.0795903
+   ]
+  ]
+ },
+ {
+  "name": "Newbury Street",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 20.03,
+  "face": "x0",
+  "path": [
+   [
+    42.3496266,
+    -71.082431
+   ],
+   [
+    42.3497953,
+    -71.0825156
+   ]
+  ]
+ },
+ {
+  "name": "Newbury Street",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 8.44,
+  "face": "x1",
+  "path": [
+   [
+    42.3510197,
+    -71.0775637
+   ],
+   [
+    42.350944,
+    -71.077569
+   ]
+  ]
+ },
+ {
+  "name": "Public Alley 435",
+  "type": "alley",
+  "lanes": 1,
+  "transitionConnector": true,
+  "lengthM": 65.15,
+  "face": "z0",
+  "path": [
+   [
+    42.3513019,
+    -71.0786444
+   ],
+   [
+    42.351297,
+    -71.0778525
+   ]
+  ]
+ },
+ {
+  "name": "Public Alley 442",
+  "type": "alley",
+  "lanes": 1,
+  "transitionConnector": true,
+  "lengthM": 9.26,
+  "face": "x0",
+  "path": [
+   [
+    42.3491902,
+    -71.082431
+   ],
+   [
+    42.3492626,
+    -71.0824862
    ]
   ]
  }

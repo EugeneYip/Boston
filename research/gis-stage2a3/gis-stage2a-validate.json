@@ -1,0 +1,70 @@
+{
+ "schemaVersion": "boston-gis-stage2a/validate/0.1.0",
+ "fingerprints": {
+  "off": "5fa6c6be79473213",
+  "offQ": "5fa6c6be79473213",
+  "on": "69df72621a056907",
+  "both": "5fa6c6be79473213",
+  "bb": "07160ebe8509a742"
+ },
+ "checks": {
+  "flag absent ⇒ road ledger null": true,
+  "unrelated flag ⇒ road ledger null": true,
+  "flag absent ⇒ city fingerprint identical to unrelated-flag build": true,
+  "flag absent ⇒ baseline road count": true,
+  "flag absent ⇒ baseline plot count": true,
+  "flag absent ⇒ baseline spec count": true,
+  "flag absent ⇒ baseline clip stats": true,
+  "?gisRoads=1 changes the city": true,
+  "both flags ⇒ BOTH disabled, city is baseline": true,
+  "both flags ⇒ no road ledger": true,
+  "both flags ⇒ no building ledger": true,
+  "?gisBackBay alone still works as before": true,
+  "?gisBackBay alone leaves roads untouched": true,
+  "candidate: all road coordinates finite": true,
+  "candidate: no zero-length road": true,
+  "candidate introduces no new duplicate edge": true,
+  "candidate: no self-loop": true,
+  "candidate: no tunnel line on the surface network": true,
+  "candidate: all key streets present in the core": true,
+  "candidate: parcels regenerate": true,
+  "candidate: buildings regenerate": true,
+  "candidate: no parcel with non-finite geometry": true,
+  "candidate: no spec with non-finite geometry": true,
+  "candidate: sidewalks regenerate": true,
+  "candidate: sidewalk strands regenerate": true,
+  "no GIS network call in the runtime road path": true
+ },
+ "failed": [],
+ "pass": true,
+ "topology": {
+  "coreNodes": 35,
+  "dangling": 8,
+  "dupEdges": 5,
+  "dupEdgesControl": 6,
+  "spawnsHeadlessObservable": false,
+  "zeroLen": 0,
+  "selfLoop": 0,
+  "nonFinite": 0,
+  "tunnelEdges": 0,
+  "keyStreetsPresent": [
+   "Newbury Street",
+   "Boylston Street",
+   "Commonwealth Avenue Inbound",
+   "Commonwealth Avenue Outbound",
+   "Exeter Street",
+   "Fairfield Street",
+   "Dartmouth Street",
+   "Huntington Avenue"
+  ],
+  "keyStreetsMissing": []
+ },
+ "dependents": {
+  "sidewalksControl": 7,
+  "sidewalksCandidate": 7,
+  "spawnsControl": null,
+  "spawnsCandidate": null,
+  "coreSpawnsControl": null,
+  "coreSpawnsCandidate": null
+ }
+}

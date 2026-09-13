@@ -1,0 +1,68 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/containment/0.1.0",
+ "finalSeam": {
+  "extentM": 6.96,
+  "vertices": 39,
+  "medianM": 1.86,
+  "from": "max distance beyond the core over all lot-grid cuts and connector vertices"
+ },
+ "roads": {
+  "changed": 101,
+  "outsideCore": 33,
+  "beyondSeam": 16,
+  "medianM": 6.96,
+  "maxM": 160.43,
+  "beyondSeamByStreet": {
+   "Commonwealth Avenue Inbound": 2,
+   "Newbury Street": 2,
+   "Boylston Street": 2,
+   "Public Alley 435": 2,
+   "Public Alley 428": 2,
+   "Blagden Street": 2,
+   "Public Alley 442": 1,
+   "Saint James Avenue": 1,
+   "Dartmouth Street": 1,
+   "Huntington Avenue": 1
+  },
+  "beyondSeamMaxM": 160.43
+ },
+ "plots": {
+  "changed": 1056,
+  "outsideCore": 261,
+  "beyondSeam": 224,
+  "medianM": 41.03,
+  "maxM": 210.48,
+  "beyondSeamByStreet": {
+   "Huntington Avenue": 135,
+   "Dartmouth Street": 49,
+   "Commonwealth Avenue Outbound": 15,
+   "Blagden Street": 6,
+   "Newbury Street": 5,
+   "Boylston Street": 5,
+   "Public Alley 435": 4,
+   "Public Alley 442": 4,
+   "Ring Road": 1
+  },
+  "beyondSeamMaxM": 210.48
+ },
+ "specs": {
+  "changed": 938,
+  "outsideCore": 195,
+  "beyondSeam": 167,
+  "medianM": 24.39,
+  "maxM": 195,
+  "beyondSeamByStreet": {
+   "Huntington Avenue": 84,
+   "Dartmouth Street": 43,
+   "Public Alley 435": 8,
+   "Newbury Street": 8,
+   "Public Alley 442": 7,
+   "Commonwealth Avenue Outbound": 6,
+   "Commonwealth Avenue Inbound": 5,
+   "Boylston Street": 3,
+   "Blagden Street": 2,
+   "Ring Road": 1
+  },
+  "beyondSeamMaxM": 195
+ }
+}

@@ -1,0 +1,540 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/port-ledger/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "endSnapM": 21,
+ "totals": {
+  "ports": 23,
+  "connected": 9,
+  "missing": 14
+ },
+ "failureCategories": {
+  "no-clipped-stub-of-this-concept": 5,
+  "nearest-same-name-stub-too-far-126.64m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-45.32m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-65.15m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-98.36m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-62.62m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-54.34m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-53.97m; no-baseline-node-within-40m": 1,
+  "nearest-same-name-stub-too-far-77.42m; no-baseline-node-within-40m": 1,
+  "concept-clipped-but-no-run-endpoint; no-baseline-node-within-40m": 1
+ },
+ "ports": [
+  {
+   "portId": "P00",
+   "street": "Boylston Street",
+   "sam": "Boylston ST",
+   "samSegmentId": 978,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -980.5,
+   "z": 594.94,
+   "connected": true,
+   "connectorIndex": 0,
+   "nearestSameNameStubM": 11.45,
+   "nearestBaselineNodeM": 61.01,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P01",
+   "street": "Dartmouth Street",
+   "sam": "Dartmouth ST",
+   "samSegmentId": 2240,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -980.5,
+   "z": 537.14,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 42.39,
+   "conceptIsClipped": false,
+   "endSnapTarget": {
+    "street": "Public Alley 442",
+    "distM": 8.06,
+    "midEdge": true
+   },
+   "failure": "no-clipped-stub-of-this-concept"
+  },
+  {
+   "portId": "P02",
+   "street": "Dartmouth Street",
+   "sam": "Dartmouth ST",
+   "samSegmentId": 2242,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -1009.29,
+   "z": 454.52,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 46.93,
+   "conceptIsClipped": false,
+   "endSnapTarget": {
+    "street": "Public Alley 435",
+    "distM": 19.45,
+    "midEdge": true
+   },
+   "failure": "no-clipped-stub-of-this-concept"
+  },
+  {
+   "portId": "P03",
+   "street": "Fairfield Street",
+   "sam": "Fairfield ST",
+   "samSegmentId": 2848,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "end",
+   "x": -1380.46,
+   "z": 576.93,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 126.64,
+   "nearestBaselineNodeM": 137.61,
+   "conceptIsClipped": true,
+   "endSnapTarget": {
+    "street": "Public Alley 435",
+    "distM": 17.76,
+    "midEdge": true
+   },
+   "failure": "nearest-same-name-stub-too-far-126.64m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P04",
+   "street": "Exeter Street",
+   "sam": "Exeter ST",
+   "samSegmentId": 3000,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "start",
+   "x": -1211.07,
+   "z": 454.52,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 45.32,
+   "nearestBaselineNodeM": 45.32,
+   "conceptIsClipped": true,
+   "endSnapTarget": {
+    "street": "Commonwealth Avenue Outbound",
+    "distM": 10.57,
+    "midEdge": true
+   },
+   "failure": "nearest-same-name-stub-too-far-45.32m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P05",
+   "street": "Newbury Street",
+   "sam": "Newbury ST",
+   "samSegmentId": 5660,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "start",
+   "x": -980.5,
+   "z": 493.82,
+   "connected": true,
+   "connectorIndex": 1,
+   "nearestSameNameStubM": 8.44,
+   "nearestBaselineNodeM": 28.96,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P06",
+   "street": "Newbury Street",
+   "sam": "Newbury ST",
+   "samSegmentId": 5667,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "end",
+   "x": -1380.46,
+   "z": 640.47,
+   "connected": true,
+   "connectorIndex": 2,
+   "nearestSameNameStubM": 20.03,
+   "nearestBaselineNodeM": 118.01,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P07",
+   "street": "Public Alley No. 432",
+   "sam": "Public Alley No. 432",
+   "samSegmentId": 5970,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -1380.46,
+   "z": 591.34,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 134.53,
+   "conceptIsClipped": false,
+   "endSnapTarget": null,
+   "failure": "no-clipped-stub-of-this-concept"
+  },
+  {
+   "portId": "P08",
+   "street": "Public Alley 435",
+   "sam": "Public Alley No. 435",
+   "samSegmentId": 5973,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -1003.82,
+   "z": 454.52,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 65.15,
+   "nearestBaselineNodeM": 43.09,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": "nearest-same-name-stub-too-far-65.15m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P09",
+   "street": "Public Alley No. 440",
+   "sam": "Public Alley No. 440",
+   "samSegmentId": 5977,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -980.5,
+   "z": 542.91,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 43.53,
+   "conceptIsClipped": false,
+   "endSnapTarget": {
+    "street": "Public Alley 442",
+    "distM": 2.59,
+    "midEdge": true
+   },
+   "failure": "no-clipped-stub-of-this-concept"
+  },
+  {
+   "portId": "P10",
+   "street": "Public Alley 442",
+   "sam": "Public Alley No. 442",
+   "samSegmentId": 5979,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -1380.46,
+   "z": 689.05,
+   "connected": true,
+   "connectorIndex": 3,
+   "nearestSameNameStubM": 9.25,
+   "nearestBaselineNodeM": 101.29,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P11",
+   "street": "Commonwealth Avenue Outbound",
+   "sam": "Commonwealth AVE",
+   "samSegmentId": 9217,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "start",
+   "x": -1272.12,
+   "z": 454.52,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 98.36,
+   "nearestBaselineNodeM": 101.28,
+   "conceptIsClipped": true,
+   "endSnapTarget": {
+    "street": "Commonwealth Avenue Inbound",
+    "distM": 16.06,
+    "midEdge": true
+   },
+   "failure": "nearest-same-name-stub-too-far-98.36m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P12",
+   "street": "Commonwealth Avenue Outbound",
+   "sam": "Commonwealth AVE",
+   "samSegmentId": 9217,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "end",
+   "x": -1380.46,
+   "z": 494.06,
+   "connected": true,
+   "connectorIndex": 4,
+   "nearestSameNameStubM": 30.29,
+   "nearestBaselineNodeM": 59.75,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P13",
+   "street": "Commonwealth Avenue Inbound",
+   "sam": "Commonwealth AVE",
+   "samSegmentId": 12254,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "end",
+   "x": -1152.59,
+   "z": 454.52,
+   "connected": true,
+   "connectorIndex": 5,
+   "nearestSameNameStubM": 168.94,
+   "nearestBaselineNodeM": 13.91,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P14",
+   "street": "Commonwealth Avenue Inbound",
+   "sam": "Commonwealth AVE",
+   "samSegmentId": 12256,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 1,
+   "end": "start",
+   "x": -1380.46,
+   "z": 537.6,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 62.62,
+   "nearestBaselineNodeM": 103,
+   "conceptIsClipped": true,
+   "endSnapTarget": {
+    "street": "Commonwealth Avenue Outbound",
+    "distM": 14.47,
+    "midEdge": true
+   },
+   "failure": "nearest-same-name-stub-too-far-62.62m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P15",
+   "street": "Boylston Street",
+   "sam": "Boylston ST",
+   "samSegmentId": 12875,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -1380.46,
+   "z": 740.81,
+   "connected": true,
+   "connectorIndex": 6,
+   "nearestSameNameStubM": 1.86,
+   "nearestBaselineNodeM": 84.46,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P16",
+   "street": "Blagden Street",
+   "sam": "Blagden ST",
+   "samSegmentId": 13842,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -980.5,
+   "z": 700.83,
+   "connected": true,
+   "connectorIndex": 7,
+   "nearestSameNameStubM": 33.55,
+   "nearestBaselineNodeM": 48.29,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P17",
+   "street": "Stuart ST",
+   "sam": "Stuart ST",
+   "samSegmentId": 16149,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -980.5,
+   "z": 816.37,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 155.91,
+   "conceptIsClipped": false,
+   "endSnapTarget": null,
+   "failure": "no-clipped-stub-of-this-concept"
+  },
+  {
+   "portId": "P18",
+   "street": "Huntington Avenue",
+   "sam": "Huntington AVE",
+   "samSegmentId": 16561,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -980.5,
+   "z": 740.46,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 54.34,
+   "nearestBaselineNodeM": 82.83,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": "nearest-same-name-stub-too-far-54.34m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P19",
+   "street": "Huntington Avenue",
+   "sam": "Huntington AVE",
+   "samSegmentId": 19565,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -980.5,
+   "z": 714.9,
+   "connected": true,
+   "connectorIndex": 8,
+   "nearestSameNameStubM": 28.93,
+   "nearestBaselineNodeM": 59.84,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": null
+  },
+  {
+   "portId": "P20",
+   "street": "Huntington Avenue",
+   "sam": "Huntington AVE",
+   "samSegmentId": 19626,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -1091.19,
+   "z": 854.6,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 53.97,
+   "nearestBaselineNodeM": 237.69,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": "nearest-same-name-stub-too-far-53.97m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P21",
+   "street": "Huntington Avenue",
+   "sam": "Huntington AVE",
+   "samSegmentId": 19794,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "start",
+   "x": -1067.72,
+   "z": 854.6,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": 77.42,
+   "nearestBaselineNodeM": 224.53,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": "nearest-same-name-stub-too-far-77.42m; no-baseline-node-within-40m"
+  },
+  {
+   "portId": "P22",
+   "street": "Ring Road",
+   "sam": "Ring RD",
+   "samSegmentId": 20724,
+   "zlev": [
+    0,
+    0
+   ],
+   "oneway": 0,
+   "end": "end",
+   "x": -1184.13,
+   "z": 854.6,
+   "connected": false,
+   "connectorIndex": null,
+   "nearestSameNameStubM": null,
+   "nearestBaselineNodeM": 237.83,
+   "conceptIsClipped": true,
+   "endSnapTarget": null,
+   "failure": "concept-clipped-but-no-run-endpoint; no-baseline-node-within-40m"
+  }
+ ]
+}

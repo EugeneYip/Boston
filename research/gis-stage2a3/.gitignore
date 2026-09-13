@@ -1,0 +1,4 @@
+.trace-*.mjs
+cache/
+captures/
+pair-*.png

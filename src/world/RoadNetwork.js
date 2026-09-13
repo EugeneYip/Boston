@@ -233,6 +233,7 @@ export default class RoadNetwork {
     return {
       name: st.name, type: st.type, lanes: st.lanes, oneway: st.oneway || 0,
       surface: st.surface || 'asphalt', mall: !!st.mall, bridged: !!(st.y || st.bridge),
+      noSnap: st.noSnap || null,
       halfRoad, park, walk: st.surface === 'cobble' ? 1.4 : p.walk, kerb: p.kerb,
       speed: p.speed, pts: out, splits: [], hasMedian: !!st.median,
       sections: st.sections || null,
@@ -296,6 +297,15 @@ export default class RoadNetwork {
     for (let si = 0; si < streets.length; si++) {
       const st = streets[si];
       for (const endIdx of [0, st.pts.length - 1]) {
+        // A seam port that already has an explicit transition target must not
+        // ALSO be snapped generically. Snapping splits the adopted street
+        // mid-edge, and `buildPlots` phases lots per EDGE — so a mid-edge split
+        // re-phases every lot along the whole edge, hundreds of metres away.
+        // `noSnap` lists this street's protected endpoints (0 = first, 1 =
+        // last). Only generated seam data sets it; no authored street carries
+        // it, so the baseline world cannot change. True crossings (pass 1) are
+        // untouched — this suppresses adoption, not intersection.
+        if (st.noSnap && st.noSnap.includes(endIdx === 0 ? 0 : 1)) continue;
         const p = st.pts[endIdx];
         let best = null;
         const cx = Math.floor(p.x / HASH), cz = Math.floor(p.z / HASH);

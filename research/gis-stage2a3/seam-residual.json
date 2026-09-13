@@ -1,0 +1,30 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/seam-residual/0.1.0",
+ "finalSeamM": 6.96,
+ "beyondSeam": 224,
+ "byMechanism": {
+  "EDGE_CHANGED": {
+   "Newbury Street": 3,
+   "Boylston Street": 5,
+   "Blagden Street": 4,
+   "Huntington Avenue": 121,
+   "Commonwealth Avenue Outbound": 1,
+   "Dartmouth Street": 2,
+   "Stuart ST": 1
+  },
+  "DEPTH_COUPLING": {
+   "Dartmouth Street": 55,
+   "Huntington Avenue": 8,
+   "Commonwealth Avenue Outbound": 14
+  },
+  "CONNECTOR_FRONTAGE": {
+   "Huntington Avenue": 9,
+   "Newbury Street": 1
+  }
+ },
+ "furthestM": {
+  "DEPTH_COUPLING": 63.11,
+  "EDGE_CHANGED": 210.48,
+  "CONNECTOR_FRONTAGE": 17.64
+ }
+}

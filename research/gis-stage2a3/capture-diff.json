@@ -1,0 +1,75 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/capture-diff/0.1.0",
+ "canvas": [
+  1920,
+  1080
+ ],
+ "method": "A/B against an A/A floor from two separate page loads of the same world; holdActors true.",
+ "views": {
+  "B_boylston_block": {
+   "ab": {
+    "meanAbsDiff": 43.78,
+    "pctOver32": 49.83,
+    "pixels": 2073600
+   },
+   "aa": {
+    "meanAbsDiff": 1.29,
+    "pctOver32": 0.32,
+    "pixels": 2073600
+   },
+   "signalOverFloor": 49.51
+  },
+  "C_cross_exeter_fairfield": {
+   "ab": {
+    "meanAbsDiff": 47.71,
+    "pctOver32": 50.77,
+    "pixels": 2073600
+   },
+   "aa": {
+    "meanAbsDiff": 1.46,
+    "pctOver32": 0.38,
+    "pixels": 2073600
+   },
+   "signalOverFloor": 50.39
+  },
+  "D_district_overview": {
+   "ab": {
+    "meanAbsDiff": 27.83,
+    "pctOver32": 29.65,
+    "pixels": 2073600
+   },
+   "aa": {
+    "meanAbsDiff": 0.85,
+    "pctOver32": 0.06,
+    "pixels": 2073600
+   },
+   "signalOverFloor": 29.59
+  },
+  "E_commonwealth": {
+   "ab": {
+    "meanAbsDiff": 32.45,
+    "pctOver32": 34.33,
+    "pixels": 2073600
+   },
+   "aa": {
+    "meanAbsDiff": 1.72,
+    "pctOver32": 0.6,
+    "pixels": 2073600
+   },
+   "signalOverFloor": 33.73
+  },
+  "F_seam": {
+   "ab": {
+    "meanAbsDiff": 42.09,
+    "pctOver32": 48.14,
+    "pixels": 2073600
+   },
+   "aa": {
+    "meanAbsDiff": 1.09,
+    "pctOver32": 0.09,
+    "pixels": 2073600
+   },
+   "signalOverFloor": 48.05
+  }
+ }
+}

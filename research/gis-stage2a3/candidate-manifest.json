@@ -1,0 +1,1495 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/candidate/0.3.0",
+ "source": {
+  "dataset": "Boston Street Segments (SAM System)",
+  "publisher": "Boston Maps, City of Boston",
+  "catalog": "https://data.boston.gov/dataset/boston-street-segments-sam-system",
+  "packageId": "b9b8b634-f28a-410f-9727-b53d0d006308",
+  "service": "https://gisportal.boston.gov/arcgis/rest/services/SAM/Live_SAM_Address/FeatureServer/3",
+  "layerName": "SAM_Boston_Segments_tbl",
+  "licence": "ODC-PDDL-1.0 (odc-pddl), per the Analyze Boston CKAN record",
+  "licenceUrl": "http://www.opendefinition.org/licenses/odc-pddl",
+  "attribution": "Boston Maps / City of Boston. PDDL imposes no attribution requirement; credit is given as project policy.",
+  "sourceCRS": "EPSG:4326 (requested outSR=4326; native service SR is EPSG:2249 / WKID 102686, NAD83 Massachusetts Mainland ftUS)",
+  "transformPath": "ArcGIS service reprojection to EPSG:4326, then production src/core/Geo.js geo() to Boston local X/Z",
+  "retrieved": "2026-09-13",
+  "rawSha256": "647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450",
+  "semantics": "Street centreline carrying address ranges, one-way, z-levels and routing costs. An addressing/routing centreline — NOT a surveyed pavement or carriageway centreline."
+ },
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "emittedStreets": 44,
+ "clippedFactualRuns": 44,
+ "excludedFeatures": [
+  {
+   "segmentId": 21626,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23062,
+   "name": null,
+   "zlev": [
+    0,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23138,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24056,
+   "name": null,
+   "zlev": [
+    -1,
+    0
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24058,
+   "name": null,
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24105,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26489,
+   "name": null,
+   "zlev": [
+    -2,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26524,
+   "name": "Exeter PLZ",
+   "zlev": [
+    0,
+    0
+   ],
+   "cfcc": "A71",
+   "reason": "walkway/plaza (CFCC A71)"
+  }
+ ],
+ "connectors": {
+  "ports": 23,
+  "joined": 11,
+  "unjoined": 12,
+  "lengths": [
+   1.86,
+   8.44,
+   9.26,
+   11.45,
+   20.03,
+   28.92,
+   30.28,
+   33.55,
+   45.32,
+   55.89,
+   65.15
+  ],
+  "maxLengthM": 65.15,
+  "medianLengthM": 28.92
+ },
+ "clippedStreets": [
+  {
+   "name": "Commonwealth Avenue Inbound",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Commonwealth Avenue Outbound",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Newbury Street",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Boylston Street",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Public Alley 435",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Public Alley 442",
+   "runs": 2,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Exeter Street",
+   "runs": 1,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Fairfield Street",
+   "runs": 1,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Blagden Street",
+   "runs": 1,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Ring Road",
+   "runs": 0,
+   "perVertexArrays": []
+  },
+  {
+   "name": "Huntington Avenue",
+   "runs": 2,
+   "perVertexArrays": [
+    "median"
+   ]
+  }
+ ],
+ "seamAnchors": [
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "at": {
+    "x": -1384.21,
+    "z": 475.09
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "distM": 42.07,
+   "beyondCoreM": 19.53
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "at": {
+    "x": -1321.53,
+    "z": 454.12
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "distM": 53.5,
+   "beyondCoreM": 19.53
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "at": {
+    "x": -1173.77,
+    "z": 453.18
+   },
+   "anchor": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "distM": 8.26,
+   "beyondCoreM": 3.96
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "at": {
+    "x": -1385.28,
+    "z": 523.96
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "distM": 90.04,
+   "beyondCoreM": 19.53
+  },
+  {
+   "street": "Newbury Street",
+   "at": {
+    "x": -980.06,
+    "z": 485.39
+   },
+   "anchor": {
+    "x": -956.55,
+    "z": 477.52
+   },
+   "distM": 24.79,
+   "beyondCoreM": 23.94
+  },
+  {
+   "street": "Newbury Street",
+   "at": {
+    "x": -1387.42,
+    "z": 621.69
+   },
+   "anchor": {
+    "x": -1497.1,
+    "z": 658.38
+   },
+   "distM": 115.66,
+   "beyondCoreM": 116.64
+  },
+  {
+   "street": "Boylston Street",
+   "at": {
+    "x": -974.9,
+    "z": 604.92
+   },
+   "anchor": {
+    "x": -920.06,
+    "z": 586.58
+   },
+   "distM": 57.83,
+   "beyondCoreM": 60.43
+  },
+  {
+   "street": "Boylston Street",
+   "at": {
+    "x": -1382.27,
+    "z": 741.22
+   },
+   "anchor": {
+    "x": -1460.61,
+    "z": 767.44
+   },
+   "distM": 82.61,
+   "beyondCoreM": 80.15
+  },
+  {
+   "street": "Public Alley 435",
+   "at": {
+    "x": -1068.96,
+    "z": 453.97
+   },
+   "anchor": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "distM": 97.03,
+   "beyondCoreM": 3.96
+  },
+  {
+   "street": "Public Alley 435",
+   "at": {
+    "x": -1382.33,
+    "z": 558.83
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "distM": 124.31,
+   "beyondCoreM": 19.53
+  },
+  {
+   "street": "Public Alley 442",
+   "at": {
+    "x": -977.64,
+    "z": 544.68
+   },
+   "anchor": {
+    "x": -938.47,
+    "z": 531.58
+   },
+   "distM": 41.31,
+   "beyondCoreM": 42.03
+  },
+  {
+   "street": "Public Alley 442",
+   "at": {
+    "x": -1385,
+    "z": 680.99
+   },
+   "anchor": {
+    "x": -1479.01,
+    "z": 712.44
+   },
+   "distM": 99.13,
+   "beyondCoreM": 98.55
+  },
+  {
+   "street": "Exeter Street",
+   "at": {
+    "x": -1165.93,
+    "z": 450.57
+   },
+   "anchor": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "distM": 0.01,
+   "beyondCoreM": 3.96
+  },
+  {
+   "street": "Fairfield Street",
+   "at": {
+    "x": -1366.1,
+    "z": 451.1
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "distM": 17,
+   "beyondCoreM": 19.53
+  },
+  {
+   "street": "Blagden Street",
+   "at": {
+    "x": -978.61,
+    "z": 667.33
+   },
+   "anchor": {
+    "x": -949.87,
+    "z": 663.5
+   },
+   "distM": 29,
+   "beyondCoreM": 30.63
+  },
+  {
+   "street": "Huntington Avenue",
+   "at": {
+    "x": -976.28,
+    "z": 686.28
+   },
+   "anchor": {
+    "x": -949.87,
+    "z": 663.5
+   },
+   "distM": 34.88,
+   "beyondCoreM": 30.63
+  },
+  {
+   "street": "Huntington Avenue",
+   "at": {
+    "x": -1146.77,
+    "z": 860.41
+   },
+   "anchor": {
+    "x": -1283.33,
+    "z": 1070.76
+   },
+   "distM": 250.78,
+   "beyondCoreM": 216.15
+  }
+ ],
+ "seamMaxBeyondCoreM": 216.15,
+ "lotCuts": [
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "point": {
+    "x": -1384.21,
+    "z": 475.09
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 3.95,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "point": {
+    "x": -1321.54,
+    "z": 454.12
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 1.25,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "point": {
+    "x": -1173.76,
+    "z": 453.18
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 4.21,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "point": {
+    "x": -1385.28,
+    "z": 523.96
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 5.08,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Newbury Street",
+   "point": {
+    "x": -980.06,
+    "z": 485.38
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 0.46,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Newbury Street",
+   "point": {
+    "x": -1387.42,
+    "z": 621.69
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 7.34,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Boylston Street",
+   "point": {
+    "x": -974.9,
+    "z": 604.93
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 5.9,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Boylston Street",
+   "point": {
+    "x": -1382.27,
+    "z": 741.23
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 1.91,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Public Alley 435",
+   "point": {
+    "x": -1068.97,
+    "z": 453.97
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 1.72,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Public Alley 435",
+   "point": {
+    "x": -1382.32,
+    "z": 558.82
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 1.97,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Public Alley 442",
+   "point": {
+    "x": -977.64,
+    "z": 544.68
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 3.01,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Public Alley 442",
+   "point": {
+    "x": -1385,
+    "z": 680.98
+   },
+   "stepM": 8.26,
+   "lots": 23,
+   "offsetFromCrossingM": 4.79,
+   "phaseErrorM": 0,
+   "edgeLengthM": 190,
+   "district": "backBay",
+   "sideLots": [
+    23,
+    23
+   ]
+  },
+  {
+   "street": "Exeter Street",
+   "point": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "stepM": 8.5,
+   "lots": 4,
+   "offsetFromCrossingM": 4.17,
+   "phaseErrorM": 0,
+   "edgeLengthM": 34,
+   "district": "backBay",
+   "sideLots": [
+    4,
+    4
+   ]
+  },
+  {
+   "street": "Fairfield Street",
+   "point": {
+    "x": -1366.1,
+    "z": 451.11
+   },
+   "stepM": 8.5,
+   "lots": 4,
+   "offsetFromCrossingM": 3.6,
+   "phaseErrorM": 0,
+   "edgeLengthM": 34,
+   "district": "backBay",
+   "sideLots": [
+    4,
+    4
+   ]
+  },
+  {
+   "street": "Blagden Street",
+   "point": {
+    "x": -978.61,
+    "z": 667.33
+   },
+   "stepM": 8.37,
+   "lots": 18,
+   "offsetFromCrossingM": 1.99,
+   "phaseErrorM": 0,
+   "edgeLengthM": 150.73,
+   "district": "backBay",
+   "sideLots": [
+    18,
+    18
+   ]
+  },
+  {
+   "street": "Huntington Avenue",
+   "point": {
+    "x": -976.29,
+    "z": 686.28
+   },
+   "stepM": 8.72,
+   "lots": 6,
+   "offsetFromCrossingM": 5.56,
+   "phaseErrorM": 0,
+   "edgeLengthM": 52.33,
+   "district": "backBay",
+   "sideLots": [
+    6,
+    6
+   ]
+  },
+  {
+   "street": "Huntington Avenue",
+   "point": {
+    "x": -1146.77,
+    "z": 860.41
+   },
+   "stepM": 7.86,
+   "lots": 60,
+   "offsetFromCrossingM": 6.56,
+   "phaseErrorM": 2.28,
+   "edgeLengthM": 472.98,
+   "district": null,
+   "sideLots": [
+    60,
+    61
+   ]
+  }
+ ],
+ "mapping": [
+  {
+   "sam": "Boylston ST",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Dartmouth ST",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Dartmouth ST",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Dartmouth ST",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Fairfield ST",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Fairfield ST",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Fairfield ST",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Newbury ST",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Newbury ST",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Newbury ST",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Newbury ST",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Public Alley No. 432",
+   "boston": "(none)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Public Alley No. 433",
+   "boston": "(none)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Public Alley No. 434",
+   "boston": "(none)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Public Alley No. 435",
+   "boston": "Public Alley 435",
+   "type": "alley",
+   "lanes": 1,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Public Alley No. 440",
+   "boston": "(none)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Public Alley No. 441",
+   "boston": "(none)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Public Alley No. 442",
+   "boston": "Public Alley 442",
+   "type": "alley",
+   "lanes": 1,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "boston": "Commonwealth Avenue Outbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Fairfield ST",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Boylston ST",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Boylston ST",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "boston": "Commonwealth Avenue Inbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "boston": "Commonwealth Avenue Inbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Boylston ST",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Blagden ST",
+   "boston": "Blagden Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Clarendon SQ",
+   "boston": "(none)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Stuart ST",
+   "boston": "(none)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Huntington AVE",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Huntington AVE",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Huntington AVE",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Huntington AVE",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Huntington AVE",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Ring RD",
+   "boston": "Ring Road",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  },
+  {
+   "sam": "Stuart ST",
+   "boston": "(none)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback"
+  },
+  {
+   "sam": "Exeter ST",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept"
+  }
+ ],
+ "portLedger": [
+  {
+   "street": "Boylston Street",
+   "samSegmentId": 978,
+   "face": "x1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 594.94,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x1",
+    "x": -974.9,
+    "z": 604.93,
+    "connectorM": 11.45
+   }
+  },
+  {
+   "street": "Dartmouth Street",
+   "samSegmentId": 2240,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 537.14,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  },
+  {
+   "street": "Dartmouth Street",
+   "samSegmentId": 2242,
+   "face": "z0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1009.29,
+   "z": 454.52,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  },
+  {
+   "street": "Fairfield Street",
+   "samSegmentId": 2848,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 576.93,
+   "ownership": "TERMINAL_COUNTERPART_CROSSES_ANOTHER_FACE",
+   "pairedTo": null
+  },
+  {
+   "street": "Exeter Street",
+   "samSegmentId": 3000,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1211.07,
+   "z": 454.52,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "z0",
+    "x": -1165.93,
+    "z": 450.56,
+    "connectorM": 45.32
+   }
+  },
+  {
+   "street": "Newbury Street",
+   "samSegmentId": 5660,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 1,
+   "x": -980.5,
+   "z": 493.82,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x1",
+    "x": -980.06,
+    "z": 485.38,
+    "connectorM": 8.44
+   }
+  },
+  {
+   "street": "Newbury Street",
+   "samSegmentId": 5667,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 640.47,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x0",
+    "x": -1387.42,
+    "z": 621.69,
+    "connectorM": 20.03
+   }
+  },
+  {
+   "street": "Public Alley No. 432",
+   "samSegmentId": 5970,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 591.34,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  },
+  {
+   "street": "Public Alley 435",
+   "samSegmentId": 5973,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1003.82,
+   "z": 454.52,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "z0",
+    "x": -1068.97,
+    "z": 453.97,
+    "connectorM": 65.15
+   }
+  },
+  {
+   "street": "Public Alley No. 440",
+   "samSegmentId": 5977,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 542.91,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  },
+  {
+   "street": "Public Alley 442",
+   "samSegmentId": 5979,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 689.05,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x0",
+    "x": -1385,
+    "z": 680.98,
+    "connectorM": 9.26
+   }
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "samSegmentId": 9217,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1272.12,
+   "z": 454.52,
+   "ownership": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "pairedTo": null
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "samSegmentId": 9217,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 494.06,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x0",
+    "x": -1385.28,
+    "z": 523.96,
+    "connectorM": 30.28
+   }
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "samSegmentId": 12254,
+   "face": "z0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1152.59,
+   "z": 454.52,
+   "ownership": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "pairedTo": null
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "samSegmentId": 12256,
+   "face": "x0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 537.6,
+   "ownership": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "pairedTo": null
+  },
+  {
+   "street": "Boylston Street",
+   "samSegmentId": 12875,
+   "face": "x0",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 740.81,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x0",
+    "x": -1382.27,
+    "z": 741.23,
+    "connectorM": 1.86
+   }
+  },
+  {
+   "street": "Blagden Street",
+   "samSegmentId": 13842,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 700.83,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x1",
+    "x": -978.61,
+    "z": 667.33,
+    "connectorM": 33.55
+   }
+  },
+  {
+   "street": "Stuart ST",
+   "samSegmentId": 16149,
+   "face": "x1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 816.37,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 16561,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 740.46,
+   "ownership": "TERMINAL_COUNTERPART_ALREADY_PAIRED",
+   "pairedTo": null
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19565,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 714.9,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "x1",
+    "x": -976.29,
+    "z": 686.28,
+    "connectorM": 28.92
+   }
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19626,
+   "face": "z1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1091.19,
+   "z": 854.6,
+   "ownership": "CONNECTED",
+   "pairedTo": {
+    "face": "z1",
+    "x": -1146.77,
+    "z": 860.41,
+    "connectorM": 55.89
+   }
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19794,
+   "face": "z1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1067.72,
+   "z": 854.6,
+   "ownership": "TERMINAL_COUNTERPART_ALREADY_PAIRED",
+   "pairedTo": null
+  },
+  {
+   "street": "Ring Road",
+   "samSegmentId": 20724,
+   "face": "z1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1184.13,
+   "z": 854.6,
+   "ownership": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "pairedTo": null
+  }
+ ],
+ "orphanCuts": [
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "face": "x0",
+   "dir": "in",
+   "x": -1384.21,
+   "z": 475.09
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "face": "z0",
+   "dir": "out",
+   "x": -1321.54,
+   "z": 454.12
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "face": "z0",
+   "dir": "in",
+   "x": -1173.76,
+   "z": 453.18
+  },
+  {
+   "street": "Public Alley 435",
+   "face": "x0",
+   "dir": "out",
+   "x": -1382.32,
+   "z": 558.82
+  },
+  {
+   "street": "Public Alley 442",
+   "face": "x1",
+   "dir": "in",
+   "x": -977.64,
+   "z": 544.68
+  },
+  {
+   "street": "Fairfield Street",
+   "face": "z0",
+   "dir": "in",
+   "x": -1366.1,
+   "z": 451.11
+  }
+ ],
+ "rejectedConnectors": [
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "face": "z0",
+   "lengthM": 168.95,
+   "crossings": 2,
+   "through": [
+    "connector:Commonwealth Avenue Outbound",
+    "connector:Exeter Street"
+   ]
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "face": "z0",
+   "lengthM": 98.37,
+   "crossings": 1,
+   "through": [
+    "connector:Exeter Street"
+   ]
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "face": "x0",
+   "lengthM": 62.62,
+   "crossings": 1,
+   "through": [
+    "connector:Commonwealth Avenue Outbound"
+   ]
+  }
+ ],
+ "connectorWorld": [
+  {
+   "x": -978.61,
+   "z": 667.33
+  },
+  {
+   "x": -980.5,
+   "z": 700.83
+  },
+  {
+   "x": -1382.27,
+   "z": 741.22
+  },
+  {
+   "x": -1380.46,
+   "z": 740.81
+  },
+  {
+   "x": -980.5,
+   "z": 594.94
+  },
+  {
+   "x": -974.9,
+   "z": 604.92
+  },
+  {
+   "x": -1380.46,
+   "z": 494.06
+  },
+  {
+   "x": -1385.28,
+   "z": 523.96
+  },
+  {
+   "x": -1165.93,
+   "z": 450.57
+  },
+  {
+   "x": -1211.07,
+   "z": 454.52
+  },
+  {
+   "x": -976.28,
+   "z": 686.28
+  },
+  {
+   "x": -980.5,
+   "z": 714.9
+  },
+  {
+   "x": -1091.19,
+   "z": 854.6
+  },
+  {
+   "x": -1146.77,
+   "z": 860.41
+  },
+  {
+   "x": -1380.46,
+   "z": 640.47
+  },
+  {
+   "x": -1387.42,
+   "z": 621.69
+  },
+  {
+   "x": -980.06,
+   "z": 485.39
+  },
+  {
+   "x": -980.5,
+   "z": 493.82
+  },
+  {
+   "x": -1068.96,
+   "z": 453.97
+  },
+  {
+   "x": -1003.82,
+   "z": 454.52
+  },
+  {
+   "x": -1380.46,
+   "z": 689.05
+  },
+  {
+   "x": -1385,
+   "z": 680.99
+  }
+ ],
+ "finalSeam": {
+  "extentM": 6.96,
+  "vertices": 39,
+  "medianM": 1.86,
+  "from": "max distance beyond the core over all lot-grid cuts and connector vertices"
+ },
+ "outputBytes": 27688,
+ "outputSha256": "d42f2e86537a5ac08bbfb61a4e54e8bb6e4b4e0692b9791cc111c8ebdd33772a"
+}

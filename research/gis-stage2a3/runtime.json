@@ -1,0 +1,20 @@
+{
+ "schemaVersion": "boston-gis-stage2a3/runtime/0.1.0",
+ "method": "24 s of stepped runtime per world (4 areas x 6 x api.step(1)), actors released. api.step is used rather than real time because the Browser pane pauses requestAnimationFrame when hidden, which made every vehicle read as stuck in Stage 2A.2.",
+ "areas": [[-1180, 45, 654], [-1000, 45, 560], [-1370, 45, 760], [-1180, 45, 460]],
+ "traffic": {
+  "control":   { "vehiclesInCore": 80, "samples": 1482, "entries": 27, "exits": 2, "offRoad": 0, "buildingPenetration": 0, "stuck4": 0, "stuck6": 0 },
+  "candidate": { "vehiclesInCore": 82, "samples": 1404, "entries": 32, "exits": 9, "offRoad": 0, "buildingPenetration": 0, "stuck4": 0, "stuck6": 0 }
+ },
+ "pedestrians": {
+  "control":   { "inCore": 141, "insideBuilding": 0, "onCarriageway": 15, "farFromRoad": 0 },
+  "candidate": { "inCore": 184, "insideBuilding": 0, "onCarriageway": 26, "farFromRoad": 0 }
+ },
+ "spawns": { "control": { "total": 3712, "core": 118 }, "candidate": { "total": 3750, "core": 144 } },
+ "coreBuildingSpecs": { "control": 361, "candidate": 386 },
+ "notes": [
+  "offRoad counts samples further than halfRoad + 1.5 m from every road centreline.",
+  "onCarriageway uses d <= halfRoad, a crude proxy; the candidate's 26 of 184 (14.1%) against the control's 15 of 141 (10.6%) is not an improvement and is not claimed as one.",
+  "Spawn and core-spec counts agree exactly with the headless build, which is the cross-check that the runtime is the same world the measurements describe."
+ ]
+}
