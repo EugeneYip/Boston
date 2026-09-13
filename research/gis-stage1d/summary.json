@@ -1,0 +1,2898 @@
+{
+ "schemaVersion": "boston-gis-stage1d/summary/0.1.0",
+ "inputs": {
+  "provenance": {
+   "pddl": {
+    "label": "roofbreaks",
+    "licence": "ODC-PDDL-1.0",
+    "sha256": "6d0e737fac9e0eabf4c4956c3baed180178bd69c72d43b93796c9b62f3996e7f",
+    "count": 218
+   },
+   "massgis": {
+    "label": "massgis",
+    "licence": "MassGIS public record",
+    "sha256": "8a48d7da4eac7a42c15397ef37049f496e27fc0f07df7437a4960ef32ab2e509",
+    "count": 169
+   }
+  },
+  "tolM": 0.5,
+  "samples": 2165,
+  "faces": 41,
+  "centre": {
+   "x": -1191.17,
+   "z": 611.95
+  }
+ },
+ "semantics": {
+  "proceduralFrontLine": "centreline offset by corridorHalf(e) = e.halfRoad + 0.16 + e.walk, via RoadNetwork._frontageLine",
+  "proceduralWallToWall": "2 * corridorHalf(e)",
+  "proceduralWallMidline": "identically the road centreline — the offset is symmetric in side and nothing downstream moves it laterally",
+  "factualWallMidline": "midpoint of the two opposing factual first-hit walls; NOT a road centreline",
+  "dSign": "positive outward, away from the carriageway"
+ },
+ "corridorHalfByType": {
+  "arterial": 13.56,
+  "street": 8.76
+ },
+ "fits": {
+  "G0": {
+   "key": "G0",
+   "name": "G0 no correction",
+   "params": 0,
+   "beta": [],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 11.08,
+    "p75": 16.81,
+    "p90": 32.74,
+    "max": 44.86,
+    "rms": 17.01
+   },
+   "admissibility": {
+    "admissibleFrontageM": 43.17,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 1,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -11.47833082594726,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 15.2457532646406,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 17.64071849017205,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 20.22139704945762,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -11.54,
+     "r1": -3.37,
+     "widthErrM": -14.91,
+     "shiftM": -4.09,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -7.27,
+     "r1": -8.35,
+     "widthErrM": -15.62,
+     "shiftM": 0.54,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -12.3,
+     "r1": -5.37,
+     "widthErrM": -17.68,
+     "shiftM": -3.46,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": -3.51,
+     "r1": 15.27,
+     "widthErrM": 11.76,
+     "shiftM": -9.39,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -2.49,
+     "r1": 7.18,
+     "widthErrM": 4.69,
+     "shiftM": -4.84,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -1.16,
+     "r1": 32.49,
+     "widthErrM": 31.33,
+     "shiftM": -16.82,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": 3.643213818975355,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": -1.64,
+     "r1": 0.2,
+     "widthErrM": -1.43,
+     "shiftM": -0.92,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -8.63,
+     "r1": -9.12,
+     "widthErrM": -17.75,
+     "shiftM": 0.25,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 8.15,
+     "r1": 6.45,
+     "widthErrM": 14.6,
+     "shiftM": 0.85,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 9.2,
+     "r1": 21.74,
+     "widthErrM": 30.94,
+     "shiftM": -6.27,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 16.45843796598576,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -10.22,
+     "r1": -13.61,
+     "widthErrM": -23.83,
+     "shiftM": 1.69,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -13.92,
+     "r1": -8.91,
+     "widthErrM": -22.83,
+     "shiftM": -2.5,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -9.1,
+     "r1": -12.51,
+     "widthErrM": -21.62,
+     "shiftM": 1.7,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -2.3,
+     "r1": 32.7,
+     "widthErrM": 30.4,
+     "shiftM": -17.5,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 17.12894751577985,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 38.7268946422451,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -1.9110502180672875,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 16.51,
+     "r1": 19.14,
+     "widthErrM": 35.65,
+     "shiftM": -1.32,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -6.86,
+     "r1": -8.97,
+     "widthErrM": -15.84,
+     "shiftM": 1.05,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "G1": {
+   "key": "G1",
+   "name": "G1 global translation",
+   "params": 2,
+   "beta": [
+    -0.92,
+    -2.03
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 10.59,
+    "p75": 17.57,
+    "p90": 31.87,
+    "max": 46,
+    "rms": 16.82
+   },
+   "admissibility": {
+    "admissibleFrontageM": 43.17,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 1,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -13.700176099829793,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 17.467598538522672,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 19.862563764054578,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 22.44324232333924,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -9.32,
+     "r1": -5.59,
+     "widthErrM": -14.91,
+     "shiftM": -1.86,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -5.05,
+     "r1": -10.58,
+     "widthErrM": -15.62,
+     "shiftM": 2.76,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -10.08,
+     "r1": -7.6,
+     "widthErrM": -17.68,
+     "shiftM": -1.24,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": -1.29,
+     "r1": 13.05,
+     "widthErrM": 11.76,
+     "shiftM": -7.17,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -0.27,
+     "r1": 4.96,
+     "widthErrM": 4.69,
+     "shiftM": -2.61,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": 1.07,
+     "r1": 30.27,
+     "widthErrM": 31.33,
+     "shiftM": -14.6,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": 3.412425273241037,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": -1.4,
+     "r1": -0.03,
+     "widthErrM": -1.43,
+     "shiftM": -0.69,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -8.4,
+     "r1": -9.36,
+     "widthErrM": -17.75,
+     "shiftM": 0.48,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 8.38,
+     "r1": 6.22,
+     "widthErrM": 14.6,
+     "shiftM": 1.08,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 9.43,
+     "r1": 21.51,
+     "widthErrM": 30.94,
+     "shiftM": -6.04,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 16.22764942024747,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -9.99,
+     "r1": -13.84,
+     "widthErrM": -23.83,
+     "shiftM": 1.92,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -13.69,
+     "r1": -9.14,
+     "widthErrM": -22.83,
+     "shiftM": -2.27,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -8.87,
+     "r1": -12.74,
+     "widthErrM": -21.62,
+     "shiftM": 1.94,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -2.07,
+     "r1": 32.47,
+     "widthErrM": 30.4,
+     "shiftM": -17.27,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 17.359736061512443,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 36.50504936836398,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -4.132895491948412,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 18.73,
+     "r1": 16.92,
+     "widthErrM": 35.65,
+     "shiftM": 0.9,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -4.79,
+     "r1": -11.08,
+     "widthErrM": -15.87,
+     "shiftM": 3.14,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "G2": {
+   "key": "G2",
+   "name": "G2 rigid (translation + rotation)",
+   "params": 3,
+   "beta": [
+    -0.15,
+    -2.41,
+    -0.02
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 10.08,
+    "p75": 18.43,
+    "p90": 33.87,
+    "max": 46.66,
+    "rms": 16.73
+   },
+   "admissibility": {
+    "admissibleFrontageM": 43.17,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 1,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -11.391595195545126,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 19.338473847544257,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 19.136886975587537,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 19.66185755438267,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -7.11,
+     "r1": -9,
+     "widthErrM": -16.11,
+     "shiftM": 0.94,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -5.72,
+     "r1": -10.35,
+     "widthErrM": -16.07,
+     "shiftM": 2.31,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -13.03,
+     "r1": -4.49,
+     "widthErrM": -17.52,
+     "shiftM": -4.27,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": 0.94,
+     "r1": 9.87,
+     "widthErrM": 10.81,
+     "shiftM": -4.46,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": 1.08,
+     "r1": 5.42,
+     "widthErrM": 6.5,
+     "shiftM": -2.17,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -2.77,
+     "r1": 34.28,
+     "widthErrM": 31.51,
+     "shiftM": -18.53,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": 2.597272116617695,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": 0.03,
+     "r1": -1.54,
+     "widthErrM": -1.51,
+     "shiftM": 0.79,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -7.68,
+     "r1": -9.99,
+     "widthErrM": -17.67,
+     "shiftM": 1.16,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 7.76,
+     "r1": 7.07,
+     "widthErrM": 14.84,
+     "shiftM": 0.34,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 8.14,
+     "r1": 22.99,
+     "widthErrM": 31.13,
+     "shiftM": -7.43,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 19.035305892366694,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -8.46,
+     "r1": -15.47,
+     "widthErrM": -23.93,
+     "shiftM": 3.51,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -13.09,
+     "r1": -10.04,
+     "widthErrM": -23.13,
+     "shiftM": -1.53,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -9.36,
+     "r1": -12.2,
+     "widthErrM": -21.56,
+     "shiftM": 1.42,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -3.78,
+     "r1": 33.93,
+     "widthErrM": 30.14,
+     "shiftM": -18.86,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 14.671291093545335,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 34.45916732489216,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -5.029488326600386,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 18.16,
+     "r1": 17.24,
+     "widthErrM": 35.39,
+     "shiftM": 0.46,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -6.9,
+     "r1": -9.49,
+     "widthErrM": -16.39,
+     "shiftM": 1.3,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "G3": {
+   "key": "G3",
+   "name": "G3 affine",
+   "params": 6,
+   "beta": [
+    3.97,
+    -3.35,
+    0.02,
+    0.06,
+    -0.05,
+    -0.1
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 8.22,
+    "p75": 15.98,
+    "p90": 29.87,
+    "max": 52.05,
+    "rms": 15.68
+   },
+   "admissibility": {
+    "admissibleFrontageM": 0,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 0,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": 5.428618868987321,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 6.180398659080161,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 7.248901828655862,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 8.609785739128412,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -12.47,
+     "r1": -1.56,
+     "widthErrM": -14.03,
+     "shiftM": -5.45,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -9.42,
+     "r1": -4.75,
+     "widthErrM": -14.17,
+     "shiftM": -2.33,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -15.96,
+     "r1": -0.09,
+     "widthErrM": -16.05,
+     "shiftM": -7.93,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": 6.24,
+     "r1": 7.41,
+     "widthErrM": 13.65,
+     "shiftM": -0.58,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": 6.72,
+     "r1": 1.13,
+     "widthErrM": 7.86,
+     "shiftM": 2.79,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": 5.24,
+     "r1": 28.58,
+     "widthErrM": 33.82,
+     "shiftM": -11.67,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": 2.085820564980662,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": 4.54,
+     "r1": -6.47,
+     "widthErrM": -1.92,
+     "shiftM": 5.5,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -5.74,
+     "r1": -11.55,
+     "widthErrM": -17.29,
+     "shiftM": 2.9,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 4.52,
+     "r1": 10.01,
+     "widthErrM": 14.53,
+     "shiftM": -2.74,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 1.94,
+     "r1": 29.76,
+     "widthErrM": 31.7,
+     "shiftM": -13.91,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 31.93258136945127,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -2.44,
+     "r1": -21.51,
+     "widthErrM": -23.95,
+     "shiftM": 9.53,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -10.34,
+     "r1": -13.23,
+     "widthErrM": -23.57,
+     "shiftM": 1.45,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -10.59,
+     "r1": -9.81,
+     "widthErrM": -20.41,
+     "shiftM": -0.39,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -10.93,
+     "r1": 39.34,
+     "widthErrM": 28.41,
+     "shiftM": -25.13,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 3.6512374496881392,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 26.010431119310468,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -14.00182002444088,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 31.79,
+     "r1": 5.26,
+     "widthErrM": 37.05,
+     "shiftM": 13.26,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -0.71,
+     "r1": -14.1,
+     "widthErrM": -14.8,
+     "shiftM": 6.69,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "W": {
+   "key": "W",
+   "name": "W  street-section width only (per road type)",
+   "params": 2,
+   "beta": [
+    3.35,
+    1.51
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 11.78,
+    "p75": 15.85,
+    "p90": 30.7,
+    "max": 42.27,
+    "rms": 16.38
+   },
+   "admissibility": {
+    "admissibleFrontageM": 0,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 0,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -12.985618062420901,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 13.738466028166957,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 16.133431253698408,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 18.71410981298398,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -13.05,
+     "r1": -4.87,
+     "widthErrM": -17.92,
+     "shiftM": -4.09,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -8.78,
+     "r1": -9.86,
+     "widthErrM": -18.64,
+     "shiftM": 0.54,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -13.81,
+     "r1": -6.88,
+     "widthErrM": -20.69,
+     "shiftM": -3.46,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": -6.86,
+     "r1": 11.92,
+     "widthErrM": 5.07,
+     "shiftM": -9.39,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -5.84,
+     "r1": 3.83,
+     "widthErrM": -2,
+     "shiftM": -4.84,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -4.5,
+     "r1": 29.14,
+     "widthErrM": 24.64,
+     "shiftM": -16.82,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": 0.2953728107340967,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": -3.14,
+     "r1": -1.3,
+     "widthErrM": -4.45,
+     "shiftM": -0.92,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -10.13,
+     "r1": -10.63,
+     "widthErrM": -20.76,
+     "shiftM": 0.25,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 6.64,
+     "r1": 4.94,
+     "widthErrM": 11.59,
+     "shiftM": 0.85,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 7.69,
+     "r1": 20.24,
+     "widthErrM": 27.93,
+     "shiftM": -6.27,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 14.951150729512118,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -11.73,
+     "r1": -15.12,
+     "widthErrM": -26.85,
+     "shiftM": 1.69,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -15.43,
+     "r1": -10.42,
+     "widthErrM": -25.85,
+     "shiftM": -2.5,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -10.61,
+     "r1": -14.02,
+     "widthErrM": -24.63,
+     "shiftM": 1.7,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -3.81,
+     "r1": 31.19,
+     "widthErrM": 27.38,
+     "shiftM": -17.5,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 15.621660279306209,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 37.219607405771455,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -3.4183374545409286,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 15,
+     "r1": 17.64,
+     "widthErrM": 32.63,
+     "shiftM": -1.32,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -10.21,
+     "r1": -12.32,
+     "widthErrM": -22.53,
+     "shiftM": 1.05,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "G2W": {
+   "key": "G2W",
+   "name": "G2+W rigid + width",
+   "params": 5,
+   "beta": [
+    -3.41,
+    -0.07,
+    -0.01,
+    2.69,
+    1.68
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 11.34,
+    "p75": 16.88,
+    "p90": 28.56,
+    "max": 43.06,
+    "rms": 16.18
+   },
+   "admissibility": {
+    "admissibleFrontageM": 0,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 0,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -12.58238506285068,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 15.969832023535288,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 16.56011256588134,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 17.65839551754178,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -10.68,
+     "r1": -8.64,
+     "widthErrM": -19.32,
+     "shiftM": -1.02,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -8.1,
+     "r1": -11.02,
+     "widthErrM": -19.11,
+     "shiftM": 1.46,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -15.05,
+     "r1": -5.86,
+     "widthErrM": -20.91,
+     "shiftM": -4.59,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": -3.49,
+     "r1": 9.24,
+     "widthErrM": 5.75,
+     "shiftM": -6.36,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -3.15,
+     "r1": 3.59,
+     "widthErrM": 0.45,
+     "shiftM": -3.37,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -5.5,
+     "r1": 31.59,
+     "widthErrM": 26.09,
+     "shiftM": -18.54,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": -3.4452941165990434,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": 1.53,
+     "r1": -6.37,
+     "widthErrM": -4.84,
+     "shiftM": 3.95,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -5.98,
+     "r1": -15.07,
+     "widthErrM": -21.05,
+     "shiftM": 4.55,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 9.85,
+     "r1": 1.56,
+     "widthErrM": 11.41,
+     "shiftM": 4.15,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 10.46,
+     "r1": 17.3,
+     "widthErrM": 27.76,
+     "shiftM": -3.42,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": 12.960121765644221,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -6.99,
+     "r1": -20.27,
+     "widthErrM": -27.26,
+     "shiftM": 6.64,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -11.33,
+     "r1": -15.04,
+     "widthErrM": -26.37,
+     "shiftM": 1.86,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -7.3,
+     "r1": -17.63,
+     "widthErrM": -24.93,
+     "shiftM": 5.16,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -1.38,
+     "r1": 28.24,
+     "widthErrM": 26.86,
+     "shiftM": -14.81,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": 17.3574099370647,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": 34.52355233607974,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -5.296386176311196,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 15.49,
+     "r1": 16.62,
+     "widthErrM": 32.11,
+     "shiftM": -0.57,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -8.3,
+     "r1": -13.3,
+     "widthErrM": -21.6,
+     "shiftM": 2.5,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "PSW": {
+   "key": "PSW",
+   "name": "PSW per-street section-width correction",
+   "params": 25,
+   "beta": [
+    -12.12,
+    15.69,
+    17.85,
+    19.78,
+    1.41,
+    -6.33,
+    -9.17,
+    7.93,
+    6.34,
+    1.27,
+    9.42,
+    -2.53,
+    -8.22,
+    7.04,
+    11.63,
+    23.78,
+    -10.56,
+    -10.79,
+    -8.54,
+    17.66,
+    17.26,
+    39.21,
+    -1.97,
+    20.76,
+    -6.67
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 4.67,
+    "p75": 13.57,
+    "p90": 26.77,
+    "max": 50.1,
+    "rms": 13.49
+   },
+   "admissibility": {
+    "admissibleFrontageM": 932.37,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 6,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": 0.6413448616316497,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -0.4393341600816516,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -0.21300667229392545,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": 0.44011157806210477,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -12.95,
+     "r1": -4.78,
+     "widthErrM": -17.73,
+     "shiftM": -4.09,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -0.94,
+     "r1": -2.03,
+     "widthErrM": -2.97,
+     "shiftM": 0.54,
+     "frontageM": 344.97,
+     "admissible": true
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -3.14,
+     "r1": 3.79,
+     "widthErrM": 0.66,
+     "shiftM": -3.46,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": -11.44,
+     "r1": 7.34,
+     "widthErrM": -4.09,
+     "shiftM": -9.39,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -8.83,
+     "r1": 0.84,
+     "widthErrM": -8,
+     "shiftM": -4.84,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -2.42,
+     "r1": 31.22,
+     "widthErrM": 28.8,
+     "shiftM": -16.82,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": -5.77868726677171,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": 0.9,
+     "r1": 2.73,
+     "widthErrM": 3.63,
+     "shiftM": -0.92,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -0.41,
+     "r1": -0.91,
+     "widthErrM": -1.32,
+     "shiftM": 0.25,
+     "frontageM": 91.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 1.11,
+     "r1": -0.6,
+     "widthErrM": 0.51,
+     "shiftM": 0.85,
+     "frontageM": 89.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": -2.43,
+     "r1": 10.11,
+     "widthErrM": 7.68,
+     "shiftM": -6.27,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": -7.3265290003212264,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": 0.33,
+     "r1": -3.05,
+     "widthErrM": -2.72,
+     "shiftM": 1.69,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -3.13,
+     "r1": 1.88,
+     "widthErrM": -1.25,
+     "shiftM": -2.5,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -0.57,
+     "r1": -3.98,
+     "widthErrM": -4.55,
+     "shiftM": 1.7,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -19.96,
+     "r1": 15.04,
+     "widthErrM": -4.92,
+     "shiftM": -17.5,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": -0.13170935648387072,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": -0.4790564480560704,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": 0.06333855238814845,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": -4.25,
+     "r1": -1.61,
+     "widthErrM": -5.86,
+     "shiftM": -1.32,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -0.2,
+     "r1": -2.3,
+     "widthErrM": -2.5,
+     "shiftM": 1.05,
+     "frontageM": 320.71,
+     "admissible": true
+    }
+   ]
+  },
+  "PSL": {
+   "key": "PSL",
+   "name": "PSL per-street lateral shift",
+   "params": 25,
+   "beta": [
+    -6.4,
+    17.38,
+    20.45,
+    21.05,
+    -1.97,
+    0.89,
+    -1.71,
+    -13.6,
+    -9.8,
+    -11.92,
+    -8.75,
+    0.15,
+    -0.76,
+    5.27,
+    1.19,
+    -23.78,
+    -0.29,
+    -2.58,
+    -1.12,
+    -13.6,
+    17.26,
+    -39.21,
+    -13.18,
+    -6.32,
+    -0.71
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 9.2,
+    "p75": 13.11,
+    "p90": 22.25,
+    "max": 46.03,
+    "rms": 13.24
+   },
+   "admissibility": {
+    "admissibleFrontageM": 43.17,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 1,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -5.077091049449213,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -2.136690535581545,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -2.8059015622192227,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -0.8334066971423901,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -9.56,
+     "r1": -5.34,
+     "widthErrM": -14.91,
+     "shiftM": -2.11,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -8.16,
+     "r1": -7.47,
+     "widthErrM": -15.62,
+     "shiftM": -0.35,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -10.6,
+     "r1": -7.08,
+     "widthErrM": -17.68,
+     "shiftM": -1.76,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": 10.09,
+     "r1": 1.67,
+     "widthErrM": 11.76,
+     "shiftM": 4.21,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": 7.31,
+     "r1": -2.62,
+     "widthErrM": 4.69,
+     "shiftM": 4.96,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": 10.76,
+     "r1": 20.57,
+     "widthErrM": 31.33,
+     "shiftM": -4.9,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": -5.10616002673739,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": -1.79,
+     "r1": 0.36,
+     "widthErrM": -1.43,
+     "shiftM": -1.07,
+     "frontageM": 43.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -7.86,
+     "r1": -9.89,
+     "widthErrM": -17.75,
+     "shiftM": 1.01,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 2.88,
+     "r1": 11.72,
+     "widthErrM": 14.6,
+     "shiftM": -4.42,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 8.01,
+     "r1": 22.93,
+     "widthErrM": 30.94,
+     "shiftM": -7.46,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": -7.3265290003212264,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -9.93,
+     "r1": -13.9,
+     "widthErrM": -23.83,
+     "shiftM": 1.98,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -11.34,
+     "r1": -11.49,
+     "widthErrM": -22.83,
+     "shiftM": 0.07,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -7.98,
+     "r1": -13.63,
+     "widthErrM": -21.62,
+     "shiftM": 2.83,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": 11.3,
+     "r1": 19.09,
+     "widthErrM": 30.4,
+     "shiftM": -3.9,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": -0.13170935648387072,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": -0.4790564480560633,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -15.093846931961385,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": 22.82,
+     "r1": 12.83,
+     "widthErrM": 35.65,
+     "shiftM": 5,
+     "frontageM": 158.95,
+     "admissible": false
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -6.15,
+     "r1": -9.69,
+     "widthErrM": -15.84,
+     "shiftM": 1.77,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  },
+  "PSLW": {
+   "key": "PSLW",
+   "name": "PSL+PSW per-street lateral + width",
+   "params": 41,
+   "beta": [
+    -1.75,
+    0.94,
+    -1.09,
+    -11.86,
+    -7.1,
+    -10.28,
+    2.25,
+    -0.76,
+    1.97,
+    -2.53,
+    -0.66,
+    -3.07,
+    1.57,
+    -8.1,
+    -0.44,
+    0.56,
+    -6.4,
+    17.38,
+    20.45,
+    21.05,
+    2.81,
+    0.86,
+    -6.26,
+    6.9,
+    8.02,
+    9.52,
+    8.75,
+    -3.78,
+    -6.97,
+    5.86,
+    11.16,
+    23.78,
+    -7.78,
+    -6.68,
+    -8.32,
+    12.51,
+    17.26,
+    39.21,
+    13.18,
+    18.7,
+    -5.28
+   ],
+   "twoSided": [
+    40,
+    41,
+    42,
+    51,
+    52,
+    53,
+    156,
+    157,
+    158,
+    159,
+    167,
+    168,
+    169,
+    170,
+    202,
+    483
+   ],
+   "types": [
+    "arterial",
+    "street"
+   ],
+   "residual": {
+    "median": 7.36,
+    "p75": 12.89,
+    "p90": 19.75,
+    "max": 42.06,
+    "rms": 11.68
+   },
+   "admissibility": {
+    "admissibleFrontageM": 339.29,
+    "twoSidedFrontageM": 3073.57,
+    "admissibleEdges": 3,
+    "twoSidedEdges": 16
+   },
+   "admissibleDetail": [
+    {
+     "edgeId": 21,
+     "street": "Commonwealth Avenue Inbound",
+     "r0": -5.077091049449213,
+     "f0": 7.76473913043646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 30,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -2.136690535581545,
+     "f0": 24.286478261202646,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 31,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -2.8059015622192227,
+     "f0": 172.48600000027682,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 32,
+     "street": "Commonwealth Avenue Outbound",
+     "r0": -0.8334066971423901,
+     "f0": 32.547347825628044,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 40,
+     "street": "Newbury Street",
+     "r0": -12.6,
+     "r1": -7.93,
+     "widthErrM": -20.53,
+     "shiftM": -2.33,
+     "frontageM": 312.92,
+     "admissible": false
+    },
+    {
+     "edgeId": 41,
+     "street": "Newbury Street",
+     "r0": -9.07,
+     "r1": -8.28,
+     "widthErrM": -17.35,
+     "shiftM": -0.39,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 42,
+     "street": "Newbury Street",
+     "r0": -4.96,
+     "r1": -0.2,
+     "widthErrM": -5.16,
+     "shiftM": -2.38,
+     "frontageM": 114.66,
+     "admissible": false
+    },
+    {
+     "edgeId": 51,
+     "street": "Boylston Street",
+     "r0": 1.45,
+     "r1": -3.48,
+     "widthErrM": -2.03,
+     "shiftM": 2.47,
+     "frontageM": 230.31,
+     "admissible": false
+    },
+    {
+     "edgeId": 52,
+     "street": "Boylston Street",
+     "r0": -3.41,
+     "r1": -7.94,
+     "widthErrM": -11.35,
+     "shiftM": 2.27,
+     "frontageM": 344.97,
+     "admissible": false
+    },
+    {
+     "edgeId": 53,
+     "street": "Boylston Street",
+     "r0": -0.39,
+     "r1": 12.69,
+     "widthErrM": 12.3,
+     "shiftM": -6.54,
+     "frontageM": 197.27,
+     "admissible": false
+    },
+    {
+     "edgeId": 142,
+     "street": "Dartmouth Street",
+     "r1": -5.10616002673739,
+     "f1": 24.385857142969474,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 156,
+     "street": "Exeter Street",
+     "r0": -0.11,
+     "r1": 6.24,
+     "widthErrM": 6.14,
+     "shiftM": -3.17,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 157,
+     "street": "Exeter Street",
+     "r0": -0.89,
+     "r1": -2.91,
+     "widthErrM": -3.8,
+     "shiftM": 1.01,
+     "frontageM": 91.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 158,
+     "street": "Exeter Street",
+     "r0": 0.33,
+     "r1": 2.56,
+     "widthErrM": 2.89,
+     "shiftM": -1.12,
+     "frontageM": 89.17,
+     "admissible": true
+    },
+    {
+     "edgeId": 159,
+     "street": "Exeter Street",
+     "r0": 0.57,
+     "r1": 8.05,
+     "widthErrM": 8.62,
+     "shiftM": -3.74,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 160,
+     "street": "Exeter Street",
+     "r1": -7.3265290003212264,
+     "f1": 32.67157142863969,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 167,
+     "street": "Fairfield Street",
+     "r0": -1.78,
+     "r1": -6.49,
+     "widthErrM": -8.27,
+     "shiftM": 2.35,
+     "frontageM": 43.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 168,
+     "street": "Fairfield Street",
+     "r0": -4.18,
+     "r1": -5.3,
+     "widthErrM": -9.47,
+     "shiftM": 0.56,
+     "frontageM": 91.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 169,
+     "street": "Fairfield Street",
+     "r0": -2.35,
+     "r1": -2.62,
+     "widthErrM": -4.97,
+     "shiftM": 0.13,
+     "frontageM": 89.17,
+     "admissible": false
+    },
+    {
+     "edgeId": 170,
+     "street": "Fairfield Street",
+     "r0": -6.71,
+     "r1": 12.09,
+     "widthErrM": 5.38,
+     "shiftM": -9.4,
+     "frontageM": 75.54,
+     "admissible": false
+    },
+    {
+     "edgeId": 171,
+     "street": "Fairfield Street",
+     "r0": -0.13170935648387072,
+     "f0": 25.1999999998821,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 199,
+     "street": "Blagden Street",
+     "r1": -0.4790564480560633,
+     "f1": 100.10072557537897,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 200,
+     "street": "Blagden Street",
+     "r1": -15.093846931961385,
+     "f1": 31.243000000022178,
+     "admissible": false,
+     "why": "one-sided"
+    },
+    {
+     "edgeId": 202,
+     "street": "Ring Road",
+     "r0": -1.76,
+     "r1": 0,
+     "widthErrM": -1.76,
+     "shiftM": -0.88,
+     "frontageM": 158.95,
+     "admissible": true
+    },
+    {
+     "edgeId": 483,
+     "street": "Huntington Avenue",
+     "r0": -2.14,
+     "r1": -3.13,
+     "widthErrM": -5.27,
+     "shiftM": 0.49,
+     "frontageM": 320.71,
+     "admissible": false
+    }
+   ]
+  }
+ },
+ "perEdge": [
+  {
+   "edgeId": 21,
+   "street": "Commonwealth Avenue Inbound",
+   "lateralM": null,
+   "widthM": -6.4,
+   "samples": 8,
+   "sides": 1
+  },
+  {
+   "edgeId": 30,
+   "street": "Commonwealth Avenue Outbound",
+   "lateralM": null,
+   "widthM": 17.38,
+   "samples": 24,
+   "sides": 1
+  },
+  {
+   "edgeId": 31,
+   "street": "Commonwealth Avenue Outbound",
+   "lateralM": null,
+   "widthM": 20.45,
+   "samples": 138,
+   "sides": 1
+  },
+  {
+   "edgeId": 32,
+   "street": "Commonwealth Avenue Outbound",
+   "lateralM": null,
+   "widthM": 21.05,
+   "samples": 31,
+   "sides": 1
+  },
+  {
+   "edgeId": 40,
+   "street": "Newbury Street",
+   "lateralM": -1.75,
+   "widthM": 2.81,
+   "samples": 226,
+   "sides": 2
+  },
+  {
+   "edgeId": 41,
+   "street": "Newbury Street",
+   "lateralM": 0.94,
+   "widthM": 0.86,
+   "samples": 292,
+   "sides": 2
+  },
+  {
+   "edgeId": 42,
+   "street": "Newbury Street",
+   "lateralM": -1.09,
+   "widthM": -6.26,
+   "samples": 111,
+   "sides": 2
+  },
+  {
+   "edgeId": 51,
+   "street": "Boylston Street",
+   "lateralM": -11.86,
+   "widthM": 6.9,
+   "samples": 182,
+   "sides": 2
+  },
+  {
+   "edgeId": 52,
+   "street": "Boylston Street",
+   "lateralM": -7.1,
+   "widthM": 8.02,
+   "samples": 253,
+   "sides": 2
+  },
+  {
+   "edgeId": 53,
+   "street": "Boylston Street",
+   "lateralM": -10.28,
+   "widthM": 9.52,
+   "samples": 145,
+   "sides": 2
+  },
+  {
+   "edgeId": 142,
+   "street": "Dartmouth Street",
+   "lateralM": null,
+   "widthM": 8.75,
+   "samples": 25,
+   "sides": 1
+  },
+  {
+   "edgeId": 156,
+   "street": "Exeter Street",
+   "lateralM": 2.25,
+   "widthM": -3.78,
+   "samples": 9,
+   "sides": 2
+  },
+  {
+   "edgeId": 157,
+   "street": "Exeter Street",
+   "lateralM": -0.76,
+   "widthM": -6.97,
+   "samples": 78,
+   "sides": 2
+  },
+  {
+   "edgeId": 158,
+   "street": "Exeter Street",
+   "lateralM": 1.97,
+   "widthM": 5.86,
+   "samples": 55,
+   "sides": 2
+  },
+  {
+   "edgeId": 159,
+   "street": "Exeter Street",
+   "lateralM": -2.53,
+   "widthM": 11.16,
+   "samples": 48,
+   "sides": 2
+  },
+  {
+   "edgeId": 160,
+   "street": "Exeter Street",
+   "lateralM": null,
+   "widthM": 23.78,
+   "samples": 31,
+   "sides": 1
+  },
+  {
+   "edgeId": 167,
+   "street": "Fairfield Street",
+   "lateralM": -0.66,
+   "widthM": -7.78,
+   "samples": 42,
+   "sides": 2
+  },
+  {
+   "edgeId": 168,
+   "street": "Fairfield Street",
+   "lateralM": -3.07,
+   "widthM": -6.68,
+   "samples": 82,
+   "sides": 2
+  },
+  {
+   "edgeId": 169,
+   "street": "Fairfield Street",
+   "lateralM": 1.57,
+   "widthM": -8.32,
+   "samples": 68,
+   "sides": 2
+  },
+  {
+   "edgeId": 170,
+   "street": "Fairfield Street",
+   "lateralM": -8.1,
+   "widthM": 12.51,
+   "samples": 50,
+   "sides": 2
+  },
+  {
+   "edgeId": 171,
+   "street": "Fairfield Street",
+   "lateralM": null,
+   "widthM": 17.26,
+   "samples": 21,
+   "sides": 1
+  },
+  {
+   "edgeId": 199,
+   "street": "Blagden Street",
+   "lateralM": null,
+   "widthM": 39.21,
+   "samples": 30,
+   "sides": 1
+  },
+  {
+   "edgeId": 200,
+   "street": "Blagden Street",
+   "lateralM": null,
+   "widthM": 13.18,
+   "samples": 15,
+   "sides": 1
+  },
+  {
+   "edgeId": 202,
+   "street": "Ring Road",
+   "lateralM": -0.44,
+   "widthM": 18.7,
+   "samples": 35,
+   "sides": 2
+  },
+  {
+   "edgeId": 483,
+   "street": "Huntington Avenue",
+   "lateralM": 0.56,
+   "widthM": -5.28,
+   "samples": 166,
+   "sides": 2
+  }
+ ],
+ "intersection": {
+  "cutoffM": 21.45,
+  "near": {
+   "raw": {
+    "n": 542,
+    "median": 11.99,
+    "p90": 28.36
+   },
+   "afterG2W": {
+    "n": 542,
+    "median": 12.47,
+    "p90": 23.9
+   }
+  },
+  "midBlock": {
+   "raw": {
+    "n": 1623,
+    "median": 10.79,
+    "p90": 32.86
+   },
+   "afterG2W": {
+    "n": 1623,
+    "median": 10.96,
+    "p90": 31.75
+   }
+  }
+ },
+ "crossValidation": {
+  "G1": {
+   "trainMedian": 11.51,
+   "heldOutMedian": 10.35,
+   "heldOutP90": 28.52,
+   "n": 1083
+  },
+  "G2": {
+   "trainMedian": 10.48,
+   "heldOutMedian": 9.18,
+   "heldOutP90": 29.21,
+   "n": 1083
+  },
+  "W": {
+   "trainMedian": 8.72,
+   "heldOutMedian": 12.63,
+   "heldOutP90": 30.03,
+   "n": 1083
+  },
+  "G2W": {
+   "trainMedian": 7.57,
+   "heldOutMedian": 14.61,
+   "heldOutP90": 31.44,
+   "n": 1083
+  },
+  "PSL": {
+   "trainMedian": 8.16,
+   "heldOutMedian": 12.91,
+   "heldOutP90": 36.79,
+   "n": 1083
+  },
+  "PSW": {
+   "trainMedian": 8.16,
+   "heldOutMedian": 16.4,
+   "heldOutP90": 29.84,
+   "n": 1083
+  }
+ }
+}
