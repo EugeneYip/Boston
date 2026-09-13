@@ -1,0 +1,251 @@
+{
+ "schemaVersion": "boston-gis-stage2a1/blast-trace/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "changed": 1540,
+ "outsideCore": 754,
+ "maxDistanceM": 231.68,
+ "attribution": {
+  "clippedStreet": 581,
+  "factualSameName": 99,
+  "neither": 74,
+  "edgeReSplit": 438,
+  "edgeIdentical": 316
+ },
+ "perStreet": [
+  {
+   "name": "Huntington Avenue",
+   "changed": 155,
+   "maxDistM": 210.48,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Commonwealth Avenue Inbound",
+   "changed": 109,
+   "maxDistM": 154.9,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Newbury Street",
+   "changed": 102,
+   "maxDistM": 160.45,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Dartmouth Street",
+   "changed": 96,
+   "maxDistM": 69.13,
+   "clipped": false,
+   "factualAdded": true
+  },
+  {
+   "name": "Boylston Street",
+   "changed": 93,
+   "maxDistM": 181.47,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Commonwealth Avenue Outbound",
+   "changed": 80,
+   "maxDistM": 158.72,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Gloucester Street",
+   "changed": 52,
+   "maxDistM": 151.36,
+   "clipped": false,
+   "factualAdded": false
+  },
+  {
+   "name": "Fairfield Street",
+   "changed": 23,
+   "maxDistM": 69.01,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Clarendon Street",
+   "changed": 18,
+   "maxDistM": 231.68,
+   "clipped": false,
+   "factualAdded": false
+  },
+  {
+   "name": "Exeter Street",
+   "changed": 14,
+   "maxDistM": 84.9,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Blagden Street",
+   "changed": 5,
+   "maxDistM": 24.28,
+   "clipped": true,
+   "factualAdded": true
+  },
+  {
+   "name": "Saint James Avenue",
+   "changed": 4,
+   "maxDistM": 55.28,
+   "clipped": false,
+   "factualAdded": false
+  },
+  {
+   "name": "Stuart ST",
+   "changed": 3,
+   "maxDistM": 9.91,
+   "clipped": false,
+   "factualAdded": true
+  }
+ ],
+ "trace": {
+  "street": "Gloucester Street",
+  "controlEdges": [
+   {
+    "id": 172,
+    "lengthM": 32,
+    "a": 74,
+    "b": 7
+   },
+   {
+    "id": 173,
+    "lengthM": 58,
+    "a": 7,
+    "b": 81
+   },
+   {
+    "id": 174,
+    "lengthM": 57,
+    "a": 81,
+    "b": 18
+   },
+   {
+    "id": 175,
+    "lengthM": 58,
+    "a": 18,
+    "b": 90
+   },
+   {
+    "id": 176,
+    "lengthM": 34,
+    "a": 90,
+    "b": 23
+   },
+   {
+    "id": 177,
+    "lengthM": 46,
+    "a": 23,
+    "b": 36
+   },
+   {
+    "id": 178,
+    "lengthM": 34,
+    "a": 36,
+    "b": 99
+   },
+   {
+    "id": 179,
+    "lengthM": 58,
+    "a": 99,
+    "b": 48
+   },
+   {
+    "id": 180,
+    "lengthM": 57,
+    "a": 48,
+    "b": 108
+   },
+   {
+    "id": 181,
+    "lengthM": 58,
+    "a": 108,
+    "b": 60
+   },
+   {
+    "id": 182,
+    "lengthM": 42,
+    "a": 60,
+    "b": 129
+   }
+  ],
+  "candidateEdges": [
+   {
+    "id": 159,
+    "lengthM": 32,
+    "a": 79,
+    "b": 7
+   },
+   {
+    "id": 160,
+    "lengthM": 58,
+    "a": 7,
+    "b": 86
+   },
+   {
+    "id": 161,
+    "lengthM": 57,
+    "a": 86,
+    "b": 18
+   },
+   {
+    "id": 162,
+    "lengthM": 58,
+    "a": 18,
+    "b": 95
+   },
+   {
+    "id": 163,
+    "lengthM": 34,
+    "a": 95,
+    "b": 23
+   },
+   {
+    "id": 164,
+    "lengthM": 46,
+    "a": 23,
+    "b": 40
+   },
+   {
+    "id": 165,
+    "lengthM": 34,
+    "a": 40,
+    "b": 104
+   },
+   {
+    "id": 166,
+    "lengthM": 58,
+    "a": 104,
+    "b": 53
+   },
+   {
+    "id": 167,
+    "lengthM": 57,
+    "a": 53,
+    "b": 113
+   },
+   {
+    "id": 168,
+    "lengthM": 58,
+    "a": 113,
+    "b": 65
+   },
+   {
+    "id": 169,
+    "lengthM": 42,
+    "a": 65,
+    "b": 132
+   }
+  ]
+ }
+}

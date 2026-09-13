@@ -1,0 +1,26 @@
+{
+ "A_newbury_block": {
+  "meanAbsDiff": 47.01,
+  "pctOver32": 49.96
+ },
+ "B_boylston_block": {
+  "meanAbsDiff": 46.27,
+  "pctOver32": 54.55
+ },
+ "C_cross_exeter_fairfield": {
+  "meanAbsDiff": 46.07,
+  "pctOver32": 51.03
+ },
+ "D_district_overview": {
+  "meanAbsDiff": 28.58,
+  "pctOver32": 30.49
+ },
+ "E_commonwealth": {
+  "meanAbsDiff": 28.75,
+  "pctOver32": 30.08
+ },
+ "F_seam": {
+  "meanAbsDiff": 41.8,
+  "pctOver32": 48.02
+ }
+}

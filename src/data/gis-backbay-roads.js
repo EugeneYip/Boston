@@ -1,9 +1,9 @@
 /**
  * Back Bay factual road centrelines — GENERATED, do not hand-edit.
  *
- *   node research/gis-stage2a/build-candidate.mjs
+ *   node research/gis-stage2a1/build-candidate.mjs
  *
- * Stage 2A prototype data. DEFAULT OFF: nothing imports this unless
+ * Stage 2A.1 prototype data. DEFAULT OFF: nothing imports this unless
  * `?gisRoads=1` is present. See `src/world/GisRoads.js`.
  *
  * Source      Boston Street Segments (SAM System), Boston Maps, City of Boston
@@ -14,15 +14,23 @@
  * Raw sha256  647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450
  * Projection  service EPSG:4326, then production src/core/Geo.js geo()
  *
- * SEMANTICS. These are ADDRESSING / ROUTING centrelines, not surveyed pavement
- * centrelines, and SAM carries no authoritative road width. Only the centreline
- * geometry, street identity, ZLEV and one-way sense are factual here. Width,
- * lane count, road class, footway, kerb and parking all stay procedural and are
- * inherited from Boston's existing entry for the street of the same name.
+ * SEMANTICS. Addressing / routing centrelines, not surveyed pavement centrelines,
+ * and SAM carries no authoritative width. Only centreline geometry, street
+ * identity, ZLEV and one-way sense are factual. Width, lanes, class, footway,
+ * kerb and parking stay procedural, inherited from Boston's own entry for the
+ * street of that name.
  *
- * EXCLUSIONS. Grade-separated features are dropped rather than flattened: the
- * Massachusetts Turnpike runs under Back Bay at ZLEV -1 and its ramps at -2..0.
- * `Exeter PLZ` is a pedestrian plaza (CFCC A71).
+ * CONTAINMENT (Stage 2A.1). Factual geometry is CLIPPED TO THE CORE so it cannot
+ * create junctions outside it, and Boston's own streets are cut at the nearest
+ * baseline junction beyond the core — never mid-edge — so every edge outside the
+ * seam keeps both endpoints and regenerates bit-identically. Clipped streets
+ * carry the matching slice of every per-vertex array (`median`, `y`, `bridge`);
+ * Stage 2A kept them whole, which misaligned Huntington's median and caused the
+ * `nuniv` station section to be refused.
+ *
+ * EXCLUSIONS. Grade-separated features are dropped, not flattened: the Turnpike
+ * runs under Back Bay at ZLEV -1 and its ramps at -2..0. `Exeter PLZ` is a
+ * pedestrian plaza (CFCC A71).
  */
 export const GIS_ROADS_SOURCE = {
  "dataset": "Boston Street Segments (SAM System)",
@@ -41,16 +49,17 @@ export const GIS_ROADS_SOURCE = {
   "z1": 854.60364
  },
  "surfaceFilter": "F_ZLEV >= 0 AND T_ZLEV >= 0 AND CFCC != A71",
- "excludedFeatures": 8
+ "excludedFeatures": 8,
+ "containment": "factual geometry clipped to the core; Boston streets cut at the nearest baseline junction beyond it",
+ "seamMaxBeyondCoreM": 216.15
 };
 
-/** Factual surface streets, in the STREETS shape `RoadNetwork._prepare` consumes. */
+/** Factual surface streets, clipped to the core, in the STREETS shape. */
 export const GIS_ROADS = [
  {
   "name": "Boylston Street",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3495165,
@@ -61,21 +70,12 @@ export const GIS_ROADS = [
     -71.0778192
    ],
    [
-    42.3500531,
-    -71.0775024
-   ],
-   [
-    42.3500972,
-    -71.0773481
-   ],
-   [
-    42.3501047,
-    -71.0773217
+    42.3500356,
+    -71.077569
    ]
   ],
   "sam": {
    "segmentId": 978,
-   "objectId": 789,
    "name": "Boylston ST",
    "cfcc": "A31",
    "zlev": [
@@ -88,11 +88,10 @@ export const GIS_ROADS = [
   "name": "Dartmouth Street",
   "type": "arterial",
   "lanes": 3,
-  "oneway": 1,
   "path": [
    [
-    42.3505089,
-    -71.077547
+    42.3505548,
+    -71.077569
    ],
    [
     42.3508992,
@@ -101,7 +100,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 2240,
-   "objectId": 1785,
    "name": "Dartmouth ST",
    "cfcc": "A41",
    "zlev": [
@@ -114,7 +112,6 @@ export const GIS_ROADS = [
   "name": "Dartmouth Street",
   "type": "arterial",
   "lanes": 3,
-  "oneway": 1,
   "path": [
    [
     42.3508992,
@@ -127,7 +124,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 2241,
-   "objectId": 1786,
    "name": "Dartmouth ST",
    "cfcc": "A41",
    "zlev": [
@@ -140,20 +136,18 @@ export const GIS_ROADS = [
   "name": "Dartmouth Street",
   "type": "arterial",
   "lanes": 3,
-  "oneway": 1,
   "path": [
    [
     42.351281,
     -71.0779105
    ],
    [
-    42.3517095,
-    -71.0781392
+    42.351297,
+    -71.077919
    ]
   ],
   "sam": {
    "segmentId": 2242,
-   "objectId": 1787,
    "name": "Dartmouth ST",
    "cfcc": "A41",
    "zlev": [
@@ -173,13 +167,12 @@ export const GIS_ROADS = [
     -71.0823711
    ],
    [
-    42.3505067,
-    -71.0825944
+    42.3501974,
+    -71.082431
    ]
   ],
   "sam": {
    "segmentId": 2848,
-   "objectId": 2314,
    "name": "Fairfield ST",
    "cfcc": "A41",
    "zlev": [
@@ -209,7 +202,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 2849,
-   "objectId": 2315,
    "name": "Fairfield ST",
    "cfcc": "A41",
    "zlev": [
@@ -243,7 +235,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 2850,
-   "objectId": 2316,
    "name": "Fairfield ST",
    "cfcc": "A41",
    "zlev": [
@@ -259,8 +250,8 @@ export const GIS_ROADS = [
   "oneway": 1,
   "path": [
    [
-    42.3514731,
-    -71.0804694
+    42.351297,
+    -71.0803719
    ],
    [
     42.3511294,
@@ -269,7 +260,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 3000,
-   "objectId": 2434,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -295,7 +285,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 3001,
-   "objectId": 2435,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -321,7 +310,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 3002,
-   "objectId": 2436,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -351,7 +339,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 3003,
-   "objectId": 2437,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -367,12 +354,8 @@ export const GIS_ROADS = [
   "oneway": 1,
   "path": [
    [
-    42.351482,
-    -71.075601
-   ],
-   [
-    42.3512623,
-    -71.0763955
+    42.350944,
+    -71.077569
    ],
    [
     42.3508992,
@@ -381,7 +364,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5660,
-   "objectId": 4629,
    "name": "Newbury ST",
    "cfcc": "A41",
    "zlev": [
@@ -411,7 +393,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5661,
-   "objectId": 4630,
    "name": "Newbury ST",
    "cfcc": "A41",
    "zlev": [
@@ -441,7 +422,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5666,
-   "objectId": 4634,
    "name": "Newbury ST",
    "cfcc": "A41",
    "zlev": [
@@ -461,13 +441,12 @@ export const GIS_ROADS = [
     -71.08218
    ],
    [
-    42.3491636,
-    -71.0841371
+    42.3496266,
+    -71.082431
    ]
   ],
   "sam": {
    "segmentId": 5667,
-   "objectId": 4635,
    "name": "Newbury ST",
    "cfcc": "A41",
    "zlev": [
@@ -480,20 +459,18 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 432",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
     42.350084,
     -71.0823711
    ],
    [
-    42.3495601,
-    -71.0843244
+    42.3500679,
+    -71.082431
    ]
   ],
   "sam": {
    "segmentId": 5970,
-   "objectId": 4849,
    "name": "Public Alley No. 432",
    "cfcc": "A73",
    "zlev": [
@@ -506,7 +483,6 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 433",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
     42.3507002,
@@ -519,7 +495,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5971,
-   "objectId": 4850,
    "name": "Public Alley No. 433",
    "cfcc": "A73",
    "zlev": [
@@ -532,7 +507,6 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 434",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
     42.351281,
@@ -545,7 +519,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5972,
-   "objectId": 4851,
    "name": "Public Alley No. 434",
    "cfcc": "A73",
    "zlev": [
@@ -558,11 +531,10 @@ export const GIS_ROADS = [
   "name": "Public Alley 435",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
-    42.3518676,
-    -71.0757836
+    42.351297,
+    -71.0778525
    ],
    [
     42.351281,
@@ -571,7 +543,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5973,
-   "objectId": 4852,
    "name": "Public Alley No. 435",
    "cfcc": "A73",
    "zlev": [
@@ -584,11 +555,10 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 440",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
-    42.3505089,
-    -71.077547
+    42.350503,
+    -71.077569
    ],
    [
     42.3499378,
@@ -597,7 +567,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5977,
-   "objectId": 10131,
    "name": "Public Alley No. 440",
    "cfcc": "A73",
    "zlev": [
@@ -610,7 +579,6 @@ export const GIS_ROADS = [
   "name": "Public Alley No. 441",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
     42.3499378,
@@ -623,7 +591,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 5978,
-   "objectId": 10132,
    "name": "Public Alley No. 441",
    "cfcc": "A73",
    "zlev": [
@@ -636,20 +603,18 @@ export const GIS_ROADS = [
   "name": "Public Alley 442",
   "type": "alley",
   "lanes": 1,
-  "oneway": 1,
   "path": [
    [
     42.3493079,
     -71.081996
    ],
    [
-    42.3487794,
-    -71.0839494
+    42.3491902,
+    -71.082431
    ]
   ],
   "sam": {
    "segmentId": 5979,
-   "objectId": 10133,
    "name": "Public Alley No. 442",
    "cfcc": "A73",
    "zlev": [
@@ -659,15 +624,15 @@ export const GIS_ROADS = [
   }
  },
  {
-  "name": "Commonwealth Avenue Inbound",
+  "name": "Commonwealth Avenue Outbound",
   "type": "street",
   "lanes": 2,
   "oneway": 1,
   "mall": true,
   "path": [
    [
-    42.3514731,
-    -71.0804694
+    42.351297,
+    -71.081114
    ],
    [
     42.3512524,
@@ -678,13 +643,12 @@ export const GIS_ROADS = [
     -71.0822791
    ],
    [
-    42.3508531,
-    -71.0827607
+    42.3509418,
+    -71.082431
    ]
   ],
   "sam": {
    "segmentId": 9217,
-   "objectId": 11477,
    "name": "Commonwealth AVE",
    "cfcc": "A25",
    "zlev": [
@@ -710,7 +674,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 10182,
-   "objectId": 7115,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -736,7 +699,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 10183,
-   "objectId": 7116,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -766,7 +728,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 11006,
-   "objectId": 12233,
    "name": "Fairfield ST",
    "cfcc": "A41",
    "zlev": [
@@ -804,7 +765,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 11605,
-   "objectId": 12234,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -817,7 +777,6 @@ export const GIS_ROADS = [
   "name": "Boylston Street",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3491606,
@@ -830,7 +789,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 11694,
-   "objectId": 15705,
    "name": "Boylston ST",
    "cfcc": "A31",
    "zlev": [
@@ -843,7 +801,6 @@ export const GIS_ROADS = [
   "name": "Boylston Street",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3488972,
@@ -864,7 +821,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 11695,
-   "objectId": 11932,
    "name": "Boylston ST",
    "cfcc": "A31",
    "zlev": [
@@ -874,7 +830,7 @@ export const GIS_ROADS = [
   }
  },
  {
-  "name": "Commonwealth Avenue Outbound",
+  "name": "Commonwealth Avenue Inbound",
   "type": "street",
   "lanes": 2,
   "oneway": 1,
@@ -885,17 +841,12 @@ export const GIS_ROADS = [
     -71.0802791
    ],
    [
-    42.3515916,
-    -71.0785744
-   ],
-   [
-    42.3517095,
-    -71.0781392
+    42.351297,
+    -71.079661
    ]
   ],
   "sam": {
    "segmentId": 12254,
-   "objectId": 11474,
    "name": "Commonwealth AVE",
    "cfcc": "A25",
    "zlev": [
@@ -905,15 +856,15 @@ export const GIS_ROADS = [
   }
  },
  {
-  "name": "Commonwealth Avenue Outbound",
+  "name": "Commonwealth Avenue Inbound",
   "type": "street",
   "lanes": 2,
   "oneway": 1,
   "mall": true,
   "path": [
    [
-    42.3505067,
-    -71.0825944
+    42.3505507,
+    -71.082431
    ],
    [
     42.3510201,
@@ -926,7 +877,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 12256,
-   "objectId": 11476,
    "name": "Commonwealth AVE",
    "cfcc": "A25",
    "zlev": [
@@ -939,19 +889,10 @@ export const GIS_ROADS = [
   "name": "Boylston Street",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
-    42.3483705,
-    -71.0837544
-   ],
-   [
-    42.3484434,
-    -71.0834825
-   ],
-   [
-    42.348699,
-    -71.0825288
+    42.3487252,
+    -71.082431
    ],
    [
     42.3487448,
@@ -968,7 +909,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 12875,
-   "objectId": 11933,
    "name": "Boylston ST",
    "cfcc": "A31",
    "zlev": [
@@ -981,15 +921,10 @@ export const GIS_ROADS = [
   "name": "Blagden Street",
   "type": "street",
   "lanes": 2,
-  "oneway": 1,
   "path": [
    [
-    42.3491127,
-    -71.0772656
-   ],
-   [
-    42.3491032,
-    -71.0774631
+    42.3490844,
+    -71.077569
    ],
    [
     42.3490566,
@@ -1006,7 +941,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 13842,
-   "objectId": 12235,
    "name": "Blagden ST",
    "cfcc": "A41",
    "zlev": [
@@ -1019,7 +953,6 @@ export const GIS_ROADS = [
   "name": "Clarendon SQ",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.348118,
@@ -1032,7 +965,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 16148,
-   "objectId": 7513,
    "name": "Clarendon SQ",
    "cfcc": "A31",
    "zlev": [
@@ -1045,7 +977,6 @@ export const GIS_ROADS = [
   "name": "Stuart ST",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3479285,
@@ -1060,13 +991,12 @@ export const GIS_ROADS = [
     -71.0776708
    ],
    [
-    42.3480712,
-    -71.0773158
+    42.3480465,
+    -71.077569
    ]
   ],
   "sam": {
    "segmentId": 16149,
-   "objectId": 17915,
    "name": "Stuart ST",
    "cfcc": "A31",
    "zlev": [
@@ -1092,7 +1022,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 16151,
-   "objectId": 15603,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -1105,7 +1034,6 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.348118,
@@ -1118,7 +1046,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 16154,
-   "objectId": 15606,
    "name": "Huntington AVE",
    "cfcc": "A31",
    "zlev": [
@@ -1131,15 +1058,10 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
-    42.3491127,
-    -71.0772656
-   ],
-   [
-    42.348963,
-    -71.0773087
+    42.3487284,
+    -71.077569
    ],
    [
     42.348446,
@@ -1152,7 +1074,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 16561,
-   "objectId": 15602,
    "name": "Huntington AVE",
    "cfcc": "A31",
    "zlev": [
@@ -1165,15 +1086,10 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
-    42.3491127,
-    -71.0772656
-   ],
-   [
-    42.3490507,
-    -71.0774559
+    42.348958,
+    -71.077569
    ],
    [
     42.3485491,
@@ -1194,7 +1110,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 19565,
-   "objectId": 15607,
    "name": "Huntington AVE",
    "cfcc": "A41",
    "zlev": [
@@ -1207,24 +1122,18 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3478717,
     -71.078706
    ],
    [
-    42.3471783,
-    -71.0795633
-   ],
-   [
-    42.3470254,
-    -71.0797061
+    42.347703,
+    -71.0789146
    ]
   ],
   "sam": {
    "segmentId": 19626,
-   "objectId": 15605,
    "name": "Huntington AVE",
    "cfcc": "A35",
    "zlev": [
@@ -1237,19 +1146,10 @@ export const GIS_ROADS = [
   "name": "Huntington Avenue",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
-    42.3469421,
-    -71.079621
-   ],
-   [
-    42.347075,
-    -71.0793985
-   ],
-   [
-    42.3476334,
-    -71.0787275
+    42.347703,
+    -71.0786293
    ],
    [
     42.3477099,
@@ -1258,7 +1158,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 19794,
-   "objectId": 17913,
    "name": "Huntington AVE",
    "cfcc": "A35",
    "zlev": [
@@ -1293,29 +1192,12 @@ export const GIS_ROADS = [
     -71.0800546
    ],
    [
-    42.3475367,
-    -71.0799626
-   ],
-   [
-    42.3474867,
-    -71.0799386
-   ],
-   [
-    42.3474487,
-    -71.0799196
-   ],
-   [
-    42.3471195,
-    -71.0797589
-   ],
-   [
-    42.3470254,
-    -71.0797061
+    42.347703,
+    -71.0800444
    ]
   ],
   "sam": {
    "segmentId": 20724,
-   "objectId": 14710,
    "name": "Ring RD",
    "cfcc": "A41",
    "zlev": [
@@ -1328,7 +1210,6 @@ export const GIS_ROADS = [
   "name": "Stuart ST",
   "type": "arterial",
   "lanes": 4,
-  "oneway": 1,
   "path": [
    [
     42.3477099,
@@ -1369,7 +1250,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 24055,
-   "objectId": 17914,
    "name": "Stuart ST",
    "cfcc": "A31",
    "zlev": [
@@ -1395,7 +1275,6 @@ export const GIS_ROADS = [
   ],
   "sam": {
    "segmentId": 24061,
-   "objectId": 15604,
    "name": "Exeter ST",
    "cfcc": "A31",
    "zlev": [
@@ -1406,296 +1285,393 @@ export const GIS_ROADS = [
  }
 ];
 
-/** Hand-authored Boston streets, clipped to the parts OUTSIDE the factual core. */
+/** Boston streets, clipped to the parts outside the core, per-vertex arrays sliced to match. */
 export const GIS_ROADS_CLIPPED = [
  {
   "name": "Commonwealth Avenue Inbound",
   "index": 2,
   "runs": [
-   [
-    [
-     42.34955812043059,
-     -71.0887617693674
-    ],
-    [
-     42.350099693236174,
-     -71.08657146655298
-    ],
-    [
-     42.35064126604175,
-     -71.08438116373856
+   {
+    "path": [
+     [
+      42.34955812043059,
+      -71.0887617693674
+     ],
+     [
+      42.350099693236174,
+      -71.08657146655298
+     ],
+     [
+      42.35064126604175,
+      -71.08438116373856
+     ],
+     [
+      42.3511235,
+      -71.082431
+     ]
     ]
-   ],
-   [
-    [
-     42.3517244116529,
-     -71.0800005581097
-    ],
-    [
-     42.352265984458484,
-     -71.07781025529528
-    ],
-    [
-     42.352807557264065,
-     -71.07561995248085
-    ],
-    [
-     42.35334913006964,
-     -71.07342964966644
-    ],
-    [
-     42.35389070287522,
-     -71.07123934685201
+   },
+   {
+    "path": [
+     [
+      42.351297,
+      -71.0817292
+     ],
+     [
+      42.3517244116529,
+      -71.0800005581097
+     ],
+     [
+      42.352265984458484,
+      -71.07781025529528
+     ],
+     [
+      42.352807557264065,
+      -71.07561995248085
+     ],
+     [
+      42.35334913006964,
+      -71.07342964966644
+     ],
+     [
+      42.35389070287522,
+      -71.07123934685201
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Commonwealth Avenue Outbound",
   "index": 3,
   "runs": [
-   [
-    [
-     42.353498833596205,
-     -71.07106191636137
-    ],
-    [
-     42.35295726079063,
-     -71.0732522191758
-    ],
-    [
-     42.35241568798505,
-     -71.07544252199023
-    ],
-    [
-     42.35187411517947,
-     -71.07763282480465
-    ],
-    [
-     42.351332542373896,
-     -71.07982312761906
+   {
+    "path": [
+     [
+      42.353498833596205,
+      -71.07106191636137
+     ],
+     [
+      42.35295726079063,
+      -71.0732522191758
+     ],
+     [
+      42.35241568798505,
+      -71.07544252199023
+     ],
+     [
+      42.35187411517947,
+      -71.07763282480465
+     ],
+     [
+      42.351332542373896,
+      -71.07982312761906
+     ],
+     [
+      42.351297,
+      -71.0799669
+     ]
     ]
-   ],
-   [
-    [
-     42.35024939676274,
-     -71.08420373324792
-    ],
-    [
-     42.34970782395716,
-     -71.08639403606234
-    ],
-    [
-     42.34916625115158,
-     -71.08858433887677
+   },
+   {
+    "path": [
+     [
+      42.3506877,
+      -71.082431
+     ],
+     [
+      42.35024939676274,
+      -71.08420373324792
+     ],
+     [
+      42.34970782395716,
+      -71.08639403606234
+     ],
+     [
+      42.34916625115158,
+      -71.08858433887677
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Newbury Street",
   "index": 5,
   "runs": [
-   [
-    [
-     42.352715095038185,
-     -71.07070705538011
-    ],
-    [
-     42.35215927031667,
-     -71.07295499774229
-    ],
-    [
-     42.35160344559516,
-     -71.07520294010446
-    ],
-    [
-     42.35104762087364,
-     -71.07745088246664
+   {
+    "path": [
+     [
+      42.352715095038185,
+      -71.07070705538011
+     ],
+     [
+      42.35215927031667,
+      -71.07295499774229
+     ],
+     [
+      42.35160344559516,
+      -71.07520294010446
+     ],
+     [
+      42.35104762087364,
+      -71.07745088246664
+     ],
+     [
+      42.3510184,
+      -71.077569
+     ]
     ]
-   ],
-   [
-    [
-     42.3493801467091,
-     -71.08419470955315
-    ],
-    [
-     42.348824321987586,
-     -71.08644265191532
-    ],
-    [
-     42.34826849726607,
-     -71.0886905942775
+   },
+   {
+    "path": [
+     [
+      42.3498162,
+      -71.082431
+     ],
+     [
+      42.3493801467091,
+      -71.08419470955315
+     ],
+     [
+      42.348824321987586,
+      -71.08644265191532
+     ],
+     [
+      42.34826849726607,
+      -71.0886905942775
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Boylston Street",
   "index": 6,
   "runs": [
-   [
-    [
-     42.35225,
-     -71.06432
-    ],
-    [
-     42.35208,
-     -71.066
-    ],
-    [
-     42.35221143583293,
-     -71.06833831825875
-    ],
-    [
-     42.35173542184066,
-     -71.07026347915354
-    ],
-    [
-     42.351193849035084,
-     -71.07245378196797
-    ],
-    [
-     42.3506522762295,
-     -71.07464408478238
-    ],
-    [
-     42.35011070342392,
-     -71.0768343875968
+   {
+    "path": [
+     [
+      42.35225,
+      -71.06432
+     ],
+     [
+      42.35208,
+      -71.066
+     ],
+     [
+      42.35221143583293,
+      -71.06833831825875
+     ],
+     [
+      42.35173542184066,
+      -71.07026347915354
+     ],
+     [
+      42.351193849035084,
+      -71.07245378196797
+     ],
+     [
+      42.3506522762295,
+      -71.07464408478238
+     ],
+     [
+      42.35011070342392,
+      -71.0768343875968
+     ],
+     [
+      42.3499291,
+      -71.077569
+     ]
     ]
-   ],
-   [
-    [
-     42.34848598500719,
-     -71.08340529604008
-    ],
-    [
-     42.34794441220161,
-     -71.08559559885451
-    ],
-    [
-     42.34740283939603,
-     -71.08778590166892
-    ],
-    [
-     42.346924491055645,
-     -71.08910753586161
-    ],
-    [
-     42.34638945757344,
-     -71.09027531911302
-    ],
-    [
-     42.34580888246461,
-     -71.09155066709076
-    ],
-    [
-     42.34518276572917,
-     -71.09293357979485
-    ],
-    [
-     42.3464,
-     -71.0993
-    ],
-    [
-     42.3458,
-     -71.1032
+   },
+   {
+    "path": [
+     [
+      42.3487269,
+      -71.082431
+     ],
+     [
+      42.34848598500719,
+      -71.08340529604008
+     ],
+     [
+      42.34794441220161,
+      -71.08559559885451
+     ],
+     [
+      42.34740283939603,
+      -71.08778590166892
+     ],
+     [
+      42.346924491055645,
+      -71.08910753586161
+     ],
+     [
+      42.34638945757344,
+      -71.09027531911302
+     ],
+     [
+      42.34580888246461,
+      -71.09155066709076
+     ],
+     [
+      42.34518276572917,
+      -71.09293357979485
+     ],
+     [
+      42.3464,
+      -71.0993
+     ],
+     [
+      42.3458,
+      -71.1032
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Public Alley 435",
   "index": 10,
   "runs": [
-   [
-    [
-     42.35312367959002,
-     -71.07127660937218
-    ],
-    [
-     42.352285666932964,
-     -71.07466581477976
-    ],
-    [
-     42.351447654275916,
-     -71.07805502018735
+   {
+    "path": [
+     [
+      42.35312367959002,
+      -71.07127660937218
+     ],
+     [
+      42.352285666932964,
+      -71.07466581477976
+     ],
+     [
+      42.351447654275916,
+      -71.07805502018735
+     ],
+     [
+      42.351297,
+      -71.0786643
+     ]
     ]
-   ],
-   [
-    [
-     42.349771628961804,
-     -71.08483343100251
-    ],
-    [
-     42.348933616304755,
-     -71.0882226364101
+   },
+   {
+    "path": [
+     [
+      42.3503657,
+      -71.082431
+     ],
+     [
+      42.349771628961804,
+      -71.08483343100251
+     ],
+     [
+      42.348933616304755,
+      -71.0882226364101
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Public Alley 442",
   "index": 11,
   "runs": [
-   [
-    [
-     42.35214400639249,
-     -71.0708330331456
-    ],
-    [
-     42.35130599373544,
-     -71.07422223855319
+   {
+    "path": [
+     [
+      42.35214400639249,
+      -71.0708330331456
+     ],
+     [
+      42.35130599373544,
+      -71.07422223855319
+     ],
+     [
+      42.3504785,
+      -71.077569
+     ]
     ]
-   ],
-   [
-    [
-     42.34879195576428,
-     -71.08438985477594
-    ],
-    [
-     42.34795394310723,
-     -71.08777906018351
+   },
+   {
+    "path": [
+     [
+      42.3492763,
+      -71.082431
+     ],
+     [
+      42.34879195576428,
+      -71.08438985477594
+     ],
+     [
+      42.34795394310723,
+      -71.08777906018351
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Exeter Street",
   "index": 16,
   "runs": [
-   [
-    [
-     42.35376042812429,
-     -71.08092242522407
-    ],
-    [
-     42.352244064392465,
-     -71.08023584636902
+   {
+    "path": [
+     [
+      42.35376042812429,
+      -71.08092242522407
+     ],
+     [
+      42.352244064392465,
+      -71.08023584636902
+     ],
+     [
+      42.351297,
+      -71.079807
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Fairfield Street",
   "index": 17,
   "runs": [
-   [
-    [
-     42.35321885531871,
-     -71.0831127280385
-    ],
-    [
-     42.351702491586884,
-     -71.08242614918345
+   {
+    "path": [
+     [
+      42.35321885531871,
+      -71.0831127280385
+     ],
+     [
+      42.351702491586884,
+      -71.08242614918345
+     ],
+     [
+      42.351297,
+      -71.0822426
+     ]
     ]
-   ]
+   }
   ]
  },
  {
   "name": "Blagden Street",
   "index": 21,
-  "runs": []
+  "runs": [
+   {
+    "path": [
+     [
+      42.349588103544605,
+      -71.07672594998672
+     ],
+     [
+      42.3493797,
+      -71.077569
+     ]
+    ]
+   }
+  ]
  },
  {
   "name": "Ring Road",
@@ -1706,47 +1682,225 @@ export const GIS_ROADS_CLIPPED = [
   "name": "Huntington Avenue",
   "index": 100,
   "runs": [
-   [
-    [
-     42.34672,
-     -71.08025
+   {
+    "path": [
+     [
+      42.3498,
+      -71.0766
+     ],
+     [
+      42.3491825,
+      -71.077569
+     ]
     ],
-    [
-     42.34626,
-     -71.08066
-    ],
-    [
-     42.34509,
-     -71.08215
-    ],
-    [
-     42.34337,
-     -71.08418
-    ],
-    [
-     42.34135,
-     -71.08672
-    ],
-    [
-     42.34109,
-     -71.08717
-    ],
-    [
-     42.34087,
-     -71.08767
-    ],
-    [
-     42.33797,
-     -71.09491
-    ],
-    [
-     42.33755,
-     -71.09607
-    ],
-    [
-     42.33732,
-     -71.09695
+    "median": [
+     0,
+     0
     ]
+   },
+   {
+    "path": [
+     [
+      42.347703,
+      -71.0795533
+     ],
+     [
+      42.34672,
+      -71.08025
+     ],
+     [
+      42.34626,
+      -71.08066
+     ],
+     [
+      42.34509,
+      -71.08215
+     ],
+     [
+      42.34337,
+      -71.08418
+     ],
+     [
+      42.34135,
+      -71.08672
+     ],
+     [
+      42.34109,
+      -71.08717
+     ],
+     [
+      42.34087,
+      -71.08767
+     ],
+     [
+      42.33797,
+      -71.09491
+     ],
+     [
+      42.33755,
+      -71.09607
+     ],
+     [
+      42.33732,
+      -71.09695
+     ]
+    ],
+    "median": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     7,
+     7,
+     7,
+     7
+    ]
+   }
+  ]
+ }
+];
+
+/** SYNTHETIC seam joins. NOT factual SAM geometry; they exist only in the transition seam. */
+export const GIS_ROADS_CONNECTORS = [
+ {
+  "name": "Boylston Street",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 11.86,
+  "path": [
+   [
+    42.3500356,
+    -71.077569
+   ],
+   [
+    42.3499291,
+    -71.077569
+   ]
+  ]
+ },
+ {
+  "name": "Newbury Street",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 8.28,
+  "path": [
+   [
+    42.3510184,
+    -71.077569
+   ],
+   [
+    42.350944,
+    -71.077569
+   ]
+  ]
+ },
+ {
+  "name": "Newbury Street",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 21.11,
+  "path": [
+   [
+    42.3496266,
+    -71.082431
+   ],
+   [
+    42.3498162,
+    -71.082431
+   ]
+  ]
+ },
+ {
+  "name": "Public Alley 442",
+  "type": "alley",
+  "lanes": 1,
+  "transitionConnector": true,
+  "lengthM": 9.58,
+  "path": [
+   [
+    42.3491902,
+    -71.082431
+   ],
+   [
+    42.3492763,
+    -71.082431
+   ]
+  ]
+ },
+ {
+  "name": "Commonwealth Avenue Outbound",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 28.29,
+  "path": [
+   [
+    42.3509418,
+    -71.082431
+   ],
+   [
+    42.3506877,
+    -71.082431
+   ]
+  ]
+ },
+ {
+  "name": "Boylston Street",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 0.19,
+  "path": [
+   [
+    42.3487269,
+    -71.082431
+   ],
+   [
+    42.3487252,
+    -71.082431
+   ]
+  ]
+ },
+ {
+  "name": "Blagden Street",
+  "type": "street",
+  "lanes": 2,
+  "transitionConnector": true,
+  "lengthM": 32.87,
+  "path": [
+   [
+    42.3493797,
+    -71.077569
+   ],
+   [
+    42.3490844,
+    -71.077569
+   ]
+  ]
+ },
+ {
+  "name": "Huntington Avenue",
+  "type": "arterial",
+  "lanes": 4,
+  "transitionConnector": true,
+  "lengthM": 24.99,
+  "path": [
+   [
+    42.3491825,
+    -71.077569
+   ],
+   [
+    42.348958,
+    -71.077569
    ]
   ]
  }

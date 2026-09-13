@@ -1,0 +1,273 @@
+{
+ "schemaVersion": "boston-gis-stage2a1/seam-design/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "baselineJunctions": 248,
+ "junctionsInCore": 13,
+ "anchors": [
+  {
+   "street": "Blagden Street",
+   "streetIndex": 21,
+   "vertex": 0,
+   "at": {
+    "x": -911.14,
+    "z": 644.75
+   },
+   "anchor": {
+    "x": -901.66,
+    "z": 641.58
+   },
+   "anchorDistM": 10,
+   "anchorBeyondCoreM": 78.84
+  },
+  {
+   "street": "Boylston Street",
+   "streetIndex": 6,
+   "vertex": 6,
+   "at": {
+    "x": -920.06,
+    "z": 586.58
+   },
+   "anchor": {
+    "x": -920.06,
+    "z": 586.58
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 60.43
+  },
+  {
+   "street": "Boylston Street",
+   "streetIndex": 6,
+   "vertex": 9,
+   "at": {
+    "x": -1460.61,
+    "z": 767.44
+   },
+   "anchor": {
+    "x": -1460.61,
+    "z": 767.44
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 80.15
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "streetIndex": 2,
+   "vertex": 2,
+   "at": {
+    "x": -1540.89,
+    "z": 527.52
+   },
+   "anchor": {
+    "x": -1540.89,
+    "z": 527.52
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 160.43
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "streetIndex": 2,
+   "vertex": 4,
+   "at": {
+    "x": -1180.52,
+    "z": 406.94
+   },
+   "anchor": {
+    "x": -1180.52,
+    "z": 406.94
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 47.58
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "streetIndex": 3,
+   "vertex": 4,
+   "at": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "anchor": {
+    "x": -1165.93,
+    "z": 450.56
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 3.96
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "streetIndex": 3,
+   "vertex": 6,
+   "at": {
+    "x": -1526.29,
+    "z": 571.14
+   },
+   "anchor": {
+    "x": -1526.29,
+    "z": 571.14
+   },
+   "anchorDistM": 0,
+   "anchorBeyondCoreM": 145.83
+  },
+  {
+   "street": "Exeter Street",
+   "streetIndex": 16,
+   "vertex": 1,
+   "at": {
+    "x": -1199.88,
+    "z": 349.09
+   },
+   "anchor": {
+    "x": -1191.31,
+    "z": 374.7
+   },
+   "anchorDistM": 27,
+   "anchorBeyondCoreM": 79.82
+  },
+  {
+   "street": "Fairfield Street",
+   "streetIndex": 17,
+   "vertex": 1,
+   "at": {
+    "x": -1380.06,
+    "z": 409.38
+   },
+   "anchor": {
+    "x": -1371.49,
+    "z": 434.98
+   },
+   "anchorDistM": 27,
+   "anchorBeyondCoreM": 19.53
+  },
+  {
+   "street": "Huntington Avenue",
+   "streetIndex": 100,
+   "vertex": 0,
+   "at": {
+    "x": -900.78,
+    "z": 621.17
+   },
+   "anchor": {
+    "x": -907.72,
+    "z": 623.49
+   },
+   "anchorDistM": 7.31,
+   "anchorBeyondCoreM": 72.78
+  },
+  {
+   "street": "Huntington Avenue",
+   "streetIndex": 100,
+   "vertex": 4,
+   "at": {
+    "x": -1201.04,
+    "z": 964.03
+   },
+   "anchor": {
+    "x": -1283.33,
+    "z": 1070.76
+   },
+   "anchorDistM": 134.77,
+   "anchorBeyondCoreM": 216.15
+  },
+  {
+   "street": "Newbury Street",
+   "streetIndex": 5,
+   "vertex": 3,
+   "at": {
+    "x": -970.78,
+    "z": 482.28
+   },
+   "anchor": {
+    "x": -956.55,
+    "z": 477.52
+   },
+   "anchorDistM": 15,
+   "anchorBeyondCoreM": 23.94
+  },
+  {
+   "street": "Newbury Street",
+   "streetIndex": 5,
+   "vertex": 6,
+   "at": {
+    "x": -1525.55,
+    "z": 667.9
+   },
+   "anchor": {
+    "x": -1497.1,
+    "z": 658.38
+   },
+   "anchorDistM": 30,
+   "anchorBeyondCoreM": 116.64
+  },
+  {
+   "street": "Public Alley 435",
+   "streetIndex": 10,
+   "vertex": 2,
+   "at": {
+    "x": -1020.48,
+    "z": 437.75
+   },
+   "anchor": {
+    "x": -974.96,
+    "z": 422.52
+   },
+   "anchorDistM": 48,
+   "anchorBeyondCoreM": 32.48
+  },
+  {
+   "street": "Public Alley 435",
+   "streetIndex": 10,
+   "vertex": 4,
+   "at": {
+    "x": -1578.09,
+    "z": 624.32
+   },
+   "anchor": {
+    "x": -1515.5,
+    "z": 603.38
+   },
+   "anchorDistM": 66,
+   "anchorBeyondCoreM": 135.04
+  },
+  {
+   "street": "Public Alley 442",
+   "streetIndex": 11,
+   "vertex": 1,
+   "at": {
+    "x": -705.18,
+    "z": 453.52
+   },
+   "anchor": {
+    "x": -758.29,
+    "z": 471.29
+   },
+   "anchorDistM": 56,
+   "anchorBeyondCoreM": 222.21
+  },
+  {
+   "street": "Public Alley 442",
+   "streetIndex": 11,
+   "vertex": 4,
+   "at": {
+    "x": -1541.6,
+    "z": 733.38
+   },
+   "anchor": {
+    "x": -1479.01,
+    "z": 712.44
+   },
+   "anchorDistM": 66,
+   "anchorBeyondCoreM": 98.55
+  }
+ ],
+ "anchorBeyondCoreM": {
+  "min": 3.96,
+  "median": 79.82,
+  "max": 222.21
+ }
+}

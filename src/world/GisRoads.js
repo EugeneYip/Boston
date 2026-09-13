@@ -1,4 +1,13 @@
-import { GIS_ROADS, GIS_ROADS_CLIPPED, GIS_ROADS_SOURCE } from '../data/gis-backbay-roads.js';
+import * as ROADS from '../data/gis-backbay-roads.js';
+
+// Namespace import on purpose. The generator in `research/gis-stage2a1/` has to
+// import the production pipeline to find Boston's own junctions, which imports
+// this module, which imports the file the generator is about to write — so a
+// named import of a key the current file does not yet carry is a bootstrap
+// deadlock. Reading through the namespace with a default keeps regeneration
+// possible from any prior state of the data file.
+const { GIS_ROADS, GIS_ROADS_CLIPPED, GIS_ROADS_SOURCE } = ROADS;
+const GIS_ROADS_CONNECTORS = ROADS.GIS_ROADS_CONNECTORS || [];
 
 /**
  * Stage 2A prototype — factual Back Bay road centrelines.
@@ -55,6 +64,9 @@ export function isConflicting() {
   return on('gisRoads') && on('gisBackBay');
 }
 
+/** Street attributes Boston declares as arrays parallel to `path`. */
+const PER_VERTEX = ['median', 'y', 'bridge'];
+
 export const CORE = GIS_ROADS_SOURCE.core;
 export const source = GIS_ROADS_SOURCE;
 
@@ -76,7 +88,7 @@ export function apply(streets) {
   const ledger = {
     enabled: true, source: GIS_ROADS_SOURCE.dataset, licence: GIS_ROADS_SOURCE.licence,
     core: CORE, factualStreets: 0, proceduralKept: 0, proceduralClipped: 0,
-    proceduralRuns: 0, proceduralFullyRemoved: 0,
+    proceduralRuns: 0, proceduralFullyRemoved: 0, connectors: 0,
   };
   for (let i = 0; i < streets.length; i++) {
     const c = clippedByIndex.get(i);
@@ -84,10 +96,22 @@ export function apply(streets) {
     ledger.proceduralClipped++;
     if (!c.runs.length) { ledger.proceduralFullyRemoved++; continue; }
     for (const run of c.runs) {
-      out.push({ ...streets[i], path: run });
+      // `run` carries the clipped `path` AND the matching slice of every
+      // per-vertex array the street declares. Boston publishes `median`, `y`
+      // and `bridge` as arrays parallel to `path`; Stage 2A spread only the
+      // path and left the arrays whole, so Huntington Avenue's
+      // `median: [0 x10, 7.0 x4]` misaligned on its clipped run, `e.median`
+      // fell to 0, `laneLayout` counted 4 lanes instead of 2, and the `nuniv`
+      // MBTA station section was refused as a lane-count change. Any array the
+      // run does not supply is dropped rather than inherited stale.
+      const o = { ...streets[i], ...run };
+      for (const k of PER_VERTEX) if (!(k in run)) delete o[k];
+      out.push(o);
       ledger.proceduralRuns++;
     }
   }
   for (const r of GIS_ROADS) { out.push(r); ledger.factualStreets++; }
+  // Synthetic seam joins, last: not factual geometry, and confined to the seam.
+  for (const c of GIS_ROADS_CONNECTORS) { out.push(c); ledger.connectors = (ledger.connectors || 0) + 1; }
   return { streets: out, ledger };
 }

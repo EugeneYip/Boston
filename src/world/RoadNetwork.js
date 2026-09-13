@@ -1140,6 +1140,33 @@ export default class RoadNetwork {
    * and, on a 58 m lot, looked at three depths 29 m apart — a corridor crossing
    * anywhere between them was invisible.
    */
+  /**
+   * Does a lot extruding outward from a mall carriageway run into its twin?
+   *
+   * Cast the parcel's own outward direction and look for another edge flagged
+   * `mall`. If the ray reaches that carriageway's corridor within the parcel's
+   * depth, the parcel is standing in the central reservation.
+   * @returns {boolean}
+   */
+  _inMallReservation(mx, mz, dx, dz, depth, selfId) {
+    for (const o of this.edges) {
+      if (!o.mall || o.id === selfId) continue;
+      const lim = depth + corridorHalf(o) + 4;
+      for (let i = 1; i < o.pts.length; i++) {
+        const a = o.pts[i - 1], b = o.pts[i];
+        const ex = b.x - a.x, ez = b.z - a.z;
+        const den = dx * ez - dz * ex;
+        if (Math.abs(den) < 1e-12) continue;
+        const qx = a.x - mx, qz = a.z - mz;
+        const t = (qx * ez - qz * ex) / den;
+        const w = (qx * dz - qz * dx) / -den;
+        if (w < 0 || w > 1 || t <= 0) continue;
+        if (t < lim) return true;
+      }
+    }
+    return false;
+  }
+
   _fitDepth(p0, p1, dx, dz, dmax) {
     const ex0 = p0.x + dx * dmax, ez0 = p0.z + dz * dmax;
     const ex1 = p1.x + dx * dmax, ez1 = p1.z + dz * dmax;
@@ -1232,6 +1259,18 @@ export default class RoadNetwork {
           // Test the middle of the parcel, not the kerb: a street that runs
           // along the Common has frontage on the pavement but no land behind it.
           if (blocked && blocked(mx + dx * depth * 0.5, mz + dz * depth * 0.5)) continue;
+          // Nothing is sold in the reservation of a divided boulevard. A lot
+          // extruding from one carriageway toward its twin is standing on the
+          // planted mall, which is the whole point of Commonwealth Avenue.
+          //
+          // Latent until now: the authored carriageways sit a uniform 46 m
+          // apart, which leaves too little depth to pass `MIN_DEPTH`, so the
+          // baseline never produced one. Real carriageways are not uniform —
+          // measured at a median 40.93 m and locally wider — and three lots
+          // appeared in the mall the moment the geometry stopped being ideal.
+          // The rule is generic and provably a no-op on the baseline: 0 lots
+          // there satisfy it.
+          if (e.mall && this._inMallReservation(mx, mz, dx, dz, depth, e.id)) continue;
           const q0 = { x: p0.x + dx * depth, z: p0.z + dz * depth };
           const q1 = { x: p1.x + dx * depth, z: p1.z + dz * depth };
           plots.push({

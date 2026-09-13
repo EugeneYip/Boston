@@ -1,0 +1,83 @@
+{
+ "schemaVersion": "boston-gis-stage2a1/commonwealth/0.1.0",
+ "control": {
+  "byName": {
+   "Commonwealth Avenue Inbound": {
+    "edges": 2,
+    "lengthM": 380,
+    "lanes": [
+     2
+    ],
+    "halfRoad": [
+     5.9
+    ],
+    "corridorHalf": [
+     8.76
+    ],
+    "mall": [
+     true
+    ]
+   },
+   "Commonwealth Avenue Outbound": {
+    "edges": 2,
+    "lengthM": 380,
+    "lanes": [
+     2
+    ],
+    "halfRoad": [
+     5.9
+    ],
+    "corridorHalf": [
+     8.76
+    ],
+    "mall": [
+     true
+    ]
+   }
+  },
+  "spacingM": 46,
+  "corridorHalfMax": 8.76,
+  "freeRealmM": 28.48,
+  "parcelsInMedian": 0
+ },
+ "candidate": {
+  "byName": {
+   "Commonwealth Avenue Inbound": {
+    "edges": 4,
+    "lengthM": 347,
+    "lanes": [
+     2
+    ],
+    "halfRoad": [
+     5.9
+    ],
+    "corridorHalf": [
+     8.76
+    ],
+    "mall": [
+     true
+    ]
+   },
+   "Commonwealth Avenue Outbound": {
+    "edges": 5,
+    "lengthM": 413.04,
+    "lanes": [
+     2
+    ],
+    "halfRoad": [
+     5.9
+    ],
+    "corridorHalf": [
+     8.76
+    ],
+    "mall": [
+     true
+    ]
+   }
+  },
+  "spacingM": 40.93,
+  "corridorHalfMax": 8.76,
+  "freeRealmM": 23.41,
+  "parcelsInMedian": 14
+ }
+}

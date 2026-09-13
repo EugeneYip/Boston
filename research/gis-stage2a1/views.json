@@ -1,0 +1,145 @@
+{
+ "schemaVersion": "boston-gis-stage2a1/views/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "common": {
+  "tod": 10.5,
+  "weather": "clear",
+  "quality": "high",
+  "warmup": 26,
+  "holdActors": true
+ },
+ "method": "fixed world positions, independent of either candidate; each verified to stand in open air — above any building containing it, with 4 m margin — in BOTH worlds",
+ "views": [
+  {
+   "id": "A_newbury_block",
+   "note": "elevated oblique over the Newbury block — camera-fair",
+   "pos": [
+    -1076,
+    46,
+    560
+   ],
+   "look": [
+    -1160,
+    6,
+    505
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  },
+  {
+   "id": "B_boylston_block",
+   "note": "elevated oblique over Boylston — camera-fair",
+   "pos": [
+    -1180,
+    46,
+    760
+   ],
+   "look": [
+    -1260,
+    6,
+    700
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  },
+  {
+   "id": "C_cross_exeter_fairfield",
+   "note": "elevated cross-street view, Exeter/Fairfield — camera-fair",
+   "pos": [
+    -1230,
+    40,
+    560
+   ],
+   "look": [
+    -1170,
+    6,
+    660
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  },
+  {
+   "id": "D_district_overview",
+   "note": "district overview, core centred — camera-fair",
+   "pos": [
+    -1030.5,
+    150,
+    844.6
+   ],
+   "look": [
+    -1210.5,
+    8,
+    614.6
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  },
+  {
+   "id": "E_commonwealth",
+   "note": "Commonwealth boulevard diagnostic — mall legibility",
+   "pos": [
+    -1150,
+    38,
+    380
+   ],
+   "look": [
+    -1250,
+    6,
+    470
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  },
+  {
+   "id": "F_seam",
+   "note": "transition seam diagnostic — NOT verdict-driving",
+   "pos": [
+    -1460,
+    60,
+    700
+   ],
+   "look": [
+    -1370,
+    8,
+    660
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "validInControl": true,
+   "validInCandidate": true,
+   "cameraFair": true
+  }
+ ]
+}

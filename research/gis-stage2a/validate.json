@@ -3,7 +3,7 @@
  "fingerprints": {
   "off": "5fa6c6be79473213",
   "offQ": "5fa6c6be79473213",
-  "on": "83ff879addc0f720",
+  "on": "29466eb445bb72b9",
   "both": "5fa6c6be79473213",
   "bb": "07160ebe8509a742"
  },
@@ -38,9 +38,9 @@
  "failed": [],
  "pass": true,
  "topology": {
-  "coreNodes": 19,
-  "dangling": 0,
-  "dupEdges": 5,
+  "coreNodes": 43,
+  "dangling": 5,
+  "dupEdges": 6,
   "dupEdgesControl": 6,
   "spawnsHeadlessObservable": false,
   "zeroLen": 0,
