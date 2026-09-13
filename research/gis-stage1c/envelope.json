@@ -1,0 +1,82 @@
+{
+ "schemaVersion": "boston-gis-stage1c/envelope/0.2.0",
+ "provenance": {
+  "pddl": {
+   "label": "roofbreaks",
+   "licence": "ODC-PDDL-1.0",
+   "sha256": "6d0e737fac9e0eabf4c4956c3baed180178bd69c72d43b93796c9b62f3996e7f",
+   "count": 218
+  },
+  "massgis": {
+   "label": "massgis",
+   "licence": "MassGIS public record",
+   "sha256": "8a48d7da4eac7a42c15397ef37049f496e27fc0f07df7437a4960ef32ab2e509",
+   "count": 169
+  }
+ },
+ "profile": {
+  "step": 1,
+  "dMin": -15,
+  "dMax": 45
+ },
+ "coverage": {
+  "totalSamples": 3151,
+  "bothSources": 2711,
+  "oneSource": 119,
+  "neither": 321
+ },
+ "distributions": {
+  "normalDisagreementM": {
+   "n": 2711,
+   "p10": 0,
+   "p25": 0,
+   "p50": 0,
+   "p75": 0,
+   "p90": 17.8,
+   "max": 55.72
+  },
+  "currentToFactualM": {
+   "n": 2711,
+   "p10": -11.6,
+   "p25": -7.58,
+   "p50": 4.75,
+   "p75": 16.53,
+   "p90": 32.31,
+   "max": 44.86
+  },
+  "pddlDM": {
+   "n": 2805,
+   "p10": -12.72,
+   "p25": -8.66,
+   "p50": -0.4,
+   "p75": 16.63,
+   "p90": 30.75,
+   "max": 44.86
+  },
+  "massgisDM": {
+   "n": 2736,
+   "p10": -11.74,
+   "p25": -7.68,
+   "p50": 5.72,
+   "p75": 18.92,
+   "p90": 34.62,
+   "max": 44.86
+  },
+  "faceSlopeDisagreementDeg": {
+   "n": 41,
+   "p10": 0,
+   "p25": 0,
+   "p50": 0.25,
+   "p75": 3.91,
+   "p90": 15.3,
+   "max": 73.59
+  }
+ },
+ "agreementWithin": {
+  "0.25m": 79.6,
+  "0.5m": 79.9,
+  "1m": 80,
+  "2m": 80.8,
+  "5m": 82
+ }
+}
