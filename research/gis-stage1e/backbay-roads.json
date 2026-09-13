@@ -1,0 +1,2776 @@
+{
+ "schemaVersion": "boston-gis-stage1e/backbay-roads/0.1.0",
+ "what": "Bounded Back Bay extract of the Stage 1E PRIMARY factual road candidate, in Boston local X/Z metres. RESEARCH FIXTURE — not runtime data, not in src/.",
+ "primary": "sam",
+ "source": {
+  "dataset": "Boston Street Segments (SAM System)",
+  "publisher": "Boston Maps, City of Boston",
+  "catalog": "https://data.boston.gov/dataset/boston-street-segments-sam-system",
+  "packageId": "b9b8b634-f28a-410f-9727-b53d0d006308",
+  "service": "https://gisportal.boston.gov/arcgis/rest/services/SAM/Live_SAM_Address/FeatureServer/3",
+  "layerName": "SAM_Boston_Segments_tbl",
+  "licence": "ODC-PDDL-1.0 (odc-pddl), per the Analyze Boston CKAN record",
+  "licenceUrl": "http://www.opendefinition.org/licenses/odc-pddl",
+  "attribution": "Boston Maps / City of Boston. PDDL imposes no attribution requirement; credit is given as project policy.",
+  "sourceCRS": "EPSG:4326 (requested outSR=4326; native service SR is EPSG:2249 / WKID 102686, NAD83 Massachusetts Mainland ftUS)",
+  "transformPath": "ArcGIS service reprojection to EPSG:4326, then production src/core/Geo.js geo() to Boston local X/Z",
+  "retrieved": "2026-09-13",
+  "rawSha256": "647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450",
+  "semantics": "Street centreline carrying address ranges, one-way, z-levels and routing costs. An addressing/routing centreline — NOT a surveyed pavement or carriageway centreline."
+ },
+ "bboxWgs84": {
+  "s": 42.347703,
+  "w": -71.082431,
+  "n": 42.351297,
+  "e": -71.077569
+ },
+ "surfaceFilter": "F_ZLEV >= 0 AND T_ZLEV >= 0 AND CFCC != A71",
+ "features": [
+  {
+   "segmentId": 978,
+   "objectId": 789,
+   "name": "Boylston ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1139.285,
+      652.725
+     ],
+     [
+      -1001.082,
+      602.244
+     ],
+     [
+      -975.017,
+      592.989
+     ],
+     [
+      -962.325,
+      588.08
+     ],
+     [
+      -960.152,
+      587.251
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2240,
+   "objectId": 1785,
+   "name": "Dartmouth ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -978.685,
+      542.254
+     ],
+     [
+      -994.086,
+      498.8
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2241,
+   "objectId": 1786,
+   "name": "Dartmouth ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -994.086,
+      498.8
+     ],
+     [
+      -1008.587,
+      456.301
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2242,
+   "objectId": 1787,
+   "name": "Dartmouth ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1008.587,
+      456.301
+     ],
+     [
+      -1027.404,
+      408.597
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2848,
+   "objectId": 2314,
+   "name": "Fairfield ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1375.531,
+      589.55
+     ],
+     [
+      -1393.904,
+      542.493
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2849,
+   "objectId": 2315,
+   "name": "Fairfield ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1359.816,
+      632.883
+     ],
+     [
+      -1359.992,
+      632.392
+     ],
+     [
+      -1375.531,
+      589.55
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 2850,
+   "objectId": 2316,
+   "name": "Fairfield ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1344.673,
+      675.943
+     ],
+     [
+      -1345.003,
+      675.003
+     ],
+     [
+      -1352.955,
+      652.054
+     ],
+     [
+      -1359.816,
+      632.883
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 3000,
+   "objectId": 2434,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1219.092,
+      434.911
+     ],
+     [
+      -1203.435,
+      473.173
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 3001,
+   "objectId": 2435,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1203.435,
+      473.173
+     ],
+     [
+      -1186.886,
+      520.96
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 3002,
+   "objectId": 2436,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1186.886,
+      520.96
+     ],
+     [
+      -1171.448,
+      563.522
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 3003,
+   "objectId": 2437,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1171.448,
+      563.522
+     ],
+     [
+      -1164.165,
+      583.63
+     ],
+     [
+      -1156.125,
+      605.829
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5660,
+   "objectId": 4629,
+   "name": "Newbury ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -818.603,
+      433.922
+     ],
+     [
+      -883.957,
+      458.386
+     ],
+     [
+      -994.086,
+      498.8
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5661,
+   "objectId": 4630,
+   "name": "Newbury ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -994.086,
+      498.8
+     ],
+     [
+      -1084.385,
+      532.096
+     ],
+     [
+      -1171.448,
+      563.522
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5666,
+   "objectId": 4634,
+   "name": "Newbury ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1171.448,
+      563.522
+     ],
+     [
+      -1307.252,
+      613.58
+     ],
+     [
+      -1359.816,
+      632.883
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5667,
+   "objectId": 4635,
+   "name": "Newbury ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1359.816,
+      632.883
+     ],
+     [
+      -1520.812,
+      692.011
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5970,
+   "objectId": 4849,
+   "name": "Public Alley No. 432",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1375.531,
+      589.55
+     ],
+     [
+      -1536.214,
+      647.871
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5971,
+   "objectId": 4850,
+   "name": "Public Alley No. 433",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1186.886,
+      520.96
+     ],
+     [
+      -1375.531,
+      589.55
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5972,
+   "objectId": 4851,
+   "name": "Public Alley No. 434",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1008.587,
+      456.301
+     ],
+     [
+      -1186.886,
+      520.96
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5973,
+   "objectId": 4852,
+   "name": "Public Alley No. 435",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -833.626,
+      391.004
+     ],
+     [
+      -1008.587,
+      456.301
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5977,
+   "objectId": 10131,
+   "name": "Public Alley No. 440",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -978.685,
+      542.254
+     ],
+     [
+      -1156.125,
+      605.829
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5978,
+   "objectId": 10132,
+   "name": "Public Alley No. 441",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1156.125,
+      605.829
+     ],
+     [
+      -1344.673,
+      675.943
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 5979,
+   "objectId": 10133,
+   "name": "Public Alley No. 442",
+   "cfcc": "A73",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 15,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1344.673,
+      675.943
+     ],
+     [
+      -1505.367,
+      734.776
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 9217,
+   "objectId": 11477,
+   "name": "Commonwealth AVE",
+   "cfcc": "A25",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1219.092,
+      434.911
+     ],
+     [
+      -1285.537,
+      459.48
+     ],
+     [
+      -1367.968,
+      489.506
+     ],
+     [
+      -1407.582,
+      503.937
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 10182,
+   "objectId": 7115,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1156.125,
+      605.829
+     ],
+     [
+      -1147.344,
+      630.282
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 10183,
+   "objectId": 7116,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1147.344,
+      630.282
+     ],
+     [
+      -1139.285,
+      652.725
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 11006,
+   "objectId": 12233,
+   "name": "Fairfield ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1328.626,
+      721.668
+     ],
+     [
+      -1335.501,
+      702.079
+     ],
+     [
+      -1344.673,
+      675.943
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 11605,
+   "objectId": 12234,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1139.285,
+      652.725
+     ],
+     [
+      -1129.641,
+      679.127
+     ],
+     [
+      -1128.984,
+      680.925
+     ],
+     [
+      -1118.573,
+      709.426
+     ],
+     [
+      -1105.972,
+      743.922
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 11694,
+   "objectId": 15705,
+   "name": "Boylston ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1246.588,
+      692.34
+     ],
+     [
+      -1139.285,
+      652.725
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 11695,
+   "objectId": 11932,
+   "name": "Boylston ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1328.626,
+      721.668
+     ],
+     [
+      -1281.702,
+      704.992
+     ],
+     [
+      -1280.726,
+      704.645
+     ],
+     [
+      -1246.588,
+      692.34
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 12254,
+   "objectId": 11474,
+   "name": "Commonwealth AVE",
+   "cfcc": "A25",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1203.435,
+      473.173
+     ],
+     [
+      -1063.202,
+      421.729
+     ],
+     [
+      -1027.404,
+      408.597
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 12256,
+   "objectId": 11476,
+   "name": "Commonwealth AVE",
+   "cfcc": "A25",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1393.904,
+      542.493
+     ],
+     [
+      -1236.89,
+      485.348
+     ],
+     [
+      -1203.435,
+      473.173
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 12875,
+   "objectId": 11933,
+   "name": "Boylston ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1489.326,
+      780.294
+     ],
+     [
+      -1466.956,
+      772.181
+     ],
+     [
+      -1388.504,
+      743.729
+     ],
+     [
+      -1374.433,
+      738.626
+     ],
+     [
+      -1360.573,
+      733.495
+     ],
+     [
+      -1328.626,
+      721.668
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 13842,
+   "objectId": 12235,
+   "name": "Blagden ST",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -955.537,
+      697.679
+     ],
+     [
+      -971.786,
+      698.731
+     ],
+     [
+      -993.368,
+      703.916
+     ],
+     [
+      -1063.793,
+      728.936
+     ],
+     [
+      -1105.972,
+      743.922
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 16148,
+   "objectId": 7513,
+   "name": "Clarendon SQ",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1039.569,
+      808.409
+     ],
+     [
+      -1024.457,
+      829.498
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 16149,
+   "objectId": 17915,
+   "name": "Stuart ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1024.457,
+      829.498
+     ],
+     [
+      -1008.805,
+      823.363
+     ],
+     [
+      -988.873,
+      817.468
+     ],
+     [
+      -959.663,
+      813.618
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 16151,
+   "objectId": 15603,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1105.972,
+      743.922
+     ],
+     [
+      -1074.027,
+      835.824
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 16154,
+   "objectId": 15606,
+   "name": "Huntington AVE",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1039.569,
+      808.409
+     ],
+     [
+      -1074.027,
+      835.824
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 16561,
+   "objectId": 15602,
+   "name": "Huntington AVE",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -955.537,
+      697.679
+     ],
+     [
+      -959.086,
+      714.341
+     ],
+     [
+      -1006.26,
+      771.891
+     ],
+     [
+      -1039.569,
+      808.409
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 19565,
+   "objectId": 15607,
+   "name": "Huntington AVE",
+   "cfcc": "A41",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -955.537,
+      697.679
+     ],
+     [
+      -971.19,
+      704.58
+     ],
+     [
+      -1021.525,
+      760.413
+     ],
+     [
+      -1055.209,
+      798.532
+     ],
+     [
+      -1068.788,
+      818.211
+     ],
+     [
+      -1074.027,
+      835.824
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 19626,
+   "objectId": 15605,
+   "name": "Huntington AVE",
+   "cfcc": "A35",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1074.027,
+      835.824
+     ],
+     [
+      -1144.556,
+      913.017
+     ],
+     [
+      -1156.3,
+      930.033
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 19794,
+   "objectId": 17913,
+   "name": "Huntington AVE",
+   "cfcc": "A35",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1149.302,
+      939.31
+     ],
+     [
+      -1131,
+      924.509
+     ],
+     [
+      -1075.796,
+      862.349
+     ],
+     [
+      -1066.91,
+      853.831
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 20724,
+   "objectId": 14710,
+   "name": "Ring RD",
+   "cfcc": "A41",
+   "oneway": null,
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 20,
+   "ownership": "Private",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1246.588,
+      692.34
+     ],
+     [
+      -1235.89,
+      718.719
+     ],
+     [
+      -1202.08,
+      807.663
+     ],
+     [
+      -1193.031,
+      829.593
+     ],
+     [
+      -1184.969,
+      852.303
+     ],
+     [
+      -1177.401,
+      873.12
+     ],
+     [
+      -1175.427,
+      878.685
+     ],
+     [
+      -1173.864,
+      882.916
+     ],
+     [
+      -1160.648,
+      919.562
+     ],
+     [
+      -1156.3,
+      930.033
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 21626,
+   "objectId": 14157,
+   "name": "Massachusetts TPKE W",
+   "cfcc": "A15",
+   "oneway": "FT",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "speedLimit": 65,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -826.877,
+      833.489
+     ],
+     [
+      -851.885,
+      834.157
+     ],
+     [
+      -863.484,
+      834.714
+     ],
+     [
+      -873.603,
+      836.161
+     ],
+     [
+      -976.843,
+      840.057
+     ],
+     [
+      -999.137,
+      840.837
+     ],
+     [
+      -1005.471,
+      841.282
+     ],
+     [
+      -1058.119,
+      845.401
+     ],
+     [
+      -1072.104,
+      846.403
+     ],
+     [
+      -1090.202,
+      847.293
+     ],
+     [
+      -1096.701,
+      847.738
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 23062,
+   "objectId": 10211,
+   "name": "",
+   "cfcc": "A63",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    -1
+   ],
+   "speedLimit": 25,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -955.537,
+      697.679
+     ],
+     [
+      -1037.562,
+      791.106
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 23138,
+   "objectId": 9001,
+   "name": "Massachusetts TPKE W",
+   "cfcc": "A15",
+   "oneway": "FT",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "speedLimit": 65,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -1096.701,
+      847.738
+     ],
+     [
+      -1167.201,
+      850.967
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 24055,
+   "objectId": 17914,
+   "name": "Stuart ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1066.91,
+      853.831
+     ],
+     [
+      -1059.14,
+      847.752
+     ],
+     [
+      -1057.32,
+      846.327
+     ],
+     [
+      -1051.22,
+      842.258
+     ],
+     [
+      -1044.871,
+      838.592
+     ],
+     [
+      -1038.298,
+      835.347
+     ],
+     [
+      -1031.531,
+      832.535
+     ],
+     [
+      -1030.484,
+      832.129
+     ],
+     [
+      -1024.457,
+      829.498
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 24056,
+   "objectId": 9141,
+   "name": "",
+   "cfcc": "A63",
+   "oneway": "FT",
+   "zlev": [
+    -1,
+    0
+   ],
+   "speedLimit": 25,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -983.013,
+      826.364
+     ],
+     [
+      -959.663,
+      813.618
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 24058,
+   "objectId": 10212,
+   "name": "",
+   "cfcc": "A63",
+   "oneway": "FT",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "speedLimit": 25,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -1037.562,
+      791.106
+     ],
+     [
+      -1069.494,
+      816.934
+     ],
+     [
+      -1094.692,
+      830.813
+     ],
+     [
+      -1107.195,
+      835.766
+     ],
+     [
+      -1121.161,
+      840.389
+     ],
+     [
+      -1167.201,
+      850.967
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 24061,
+   "objectId": 15604,
+   "name": "Exeter ST",
+   "cfcc": "A31",
+   "oneway": "FT",
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 35,
+   "ownership": "Boston Public Works Department",
+   "surface": true,
+   "paths": [
+    [
+     [
+      -1074.027,
+      835.824
+     ],
+     [
+      -1066.91,
+      853.831
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 24105,
+   "objectId": 10213,
+   "name": "Massachusetts TPKE W",
+   "cfcc": "A15",
+   "oneway": "FT",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "speedLimit": 65,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -1167.201,
+      850.967
+     ],
+     [
+      -1636.176,
+      849.895
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 26489,
+   "objectId": 10999,
+   "name": "",
+   "cfcc": "A63",
+   "oneway": "FT",
+   "zlev": [
+    -2,
+    -1
+   ],
+   "speedLimit": 25,
+   "ownership": "Massachusetts Department of Transportation\r\n",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -1026.742,
+      857.379
+     ],
+     [
+      -1017.939,
+      847.31
+     ],
+     [
+      -1003.686,
+      837.268
+     ],
+     [
+      -983.013,
+      826.364
+     ]
+    ]
+   ]
+  },
+  {
+   "segmentId": 26524,
+   "objectId": 9741,
+   "name": "Exeter PLZ",
+   "cfcc": "A71",
+   "oneway": null,
+   "zlev": [
+    0,
+    0
+   ],
+   "speedLimit": 1,
+   "ownership": "Boston Public Works Department",
+   "surface": false,
+   "paths": [
+    [
+     [
+      -1147.344,
+      630.282
+     ],
+     [
+      -1097.648,
+      613.273
+     ]
+    ]
+   ]
+  }
+ ],
+ "secondary": {
+  "dataset": "City of Boston Managed Streets",
+  "publisher": "Boston Maps, City of Boston",
+  "licence": "ODC-PDDL-1.0 (odc-pddl), per the Analyze Boston CKAN record",
+  "service": "https://services.arcgis.com/sFnw0xNflSi8J0uh/arcgis/rest/services/City_of_Boston_Managed_Streets/FeatureServer/0",
+  "rawSha256": "3d8ca23cd3300535819620013cf6bfb31b9144d8b14368e53be2a1420b776424",
+  "semantics": "MassDOT Road Inventory centreline clipped to City-of-Boston jurisdiction. A road-inventory centreline; a JURISDICTIONAL SUBSET, not a complete street network.",
+  "features": [
+   {
+    "segmentId": 0,
+    "objectId": 247,
+    "name": "PUBLIC ALLEY NO 432",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1535.507,
+       646.619
+      ],
+      [
+       -1376.465,
+       586.603
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 947,
+    "name": "BLAGDEN STREET",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1108.2,
+       745.355
+      ],
+      [
+       -1064.062,
+       728.279
+      ],
+      [
+       -1024.323,
+       712.904
+      ],
+      [
+       -994.097,
+       701.962
+      ],
+      [
+       -928.224,
+       678.117
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 1341,
+    "name": "PUBLIC ALLEY NO 434",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1186.914,
+       518.913
+      ],
+      [
+       -1011.003,
+       455.945
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 1821,
+    "name": "PUBLIC ALLEY NO 439",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -979.378,
+       543.45
+      ],
+      [
+       -803.209,
+       478.248
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 3737,
+    "name": "PUBLIC ALLEY NO 435",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1011.003,
+       455.945
+      ],
+      [
+       -834.847,
+       389.355
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 6137,
+    "name": "PUBLIC ALLEY NO 441",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1344.091,
+       675.608
+      ],
+      [
+       -1154.336,
+       607.507
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 6842,
+    "name": "PUBLIC ALLEY NO 440",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1154.336,
+       607.507
+      ],
+      [
+       -979.378,
+       543.45
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 7828,
+    "name": "PUBLIC ALLEY NO 433",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1376.465,
+       586.603
+      ],
+      [
+       -1186.914,
+       518.913
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 8502,
+    "name": "PUBLIC ALLEY NO 442",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1504.378,
+       735.084
+      ],
+      [
+       -1344.091,
+       675.608
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 0,
+    "objectId": 8716,
+    "name": "FAIRFIELD STREET",
+    "klass": 5,
+    "rdtype": 5,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1328.043,
+       720.968
+      ],
+      [
+       -1334.826,
+       701.795
+      ],
+      [
+       -1344.091,
+       675.608
+      ],
+      [
+       -1360.295,
+       632.029
+      ],
+      [
+       -1376.465,
+       586.603
+      ],
+      [
+       -1391.868,
+       542.052
+      ],
+      [
+       -1406.977,
+       502.62
+      ],
+      [
+       -1423.653,
+       457.421
+      ],
+      [
+       -1440.012,
+       412.865
+      ],
+      [
+       -1456.633,
+       370.498
+      ],
+      [
+       -1472.553,
+       324.468
+      ],
+      [
+       -1493.348,
+       265.606
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44904,
+    "objectId": 1904,
+    "name": "COMMONWEALTH AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1154.318,
+       455.451
+      ],
+      [
+       -1027.171,
+       409.462
+      ],
+      [
+       -1020.483,
+       407.08
+      ],
+      [
+       -977.95,
+       391.934
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44905,
+    "objectId": 8078,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1218.562,
+       434.113
+      ],
+      [
+       -1203.452,
+       473.224
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44912,
+    "objectId": 2407,
+    "name": "NEWBURY STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -819.067,
+       435.752
+      ],
+      [
+       -995.411,
+       497.933
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44946,
+    "objectId": 10839,
+    "name": "COMMONWEALTH AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1342.803,
+       524.128
+      ],
+      [
+       -1203.452,
+       473.224
+      ],
+      [
+       -1187.836,
+       467.575
+      ],
+      [
+       -1154.318,
+       455.451
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44954,
+    "objectId": 2625,
+    "name": "NEWBURY STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -995.411,
+       497.933
+      ],
+      [
+       -1169.791,
+       564.584
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44981,
+    "objectId": 5039,
+    "name": "COMMONWEALTH AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1504.155,
+       582.718
+      ],
+      [
+       -1391.868,
+       542.052
+      ],
+      [
+       -1382.764,
+       538.726
+      ],
+      [
+       -1342.803,
+       524.128
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 44997,
+    "objectId": 10083,
+    "name": "NEWBURY STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1169.791,
+       564.584
+      ],
+      [
+       -1360.295,
+       632.029
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 45007,
+    "objectId": 2701,
+    "name": "BOYLSTON STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -964.027,
+       589.557
+      ],
+      [
+       -1138.344,
+       652.093
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 45022,
+    "objectId": 917,
+    "name": "BOYLSTON STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1138.344,
+       652.093
+      ],
+      [
+       -1229.217,
+       685.231
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 45025,
+    "objectId": 2668,
+    "name": "NEWBURY STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1360.295,
+       632.029
+      ],
+      [
+       -1521.053,
+       689.785
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 45059,
+    "objectId": 8173,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1138.344,
+       652.093
+      ],
+      [
+       -1129.014,
+       680.956
+      ],
+      [
+       -1119.685,
+       709.819
+      ],
+      [
+       -1108.2,
+       745.355
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 45079,
+    "objectId": 4294,
+    "name": "BOYLSTON STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1328.043,
+       720.968
+      ],
+      [
+       -1360.962,
+       732.53
+      ],
+      [
+       -1389.027,
+       742.387
+      ],
+      [
+       -1467.759,
+       770.041
+      ],
+      [
+       -1489.604,
+       777.713
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 51841,
+    "objectId": 4017,
+    "name": "BOYLSTON STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1229.217,
+       685.231
+      ],
+      [
+       -1296.039,
+       709.249
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 51842,
+    "objectId": 1972,
+    "name": "BOYLSTON STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1296.039,
+       709.249
+      ],
+      [
+       -1328.043,
+       720.968
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52068,
+    "objectId": 6590,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1154.336,
+       607.507
+      ],
+      [
+       -1149.244,
+       622.588
+      ],
+      [
+       -1146.533,
+       629.926
+      ],
+      [
+       -1138.344,
+       652.093
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52069,
+    "objectId": 7811,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1169.791,
+       564.584
+      ],
+      [
+       -1154.336,
+       607.507
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52070,
+    "objectId": 3388,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1186.914,
+       518.913
+      ],
+      [
+       -1169.791,
+       564.584
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52071,
+    "objectId": 4520,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1203.452,
+       473.224
+      ],
+      [
+       -1186.914,
+       518.913
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52686,
+    "objectId": 1351,
+    "name": "DARTMOUTH STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -964.027,
+       589.557
+      ],
+      [
+       -972.341,
+       565.607
+      ],
+      [
+       -977.901,
+       549.587
+      ],
+      [
+       -979.378,
+       543.45
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52687,
+    "objectId": 5729,
+    "name": "DARTMOUTH STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -979.378,
+       543.45
+      ],
+      [
+       -995.411,
+       497.933
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52688,
+    "objectId": 8240,
+    "name": "DARTMOUTH STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -995.411,
+       497.933
+      ],
+      [
+       -1011.003,
+       455.945
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 52689,
+    "objectId": 7733,
+    "name": "DARTMOUTH STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1011.003,
+       455.945
+      ],
+      [
+       -1024.075,
+       418.821
+      ],
+      [
+       -1027.171,
+       409.462
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 55937,
+    "objectId": 8555,
+    "name": "STUART STREET",
+    "klass": 3,
+    "rdtype": 3,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1072.016,
+       852.464
+      ],
+      [
+       -1065.025,
+       846.361
+      ],
+      [
+       -1056.072,
+       840.646
+      ],
+      [
+       -1044.573,
+       835.904
+      ],
+      [
+       -1024.283,
+       829.903
+      ],
+      [
+       -1012.651,
+       826.462
+      ],
+      [
+       -954.665,
+       809.825
+      ],
+      [
+       -954.552,
+       809.793
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 55938,
+    "objectId": 2859,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1077.378,
+       830.301
+      ],
+      [
+       -1076.275,
+       834.835
+      ],
+      [
+       -1073.356,
+       846.837
+      ],
+      [
+       -1071.994,
+       852.438
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 55939,
+    "objectId": 10499,
+    "name": "EXETER STREET",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -1108.2,
+       745.355
+      ],
+      [
+       -1080.699,
+       821.149
+      ],
+      [
+       -1077.378,
+       830.301
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 55954,
+    "objectId": 826,
+    "name": "HUNTINGTON AVENUE",
+    "klass": 4,
+    "rdtype": 4,
+    "adminType": 0,
+    "paths": [
+     [
+      [
+       -928.224,
+       678.117
+      ],
+      [
+       -930.808,
+       688.238
+      ],
+      [
+       -945.062,
+       703.992
+      ],
+      [
+       -959.183,
+       719.6
+      ],
+      [
+       -983.466,
+       746.439
+      ],
+      [
+       -1015.535,
+       781.885
+      ],
+      [
+       -1040.832,
+       807.273
+      ],
+      [
+       -1046.252,
+       812.714
+      ],
+      [
+       -1048.615,
+       815.085
+      ],
+      [
+       -1063.007,
+       824.932
+      ],
+      [
+       -1077.378,
+       830.301
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 55958,
+    "objectId": 4830,
+    "name": "HUNTINGTON AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1146.042,
+       939.416
+      ],
+      [
+       -1126.778,
+       916.788
+      ],
+      [
+       -1097.554,
+       882.461
+      ],
+      [
+       -1080.639,
+       862.593
+      ],
+      [
+       -1072.016,
+       852.464
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 62090,
+    "objectId": 9057,
+    "name": "COMMONWEALTH AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1218.562,
+       434.113
+      ],
+      [
+       -1368.306,
+       488.558
+      ],
+      [
+       -1406.977,
+       502.62
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 62623,
+    "objectId": 5333,
+    "name": "HUNTINGTON AVENUE",
+    "klass": 3,
+    "rdtype": 3,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -928.224,
+       678.117
+      ],
+      [
+       -951.81,
+       691.095
+      ],
+      [
+       -955.018,
+       693.525
+      ],
+      [
+       -955.071,
+       693.565
+      ],
+      [
+       -966.246,
+       702.031
+      ],
+      [
+       -969.134,
+       704.219
+      ],
+      [
+       -983.099,
+       719.893
+      ],
+      [
+       -1002.997,
+       743.098
+      ],
+      [
+       -1007.714,
+       748.569
+      ],
+      [
+       -1023.96,
+       767.412
+      ],
+      [
+       -1045.122,
+       790.813
+      ],
+      [
+       -1047.004,
+       793.126
+      ],
+      [
+       -1060.557,
+       809.785
+      ],
+      [
+       -1062.086,
+       811.65
+      ],
+      [
+       -1077.378,
+       830.301
+      ]
+     ]
+    ]
+   },
+   {
+    "segmentId": 62625,
+    "objectId": 256,
+    "name": "HUNTINGTON AVENUE",
+    "klass": 2,
+    "rdtype": 2,
+    "adminType": 3,
+    "paths": [
+     [
+      [
+       -1077.378,
+       830.301
+      ],
+      [
+       -1082.446,
+       836.327
+      ],
+      [
+       -1086.344,
+       840.962
+      ],
+      [
+       -1091.12,
+       846.64
+      ],
+      [
+       -1112.852,
+       872.48
+      ],
+      [
+       -1121.721,
+       883.025
+      ],
+      [
+       -1126.593,
+       888.819
+      ],
+      [
+       -1152.808,
+       919.99
+      ],
+      [
+       -1157.096,
+       925.089
+      ],
+      [
+       -1182.502,
+       952.909
+      ],
+      [
+       -1216.989,
+       990.673
+      ],
+      [
+       -1236.375,
+       1011.901
+      ],
+      [
+       -1238.271,
+       1014.06
+      ],
+      [
+       -1269.603,
+       1049.747
+      ],
+      [
+       -1274.004,
+       1053.907
+      ],
+      [
+       -1316.144,
+       1093.742
+      ]
+     ]
+    ]
+   }
+  ]
+ }
+}

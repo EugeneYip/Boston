@@ -1,0 +1,758 @@
+{
+ "schemaVersion": "boston-gis-stage1e/probe/0.2.0",
+ "fixture": {
+  "primary": "sam",
+  "rawSha256": "647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450",
+  "retrieved": "2026-09-13"
+ },
+ "pairwise": {
+  "samSurfaceToManagedM": {
+   "n": 1758,
+   "p50": 1,
+   "p75": 1.82,
+   "p90": 2.75,
+   "max": 109.7
+  },
+  "bostonToSamSurfaceM": {
+   "n": 1575,
+   "p50": 10.64,
+   "p75": 18.79,
+   "p90": 26.5,
+   "max": 56.26
+  }
+ },
+ "method": {
+  "stepM": 2,
+  "reachM": 60,
+  "cellM": 1,
+  "bbox": {
+   "x0": -1380.460107666336,
+   "x1": -980.4960385715406,
+   "z0": 454.5195599993639,
+   "z1": 854.6036399993252
+  },
+  "factualPDDLPolys": 218,
+  "factualMassGISPolys": 169
+ },
+ "results": {
+  "boston": {
+   "label": "Boston hand-authored STREETS (boston-geo.js)",
+   "vsPDDL": {
+    "samples": 1575,
+    "pctRoadLineInsideBuilding": 42.35,
+    "pctBothSides": 36.06,
+    "absMidlineOffsetM": {
+     "p50": 6.79,
+     "p75": 12.2,
+     "p90": 16.94,
+     "max": 27.94
+    },
+    "signedMidlineOffsetM": {
+     "p50": 0.44
+    },
+    "wallToWallM": {
+     "p10": 12.96,
+     "p50": 32.83,
+     "p90": 71.91
+    }
+   },
+   "byStreet": [
+    {
+     "name": "Blagden Street",
+     "samples": 8,
+     "absMidP50": 3.14,
+     "absMidP90": 16.59,
+     "wallToWallP50": 58.57
+    },
+    {
+     "name": "Boylston Street",
+     "samples": 145,
+     "absMidP50": 7.15,
+     "absMidP90": 16.97,
+     "wallToWallP50": 37.89
+    },
+    {
+     "name": "Commonwealth Avenue Outbound",
+     "samples": 29,
+     "absMidP50": 6.95,
+     "absMidP90": 8.24,
+     "wallToWallP50": 72.08
+    },
+    {
+     "name": "Exeter Street",
+     "samples": 31,
+     "absMidP50": 5.6,
+     "absMidP90": 15.36,
+     "wallToWallP50": 32.75
+    },
+    {
+     "name": "Fairfield Street",
+     "samples": 59,
+     "absMidP50": 7.82,
+     "absMidP90": 16.16,
+     "wallToWallP50": 19.65
+    },
+    {
+     "name": "Huntington Avenue",
+     "samples": 30,
+     "absMidP50": 2.9,
+     "absMidP90": 22.47,
+     "wallToWallP50": 26.39
+    },
+    {
+     "name": "Newbury Street",
+     "samples": 80,
+     "absMidP50": 11.05,
+     "absMidP90": 17.07,
+     "wallToWallP50": 41.39
+    },
+    {
+     "name": "Public Alley 435",
+     "samples": 1,
+     "absMidP50": 12.77,
+     "absMidP90": 12.77,
+     "wallToWallP50": 49.85
+    },
+    {
+     "name": "Public Alley 442",
+     "samples": 143,
+     "absMidP50": 5.54,
+     "absMidP90": 16.07,
+     "wallToWallP50": 31.91
+    },
+    {
+     "name": "Ring Road",
+     "samples": 42,
+     "absMidP50": 3.64,
+     "absMidP90": 16.76,
+     "wallToWallP50": 27.25
+    }
+   ],
+   "vsMassGIS": {
+    "samples": 1575,
+    "pctRoadLineInsideBuilding": 42.1,
+    "pctBothSides": 34.22,
+    "absMidlineOffsetM": {
+     "p50": 7.39,
+     "p75": 12.84,
+     "p90": 17.6,
+     "max": 28.32
+    },
+    "signedMidlineOffsetM": {
+     "p50": 0.1
+    },
+    "wallToWallM": {
+     "p10": 12.67,
+     "p50": 34.48,
+     "p90": 73.19
+    }
+   },
+   "widthSweep": {
+    "totalAreaM2": 90277,
+    "pct": [
+     {
+      "halfWidthM": 3,
+      "pctAreaInside": 9.01
+     },
+     {
+      "halfWidthM": 4,
+      "pctAreaInside": 11.88
+     },
+     {
+      "halfWidthM": 5,
+      "pctAreaInside": 14.83
+     },
+     {
+      "halfWidthM": 6,
+      "pctAreaInside": 17.86
+     },
+     {
+      "halfWidthM": 7,
+      "pctAreaInside": 20.92
+     },
+     {
+      "halfWidthM": 8,
+      "pctAreaInside": 23.92
+     },
+     {
+      "halfWidthM": 9,
+      "pctAreaInside": 26.93
+     },
+     {
+      "halfWidthM": 10,
+      "pctAreaInside": 29.98
+     }
+    ]
+   }
+  },
+  "sam": {
+   "label": "Boston Street Segments (SAM System)",
+   "vsPDDL": {
+    "samples": 2138,
+    "pctRoadLineInsideBuilding": 8.84,
+    "pctBothSides": 54.16,
+    "absMidlineOffsetM": {
+     "p50": 5.72,
+     "p75": 11.82,
+     "p90": 16.57,
+     "max": 28.56
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.29
+    },
+    "wallToWallM": {
+     "p10": 16.23,
+     "p50": 37.55,
+     "p90": 70
+    }
+   },
+   "byStreet": [
+    {
+     "name": "",
+     "samples": 72,
+     "absMidP50": 4.86,
+     "absMidP90": 18.52,
+     "wallToWallP50": 47.48
+    },
+    {
+     "name": "Blagden ST",
+     "samples": 40,
+     "absMidP50": 5.7,
+     "absMidP90": 19.64,
+     "wallToWallP50": 27.23
+    },
+    {
+     "name": "Boylston ST",
+     "samples": 137,
+     "absMidP50": 2.92,
+     "absMidP90": 16.79,
+     "wallToWallP50": 37.88
+    },
+    {
+     "name": "Commonwealth AVE",
+     "samples": 49,
+     "absMidP50": 19.77,
+     "absMidP90": 21.08,
+     "wallToWallP50": 72.27
+    },
+    {
+     "name": "Dartmouth ST",
+     "samples": 4,
+     "absMidP50": 20.58,
+     "absMidP90": 24.42,
+     "wallToWallP50": 69.36
+    },
+    {
+     "name": "Exeter PLZ",
+     "samples": 1,
+     "absMidP50": 10.52,
+     "absMidP90": 10.52,
+     "wallToWallP50": 63.53
+    },
+    {
+     "name": "Exeter ST",
+     "samples": 122,
+     "absMidP50": 3.68,
+     "absMidP90": 13.72,
+     "wallToWallP50": 29.94
+    },
+    {
+     "name": "Fairfield ST",
+     "samples": 45,
+     "absMidP50": 8.16,
+     "absMidP90": 10.46,
+     "wallToWallP50": 37.8
+    },
+    {
+     "name": "Huntington AVE",
+     "samples": 106,
+     "absMidP50": 9.99,
+     "absMidP90": 12.61,
+     "wallToWallP50": 38.73
+    },
+    {
+     "name": "Massachusetts TPKE W",
+     "samples": 26,
+     "absMidP50": 7.83,
+     "absMidP90": 17,
+     "wallToWallP50": 45.99
+    },
+    {
+     "name": "Newbury ST",
+     "samples": 169,
+     "absMidP50": 3.58,
+     "absMidP90": 15.88,
+     "wallToWallP50": 36.47
+    },
+    {
+     "name": "Public Alley No. 433",
+     "samples": 80,
+     "absMidP50": 2.99,
+     "absMidP90": 12.7,
+     "wallToWallP50": 32.38
+    },
+    {
+     "name": "Public Alley No. 434",
+     "samples": 62,
+     "absMidP50": 6.15,
+     "absMidP90": 23.3,
+     "wallToWallP50": 32.19
+    },
+    {
+     "name": "Public Alley No. 440",
+     "samples": 72,
+     "absMidP50": 2.87,
+     "absMidP90": 13.57,
+     "wallToWallP50": 13.8
+    },
+    {
+     "name": "Public Alley No. 441",
+     "samples": 86,
+     "absMidP50": 5.71,
+     "absMidP90": 14.9,
+     "wallToWallP50": 31.83
+    },
+    {
+     "name": "Public Alley No. 442",
+     "samples": 16,
+     "absMidP50": 8.98,
+     "absMidP90": 13.89,
+     "wallToWallP50": 32.88
+    },
+    {
+     "name": "Ring RD",
+     "samples": 44,
+     "absMidP50": 3,
+     "absMidP90": 5.79,
+     "wallToWallP50": 21.12
+    },
+    {
+     "name": "Stuart ST",
+     "samples": 27,
+     "absMidP50": 14.1,
+     "absMidP90": 19.88,
+     "wallToWallP50": 59.57
+    }
+   ],
+   "vsMassGIS": {
+    "samples": 2138,
+    "pctRoadLineInsideBuilding": 8.84,
+    "pctBothSides": 54.86,
+    "absMidlineOffsetM": {
+     "p50": 6.16,
+     "p75": 12.61,
+     "p90": 18.67,
+     "max": 28.62
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.26
+    },
+    "wallToWallM": {
+     "p10": 16.26,
+     "p50": 38.1,
+     "p90": 71.27
+    }
+   },
+   "widthSweep": {
+    "totalAreaM2": 90277,
+    "pct": [
+     {
+      "halfWidthM": 3,
+      "pctAreaInside": 2.8
+     },
+     {
+      "halfWidthM": 4,
+      "pctAreaInside": 4.15
+     },
+     {
+      "halfWidthM": 5,
+      "pctAreaInside": 5.39
+     },
+     {
+      "halfWidthM": 6,
+      "pctAreaInside": 6.61
+     },
+     {
+      "halfWidthM": 7,
+      "pctAreaInside": 7.84
+     },
+     {
+      "halfWidthM": 8,
+      "pctAreaInside": 9.33
+     },
+     {
+      "halfWidthM": 9,
+      "pctAreaInside": 11.13
+     },
+     {
+      "halfWidthM": 10,
+      "pctAreaInside": 13.31
+     }
+    ]
+   }
+  },
+  "samSurface": {
+   "label": "SAM, surface streets only (ZLEV >= 0, CFCC != A71)",
+   "vsPDDL": {
+    "samples": 1758,
+    "pctRoadLineInsideBuilding": 0.23,
+    "pctBothSides": 60.24,
+    "absMidlineOffsetM": {
+     "p50": 5.72,
+     "p75": 11.87,
+     "p90": 16.39,
+     "max": 28.56
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.23
+    },
+    "wallToWallM": {
+     "p10": 15.31,
+     "p50": 36.54,
+     "p90": 70.09
+    }
+   },
+   "byStreet": [
+    {
+     "name": "Blagden ST",
+     "samples": 40,
+     "absMidP50": 5.7,
+     "absMidP90": 19.64,
+     "wallToWallP50": 27.23
+    },
+    {
+     "name": "Boylston ST",
+     "samples": 137,
+     "absMidP50": 2.92,
+     "absMidP90": 16.79,
+     "wallToWallP50": 37.88
+    },
+    {
+     "name": "Commonwealth AVE",
+     "samples": 49,
+     "absMidP50": 19.77,
+     "absMidP90": 21.08,
+     "wallToWallP50": 72.27
+    },
+    {
+     "name": "Dartmouth ST",
+     "samples": 4,
+     "absMidP50": 20.58,
+     "absMidP90": 24.42,
+     "wallToWallP50": 69.36
+    },
+    {
+     "name": "Exeter ST",
+     "samples": 122,
+     "absMidP50": 3.68,
+     "absMidP90": 13.72,
+     "wallToWallP50": 29.94
+    },
+    {
+     "name": "Fairfield ST",
+     "samples": 45,
+     "absMidP50": 8.16,
+     "absMidP90": 10.46,
+     "wallToWallP50": 37.8
+    },
+    {
+     "name": "Huntington AVE",
+     "samples": 106,
+     "absMidP50": 9.99,
+     "absMidP90": 12.61,
+     "wallToWallP50": 38.73
+    },
+    {
+     "name": "Newbury ST",
+     "samples": 169,
+     "absMidP50": 3.58,
+     "absMidP90": 15.88,
+     "wallToWallP50": 36.47
+    },
+    {
+     "name": "Public Alley No. 433",
+     "samples": 80,
+     "absMidP50": 2.99,
+     "absMidP90": 12.7,
+     "wallToWallP50": 32.38
+    },
+    {
+     "name": "Public Alley No. 434",
+     "samples": 62,
+     "absMidP50": 6.15,
+     "absMidP90": 23.3,
+     "wallToWallP50": 32.19
+    },
+    {
+     "name": "Public Alley No. 440",
+     "samples": 72,
+     "absMidP50": 2.87,
+     "absMidP90": 13.57,
+     "wallToWallP50": 13.8
+    },
+    {
+     "name": "Public Alley No. 441",
+     "samples": 86,
+     "absMidP50": 5.71,
+     "absMidP90": 14.9,
+     "wallToWallP50": 31.83
+    },
+    {
+     "name": "Public Alley No. 442",
+     "samples": 16,
+     "absMidP50": 8.98,
+     "absMidP90": 13.89,
+     "wallToWallP50": 32.88
+    },
+    {
+     "name": "Ring RD",
+     "samples": 44,
+     "absMidP50": 3,
+     "absMidP90": 5.79,
+     "wallToWallP50": 21.12
+    },
+    {
+     "name": "Stuart ST",
+     "samples": 27,
+     "absMidP50": 14.1,
+     "absMidP90": 19.88,
+     "wallToWallP50": 59.57
+    }
+   ],
+   "vsMassGIS": {
+    "samples": 1758,
+    "pctRoadLineInsideBuilding": 0.23,
+    "pctBothSides": 59.27,
+    "absMidlineOffsetM": {
+     "p50": 5.77,
+     "p75": 12.41,
+     "p90": 17,
+     "max": 28.62
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.19
+    },
+    "wallToWallM": {
+     "p10": 15.54,
+     "p50": 37.38,
+     "p90": 71.23
+    }
+   },
+   "widthSweep": {
+    "totalAreaM2": 90277,
+    "pct": [
+     {
+      "halfWidthM": 3,
+      "pctAreaInside": 0.35
+     },
+     {
+      "halfWidthM": 4,
+      "pctAreaInside": 0.97
+     },
+     {
+      "halfWidthM": 5,
+      "pctAreaInside": 1.72
+     },
+     {
+      "halfWidthM": 6,
+      "pctAreaInside": 2.54
+     },
+     {
+      "halfWidthM": 7,
+      "pctAreaInside": 3.41
+     },
+     {
+      "halfWidthM": 8,
+      "pctAreaInside": 4.54
+     },
+     {
+      "halfWidthM": 9,
+      "pctAreaInside": 5.97
+     },
+     {
+      "halfWidthM": 10,
+      "pctAreaInside": 7.82
+     }
+    ]
+   }
+  },
+  "managed": {
+   "label": "City of Boston Managed Streets",
+   "vsPDDL": {
+    "samples": 1660,
+    "pctRoadLineInsideBuilding": 0,
+    "pctBothSides": 60.6,
+    "absMidlineOffsetM": {
+     "p50": 5.83,
+     "p75": 11.2,
+     "p90": 16.25,
+     "max": 26.82
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.07
+    },
+    "wallToWallM": {
+     "p10": 15.33,
+     "p50": 36.64,
+     "p90": 70.72
+    }
+   },
+   "byStreet": [
+    {
+     "name": "BLAGDEN STREET",
+     "samples": 44,
+     "absMidP50": 6.17,
+     "absMidP90": 21.51,
+     "wallToWallP50": 27.28
+    },
+    {
+     "name": "BOYLSTON STREET",
+     "samples": 137,
+     "absMidP50": 2.03,
+     "absMidP90": 16.06,
+     "wallToWallP50": 37.7
+    },
+    {
+     "name": "COMMONWEALTH AVENUE",
+     "samples": 55,
+     "absMidP50": 20.71,
+     "absMidP90": 22.06,
+     "wallToWallP50": 71.85
+    },
+    {
+     "name": "DARTMOUTH STREET",
+     "samples": 4,
+     "absMidP50": 20.49,
+     "absMidP90": 22.63,
+     "wallToWallP50": 65.8
+    },
+    {
+     "name": "EXETER STREET",
+     "samples": 123,
+     "absMidP50": 3.07,
+     "absMidP90": 12.65,
+     "wallToWallP50": 30.09
+    },
+    {
+     "name": "FAIRFIELD STREET",
+     "samples": 45,
+     "absMidP50": 5.87,
+     "absMidP90": 10.03,
+     "wallToWallP50": 37.79
+    },
+    {
+     "name": "HUNTINGTON AVENUE",
+     "samples": 108,
+     "absMidP50": 8.85,
+     "absMidP90": 12.8,
+     "wallToWallP50": 38.72
+    },
+    {
+     "name": "NEWBURY STREET",
+     "samples": 165,
+     "absMidP50": 2.67,
+     "absMidP90": 15.22,
+     "wallToWallP50": 37.95
+    },
+    {
+     "name": "PUBLIC ALLEY NO 433",
+     "samples": 76,
+     "absMidP50": 2.16,
+     "absMidP90": 11.44,
+     "wallToWallP50": 31.37
+    },
+    {
+     "name": "PUBLIC ALLEY NO 434",
+     "samples": 52,
+     "absMidP50": 7.32,
+     "absMidP90": 15.08,
+     "wallToWallP50": 26.56
+    },
+    {
+     "name": "PUBLIC ALLEY NO 440",
+     "samples": 75,
+     "absMidP50": 3.54,
+     "absMidP90": 12.58,
+     "wallToWallP50": 13.8
+    },
+    {
+     "name": "PUBLIC ALLEY NO 441",
+     "samples": 85,
+     "absMidP50": 6.22,
+     "absMidP90": 14.33,
+     "wallToWallP50": 16.36
+    },
+    {
+     "name": "PUBLIC ALLEY NO 442",
+     "samples": 15,
+     "absMidP50": 8.98,
+     "absMidP90": 14.14,
+     "wallToWallP50": 34.72
+    },
+    {
+     "name": "STUART STREET",
+     "samples": 22,
+     "absMidP50": 13.65,
+     "absMidP90": 16.82,
+     "wallToWallP50": 52.46
+    }
+   ],
+   "vsMassGIS": {
+    "samples": 1660,
+    "pctRoadLineInsideBuilding": 0,
+    "pctBothSides": 60.48,
+    "absMidlineOffsetM": {
+     "p50": 6.4,
+     "p75": 11.93,
+     "p90": 16.86,
+     "max": 26.99
+    },
+    "signedMidlineOffsetM": {
+     "p50": -0.21
+    },
+    "wallToWallM": {
+     "p10": 15.52,
+     "p50": 37.43,
+     "p90": 71.18
+    }
+   },
+   "widthSweep": {
+    "totalAreaM2": 90277,
+    "pct": [
+     {
+      "halfWidthM": 3,
+      "pctAreaInside": 0.65
+     },
+     {
+      "halfWidthM": 4,
+      "pctAreaInside": 1.27
+     },
+     {
+      "halfWidthM": 5,
+      "pctAreaInside": 1.93
+     },
+     {
+      "halfWidthM": 6,
+      "pctAreaInside": 2.64
+     },
+     {
+      "halfWidthM": 7,
+      "pctAreaInside": 3.48
+     },
+     {
+      "halfWidthM": 8,
+      "pctAreaInside": 4.56
+     },
+     {
+      "halfWidthM": 9,
+      "pctAreaInside": 5.85
+     },
+     {
+      "halfWidthM": 10,
+      "pctAreaInside": 7.42
+     }
+    ]
+   }
+  }
+ }
+}

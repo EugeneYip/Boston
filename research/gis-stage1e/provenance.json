@@ -1,0 +1,79 @@
+{
+ "schemaVersion": "boston-gis-stage1e/provenance/0.1.0",
+ "retrieved": "2026-09-13",
+ "note": "Raw extracts live in research/gis-stage1e/cache/ and are gitignored. Re-acquire with the recorded query; the hashes below pin exactly what this stage measured.",
+ "candidates": [
+  {
+   "key": "sam",
+   "status": "PRIMARY",
+   "dataset": "Boston Street Segments (SAM System)",
+   "publisher": "Boston Maps, City of Boston",
+   "catalog": "https://data.boston.gov/dataset/boston-street-segments-sam-system",
+   "ckanApi": "https://data.boston.gov/api/3/action/package_show?id=boston-street-segments-sam-system",
+   "licenceId": "odc-pddl",
+   "licenceTitle": "Open Data Commons Public Domain Dedication and License (PDDL)",
+   "licenceUrl": "http://www.opendefinition.org/licenses/odc-pddl",
+   "service": "https://gisportal.boston.gov/arcgis/rest/services/SAM/Live_SAM_Address/FeatureServer/3",
+   "query": "/query?where=1=1&geometry=-71.082431,42.347703,-71.077569,42.351297&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&f=json",
+   "rawFile": "cache/sam_roads_4326.json",
+   "rawSha256": "647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450",
+   "nativeSR": "EPSG:2249 / WKID 102686 (NAD83 Massachusetts Mainland, US survey feet)",
+   "updateCadence": "nightly (per the catalog record); CKAN metadata_modified observed 2026-09-13"
+  },
+  {
+   "key": "managed",
+   "status": "SECONDARY",
+   "dataset": "City of Boston Managed Streets",
+   "publisher": "Boston Maps, City of Boston",
+   "catalog": "https://data.boston.gov/dataset/city-of-boston-managed-streets",
+   "ckanApi": "https://data.boston.gov/api/3/action/package_show?id=city-of-boston-managed-streets",
+   "licenceId": "odc-pddl",
+   "licenceTitle": "Open Data Commons Public Domain Dedication and License (PDDL)",
+   "licenceUrl": "http://www.opendefinition.org/licenses/odc-pddl",
+   "service": "https://services.arcgis.com/sFnw0xNflSi8J0uh/arcgis/rest/services/City_of_Boston_Managed_Streets/FeatureServer/0",
+   "layerName": "Boston_owned_streets01122022",
+   "copyrightText": "Massachusetts Department of Transportation (MassDOT), MassGIS",
+   "rawFile": "cache/mgd_roads_4326.json",
+   "rawSha256": "3d8ca23cd3300535819620013cf6bfb31b9144d8b14368e53be2a1420b776424",
+   "nativeSR": "EPSG:2249 / WKID 102686 (NAD83 Massachusetts Mainland, US survey feet)",
+   "lineage": "Clipped from the MassGIS-MassDOT Roads layer (EOTROADS_ARC); MassDOT 2017 year-end Road Inventory, conflated 2014-15 with MassGIS base streets, updated against 2017-18 ortho imagery. Jurisdictional subset: City-of-Boston-managed streets only.",
+   "ckanLastModified": "2024-12-05"
+  }
+ ],
+ "topology": {
+  "sam": {
+   "features": 52,
+   "polylines": 52,
+   "vertices": 172,
+   "totalLengthM": 6371.723,
+   "endpointNodes": 42,
+   "danglingEndpoints": 13,
+   "junctionNodes": 20,
+   "pairedEndpoints": 9,
+   "duplicateEndpointPairs": 0,
+   "multipartFeatures": 0,
+   "segmentLengthM": {
+    "min": 0.521,
+    "median": 28.465,
+    "max": 468.977
+   }
+  },
+  "managed": {
+   "features": 40,
+   "polylines": 40,
+   "vertices": 158,
+   "totalLengthM": 5896.472,
+   "endpointNodes": 38,
+   "danglingEndpoints": 16,
+   "junctionNodes": 11,
+   "pairedEndpoints": 11,
+   "duplicateEndpointPairs": 1,
+   "multipartFeatures": 0,
+   "segmentLengthM": {
+    "min": 0.066,
+    "median": 32.145,
+    "max": 202.091
+   }
+  }
+ }
+}
