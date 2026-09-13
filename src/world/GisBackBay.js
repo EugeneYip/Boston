@@ -49,8 +49,18 @@ import {
 /** Query-flag control. Absent flag ⇒ absent feature. */
 export function isEnabled() {
   if (typeof location === 'undefined' || !location.search) return false;
-  const v = new URLSearchParams(location.search).get('gisBackBay');
-  return v === '1' || v === 'true';
+  const q = new URLSearchParams(location.search);
+  const on = (k) => { const v = q.get(k); return v === '1' || v === 'true'; };
+  if (!on('gisBackBay')) return false;
+  // Fail-safe against stacking with the Stage 2A road backbone. This candidate
+  // replaces buildings on parcels derived from the hand-authored roads; if the
+  // roads have moved underneath it, its Back Bay association is meaningless.
+  // Neither experiment runs rather than silently running both.
+  if (on('gisRoads')) {
+    console.error('[gis-backbay] ?gisBackBay and ?gisRoads are mutually exclusive; BOTH disabled.');
+    return false;
+  }
+  return true;
 }
 
 /**

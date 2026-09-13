@@ -1,0 +1,209 @@
+{
+ "schemaVersion": "boston-gis-stage2a/captures/0.1.0",
+ "server": "npm run verify (HMR-free, port 5290)",
+ "canvas": [
+  1350,
+  840
+ ],
+ "cssViewport": [
+  900,
+  560
+ ],
+ "common": {
+  "tod": 10.5,
+  "weather": "clear",
+  "quality": "high",
+  "warmup": 26,
+  "holdActors": true
+ },
+ "note": "Raw PNGs are local only (gitignored). Camera metadata and hashes are committed so any pair is reproducible.",
+ "cameraBias": "All street-level cameras were derived from the CANDIDATE road geometry, so the control is systematically disadvantaged at street level: the camera lands where the factual road is, which in the baseline is inside or beside a block. Those pairs evidence REGISTRATION, not art direction. The camera-fair pairs are D (elevated oblique) and E (district overview).",
+ "views": [
+  {
+   "id": "A_newbury",
+   "street": "Newbury Street",
+   "note": "primary streetwall, along the factual carriageway",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1188.4,
+    5.6,
+    569.8
+   ],
+   "look": [
+    -1307.3,
+    7.6,
+    613.6
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/A_newbury-control.png",
+     "bytes": 2678471,
+     "sha256": "80559b6136dd4e252643c0b3b761ad6aaba104c67ffd417656bda771fefd9121"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/A_newbury-candidate.png",
+     "bytes": 2770854,
+     "sha256": "3c83c576558f8b2c9becbe41624c7976bc102a97bdafb0393d4a379fb0c829a3"
+    }
+   }
+  },
+  {
+   "id": "B_boylston",
+   "street": "Boylston Street",
+   "note": "second primary street",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1228.7,
+    5.6,
+    685.7
+   ],
+   "look": [
+    -1157.2,
+    7.6,
+    659.3
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/B_boylston-control.png",
+     "bytes": 2796230,
+     "sha256": "5bbac01385226145eea21f8f55db31d6ace7761e88cf66be0e77008b360dc55a"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/B_boylston-candidate.png",
+     "bytes": 2768029,
+     "sha256": "c991572825197be219abd07257369f485b9ae29c67ac3227fa65d6c4338d418a"
+    }
+   }
+  },
+  {
+   "id": "C_exeter",
+   "street": "Exeter Street",
+   "note": "cross street",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1134.5,
+    5.6,
+    665.9
+   ],
+   "look": [
+    -1112.3,
+    7.6,
+    726.7
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/C_exeter-control.png",
+     "bytes": 2678296,
+     "sha256": "cde34bc27d0ee533def8147c5ab81d1661fe45db141b38b850a8e69251586b14"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/C_exeter-candidate.png",
+     "bytes": 2758815,
+     "sha256": "16d63dadd1c3272aeaea335b742d782f1955dbb516f99de693721a06aadfeffc"
+    }
+   }
+  },
+  {
+   "id": "D_block_oblique",
+   "street": "Newbury Street",
+   "note": "elevated oblique over the block",
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1196.3,
+    44,
+    654.8
+   ],
+   "look": [
+    -1276.3,
+    6,
+    569.8
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/D_block_oblique-control.png",
+     "bytes": 2396211,
+     "sha256": "23b790dd5149ff1d27c127a68949f9876c48638454faa1e857edcb68563643bf"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/D_block_oblique-candidate.png",
+     "bytes": 2407370,
+     "sha256": "cc4efc15475ffa0691c774ddd188ff21b643a3a9006b52b46d2317703eef3d8f"
+    }
+   }
+  },
+  {
+   "id": "E_district_overview",
+   "street": "(core)",
+   "note": "district overview, core centred",
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1030.5,
+    150,
+    844.6
+   ],
+   "look": [
+    -1210.5,
+    8,
+    614.6
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/E_district_overview-control.png",
+     "bytes": 2648018,
+     "sha256": "d7a2418292d1b5c86c4358b43c787af6dcdd8a90d825126d325693871c03fed6"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/E_district_overview-candidate.png",
+     "bytes": 2693507,
+     "sha256": "4d9ac6db7078df5acd9c31ef097d90978be8f15b83dcd599560c3d57f4a43556"
+    }
+   }
+  },
+  {
+   "id": "F_commave",
+   "street": "Commonwealth Avenue Outbound",
+   "note": "divided-boulevard diagnostic \u2014 NOT verdict-driving",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1324.1,
+    5.6,
+    517.1
+   ],
+   "look": [
+    -1289.2,
+    7.6,
+    504.4
+   ],
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a/captures/F_commave-control.png",
+     "bytes": 2883439,
+     "sha256": "d61c28cb249477b849ff4b86f72b1b10d3d35d9a19dda797619395630c66afcd"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a/captures/F_commave-candidate.png",
+     "bytes": 2796115,
+     "sha256": "d0c4e41e40fb2d0951a00e5ad05edd51d93e462c2a8da0f2a848385d968db189"
+    }
+   }
+  }
+ ]
+}

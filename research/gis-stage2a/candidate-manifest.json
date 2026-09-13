@@ -1,0 +1,570 @@
+{
+ "schemaVersion": "boston-gis-stage2a/candidate/0.1.0",
+ "source": {
+  "dataset": "Boston Street Segments (SAM System)",
+  "publisher": "Boston Maps, City of Boston",
+  "catalog": "https://data.boston.gov/dataset/boston-street-segments-sam-system",
+  "packageId": "b9b8b634-f28a-410f-9727-b53d0d006308",
+  "service": "https://gisportal.boston.gov/arcgis/rest/services/SAM/Live_SAM_Address/FeatureServer/3",
+  "layerName": "SAM_Boston_Segments_tbl",
+  "licence": "ODC-PDDL-1.0 (odc-pddl), per the Analyze Boston CKAN record",
+  "licenceUrl": "http://www.opendefinition.org/licenses/odc-pddl",
+  "attribution": "Boston Maps / City of Boston. PDDL imposes no attribution requirement; credit is given as project policy.",
+  "sourceCRS": "EPSG:4326 (requested outSR=4326; native service SR is EPSG:2249 / WKID 102686, NAD83 Massachusetts Mainland ftUS)",
+  "transformPath": "ArcGIS service reprojection to EPSG:4326, then production src/core/Geo.js geo() to Boston local X/Z",
+  "retrieved": "2026-09-13",
+  "rawSha256": "647830c587888f6133be66cd762cdc1a6bff4f961ed5541515946184220c6450",
+  "semantics": "Street centreline carrying address ranges, one-way, z-levels and routing costs. An addressing/routing centreline — NOT a surveyed pavement or carriageway centreline."
+ },
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "emittedStreets": 44,
+ "excludedFeatures": [
+  {
+   "segmentId": 21626,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23062,
+   "name": null,
+   "zlev": [
+    0,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23138,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24056,
+   "name": null,
+   "zlev": [
+    -1,
+    0
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24058,
+   "name": null,
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24105,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26489,
+   "name": null,
+   "zlev": [
+    -2,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26524,
+   "name": "Exeter PLZ",
+   "zlev": [
+    0,
+    0
+   ],
+   "cfcc": "A71",
+   "reason": "walkway/plaza (CFCC A71)"
+  }
+ ],
+ "clipped": {
+  "touched": 11,
+  "runsKept": 15,
+  "runsDropped": 11
+ },
+ "clippedStreets": [
+  {
+   "name": "Commonwealth Avenue Inbound",
+   "runs": 2,
+   "vertices": 8
+  },
+  {
+   "name": "Commonwealth Avenue Outbound",
+   "runs": 2,
+   "vertices": 8
+  },
+  {
+   "name": "Newbury Street",
+   "runs": 2,
+   "vertices": 7
+  },
+  {
+   "name": "Boylston Street",
+   "runs": 2,
+   "vertices": 16
+  },
+  {
+   "name": "Public Alley 435",
+   "runs": 2,
+   "vertices": 5
+  },
+  {
+   "name": "Public Alley 442",
+   "runs": 2,
+   "vertices": 4
+  },
+  {
+   "name": "Exeter Street",
+   "runs": 1,
+   "vertices": 2
+  },
+  {
+   "name": "Fairfield Street",
+   "runs": 1,
+   "vertices": 2
+  },
+  {
+   "name": "Blagden Street",
+   "runs": 0,
+   "vertices": 0
+  },
+  {
+   "name": "Ring Road",
+   "runs": 0,
+   "vertices": 0
+  },
+  {
+   "name": "Huntington Avenue",
+   "runs": 1,
+   "vertices": 10
+  }
+ ],
+ "mapping": [
+  {
+   "sam": "Boylston ST",
+   "samCfcc": "A31",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Dartmouth ST",
+   "samCfcc": "A41",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Dartmouth ST",
+   "samCfcc": "A41",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Dartmouth ST",
+   "samCfcc": "A41",
+   "boston": "Dartmouth Street",
+   "type": "arterial",
+   "lanes": 3,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Fairfield ST",
+   "samCfcc": "A41",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Fairfield ST",
+   "samCfcc": "A41",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Fairfield ST",
+   "samCfcc": "A41",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Newbury ST",
+   "samCfcc": "A41",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Newbury ST",
+   "samCfcc": "A41",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Newbury ST",
+   "samCfcc": "A41",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Newbury ST",
+   "samCfcc": "A41",
+   "boston": "Newbury Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 432",
+   "samCfcc": "A73",
+   "boston": "(no Boston equivalent)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 433",
+   "samCfcc": "A73",
+   "boston": "(no Boston equivalent)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 434",
+   "samCfcc": "A73",
+   "boston": "(no Boston equivalent)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 435",
+   "samCfcc": "A73",
+   "boston": "Public Alley 435",
+   "type": "alley",
+   "lanes": 1,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 440",
+   "samCfcc": "A73",
+   "boston": "(no Boston equivalent)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 441",
+   "samCfcc": "A73",
+   "boston": "(no Boston equivalent)",
+   "type": "alley",
+   "lanes": 1,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Public Alley No. 442",
+   "samCfcc": "A73",
+   "boston": "Public Alley 442",
+   "type": "alley",
+   "lanes": 1,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "samCfcc": "A25",
+   "boston": "Commonwealth Avenue Inbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": "Commonwealth Avenue Inbound"
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Fairfield ST",
+   "samCfcc": "A41",
+   "boston": "Fairfield Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Boylston ST",
+   "samCfcc": "A31",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Boylston ST",
+   "samCfcc": "A31",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "samCfcc": "A25",
+   "boston": "Commonwealth Avenue Outbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": "Commonwealth Avenue Outbound"
+  },
+  {
+   "sam": "Commonwealth AVE",
+   "samCfcc": "A25",
+   "boston": "Commonwealth Avenue Outbound",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": "Commonwealth Avenue Outbound"
+  },
+  {
+   "sam": "Boylston ST",
+   "samCfcc": "A31",
+   "boston": "Boylston Street",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Blagden ST",
+   "samCfcc": "A41",
+   "boston": "Blagden Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Clarendon SQ",
+   "samCfcc": "A31",
+   "boston": "(no Boston equivalent)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Stuart ST",
+   "samCfcc": "A31",
+   "boston": "(no Boston equivalent)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Huntington AVE",
+   "samCfcc": "A31",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Huntington AVE",
+   "samCfcc": "A31",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Huntington AVE",
+   "samCfcc": "A41",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Huntington AVE",
+   "samCfcc": "A35",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Huntington AVE",
+   "samCfcc": "A35",
+   "boston": "Huntington Avenue",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Ring RD",
+   "samCfcc": "A41",
+   "boston": "Ring Road",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  },
+  {
+   "sam": "Stuart ST",
+   "samCfcc": "A31",
+   "boston": "(no Boston equivalent)",
+   "type": "arterial",
+   "lanes": 4,
+   "source": "source-class-fallback",
+   "dividedSide": null
+  },
+  {
+   "sam": "Exeter ST",
+   "samCfcc": "A31",
+   "boston": "Exeter Street",
+   "type": "street",
+   "lanes": 2,
+   "source": "boston-concept",
+   "dividedSide": null
+  }
+ ],
+ "outputBytes": 23395,
+ "outputSha256": "f253aed9afa9a324a6be7f954b5c182fa185bdc89e848019145eb010d4eef8ad"
+}

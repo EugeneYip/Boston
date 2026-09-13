@@ -1,0 +1,133 @@
+{
+ "schemaVersion": "boston-gis-stage2a/views/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "coreMarginM": 45,
+ "common": {
+  "tod": 10.5,
+  "weather": "clear",
+  "quality": "high",
+  "warmup": 26,
+  "holdActors": true
+ },
+ "views": [
+  {
+   "id": "A_newbury",
+   "street": "Newbury Street",
+   "note": "primary streetwall, along the factual carriageway",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1188.4,
+    5.6,
+    569.8
+   ],
+   "look": [
+    -1307.3,
+    7.6,
+    613.6
+   ]
+  },
+  {
+   "id": "B_boylston",
+   "street": "Boylston Street",
+   "note": "second primary street",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1228.7,
+    5.6,
+    685.7
+   ],
+   "look": [
+    -1157.2,
+    7.6,
+    659.3
+   ]
+  },
+  {
+   "id": "C_exeter",
+   "street": "Exeter Street",
+   "note": "cross street",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1134.5,
+    5.6,
+    665.9
+   ],
+   "look": [
+    -1112.3,
+    7.6,
+    726.7
+   ]
+  },
+  {
+   "id": "D_block_oblique",
+   "street": "Newbury Street",
+   "note": "elevated oblique over the block",
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1196.3,
+    44,
+    654.8
+   ],
+   "look": [
+    -1276.3,
+    6,
+    569.8
+   ]
+  },
+  {
+   "id": "E_district_overview",
+   "street": "(core)",
+   "note": "district overview, core centred",
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1030.5,
+    150,
+    844.6
+   ],
+   "look": [
+    -1210.5,
+    8,
+    614.6
+   ]
+  },
+  {
+   "id": "F_commave",
+   "street": "Commonwealth Avenue Outbound",
+   "note": "divided-boulevard diagnostic — NOT verdict-driving",
+   "fov": 60,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "pos": [
+    -1324.1,
+    5.6,
+    517.1
+   ],
+   "look": [
+    -1289.2,
+    7.6,
+    504.4
+   ]
+  }
+ ]
+}

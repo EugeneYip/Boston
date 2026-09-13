@@ -1,5 +1,6 @@
 import { geo } from '../core/Geo.js';
 import { STREETS } from '../data/boston-geo.js';
+import { isEnabled as gisRoadsEnabled, apply as gisRoadsApply } from './GisRoads.js';
 
 /**
  * Turns hand-authored street polylines into a routable graph.
@@ -260,7 +261,21 @@ export default class RoadNetwork {
   }
 
   build() {
-    const streets = STREETS.map(s => this._prepare(s));
+    // Stage 2A prototype seam — DEFAULT OFF. Without `?gisRoads=1` this is the
+    // same `STREETS` array by identity and the city is bit-for-bit baseline.
+    // See `src/world/GisRoads.js`: it swaps the geographic centreline backbone
+    // inside a bounded Back Bay box and changes nothing else — every width,
+    // class, frontage and parcel rule below runs exactly as before.
+    this.gisRoadLedger = null;
+    let src = STREETS;
+    if (gisRoadsEnabled()) {
+      const r = gisRoadsApply(STREETS);
+      src = r.streets;
+      this.gisRoadLedger = r.ledger;
+      console.info(`[gis-roads] ${r.ledger.factualStreets} factual streets, ` +
+        `${r.ledger.proceduralClipped} procedural streets clipped to ${r.ledger.proceduralRuns} outside-core runs`);
+    }
+    const streets = src.map(s => this._prepare(s));
     const H = this._hashSegments(streets);
 
     // --- pass 1: true crossings -------------------------------------------

@@ -1,0 +1,50 @@
+{
+ "A_newbury": {
+  "meanAbsDiff": 52.22,
+  "pctOver32": 44.44,
+  "sha256_control": "80559b6136dd4e252643c0b3b761ad6aaba104c67ffd417656bda771fefd9121",
+  "sha256_candidate": "3c83c576558f8b2c9becbe41624c7976bc102a97bdafb0393d4a379fb0c829a3",
+  "bytes_control": 2678471,
+  "bytes_candidate": 2770854
+ },
+ "B_boylston": {
+  "meanAbsDiff": 41.63,
+  "pctOver32": 43.26,
+  "sha256_control": "5bbac01385226145eea21f8f55db31d6ace7761e88cf66be0e77008b360dc55a",
+  "sha256_candidate": "c991572825197be219abd07257369f485b9ae29c67ac3227fa65d6c4338d418a",
+  "bytes_control": 2796230,
+  "bytes_candidate": 2768029
+ },
+ "C_exeter": {
+  "meanAbsDiff": 58.5,
+  "pctOver32": 55.45,
+  "sha256_control": "cde34bc27d0ee533def8147c5ab81d1661fe45db141b38b850a8e69251586b14",
+  "sha256_candidate": "16d63dadd1c3272aeaea335b742d782f1955dbb516f99de693721a06aadfeffc",
+  "bytes_control": 2678296,
+  "bytes_candidate": 2758815
+ },
+ "D_block_oblique": {
+  "meanAbsDiff": 33.25,
+  "pctOver32": 38.62,
+  "sha256_control": "23b790dd5149ff1d27c127a68949f9876c48638454faa1e857edcb68563643bf",
+  "sha256_candidate": "cc4efc15475ffa0691c774ddd188ff21b643a3a9006b52b46d2317703eef3d8f",
+  "bytes_control": 2396211,
+  "bytes_candidate": 2407370
+ },
+ "E_district_overview": {
+  "meanAbsDiff": 29.52,
+  "pctOver32": 31.96,
+  "sha256_control": "d7a2418292d1b5c86c4358b43c787af6dcdd8a90d825126d325693871c03fed6",
+  "sha256_candidate": "4d9ac6db7078df5acd9c31ef097d90978be8f15b83dcd599560c3d57f4a43556",
+  "bytes_control": 2648018,
+  "bytes_candidate": 2693507
+ },
+ "F_commave": {
+  "meanAbsDiff": 77.9,
+  "pctOver32": 74.51,
+  "sha256_control": "d61c28cb249477b849ff4b86f72b1b10d3d35d9a19dda797619395630c66afcd",
+  "sha256_candidate": "d0c4e41e40fb2d0951a00e5ad05edd51d93e462c2a8da0f2a848385d968db189",
+  "bytes_control": 2883439,
+  "bytes_candidate": 2796115
+ }
+}
