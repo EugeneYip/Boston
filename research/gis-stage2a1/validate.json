@@ -18,16 +18,16 @@
  "failed": [],
  "pass": true,
  "containment": {
-  "parcelsChanged": 1537,
-  "outsideCore": 754,
-  "medianM": 57.09,
-  "maxM": 231.68,
+  "parcelsChanged": 1557,
+  "outsideCore": 769,
+  "medianM": 61.13,
+  "maxM": 235.77,
   "declaredSeamM": 216.15,
-  "parcelsBeyondSeam": 16
+  "parcelsBeyondSeam": 26
  },
  "connectors": {
-  "count": 8,
-  "maxM": 32.87
+  "count": 9,
+  "maxM": 33.55
  },
  "northeasternParcelsChanged": 0,
  "frozenCore": {

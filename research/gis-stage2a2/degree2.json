@@ -1,0 +1,612 @@
+{
+ "schemaVersion": "boston-gis-stage2a2/degree2/0.1.0",
+ "representable": true,
+ "representableEvidence": "no consumer in RoadNetwork, Navigation or Traffic branches on node degree; no Intersection type is keyed to it",
+ "containsBlastRadius": false,
+ "mechanism": "buildPlots subdivides per edge with n = round(acc/w), step = acc/n; lot phase is a function of total edge length, so any interior cut re-phases both halves",
+ "junctionException": "at a junction the two edges already exist separately in the baseline, so nothing outside is re-subdivided",
+ "lotWidthM": 8.2,
+ "crossingEdges": 17,
+ "maxLotShiftM": {
+  "min": 0,
+  "median": 1.7,
+  "max": 4.19
+ },
+ "perEdge": [
+  {
+   "name": "Commonwealth Avenue Inbound",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Commonwealth Avenue Inbound",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Commonwealth Avenue Outbound",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Commonwealth Avenue Outbound",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Newbury Street",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Newbury Street",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Boylston Street",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Boylston Street",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Public Alley 435",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Public Alley 435",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Public Alley 442",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Public Alley 442",
+   "lengthM": 190,
+   "lots": 23,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.3
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 4.13
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.65
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 0.83
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.09
+    }
+   ]
+  },
+  {
+   "name": "Exeter Street",
+   "lengthM": 34,
+   "lots": 4,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 3.4
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 0
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 3.4
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 1.7
+    }
+   ]
+  },
+  {
+   "name": "Fairfield Street",
+   "lengthM": 34,
+   "lots": 4,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 3.4
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 0
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 3.4
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 1.7
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 1.7
+    }
+   ]
+  },
+  {
+   "name": "Blagden Street",
+   "lengthM": 150.73,
+   "lots": 18,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.35
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 4.19
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.67
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 0
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.67
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 3.35
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 4.02
+    }
+   ]
+  },
+  {
+   "name": "Huntington Avenue",
+   "lengthM": 52.33,
+   "lots": 6,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 1.74
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 1.74
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 3.49
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 0
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 3.49
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 1.74
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 1.74
+    }
+   ]
+  },
+  {
+   "name": "Huntington Avenue",
+   "lengthM": 472.98,
+   "lots": 58,
+   "worst": [
+    {
+     "splitFrac": 0.2,
+     "maxLotShiftM": 3.26
+    },
+    {
+     "splitFrac": 0.3,
+     "maxLotShiftM": 3.26
+    },
+    {
+     "splitFrac": 0.4,
+     "maxLotShiftM": 1.63
+    },
+    {
+     "splitFrac": 0.5,
+     "maxLotShiftM": 0
+    },
+    {
+     "splitFrac": 0.6,
+     "maxLotShiftM": 1.63
+    },
+    {
+     "splitFrac": 0.7,
+     "maxLotShiftM": 4.04
+    },
+    {
+     "splitFrac": 0.8,
+     "maxLotShiftM": 3.26
+    }
+   ]
+  }
+ ]
+}

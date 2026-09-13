@@ -1,0 +1,31 @@
+{
+ "schemaVersion": "boston-gis-stage2a2/containment/0.1.0",
+ "frozenSeamM": 6.96,
+ "lotCuts": 17,
+ "lotCutOffsetM": {
+  "min": 0.46,
+  "max": 7.34
+ },
+ "roads": {
+  "changed": 99,
+  "outsideCore": 31,
+  "beyondSeam": 17,
+  "medianM": 15.23,
+  "maxM": 160.43
+ },
+ "plots": {
+  "changed": 1123,
+  "outsideCore": 337,
+  "beyondSeam": 295,
+  "medianM": 41.03,
+  "maxM": 210.58
+ },
+ "specs": {
+  "changed": 1004,
+  "outsideCore": 269,
+  "beyondSeam": 238,
+  "medianM": 27.69,
+  "maxM": 201.01
+ },
+ "identityOnlyChurn": 6356
+}

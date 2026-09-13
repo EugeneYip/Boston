@@ -178,48 +178,48 @@
    "proceduralClipped": 11,
    "proceduralRuns": 17,
    "proceduralFullyRemoved": 1,
-   "connectors": 8
+   "connectors": 9
   },
   "structure": {
-   "roadEdgesCity": 573,
-   "roadNodesCity": 426,
-   "roadEdgesCore": 66,
-   "roadNodesCore": 43,
-   "junctionsCore": 23,
-   "roadLengthCoreM": 3849.06,
+   "roadEdgesCity": 569,
+   "roadNodesCity": 425,
+   "roadEdgesCore": 52,
+   "roadNodesCore": 32,
+   "junctionsCore": 18,
+   "roadLengthCoreM": 3614.23,
    "plotsCity": 10955,
-   "plotsCore": 400,
-   "specsCity": 10290,
-   "specsCore": 374,
+   "plotsCore": 403,
+   "specsCity": 10292,
+   "specsCore": 378,
    "clipStats": {
-    "clipped": 15,
+    "clipped": 17,
     "dropped": 1,
-    "trimmed": 811,
+    "trimmed": 806,
     "superblocks": 26
    },
    "parcelWidthM": {
     "min": 3.88,
-    "median": 8.12,
+    "median": 8.14,
     "max": 9
    },
    "parcelDepthM": {
     "min": 8.08,
-    "median": 22.9,
+    "median": 22.72,
     "max": 34
    }
   },
   "roadPathologyVsPDDL": {
-   "samples": 1927,
-   "insidePct": 1.19,
+   "samples": 1851,
+   "insidePct": 0.22,
    "byStreet": [
     {
      "name": "Blagden Street",
-     "samples": 89,
-     "insidePct": 13.48
+     "samples": 71,
+     "insidePct": 0
     },
     {
      "name": "Boylston Street",
-     "samples": 237,
+     "samples": 231,
      "insidePct": 0
     },
     {
@@ -229,17 +229,17 @@
     },
     {
      "name": "Commonwealth Avenue Inbound",
-     "samples": 137,
+     "samples": 139,
      "insidePct": 0
     },
     {
      "name": "Commonwealth Avenue Outbound",
-     "samples": 74,
+     "samples": 59,
      "insidePct": 0
     },
     {
      "name": "Dartmouth Street",
-     "samples": 48,
+     "samples": 46,
      "insidePct": 0
     },
     {
@@ -254,13 +254,13 @@
     },
     {
      "name": "Huntington Avenue",
-     "samples": 187,
-     "insidePct": 0.53
+     "samples": 172,
+     "insidePct": 0
     },
     {
      "name": "Newbury Street",
-     "samples": 248,
-     "insidePct": 2.42
+     "samples": 231,
+     "insidePct": 0
     },
     {
      "name": "Public Alley 435",
@@ -269,7 +269,7 @@
     },
     {
      "name": "Public Alley 442",
-     "samples": 26,
+     "samples": 21,
      "insidePct": 0
     },
     {
@@ -305,10 +305,10 @@
    ]
   },
   "proceduralWallResidual": {
-   "n": 1128,
-   "median": 5.78,
-   "p75": 15.89,
-   "p90": 27.12,
+   "n": 1140,
+   "median": 5.83,
+   "p75": 15.93,
+   "p90": 26.54,
    "byStreet": [
     {
      "name": "Blagden Street",
@@ -318,26 +318,20 @@
     },
     {
      "name": "Boylston Street",
-     "n": 274,
-     "median": 5.13,
-     "p90": 32.83
+     "n": 284,
+     "median": 5.18,
+     "p90": 32.81
     },
     {
      "name": "Commonwealth Avenue Inbound",
-     "n": 119,
-     "median": 6.13,
-     "p90": 27.12
-    },
-    {
-     "name": "Commonwealth Avenue Outbound",
-     "n": 1,
-     "median": 15.32,
-     "p90": 15.32
+     "n": 116,
+     "median": 6.56,
+     "p90": 25.66
     },
     {
      "name": "Dartmouth Street",
-     "n": 17,
-     "median": 15.38,
+     "n": 20,
+     "median": 15.28,
      "p90": 40.05
     },
     {
@@ -360,8 +354,8 @@
     },
     {
      "name": "Newbury Street",
-     "n": 338,
-     "median": 6.77,
+     "n": 341,
+     "median": 6.76,
      "p90": 27.17
     },
     {
@@ -380,24 +374,24 @@
   }
  },
  "blastRadius": {
-  "plotsChanged": 1537,
-  "outsideCore": 754,
+  "plotsChanged": 1557,
+  "outsideCore": 769,
   "outsideCoreDistanceM": {
    "min": 0.07,
-   "median": 57.09,
-   "p90": 150.18,
-   "max": 231.68
+   "median": 61.13,
+   "p90": 176.54,
+   "max": 235.77
   },
   "streetsWithChangedParcelCount": [
    {
     "name": "Blagden Street",
     "control": 19,
-    "candidate": 28
+    "candidate": 27
    },
    {
     "name": "Boylston Street",
     "control": 490,
-    "candidate": 486
+    "candidate": 487
    },
    {
     "name": "Clarendon SQ",
@@ -412,12 +406,12 @@
    {
     "name": "Commonwealth Avenue Outbound",
     "control": 167,
-    "candidate": 143
+    "candidate": 142
    },
    {
     "name": "Dartmouth Street",
     "control": 273,
-    "candidate": 284
+    "candidate": 286
    },
    {
     "name": "Exeter Street",
@@ -427,17 +421,17 @@
    {
     "name": "Fairfield Street",
     "control": 96,
-    "candidate": 67
+    "candidate": 68
    },
    {
     "name": "Huntington Avenue",
     "control": 327,
-    "candidate": 309
+    "candidate": 306
    },
    {
     "name": "Newbury Street",
     "control": 341,
-    "candidate": 326
+    "candidate": 327
    },
    {
     "name": "Ring Road",
@@ -566,7 +560,7 @@
     {
      "id": "bpl",
      "keepout": 60,
-     "nearestRoadM": 35.46
+     "nearestRoadM": 37
     },
     {
      "id": "fenway",

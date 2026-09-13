@@ -1306,16 +1306,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.08438116373856
      ],
      [
-      42.3511235,
-      -71.082431
+      42.3511122,
+      -71.0824766
      ]
     ]
    },
    {
     "path": [
      [
-      42.351297,
-      -71.0817292
+      42.3513006,
+      -71.0817147
      ],
      [
       42.3517244116529,
@@ -1368,16 +1368,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.07982312761906
      ],
      [
-      42.351297,
-      -71.0799669
+      42.351309,
+      -71.0799184
      ]
     ]
    },
    {
     "path": [
      [
-      42.3506877,
-      -71.082431
+      42.3506732,
+      -71.0824896
      ],
      [
       42.35024939676274,
@@ -1418,16 +1418,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.07745088246664
      ],
      [
-      42.3510184,
-      -71.077569
+      42.3510197,
+      -71.0775637
      ]
     ]
    },
    {
     "path": [
      [
-      42.3498162,
-      -71.082431
+      42.3497953,
+      -71.0825156
      ],
      [
       42.3493801467091,
@@ -1480,16 +1480,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.0768343875968
      ],
      [
-      42.3499291,
-      -71.077569
+      42.3499459,
+      -71.077501
      ]
     ]
    },
    {
     "path": [
      [
-      42.3487269,
-      -71.082431
+      42.3487215,
+      -71.082453
      ],
      [
       42.34848598500719,
@@ -1550,16 +1550,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.07805502018735
      ],
      [
-      42.351297,
-      -71.0786643
+      42.3513019,
+      -71.0786444
      ]
     ]
    },
    {
     "path": [
      [
-      42.3503657,
-      -71.082431
+      42.35036,
+      -71.0824537
      ],
      [
       42.349771628961804,
@@ -1588,16 +1588,16 @@ export const GIS_ROADS_CLIPPED = [
       -71.07422223855319
      ],
      [
-      42.3504785,
-      -71.077569
+      42.3504871,
+      -71.0775343
      ]
     ]
    },
    {
     "path": [
      [
-      42.3492763,
-      -71.082431
+      42.3492626,
+      -71.0824862
      ],
      [
       42.34879195576428,
@@ -1626,8 +1626,8 @@ export const GIS_ROADS_CLIPPED = [
       -71.08023584636902
      ],
      [
-      42.351297,
-      -71.079807
+      42.3513325,
+      -71.0798231
      ]
     ]
    }
@@ -1648,8 +1648,8 @@ export const GIS_ROADS_CLIPPED = [
       -71.08242614918345
      ],
      [
-      42.351297,
-      -71.0822426
+      42.3513277,
+      -71.0822564
      ]
     ]
    }
@@ -1666,8 +1666,8 @@ export const GIS_ROADS_CLIPPED = [
       -71.07672594998672
      ],
      [
-      42.3493797,
-      -71.077569
+      42.3493853,
+      -71.0775461
      ]
     ]
    }
@@ -1689,8 +1689,8 @@ export const GIS_ROADS_CLIPPED = [
       -71.0766
      ],
      [
-      42.3491825,
-      -71.077569
+      42.3492151,
+      -71.0775178
      ]
     ],
     "median": [
@@ -1701,8 +1701,8 @@ export const GIS_ROADS_CLIPPED = [
    {
     "path": [
      [
-      42.347703,
-      -71.0795533
+      42.3476796,
+      -71.0795699
      ],
      [
       42.34672,
@@ -1770,15 +1770,16 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "arterial",
   "lanes": 4,
   "transitionConnector": true,
-  "lengthM": 11.86,
+  "lengthM": 11.45,
+  "toBaselineNode": false,
   "path": [
    [
     42.3500356,
     -71.077569
    ],
    [
-    42.3499291,
-    -71.077569
+    42.3499459,
+    -71.077501
    ]
   ]
  },
@@ -1788,11 +1789,12 @@ export const GIS_ROADS_CONNECTORS = [
   "lanes": 2,
   "oneway": 1,
   "transitionConnector": true,
-  "lengthM": 8.28,
+  "lengthM": 8.44,
+  "toBaselineNode": false,
   "path": [
    [
-    42.3510184,
-    -71.077569
+    42.3510197,
+    -71.0775637
    ],
    [
     42.350944,
@@ -1806,15 +1808,16 @@ export const GIS_ROADS_CONNECTORS = [
   "lanes": 2,
   "oneway": 1,
   "transitionConnector": true,
-  "lengthM": 21.11,
+  "lengthM": 20.03,
+  "toBaselineNode": false,
   "path": [
    [
     42.3496266,
     -71.082431
    ],
    [
-    42.3498162,
-    -71.082431
+    42.3497953,
+    -71.0825156
    ]
   ]
  },
@@ -1823,15 +1826,16 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "alley",
   "lanes": 1,
   "transitionConnector": true,
-  "lengthM": 9.58,
+  "lengthM": 9.25,
+  "toBaselineNode": false,
   "path": [
    [
     42.3491902,
     -71.082431
    ],
    [
-    42.3492763,
-    -71.082431
+    42.3492626,
+    -71.0824862
    ]
   ]
  },
@@ -1841,15 +1845,35 @@ export const GIS_ROADS_CONNECTORS = [
   "lanes": 2,
   "oneway": 1,
   "transitionConnector": true,
-  "lengthM": 28.29,
+  "lengthM": 30.29,
+  "toBaselineNode": false,
   "path": [
    [
     42.3509418,
     -71.082431
    ],
    [
-    42.3506877,
-    -71.082431
+    42.3506732,
+    -71.0824896
+   ]
+  ]
+ },
+ {
+  "name": "Commonwealth Avenue Inbound",
+  "type": "street",
+  "lanes": 2,
+  "oneway": 1,
+  "transitionConnector": true,
+  "lengthM": 13.91,
+  "toBaselineNode": true,
+  "path": [
+   [
+    42.351297,
+    -71.079661
+   ],
+   [
+    42.3513325,
+    -71.0798231
    ]
   ]
  },
@@ -1858,11 +1882,12 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "arterial",
   "lanes": 4,
   "transitionConnector": true,
-  "lengthM": 0.19,
+  "lengthM": 1.86,
+  "toBaselineNode": false,
   "path": [
    [
-    42.3487269,
-    -71.082431
+    42.3487215,
+    -71.082453
    ],
    [
     42.3487252,
@@ -1875,11 +1900,12 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "street",
   "lanes": 2,
   "transitionConnector": true,
-  "lengthM": 32.87,
+  "lengthM": 33.55,
+  "toBaselineNode": false,
   "path": [
    [
-    42.3493797,
-    -71.077569
+    42.3493853,
+    -71.0775461
    ],
    [
     42.3490844,
@@ -1892,11 +1918,12 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "arterial",
   "lanes": 4,
   "transitionConnector": true,
-  "lengthM": 24.99,
+  "lengthM": 28.93,
+  "toBaselineNode": false,
   "path": [
    [
-    42.3491825,
-    -71.077569
+    42.3492151,
+    -71.0775178
    ],
    [
     42.348958,

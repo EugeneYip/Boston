@@ -1,0 +1,1661 @@
+{
+ "schemaVersion": "boston-gis-stage2a2/sink/0.1.0",
+ "control": {
+  "nodes": 397,
+  "sinks": [
+   {
+    "node": 11,
+    "x": -2288.66,
+    "z": 624.81,
+    "inCore": false,
+    "distFromCore": 908.2,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beacon Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 51,
+    "x": -1895.39,
+    "z": 791.65,
+    "inCore": false,
+    "distFromCore": 514.93,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Newbury Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 111,
+    "x": -535.63,
+    "z": -60.86,
+    "inCore": false,
+    "distFromCore": 680.82,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Arlington Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 129,
+    "x": -1447.28,
+    "z": 807.27,
+    "inCore": false,
+    "distFromCore": 66.82,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Gloucester Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 130,
+    "x": -1796.9,
+    "z": 361.15,
+    "inCore": false,
+    "distFromCore": 426.78,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Hereford Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 143,
+    "x": -150.56,
+    "z": -233.96,
+    "inCore": false,
+    "distFromCore": 1078.33,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1,
+      "connector": false
+     },
+     {
+      "name": "Walnut Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1
+     },
+     {
+      "name": "Walnut Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 144,
+    "x": -28.79,
+    "z": -249.36,
+    "inCore": false,
+    "distFromCore": 1183.72,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 153,
+    "x": 9.8,
+    "z": -404.67,
+    "inCore": false,
+    "distFromCore": 1311.06,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Joy Street",
+      "oneway": 1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Pinckney Street",
+      "oneway": 1
+     },
+     {
+      "name": "Joy Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 154,
+    "x": -380.88,
+    "z": -436.37,
+    "inCore": false,
+    "distFromCore": 1073.89,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Revere Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 155,
+    "x": -342.34,
+    "z": -442.76,
+    "inCore": false,
+    "distFromCore": 1101.07,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Revere Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Revere Street",
+      "oneway": -1
+     },
+     {
+      "name": "West Cedar Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 162,
+    "x": -20.57,
+    "z": -447.51,
+    "inCore": false,
+    "distFromCore": 1317.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Myrtle Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 166,
+    "x": 25.5,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1218.92,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Joy Street",
+      "oneway": 1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 167,
+    "x": -0.82,
+    "z": -527.66,
+    "inCore": false,
+    "distFromCore": 1387.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Joy Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 168,
+    "x": -143.96,
+    "z": -187.02,
+    "inCore": false,
+    "distFromCore": 1054.21,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Walnut Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 169,
+    "x": -155.48,
+    "z": -280.53,
+    "inCore": false,
+    "distFromCore": 1104.97,
+    "forwardReach": 4,
+    "outgoing": [
+     {
+      "name": "Walnut Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 170,
+    "x": -120.93,
+    "z": -536.56,
+    "inCore": false,
+    "distFromCore": 1311.91,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Anderson Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 171,
+    "x": -193.32,
+    "z": -347.32,
+    "inCore": false,
+    "distFromCore": 1123.65,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Grove Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 173,
+    "x": 255.84,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1415.02,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beacon Street East",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 174,
+    "x": 218,
+    "z": -280.53,
+    "inCore": false,
+    "distFromCore": 1405.94,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Bowdoin Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 175,
+    "x": 260.77,
+    "z": -534.34,
+    "inCore": false,
+    "distFromCore": 1587.01,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Bowdoin Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 190,
+    "x": 564.44,
+    "z": -961.29,
+    "inCore": false,
+    "distFromCore": 2095.55,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Endicott Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 191,
+    "x": 570.7,
+    "z": -972.22,
+    "inCore": false,
+    "distFromCore": 2107.56,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1,
+      "connector": false
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 201,
+    "x": 876.1,
+    "z": -992.97,
+    "inCore": false,
+    "distFromCore": 2354.19,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Fleet Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 214,
+    "x": 522.37,
+    "z": -881.65,
+    "inCore": false,
+    "distFromCore": 2010.96,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 243,
+    "x": 320,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1471.41,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "School Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 268,
+    "x": 728.03,
+    "z": 73.47,
+    "inCore": false,
+    "distFromCore": 1750.5,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Federal Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 280,
+    "x": 1080.12,
+    "z": -220.41,
+    "inCore": false,
+    "distFromCore": 2168.33,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "India Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 282,
+    "x": 881.04,
+    "z": 313.92,
+    "inCore": false,
+    "distFromCore": 1866.84,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Purchase Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 284,
+    "x": 686.9,
+    "z": 532.11,
+    "inCore": false,
+    "distFromCore": 1667.39,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Surface Road",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 289,
+    "x": 553.63,
+    "z": 436.37,
+    "inCore": false,
+    "distFromCore": 1534.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Essex Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 290,
+    "x": 237.74,
+    "z": 436.37,
+    "inCore": false,
+    "distFromCore": 1218.37,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beach Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 302,
+    "x": 1180.48,
+    "z": 269.39,
+    "inCore": false,
+    "distFromCore": 2168.89,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 303,
+    "x": 1298.35,
+    "z": 238.34,
+    "inCore": false,
+    "distFromCore": 2289.08,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     },
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     },
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     },
+     {
+      "name": "Sleeper Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 304,
+    "x": 1945.53,
+    "z": 220.41,
+    "inCore": false,
+    "distFromCore": 2935.37,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 307,
+    "x": 958.37,
+    "z": 1044.18,
+    "inCore": false,
+    "distFromCore": 1948.11,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "A Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 317,
+    "x": 20.57,
+    "z": 665.69,
+    "inCore": false,
+    "distFromCore": 1001.06,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Shawmut Avenue",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 358,
+    "x": -143.96,
+    "z": -1137.69,
+    "inCore": false,
+    "distFromCore": 1798.59,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 359,
+    "x": -3006.72,
+    "z": 621.17,
+    "inCore": false,
+    "distFromCore": 1626.26,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 365,
+    "x": 185.09,
+    "z": -881.65,
+    "inCore": false,
+    "distFromCore": 1773.12,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 366,
+    "x": 259.13,
+    "z": -1315.8,
+    "inCore": false,
+    "distFromCore": 2161.18,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 378,
+    "x": 563.5,
+    "z": -1939.19,
+    "inCore": false,
+    "distFromCore": 2848.47,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 379,
+    "x": 810.29,
+    "z": -2473.53,
+    "inCore": false,
+    "distFromCore": 3432.26,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 380,
+    "x": 530.6,
+    "z": -1850.14,
+    "inCore": false,
+    "distFromCore": 2755.88,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 381,
+    "x": 1040.63,
+    "z": -2095.04,
+    "inCore": false,
+    "distFromCore": 3253.49,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0
+     }
+    ]
+   }
+  ]
+ },
+ "candidate": {
+  "nodes": 425,
+  "sinks": [
+   {
+    "node": 11,
+    "x": -2288.66,
+    "z": 624.81,
+    "inCore": false,
+    "distFromCore": 908.2,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beacon Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 36,
+    "x": -1165.93,
+    "z": 450.56,
+    "inCore": false,
+    "distFromCore": 3.96,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Commonwealth Avenue Outbound",
+      "oneway": 1
+     },
+     {
+      "name": "Exeter Street",
+      "oneway": 1
+     },
+     {
+      "name": "Commonwealth Avenue Inbound",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 53,
+    "x": -1895.39,
+    "z": 791.65,
+    "inCore": false,
+    "distFromCore": 514.93,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Newbury Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 113,
+    "x": -535.63,
+    "z": -60.86,
+    "inCore": false,
+    "distFromCore": 680.82,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Arlington Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 129,
+    "x": -1447.28,
+    "z": 807.27,
+    "inCore": false,
+    "distFromCore": 66.82,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Gloucester Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 130,
+    "x": -1796.9,
+    "z": 361.15,
+    "inCore": false,
+    "distFromCore": 426.78,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Hereford Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 140,
+    "x": -150.56,
+    "z": -233.96,
+    "inCore": false,
+    "distFromCore": 1078.33,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1,
+      "connector": false
+     },
+     {
+      "name": "Walnut Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1
+     },
+     {
+      "name": "Walnut Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 141,
+    "x": -28.79,
+    "z": -249.36,
+    "inCore": false,
+    "distFromCore": 1183.72,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Chestnut Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 150,
+    "x": 9.8,
+    "z": -404.67,
+    "inCore": false,
+    "distFromCore": 1311.06,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Joy Street",
+      "oneway": 1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Pinckney Street",
+      "oneway": 1
+     },
+     {
+      "name": "Joy Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 151,
+    "x": -380.88,
+    "z": -436.37,
+    "inCore": false,
+    "distFromCore": 1073.89,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Revere Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 152,
+    "x": -342.34,
+    "z": -442.76,
+    "inCore": false,
+    "distFromCore": 1101.07,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Revere Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Revere Street",
+      "oneway": -1
+     },
+     {
+      "name": "West Cedar Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 159,
+    "x": -20.57,
+    "z": -447.51,
+    "inCore": false,
+    "distFromCore": 1317.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Myrtle Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 163,
+    "x": 25.5,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1218.92,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Joy Street",
+      "oneway": 1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 164,
+    "x": -0.82,
+    "z": -527.66,
+    "inCore": false,
+    "distFromCore": 1387.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Joy Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 165,
+    "x": -143.96,
+    "z": -187.02,
+    "inCore": false,
+    "distFromCore": 1054.21,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Walnut Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 166,
+    "x": -155.48,
+    "z": -280.53,
+    "inCore": false,
+    "distFromCore": 1104.97,
+    "forwardReach": 4,
+    "outgoing": [
+     {
+      "name": "Walnut Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 167,
+    "x": -120.93,
+    "z": -536.56,
+    "inCore": false,
+    "distFromCore": 1311.91,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Anderson Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 168,
+    "x": -193.32,
+    "z": -347.32,
+    "inCore": false,
+    "distFromCore": 1123.65,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Grove Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 170,
+    "x": 255.84,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1415.02,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beacon Street East",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 171,
+    "x": 218,
+    "z": -280.53,
+    "inCore": false,
+    "distFromCore": 1405.94,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Bowdoin Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 172,
+    "x": 260.77,
+    "z": -534.34,
+    "inCore": false,
+    "distFromCore": 1587.01,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Bowdoin Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": []
+   },
+   {
+    "node": 187,
+    "x": 564.44,
+    "z": -961.29,
+    "inCore": false,
+    "distFromCore": 2095.55,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Endicott Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 188,
+    "x": 570.7,
+    "z": -972.22,
+    "inCore": false,
+    "distFromCore": 2107.56,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1,
+      "connector": false
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "North Margin Street",
+      "oneway": -1
+     },
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 198,
+    "x": 876.1,
+    "z": -992.97,
+    "inCore": false,
+    "distFromCore": 2354.19,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Fleet Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 211,
+    "x": 522.37,
+    "z": -881.65,
+    "inCore": false,
+    "distFromCore": 2010.96,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Endicott Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 240,
+    "x": 320,
+    "z": -233.77,
+    "inCore": false,
+    "distFromCore": 1471.41,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "School Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 265,
+    "x": 728.03,
+    "z": 73.47,
+    "inCore": false,
+    "distFromCore": 1750.5,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Federal Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 277,
+    "x": 1080.12,
+    "z": -220.41,
+    "inCore": false,
+    "distFromCore": 2168.33,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "India Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 279,
+    "x": 881.04,
+    "z": 313.92,
+    "inCore": false,
+    "distFromCore": 1866.84,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Purchase Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 281,
+    "x": 686.9,
+    "z": 532.11,
+    "inCore": false,
+    "distFromCore": 1667.39,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Surface Road",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 286,
+    "x": 553.63,
+    "z": 436.37,
+    "inCore": false,
+    "distFromCore": 1534.24,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Essex Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 287,
+    "x": 237.74,
+    "z": 436.37,
+    "inCore": false,
+    "distFromCore": 1218.37,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Beach Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 299,
+    "x": 1180.48,
+    "z": 269.39,
+    "inCore": false,
+    "distFromCore": 2168.89,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 300,
+    "x": 1298.35,
+    "z": 238.34,
+    "inCore": false,
+    "distFromCore": 2289.08,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     },
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     },
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     },
+     {
+      "name": "Sleeper Street",
+      "oneway": 1
+     }
+    ]
+   },
+   {
+    "node": 301,
+    "x": 1945.53,
+    "z": 220.41,
+    "inCore": false,
+    "distFromCore": 2935.37,
+    "forwardReach": 3,
+    "outgoing": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Northern Avenue",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 304,
+    "x": 958.37,
+    "z": 1044.18,
+    "inCore": false,
+    "distFromCore": 1948.11,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "A Street",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 314,
+    "x": 20.57,
+    "z": 665.69,
+    "inCore": false,
+    "distFromCore": 1001.06,
+    "forwardReach": 1,
+    "outgoing": [],
+    "incoming": [
+     {
+      "name": "Shawmut Avenue",
+      "oneway": -1
+     }
+    ]
+   },
+   {
+    "node": 357,
+    "x": -143.96,
+    "z": -1137.69,
+    "inCore": false,
+    "distFromCore": 1798.59,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 358,
+    "x": -3006.72,
+    "z": 621.17,
+    "inCore": false,
+    "distFromCore": 1626.26,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Storrow Drive",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 364,
+    "x": 185.09,
+    "z": -881.65,
+    "inCore": false,
+    "distFromCore": 1773.12,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 365,
+    "x": 259.13,
+    "z": -1315.8,
+    "inCore": false,
+    "distFromCore": 2161.18,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Zakim Ramp",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 377,
+    "x": 563.5,
+    "z": -1939.19,
+    "inCore": false,
+    "distFromCore": 2848.47,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 378,
+    "x": 810.29,
+    "z": -2473.53,
+    "inCore": false,
+    "distFromCore": 3432.26,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Chelsea Street",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 379,
+    "x": 530.6,
+    "z": -1850.14,
+    "inCore": false,
+    "distFromCore": 2755.88,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 380,
+    "x": 1040.63,
+    "z": -2095.04,
+    "inCore": false,
+    "distFromCore": 3253.49,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Constitution Road",
+      "oneway": 0
+     }
+    ]
+   },
+   {
+    "node": 414,
+    "x": -1152.59,
+    "z": 454.52,
+    "inCore": true,
+    "distFromCore": 0,
+    "forwardReach": 2,
+    "outgoing": [
+     {
+      "name": "Commonwealth Avenue Inbound",
+      "oneway": 1,
+      "connector": false
+     }
+    ],
+    "incoming": [
+     {
+      "name": "Commonwealth Avenue Inbound",
+      "oneway": 1
+     }
+    ]
+   }
+  ]
+ }
+}
