@@ -47,18 +47,32 @@ browser render.*
 `three@0.171.0` · `postprocessing@6.39` · `n8ao@2` · `@dimforge/rapier3d-compat@0.20` ·
 Vite. Plain ES modules, no TypeScript, no JSX, no build step beyond Vite.
 
-## The five documents
+## Project status — PAUSED (2026-09-13)
+
+**Active development is paused by the owner. There is no active authorized
+implementation programme.** If you have not been given a new, explicit authorization:
+read the cold-start documents, report the state, and **stop**. Do not start work because
+the project looks idle. Checkpoint at pause: `e9430a5`. Details and the do-not-reopen
+list: **`docs/PAUSE_HANDOFF_2026-09-13.md`**.
+
+## The core documents
 | File | What it is |
 |---|---|
 | `AI_HANDOFF.md` | Cold-start orientation. Read first. |
+| `docs/PAUSE_HANDOFF_2026-09-13.md` | **Pause state, read order, safe resume procedure, do-not-reopen list. Read second.** |
 | `AGENTS.md` | This file — rules and commands. |
 | `ARCHITECTURE.md` | Engine contract: coordinate system, system lifecycle, perf budget. **Binding.** |
 | `CONTRACTS.md` | Cross-system interfaces. Implement/consume exactly. |
 | `docs/CURRENT_STATE.md` | Living state: what's fixed, what's broken, what's next. **Update it.** |
+| `research/README.md` | Index of the GIS / factual-geography programme and its canonical closeout. |
 
 Supporting: `docs/PERF_REPORT.md` (measured perf diagnosis), `docs/CRITIC_RUBRIC.md`
 (how visual work is judged), `docs/AGENT_BRIEF.md` (per-agent working brief),
 `docs/PROGRESS.md` (build log, one row per iteration).
+
+**The repository is the handoff.** It must work for any successor — a different Claude
+account, ChatGPT, Codex — with no conversation history, no agent memory and no access to
+whoever worked here before. Never write instructions that depend on those.
 
 ## Exact validation commands
 Run all of these before claiming anything works.

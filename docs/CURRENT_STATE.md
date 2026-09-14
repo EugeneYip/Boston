@@ -3,7 +3,35 @@
 **Update this file whenever you fix something or find something.** It is the handover
 surface: a new agent should be able to read only this and know where to start.
 
-Last verified: **2026-08-31, commit `b12497d`** (the B2 docs record; `1beada1` is B2 itself). Verify with `git rev-parse --short HEAD` rather than trusting this line. **The runtime figures below still date from that commit.** The lifecycle audit that followed (through `8e3a825`, see §Lifecycle audit) was static/Node-only and changed no rendering behaviour, so it neither refreshes nor invalidates them.
+## ⏸ PROJECT PAUSED — last verified 2026-09-13, commit `e9430a5`
+
+**The owner has paused active Boston development. There is no active authorized
+implementation programme.** If you have no new explicit authorization: read, report, and
+stop. Verify the checkpoint with `git rev-parse --short HEAD` rather than trusting this
+line.
+
+| | |
+|---|---|
+| Checkpoint at pause | **`e9430a52854d5ba190bd4bc78d7d08391dd36f17`** (`HEAD == origin/main`, clean) |
+| Last programme | **Stage 2A factual-road family — CLOSED as PASS WITH KNOWN PROTOTYPE LIMITATIONS** |
+| Canonical closeout | `research/GIS_HYBRID_WORLD_STAGE2A4_CAUSAL_INFLUENCE_CLOSEOUT_2026-09-13.md` |
+| Factual-road candidate | **DEFAULT OFF** (`?gisRoads=1`). Default-on is **not authorized**. |
+| Stage 2B | **NOT authorized** |
+| Next stop for a cold start | **`docs/PAUSE_HANDOFF_2026-09-13.md`** — short, operational, with the read order, resume procedure and do-not-reopen list |
+
+Default-off parity is proven by fingerprint: the flag-absent city fingerprint is
+**`5fa6c6be79473213`**, unchanged across the whole GIS programme. Re-check with
+`node research/gis-stage2a/validate.mjs`.
+
+> **HISTORICAL BASELINE FOR THE RUNTIME FIGURES BELOW.** Everything after this header —
+> frame timings, luma readings, per-shot measurements, the lifecycle-audit notes and the
+> critic findings — was measured at **2026-08-31, commit `b12497d`** (the B2 docs record;
+> `1beada1` is B2 itself), or shortly after. **Treat those numbers as historical, not
+> current.** The lifecycle audit through `8e3a825` was static/Node-only and changed no
+> rendering behaviour, so it neither refreshes nor invalidates them. The GIS programme
+> that followed is entirely default-off and therefore does not change what a player sees
+> either — but no fresh runtime visual pass has been taken since, and the pause forbids
+> starting one without authorization.
 
 > **Canonical repository is `/Volumes/Projects/boston`, on an external SSD. If
 > `/Volumes/Projects` is not mounted, STOP** — never fall back to or recreate another

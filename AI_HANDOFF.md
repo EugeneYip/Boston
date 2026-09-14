@@ -24,10 +24,26 @@ git status -sb
 An older copy at `~/Desktop/boston` was renamed `boston-OLD-DO-NOT-USE` and is stale.
 Anything referring to `~/Desktop/boston` predates the migration of 2026-08-31.
 
-### Current checkpoint (2026-09-01)
-The **static lifecycle audit is closed.** Seven source waves landed on top of B2 —
-D1, D4, D5, D2 (+ dependency hardening), D3, D6 — the last being `8e3a825`. The
-documentation commit that records them supersedes that SHA. See §9.
+### Current checkpoint — PROJECT PAUSED (2026-09-13)
+
+**The owner has intentionally paused active Boston development. There is no active
+authorized implementation programme.** If you have not been given a new, explicit
+authorization: read, report the state, and **stop**. Do not invent a programme, and do
+not start "obvious" improvements because the project looks idle.
+
+| | |
+|---|---|
+| Checkpoint at pause | **`e9430a52854d5ba190bd4bc78d7d08391dd36f17`** |
+| State at pause | `HEAD == origin/main`, clean, 0 ahead / 0 behind |
+| Last programme | **Stage 2A factual-road family — CLOSED as PASS WITH KNOWN PROTOTYPE LIMITATIONS** |
+| Factual-road candidate | **DEFAULT OFF** (`?gisRoads=1`); default-on is **not authorized** |
+| Stage 2B | **NOT authorized** |
+
+**Read `docs/PAUSE_HANDOFF_2026-09-13.md` next.** It is short and operational: the
+checkpoint, what is closed/frozen/blocked, the cold-start read order, the safe resume
+procedure, and an explicit do-not-reopen list. The canonical closeout of the last
+programme is
+`research/GIS_HYBRID_WORLD_STAGE2A4_CAUSAL_INFLUENCE_CLOSEOUT_2026-09-13.md`.
 
 **Do not trust this line; verify it.** It is hand-written and has been stale before.
 A copied SHA is not a checkpoint — these three commands are:
@@ -40,6 +56,40 @@ git status -sb
 **Pushes are performed manually by the repository owner.** Do not assume
 `origin/main` contains the newest commit, and do not push. Check with
 `git status -sb` and `git log --oneline origin/main..HEAD`.
+
+**This repository is the handoff.** A successor — a different Claude account, ChatGPT,
+Codex, anything — must be able to resume from these files alone. Never write or rely on
+"continue from the chat", "ask the previous agent", or agent memory. Chat history is
+supplementary evidence only; assume it is gone.
+
+### The GIS / factual-geography programme — where it got to (2026-09-11 → 2026-09-13)
+
+Not visible from the source tree alone, so it is stated here. Seventeen reports live in
+`research/`; the index is `research/README.md`.
+
+Boston's hand-authored road geography is **not** a factual network, and **cannot** be
+repaired by a global transform — the error is per-street (0.2 m on Boylston, 44 m on
+Exeter, 57 m on Commonwealth Inbound). The programme identified and licence-cleared a
+substantially better factual source, **Boston Street Segments (SAM System)**,
+ODC-PDDL-1.0, and validated it in a bounded, reversible, default-off Back Bay runtime
+prototype.
+
+| | baseline | factual candidate |
+|---|---|---|
+| road line inside a factual building | ~42.35% | **~0.22%** |
+| procedural wall → factual wall, median | ~16.77 m | **~5.88 m** |
+
+Traffic **PASS**, pedestrians **PASS**, spawns **PASS**, collision **PASS** (carried
+forward, reasoned in the 2A.4 report §L). The factual core is bounded and reversible; no
+ordinary unresolved routing sink remains; all 23 boundary ports reconcile (11 connected,
+4 legacy-incompatible, 8 intentionally terminal, **0 unresolved**); derived parcel
+effects reconcile to the procedural dependency envelope rather than being treated as
+unexplained seam leakage. **Do not restate these metrics from memory — the 2A.4 report is
+canonical.**
+
+Known limits carried forward: Commonwealth's legacy hand-authored carriageways are on the
+wrong sides of the mall relative to factual placement, and Huntington keeps a bounded
+~0.49 m lot-phase residual. Both are documented, accepted, and **not** work items.
 
 ### NPC hair — BLOCKED on one raster capture (2026-09-10)
 
@@ -164,6 +214,13 @@ Recent completed sequence, newest last:
 - **B2** dusk hue, magenta to amber — `1beada1`
 - **static lifecycle audit** — resource and teardown correctness, seven commits
   through `8e3a825`. No visual change in any of them. See §9.
+- **GIS / factual-geography programme** (2026-09-11 → 2026-09-13), Stages 1A → 2A.4.
+  Closed as PASS WITH KNOWN PROTOTYPE LIMITATIONS at `e9430a5`. All of it is
+  **default off**. See the checkpoint block in §0 and `research/README.md`.
+- **PAUSE** (2026-09-13) — owner decision; no active programme.
+
+**The "visual quality is the active problem" line above describes the state before the
+GIS programme and before the pause. It is not a current work authorization.**
 
 ---
 
