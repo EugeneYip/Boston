@@ -1,0 +1,1302 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/road-audit/0.1.0",
+ "roadGeometrySeamM": 6.96,
+ "changedEdges": 101,
+ "byKind": {
+  "LOT_GRID_CUT": 35,
+  "CORE_REPLACED": 18,
+  "FACTUAL_CORE": 38,
+  "CUT_NEIGHBOUR": 1,
+  "TRANSITION_CONNECTOR": 9
+ },
+ "unintendedSplits": 0,
+ "detail": {
+  "LOT_GRID_CUT": {
+   "n": 35,
+   "names": {
+    "Commonwealth Avenue Inbound": 4,
+    "Commonwealth Avenue Outbound": 4,
+    "Newbury Street": 4,
+    "Boylston Street": 5,
+    "Public Alley 435": 5,
+    "Public Alley 442": 4,
+    "Exeter Street": 1,
+    "Fairfield Street": 2,
+    "Blagden Street": 2,
+    "Huntington Avenue": 4
+   },
+   "maxOutM": 216.15
+  },
+  "CORE_REPLACED": {
+   "n": 18,
+   "names": {
+    "Newbury Street": 1,
+    "Boylston Street": 1,
+    "Public Alley 435": 1,
+    "Public Alley 442": 1,
+    "Exeter Street": 4,
+    "Fairfield Street": 6,
+    "Blagden Street": 1,
+    "Ring Road": 2,
+    "Huntington Avenue": 1
+   },
+   "maxOutM": 0
+  },
+  "FACTUAL_CORE": {
+   "n": 38,
+   "names": {
+    "Boylston Street": 3,
+    "Dartmouth Street": 2,
+    "Fairfield Street": 4,
+    "Exeter Street": 9,
+    "Newbury Street": 4,
+    "Public Alley No. 433": 1,
+    "Public Alley No. 434": 1,
+    "Public Alley No. 441": 1,
+    "Public Alley 442": 1,
+    "Commonwealth Avenue Outbound": 1,
+    "Commonwealth Avenue Inbound": 2,
+    "Blagden Street": 1,
+    "Clarendon SQ": 1,
+    "Stuart ST": 2,
+    "Huntington Avenue": 4,
+    "Ring Road": 1
+   },
+   "maxOutM": 0
+  },
+  "CUT_NEIGHBOUR": {
+   "n": 1,
+   "names": {
+    "Public Alley No. 440": 1
+   },
+   "maxOutM": 2.85
+  },
+  "TRANSITION_CONNECTOR": {
+   "n": 9,
+   "names": {
+    "Blagden Street": 1,
+    "Boylston Street": 1,
+    "Commonwealth Avenue Outbound": 1,
+    "Exeter Street": 1,
+    "Huntington Avenue": 2,
+    "Newbury Street": 2,
+    "Public Alley 442": 1
+   },
+   "maxOutM": 6.96
+  }
+ },
+ "edges": [
+  {
+   "side": "control",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 21,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    160.43,
+    0
+   ],
+   "maxOutM": 160.43
+  },
+  {
+   "side": "control",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 22,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    47.58
+   ],
+   "maxOutM": 47.58
+  },
+  {
+   "side": "control",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 31,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    3.96,
+    0
+   ],
+   "maxOutM": 3.96
+  },
+  {
+   "side": "control",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 32,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    145.83
+   ],
+   "maxOutM": 145.83
+  },
+  {
+   "side": "control",
+   "name": "Newbury Street",
+   "id": 40,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    23.94,
+    0
+   ],
+   "maxOutM": 23.94
+  },
+  {
+   "side": "control",
+   "name": "Newbury Street",
+   "id": 41,
+   "lengthM": 190,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Newbury Street",
+   "id": 42,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    116.64
+   ],
+   "maxOutM": 116.64
+  },
+  {
+   "side": "control",
+   "name": "Boylston Street",
+   "id": 51,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    60.43,
+    0
+   ],
+   "maxOutM": 60.43
+  },
+  {
+   "side": "control",
+   "name": "Boylston Street",
+   "id": 52,
+   "lengthM": 190,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Boylston Street",
+   "id": 53,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    80.15
+   ],
+   "maxOutM": 80.15
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 435",
+   "id": 86,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    32.48,
+    0
+   ],
+   "maxOutM": 32.48
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 435",
+   "id": 87,
+   "lengthM": 190,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 435",
+   "id": 88,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    135.04
+   ],
+   "maxOutM": 135.04
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 442",
+   "id": 94,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    42.03,
+    0
+   ],
+   "maxOutM": 42.03
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 442",
+   "id": 95,
+   "lengthM": 190,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Public Alley 442",
+   "id": 96,
+   "lengthM": 190,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    98.55
+   ],
+   "maxOutM": 98.55
+  },
+  {
+   "side": "control",
+   "name": "Exeter Street",
+   "id": 156,
+   "lengthM": 34,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    3.96,
+    0
+   ],
+   "maxOutM": 3.96
+  },
+  {
+   "side": "control",
+   "name": "Exeter Street",
+   "id": 157,
+   "lengthM": 58,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Exeter Street",
+   "id": 158,
+   "lengthM": 57,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Exeter Street",
+   "id": 159,
+   "lengthM": 58,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Exeter Street",
+   "id": 160,
+   "lengthM": 58,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 165,
+   "lengthM": 34,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    19.53,
+    0
+   ],
+   "maxOutM": 19.53
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 166,
+   "lengthM": 46,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 167,
+   "lengthM": 34,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 168,
+   "lengthM": 58,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 169,
+   "lengthM": 57,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 170,
+   "lengthM": 58,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Fairfield Street",
+   "id": 171,
+   "lengthM": 42,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Blagden Street",
+   "id": 199,
+   "lengthM": 150.73,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    41.59,
+    0
+   ],
+   "maxOutM": 41.59
+  },
+  {
+   "side": "control",
+   "name": "Blagden Street",
+   "id": 200,
+   "lengthM": 40,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Ring Road",
+   "id": 201,
+   "lengthM": 7.28,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Ring Road",
+   "id": 202,
+   "lengthM": 191.81,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Huntington Avenue",
+   "id": 481,
+   "lengthM": 52.33,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    30.63,
+    0
+   ],
+   "maxOutM": 30.63
+  },
+  {
+   "side": "control",
+   "name": "Huntington Avenue",
+   "id": 482,
+   "lengthM": 7.28,
+   "kind": "CORE_REPLACED",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "control",
+   "name": "Huntington Avenue",
+   "id": 483,
+   "lengthM": 472.98,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0,
+    216.15
+   ],
+   "maxOutM": 216.15
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 21,
+   "lengthM": 165.21,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    160.43,
+    3.75
+   ],
+   "maxOutM": 160.43
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 22,
+   "lengthM": 148.69,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0.4,
+    47.58
+   ],
+   "maxOutM": 47.58
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 31,
+   "lengthM": 8.26,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    3.96,
+    1.34
+   ],
+   "maxOutM": 3.96
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 32,
+   "lengthM": 148.69,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    4.82,
+    145.83
+   ],
+   "maxOutM": 145.83
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 40,
+   "lengthM": 24.79,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    23.94,
+    0.44
+   ],
+   "maxOutM": 23.94
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 41,
+   "lengthM": 115.66,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    6.96,
+    116.64
+   ],
+   "maxOutM": 116.64
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 50,
+   "lengthM": 57.83,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    60.43,
+    5.59
+   ],
+   "maxOutM": 60.43
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 51,
+   "lengthM": 82.61,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    1.81,
+    80.15
+   ],
+   "maxOutM": 80.15
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 435",
+   "id": 84,
+   "lengthM": 99.13,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    32.48,
+    0.55
+   ],
+   "maxOutM": 32.48
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 435",
+   "id": 85,
+   "lengthM": 140.43,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    1.87,
+    135.04
+   ],
+   "maxOutM": 135.04
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 442",
+   "id": 91,
+   "lengthM": 41.31,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    42.03,
+    2.85
+   ],
+   "maxOutM": 42.03
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 442",
+   "id": 92,
+   "lengthM": 99.13,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    4.54,
+    98.55
+   ],
+   "maxOutM": 98.55
+  },
+  {
+   "side": "candidate",
+   "name": "Fairfield Street",
+   "id": 156,
+   "lengthM": 17,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    19.54,
+    3.42
+   ],
+   "maxOutM": 19.54
+  },
+  {
+   "side": "candidate",
+   "name": "Blagden Street",
+   "id": 184,
+   "lengthM": 41.87,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    41.59,
+    1.88
+   ],
+   "maxOutM": 41.59
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 463,
+   "lengthM": 34.88,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    30.63,
+    4.21
+   ],
+   "maxOutM": 30.63
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 464,
+   "lengthM": 258.24,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0.5,
+    216.15
+   ],
+   "maxOutM": 216.15
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 521,
+   "lengthM": 168.98,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Dartmouth Street",
+   "id": 522,
+   "lengthM": 40.68,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Dartmouth Street",
+   "id": 523,
+   "lengthM": 44.91,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Fairfield Street",
+   "id": 524,
+   "lengthM": 13.55,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Fairfield Street",
+   "id": 525,
+   "lengthM": 46.1,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Fairfield Street",
+   "id": 526,
+   "lengthM": 45.64,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 527,
+   "lengthM": 20.16,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 528,
+   "lengthM": 50.56,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 529,
+   "lengthM": 45.28,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 530,
+   "lengthM": 44.99,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 531,
+   "lengthM": 14.48,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 532,
+   "lengthM": 188.8,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 533,
+   "lengthM": 200.73,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 534,
+   "lengthM": 22,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley No. 433",
+   "id": 535,
+   "lengthM": 200.73,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley No. 434",
+   "id": 536,
+   "lengthM": 189.66,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley No. 440",
+   "id": 537,
+   "lengthM": 188.82,
+   "kind": "CUT_NEIGHBOUR",
+   "endsOutM": [
+    2.85,
+    0
+   ],
+   "maxOutM": 2.85
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley No. 441",
+   "id": 538,
+   "lengthM": 201.16,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 442",
+   "id": 539,
+   "lengthM": 38.11,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 540,
+   "lengthM": 115.33,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 541,
+   "lengthM": 25.99,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 542,
+   "lengthM": 23.84,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Fairfield Street",
+   "id": 543,
+   "lengthM": 48.45,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 544,
+   "lengthM": 97.09,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 545,
+   "lengthM": 114.38,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 546,
+   "lengthM": 87.12,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 547,
+   "lengthM": 54.16,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Inbound",
+   "id": 548,
+   "lengthM": 188.38,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 549,
+   "lengthM": 57.1,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    1.81,
+    0
+   ],
+   "maxOutM": 1.81
+  },
+  {
+   "side": "candidate",
+   "name": "Blagden Street",
+   "id": 550,
+   "lengthM": 132.74,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Clarendon SQ",
+   "id": 551,
+   "lengthM": 25.95,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Stuart ST",
+   "id": 552,
+   "lengthM": 46.05,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 553,
+   "lengthM": 97.3,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 554,
+   "lengthM": 44.04,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 555,
+   "lengthM": 90.07,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 556,
+   "lengthM": 154.43,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 557,
+   "lengthM": 25.44,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Ring Road",
+   "id": 558,
+   "lengthM": 173.89,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Stuart ST",
+   "id": 559,
+   "lengthM": 49.2,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 560,
+   "lengthM": 19.37,
+   "kind": "FACTUAL_CORE",
+   "endsOutM": [
+    0,
+    0
+   ],
+   "maxOutM": 0
+  },
+  {
+   "side": "candidate",
+   "name": "Blagden Street",
+   "id": 561,
+   "lengthM": 33.55,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    1.88,
+    0
+   ],
+   "maxOutM": 1.88
+  },
+  {
+   "side": "candidate",
+   "name": "Boylston Street",
+   "id": 562,
+   "lengthM": 11.45,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0,
+    5.59
+   ],
+   "maxOutM": 5.59
+  },
+  {
+   "side": "candidate",
+   "name": "Commonwealth Avenue Outbound",
+   "id": 563,
+   "lengthM": 30.29,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0,
+    4.82
+   ],
+   "maxOutM": 4.82
+  },
+  {
+   "side": "candidate",
+   "name": "Exeter Street",
+   "id": 564,
+   "lengthM": 45.32,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    3.96,
+    0
+   ],
+   "maxOutM": 3.96
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 565,
+   "lengthM": 28.93,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    4.21,
+    0
+   ],
+   "maxOutM": 4.21
+  },
+  {
+   "side": "candidate",
+   "name": "Huntington Avenue",
+   "id": 566,
+   "lengthM": 52.81,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0,
+    0.5
+   ],
+   "maxOutM": 0.5
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 567,
+   "lengthM": 20.03,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0,
+    6.96
+   ],
+   "maxOutM": 6.96
+  },
+  {
+   "side": "candidate",
+   "name": "Newbury Street",
+   "id": 568,
+   "lengthM": 8.44,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0.44,
+    0
+   ],
+   "maxOutM": 0.44
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 435",
+   "id": 569,
+   "lengthM": 60.53,
+   "kind": "LOT_GRID_CUT",
+   "endsOutM": [
+    0.55,
+    0
+   ],
+   "maxOutM": 0.55
+  },
+  {
+   "side": "candidate",
+   "name": "Public Alley 442",
+   "id": 570,
+   "lengthM": 9.25,
+   "kind": "TRANSITION_CONNECTOR",
+   "endsOutM": [
+    0,
+    4.54
+   ],
+   "maxOutM": 4.54
+  }
+ ]
+}

@@ -1,0 +1,554 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/port-ledger/0.1.0",
+ "totalPorts": 23,
+ "tally": {
+  "CONNECTED": 11,
+  "LEGACY_BOUNDARY_INCOMPATIBLE": 4,
+  "INTENTIONALLY_TERMINAL": 8,
+  "GRADE_SEPARATED_EXCLUDED": 0,
+  "NON_ROAD_EXCLUDED": 0,
+  "OTHER_JUSTIFIED": 0,
+  "UNRESOLVED": 0
+ },
+ "sumsExactly": true,
+ "unresolved": 0,
+ "ports": [
+  {
+   "street": "Boylston Street",
+   "samSegmentId": 978,
+   "face": "x1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 594.94,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x1",
+    "x": -974.9,
+    "z": 604.93,
+    "connectorM": 11.45
+   }
+  },
+  {
+   "street": "Dartmouth Street",
+   "samSegmentId": 2240,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 537.14,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  },
+  {
+   "street": "Dartmouth Street",
+   "samSegmentId": 2242,
+   "face": "z0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1009.29,
+   "z": 454.52,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  },
+  {
+   "street": "Fairfield Street",
+   "samSegmentId": 2848,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 576.93,
+   "stage2a3Class": "TERMINAL_COUNTERPART_CROSSES_ANOTHER_FACE",
+   "finalState": "LEGACY_BOUNDARY_INCOMPATIBLE",
+   "why": "the legacy concept crosses a DIFFERENT face of the core, so no local connector exists on this one",
+   "attemptedCounterpart": {
+    "lengthM": null,
+    "crossings": null,
+    "through": [],
+    "note": "no counterpart on this face to attempt"
+   },
+   "wouldCrossAnotherRoad": false,
+   "wouldReverseCarriageway": false
+  },
+  {
+   "street": "Exeter Street",
+   "samSegmentId": 3000,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1211.07,
+   "z": 454.52,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "z0",
+    "x": -1165.93,
+    "z": 450.56,
+    "connectorM": 45.32
+   }
+  },
+  {
+   "street": "Newbury Street",
+   "samSegmentId": 5660,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 1,
+   "x": -980.5,
+   "z": 493.82,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x1",
+    "x": -980.06,
+    "z": 485.38,
+    "connectorM": 8.44
+   }
+  },
+  {
+   "street": "Newbury Street",
+   "samSegmentId": 5667,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 640.47,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x0",
+    "x": -1387.42,
+    "z": 621.69,
+    "connectorM": 20.03
+   }
+  },
+  {
+   "street": "Public Alley No. 432",
+   "samSegmentId": 5970,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 591.34,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  },
+  {
+   "street": "Public Alley 435",
+   "samSegmentId": 5973,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1003.82,
+   "z": 454.52,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "z0",
+    "x": -1068.97,
+    "z": 453.97,
+    "connectorM": 65.15
+   }
+  },
+  {
+   "street": "Public Alley No. 440",
+   "samSegmentId": 5977,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 542.91,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  },
+  {
+   "street": "Public Alley 442",
+   "samSegmentId": 5979,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 689.05,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x0",
+    "x": -1385,
+    "z": 680.98,
+    "connectorM": 9.26
+   }
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "samSegmentId": 9217,
+   "face": "z0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1272.12,
+   "z": 454.52,
+   "stage2a3Class": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "finalState": "LEGACY_BOUNDARY_INCOMPATIBLE",
+   "why": "the legacy concept crosses this face, but the only connector to it crosses another road or the opposite carriageway",
+   "attemptedCounterpart": {
+    "lengthM": 98.37,
+    "crossings": 1,
+    "through": [
+     "connector:Exeter Street"
+    ]
+   },
+   "wouldCrossAnotherRoad": true,
+   "wouldReverseCarriageway": false
+  },
+  {
+   "street": "Commonwealth Avenue Outbound",
+   "samSegmentId": 9217,
+   "face": "x0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 494.06,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x0",
+    "x": -1385.28,
+    "z": 523.96,
+    "connectorM": 30.28
+   }
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "samSegmentId": 12254,
+   "face": "z0",
+   "dir": "out",
+   "oneway": 1,
+   "x": -1152.59,
+   "z": 454.52,
+   "stage2a3Class": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "finalState": "LEGACY_BOUNDARY_INCOMPATIBLE",
+   "why": "the legacy concept crosses this face, but the only connector to it crosses another road or the opposite carriageway",
+   "attemptedCounterpart": {
+    "lengthM": 168.95,
+    "crossings": 2,
+    "through": [
+     "connector:Commonwealth Avenue Outbound",
+     "connector:Exeter Street"
+    ]
+   },
+   "wouldCrossAnotherRoad": true,
+   "wouldReverseCarriageway": true
+  },
+  {
+   "street": "Commonwealth Avenue Inbound",
+   "samSegmentId": 12256,
+   "face": "x0",
+   "dir": "in",
+   "oneway": 1,
+   "x": -1380.46,
+   "z": 537.6,
+   "stage2a3Class": "TERMINAL_HANDOVER_NOT_LOCAL",
+   "finalState": "LEGACY_BOUNDARY_INCOMPATIBLE",
+   "why": "the legacy concept crosses this face, but the only connector to it crosses another road or the opposite carriageway",
+   "attemptedCounterpart": {
+    "lengthM": 62.62,
+    "crossings": 1,
+    "through": [
+     "connector:Commonwealth Avenue Outbound"
+    ]
+   },
+   "wouldCrossAnotherRoad": true,
+   "wouldReverseCarriageway": true
+  },
+  {
+   "street": "Boylston Street",
+   "samSegmentId": 12875,
+   "face": "x0",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1380.46,
+   "z": 740.81,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x0",
+    "x": -1382.27,
+    "z": 741.23,
+    "connectorM": 1.86
+   }
+  },
+  {
+   "street": "Blagden Street",
+   "samSegmentId": 13842,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 700.83,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x1",
+    "x": -978.61,
+    "z": 667.33,
+    "connectorM": 33.55
+   }
+  },
+  {
+   "street": "Stuart ST",
+   "samSegmentId": 16149,
+   "face": "x1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 816.37,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 16561,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 740.46,
+   "stage2a3Class": "TERMINAL_COUNTERPART_ALREADY_PAIRED",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "the factual street crosses this face more often than the legacy one does; the surplus crossing has no counterpart to take"
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19565,
+   "face": "x1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -980.5,
+   "z": 714.9,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "x1",
+    "x": -976.29,
+    "z": 686.28,
+    "connectorM": 28.92
+   }
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19626,
+   "face": "z1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1091.19,
+   "z": 854.6,
+   "stage2a3Class": "CONNECTED",
+   "finalState": "CONNECTED",
+   "why": "joined to the lot-grid cut stub of its own concept on its own boundary face",
+   "connector": {
+    "face": "z1",
+    "x": -1143.99,
+    "z": 855.1,
+    "connectorM": 52.81
+   }
+  },
+  {
+   "street": "Huntington Avenue",
+   "samSegmentId": 19794,
+   "face": "z1",
+   "dir": "in",
+   "oneway": 0,
+   "x": -1067.72,
+   "z": 854.6,
+   "stage2a3Class": "TERMINAL_COUNTERPART_ALREADY_PAIRED",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "the factual street crosses this face more often than the legacy one does; the surplus crossing has no counterpart to take"
+  },
+  {
+   "street": "Ring Road",
+   "samSegmentId": 20724,
+   "face": "z1",
+   "dir": "out",
+   "oneway": 0,
+   "x": -1184.13,
+   "z": 854.6,
+   "stage2a3Class": "TERMINAL_NO_PROCEDURAL_COUNTERPART",
+   "finalState": "INTENTIONALLY_TERMINAL",
+   "why": "no legacy street of this concept crosses the core boundary anywhere; the factual street runs past the edge of the prototype"
+  }
+ ],
+ "deadEnds": [
+  {
+   "node": 24,
+   "x": -1384.21,
+   "z": 475.09,
+   "distFromCoreM": 3.75,
+   "forwardReach": 1,
+   "incoming": [
+    "Commonwealth Avenue Inbound"
+   ],
+   "outgoing": [],
+   "classification": "ORPHAN LOT-GRID CUT STUB — the legacy side of the same incompatibility",
+   "port": null,
+   "cutStreet": {
+    "x": -1384.21,
+    "z": 475.09
+   },
+   "ordinaryRoutingSink": false
+  },
+  {
+   "node": 36,
+   "x": -1173.77,
+   "z": 453.18,
+   "distFromCoreM": 1.34,
+   "forwardReach": 1,
+   "incoming": [
+    "Commonwealth Avenue Outbound"
+   ],
+   "outgoing": [],
+   "classification": "ORPHAN LOT-GRID CUT STUB — the legacy side of the same incompatibility",
+   "port": null,
+   "cutStreet": {
+    "x": -1173.76,
+    "z": 453.18
+   },
+   "ordinaryRoutingSink": false
+  },
+  {
+   "node": 403,
+   "x": -1380.46,
+   "z": 576.93,
+   "distFromCoreM": 0,
+   "forwardReach": 1,
+   "incoming": [
+    "Fairfield Street"
+   ],
+   "outgoing": [],
+   "classification": "FACTUAL PORT — LEGACY_BOUNDARY_INCOMPATIBLE",
+   "port": {
+    "street": "Fairfield Street",
+    "face": "x0",
+    "state": "LEGACY_BOUNDARY_INCOMPATIBLE"
+   },
+   "cutStreet": null,
+   "ordinaryRoutingSink": false
+  },
+  {
+   "node": 420,
+   "x": -1152.59,
+   "z": 454.52,
+   "distFromCoreM": 0,
+   "forwardReach": 1,
+   "incoming": [
+    "Commonwealth Avenue Inbound"
+   ],
+   "outgoing": [],
+   "classification": "FACTUAL PORT — LEGACY_BOUNDARY_INCOMPATIBLE",
+   "port": {
+    "street": "Commonwealth Avenue Inbound",
+    "face": "z0",
+    "state": "LEGACY_BOUNDARY_INCOMPATIBLE"
+   },
+   "cutStreet": null,
+   "ordinaryRoutingSink": false
+  }
+ ],
+ "ordinaryUnintendedSinks": 0,
+ "excludedFactualFeatures": [
+  {
+   "segmentId": 21626,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23062,
+   "name": null,
+   "zlev": [
+    0,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 23138,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24056,
+   "name": null,
+   "zlev": [
+    -1,
+    0
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24058,
+   "name": null,
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 24105,
+   "name": "Massachusetts TPKE W",
+   "zlev": [
+    -1,
+    -1
+   ],
+   "cfcc": "A15",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26489,
+   "name": null,
+   "zlev": [
+    -2,
+    -1
+   ],
+   "cfcc": "A63",
+   "reason": "grade-separated (ZLEV < 0)"
+  },
+  {
+   "segmentId": 26524,
+   "name": "Exeter PLZ",
+   "zlev": [
+    0,
+    0
+   ],
+   "cfcc": "A71",
+   "reason": "walkway/plaza (CFCC A71)"
+  }
+ ]
+}

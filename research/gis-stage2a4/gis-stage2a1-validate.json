@@ -1,0 +1,40 @@
+{
+ "schemaVersion": "boston-gis-stage2a1/validate/0.1.0",
+ "checks": {
+  "factual core is frozen: interior vertices within 5 cm of Stage 1E": true,
+  "clip introduced only core-boundary vertices": true,
+  "factual geometry does not overhang the core": true,
+  "connectors are labelled and never claimed as factual": true,
+  "connectors are short": false,
+  "no parcel in a mall reservation, candidate": true,
+  "no parcel in a mall reservation, control (rule is a baseline no-op)": true,
+  "nuniv: candidate Huntington edge matches control lanes": true,
+  "nuniv: candidate Huntington edge matches control median": true,
+  "nuniv: the station section attaches in the candidate": true,
+  "Northeastern parcels unchanged": true,
+  "no Turnpike edge on the surface graph": true,
+  "candidate parcels all finite": true
+ },
+ "failed": [
+  "connectors are short"
+ ],
+ "pass": false,
+ "containment": {
+  "parcelsChanged": 1514,
+  "outsideCore": 717,
+  "medianM": 57.02,
+  "maxM": 235.77,
+  "declaredSeamM": 216.15,
+  "parcelsBeyondSeam": 26
+ },
+ "connectors": {
+  "count": 11,
+  "maxM": 65.15
+ },
+ "northeasternParcelsChanged": 0,
+ "frozenCore": {
+  "interiorVertices": 102,
+  "boundaryInterpolated": 23,
+  "worstDisplacementM": 0.00608
+ }
+}

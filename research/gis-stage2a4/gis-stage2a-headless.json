@@ -1,0 +1,629 @@
+{
+ "schemaVersion": "boston-gis-stage2a/headless/0.2.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "control": {
+  "flag": "absent",
+  "gisRoadLedger": null,
+  "structure": {
+   "roadEdgesCity": 540,
+   "roadNodesCity": 397,
+   "roadEdgesCore": 35,
+   "roadNodesCore": 16,
+   "junctionsCore": 13,
+   "roadLengthCoreM": 3213.52,
+   "plotsCity": 10944,
+   "plotsCore": 389,
+   "specsCity": 10278,
+   "specsCore": 361,
+   "clipStats": {
+    "clipped": 15,
+    "dropped": 1,
+    "trimmed": 778,
+    "superblocks": 26
+   },
+   "parcelWidthM": {
+    "min": 4.49,
+    "median": 8.26,
+    "max": 8.5
+   },
+   "parcelDepthM": {
+    "min": 8.48,
+    "median": 22.19,
+    "max": 34
+   }
+  },
+  "roadPathologyVsPDDL": {
+   "samples": 1575,
+   "insidePct": 42.35,
+   "byStreet": [
+    {
+     "name": "Blagden Street",
+     "samples": 80,
+     "insidePct": 90
+    },
+    {
+     "name": "Boylston Street",
+     "samples": 222,
+     "insidePct": 0
+    },
+    {
+     "name": "Commonwealth Avenue Inbound",
+     "samples": 33,
+     "insidePct": 100
+    },
+    {
+     "name": "Commonwealth Avenue Outbound",
+     "samples": 112,
+     "insidePct": 0
+    },
+    {
+     "name": "Exeter Street",
+     "samples": 135,
+     "insidePct": 60
+    },
+    {
+     "name": "Fairfield Street",
+     "samples": 161,
+     "insidePct": 40.99
+    },
+    {
+     "name": "Huntington Avenue",
+     "samples": 123,
+     "insidePct": 66.67
+    },
+    {
+     "name": "Newbury Street",
+     "samples": 218,
+     "insidePct": 43.12
+    },
+    {
+     "name": "Public Alley 435",
+     "samples": 169,
+     "insidePct": 93.49
+    },
+    {
+     "name": "Public Alley 442",
+     "samples": 218,
+     "insidePct": 21.56
+    },
+    {
+     "name": "Ring Road",
+     "samples": 104,
+     "insidePct": 32.69
+    }
+   ]
+  },
+  "proceduralWallResidual": {
+   "n": 1180,
+   "median": 16.77,
+   "p75": 26.21,
+   "p90": 37.71,
+   "byStreet": [
+    {
+     "name": "Blagden Street",
+     "n": 29,
+     "median": 38.3,
+     "p90": 40.2
+    },
+    {
+     "name": "Boylston Street",
+     "n": 296,
+     "median": 14.38,
+     "p90": 38.36
+    },
+    {
+     "name": "Commonwealth Avenue Inbound",
+     "n": 3,
+     "median": 11.41,
+     "p90": 12.03
+    },
+    {
+     "name": "Commonwealth Avenue Outbound",
+     "n": 103,
+     "median": 18.17,
+     "p90": 37.04
+    },
+    {
+     "name": "Exeter Street",
+     "n": 128,
+     "median": 15.89,
+     "p90": 37.58
+    },
+    {
+     "name": "Fairfield Street",
+     "n": 143,
+     "median": 13.22,
+     "p90": 33.05
+    },
+    {
+     "name": "Huntington Avenue",
+     "n": 103,
+     "median": 11.1,
+     "p90": 20.33
+    },
+    {
+     "name": "Newbury Street",
+     "n": 339,
+     "median": 18.89,
+     "p90": 36.59
+    },
+    {
+     "name": "Ring Road",
+     "n": 36,
+     "median": 19.38,
+     "p90": 30.94
+    }
+   ]
+  }
+ },
+ "candidate": {
+  "flag": "?gisRoads=1",
+  "gisRoadLedger": {
+   "enabled": true,
+   "source": "Boston Street Segments (SAM System)",
+   "licence": "ODC-PDDL-1.0",
+   "core": {
+    "x0": -1380.4601077,
+    "x1": -980.4960386,
+    "z0": 454.51956,
+    "z1": 854.60364
+   },
+   "factualStreets": 44,
+   "proceduralKept": 113,
+   "proceduralClipped": 11,
+   "proceduralRuns": 17,
+   "proceduralFullyRemoved": 1,
+   "connectors": 11
+  },
+  "structure": {
+   "roadEdgesCity": 571,
+   "roadNodesCity": 432,
+   "roadEdgesCore": 50,
+   "roadNodesCore": 35,
+   "junctionsCore": 16,
+   "roadLengthCoreM": 3565.56,
+   "plotsCity": 10974,
+   "plotsCore": 412,
+   "specsCity": 10310,
+   "specsCore": 387,
+   "clipStats": {
+    "clipped": 18,
+    "dropped": 1,
+    "trimmed": 785,
+    "superblocks": 26
+   },
+   "parcelWidthM": {
+    "min": 3.88,
+    "median": 8.17,
+    "max": 9
+   },
+   "parcelDepthM": {
+    "min": 8.8,
+    "median": 22.67,
+    "max": 34
+   }
+  },
+  "roadPathologyVsPDDL": {
+   "samples": 1853,
+   "insidePct": 0.22,
+   "byStreet": [
+    {
+     "name": "Blagden Street",
+     "samples": 71,
+     "insidePct": 0
+    },
+    {
+     "name": "Boylston Street",
+     "samples": 231,
+     "insidePct": 0
+    },
+    {
+     "name": "Clarendon SQ",
+     "samples": 14,
+     "insidePct": 0
+    },
+    {
+     "name": "Commonwealth Avenue Inbound",
+     "samples": 128,
+     "insidePct": 0
+    },
+    {
+     "name": "Commonwealth Avenue Outbound",
+     "samples": 61,
+     "insidePct": 0
+    },
+    {
+     "name": "Dartmouth Street",
+     "samples": 45,
+     "insidePct": 0
+    },
+    {
+     "name": "Exeter Street",
+     "samples": 226,
+     "insidePct": 0
+    },
+    {
+     "name": "Fairfield Street",
+     "samples": 85,
+     "insidePct": 0
+    },
+    {
+     "name": "Huntington Avenue",
+     "samples": 168,
+     "insidePct": 0
+    },
+    {
+     "name": "Newbury Street",
+     "samples": 231,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley 435",
+     "samples": 5,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley 442",
+     "samples": 21,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley No. 433",
+     "samples": 110,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley No. 434",
+     "samples": 100,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley No. 440",
+     "samples": 99,
+     "insidePct": 0
+    },
+    {
+     "name": "Public Alley No. 441",
+     "samples": 110,
+     "insidePct": 0
+    },
+    {
+     "name": "Ring Road",
+     "samples": 94,
+     "insidePct": 4.26
+    },
+    {
+     "name": "Stuart ST",
+     "samples": 54,
+     "insidePct": 0
+    }
+   ]
+  },
+  "proceduralWallResidual": {
+   "n": 1177,
+   "median": 5.88,
+   "p75": 17.05,
+   "p90": 27.17,
+   "byStreet": [
+    {
+     "name": "Blagden Street",
+     "n": 22,
+     "median": 4.56,
+     "p90": 25.56
+    },
+    {
+     "name": "Boylston Street",
+     "n": 284,
+     "median": 5.18,
+     "p90": 32.81
+    },
+    {
+     "name": "Commonwealth Avenue Inbound",
+     "n": 113,
+     "median": 6.22,
+     "p90": 25.79
+    },
+    {
+     "name": "Commonwealth Avenue Outbound",
+     "n": 23,
+     "median": 7.23,
+     "p90": 33.75
+    },
+    {
+     "name": "Dartmouth Street",
+     "n": 19,
+     "median": 15.28,
+     "p90": 40.05
+    },
+    {
+     "name": "Exeter Street",
+     "n": 178,
+     "median": 3.66,
+     "p90": 25.03
+    },
+    {
+     "name": "Fairfield Street",
+     "n": 62,
+     "median": 2.03,
+     "p90": 20.49
+    },
+    {
+     "name": "Huntington Avenue",
+     "n": 42,
+     "median": 13.81,
+     "p90": 33.11
+    },
+    {
+     "name": "Newbury Street",
+     "n": 341,
+     "median": 6.76,
+     "p90": 27.17
+    },
+    {
+     "name": "Ring Road",
+     "n": 76,
+     "median": 4.69,
+     "p90": 12.38
+    },
+    {
+     "name": "Stuart ST",
+     "n": 17,
+     "median": 18.6,
+     "p90": 35.13
+    }
+   ]
+  }
+ },
+ "blastRadius": {
+  "plotsChanged": 1514,
+  "outsideCore": 717,
+  "outsideCoreDistanceM": {
+   "min": 0.07,
+   "median": 57.02,
+   "p90": 173.03,
+   "max": 235.77
+  },
+  "streetsWithChangedParcelCount": [
+   {
+    "name": "Blagden Street",
+    "control": 19,
+    "candidate": 27
+   },
+   {
+    "name": "Boylston Street",
+    "control": 490,
+    "candidate": 487
+   },
+   {
+    "name": "Clarendon SQ",
+    "control": 0,
+    "candidate": 1
+   },
+   {
+    "name": "Commonwealth Avenue Inbound",
+    "control": 168,
+    "candidate": 203
+   },
+   {
+    "name": "Commonwealth Avenue Outbound",
+    "control": 167,
+    "candidate": 145
+   },
+   {
+    "name": "Dartmouth Street",
+    "control": 273,
+    "candidate": 285
+   },
+   {
+    "name": "Exeter Street",
+    "control": 98,
+    "candidate": 118
+   },
+   {
+    "name": "Fairfield Street",
+    "control": 96,
+    "candidate": 72
+   },
+   {
+    "name": "Huntington Avenue",
+    "control": 327,
+    "candidate": 318
+   },
+   {
+    "name": "Newbury Street",
+    "control": 341,
+    "candidate": 327
+   },
+   {
+    "name": "Ring Road",
+    "control": 20,
+    "candidate": 35
+   },
+   {
+    "name": "Stuart ST",
+    "control": 0,
+    "candidate": 11
+   }
+  ],
+  "northeasternEnvelope": {
+   "bbox": {
+    "x0": -2094.46,
+    "x1": -1658.97,
+    "z0": 1605.05,
+    "z1": 2114.24
+   },
+   "plotsChanged": 0
+  },
+  "landmarkKeepoutViolations": {
+   "control": [
+    {
+     "id": "hancock",
+     "keepout": 62,
+     "nearestRoadM": 29.27
+    },
+    {
+     "id": "customHouse",
+     "keepout": 40,
+     "nearestRoadM": 18.86
+    },
+    {
+     "id": "faneuil",
+     "keepout": 128,
+     "nearestRoadM": 62.49
+    },
+    {
+     "id": "trinity",
+     "keepout": 52,
+     "nearestRoadM": 10.17
+    },
+    {
+     "id": "bpl",
+     "keepout": 60,
+     "nearestRoadM": 7.06
+    },
+    {
+     "id": "fenway",
+     "keepout": 150,
+     "nearestRoadM": 0.66
+    },
+    {
+     "id": "citgo",
+     "keepout": 34,
+     "nearestRoadM": 22.47
+    },
+    {
+     "id": "zakim",
+     "keepout": 130,
+     "nearestRoadM": 56.78
+    },
+    {
+     "id": "oldNorth",
+     "keepout": 34,
+     "nearestRoadM": 16.51
+    },
+    {
+     "id": "bunkerHill",
+     "keepout": 78,
+     "nearestRoadM": 9.96
+    },
+    {
+     "id": "southStation",
+     "keepout": 86,
+     "nearestRoadM": 9.92
+    },
+    {
+     "id": "cityHall",
+     "keepout": 92,
+     "nearestRoadM": 15.85
+    },
+    {
+     "id": "constitution",
+     "keepout": 60,
+     "nearestRoadM": 55.57
+    },
+    {
+     "id": "oldState",
+     "keepout": 26,
+     "nearestRoadM": 7.83
+    },
+    {
+     "id": "onePru",
+     "keepout": 40,
+     "nearestRoadM": 4.98
+    },
+    {
+     "id": "federalSt",
+     "keepout": 42,
+     "nearestRoadM": 14.72
+    }
+   ],
+   "candidate": [
+    {
+     "id": "hancock",
+     "keepout": 62,
+     "nearestRoadM": 29.27
+    },
+    {
+     "id": "customHouse",
+     "keepout": 40,
+     "nearestRoadM": 18.86
+    },
+    {
+     "id": "faneuil",
+     "keepout": 128,
+     "nearestRoadM": 62.49
+    },
+    {
+     "id": "trinity",
+     "keepout": 52,
+     "nearestRoadM": 10.17
+    },
+    {
+     "id": "bpl",
+     "keepout": 60,
+     "nearestRoadM": 37
+    },
+    {
+     "id": "fenway",
+     "keepout": 150,
+     "nearestRoadM": 0.66
+    },
+    {
+     "id": "citgo",
+     "keepout": 34,
+     "nearestRoadM": 22.47
+    },
+    {
+     "id": "zakim",
+     "keepout": 130,
+     "nearestRoadM": 56.78
+    },
+    {
+     "id": "oldNorth",
+     "keepout": 34,
+     "nearestRoadM": 16.51
+    },
+    {
+     "id": "bunkerHill",
+     "keepout": 78,
+     "nearestRoadM": 9.96
+    },
+    {
+     "id": "southStation",
+     "keepout": 86,
+     "nearestRoadM": 9.92
+    },
+    {
+     "id": "cityHall",
+     "keepout": 92,
+     "nearestRoadM": 15.85
+    },
+    {
+     "id": "constitution",
+     "keepout": 60,
+     "nearestRoadM": 55.57
+    },
+    {
+     "id": "oldState",
+     "keepout": 26,
+     "nearestRoadM": 7.83
+    },
+    {
+     "id": "onePru",
+     "keepout": 40,
+     "nearestRoadM": 4.98
+    },
+    {
+     "id": "federalSt",
+     "keepout": 42,
+     "nearestRoadM": 14.72
+    }
+   ]
+  }
+ }
+}

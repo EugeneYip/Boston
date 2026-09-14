@@ -1,0 +1,40 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/huntington/0.1.0",
+ "street": "Huntington Avenue",
+ "centrelineM": 472.98,
+ "sideMinus1": {
+  "acc": 471.61,
+  "district": null,
+  "w": 7.8,
+  "n": 60,
+  "step": 7.86
+ },
+ "sidePlus1": {
+  "acc": 474.34,
+  "district": null,
+  "w": 7.8,
+  "n": 61,
+  "step": 7.776
+ },
+ "scanStepM": 0.01,
+ "positionsScanned": 25881,
+ "bestAnywhere": {
+  "arcM": 472.97,
+  "worstSideErrorM": 0.008
+ },
+ "bestWithinOneLot": {
+  "arcM": 214.98,
+  "worstSideErrorM": 0.247
+ },
+ "generatorChoseM": 0.49,
+ "confirmedMinimal": false,
+ "jointZeros": [
+  {
+   "ka": 0,
+   "kb": 0,
+   "tA": 0
+  }
+ ],
+ "affectedParcelRecords": 66,
+ "furthestBeyondCoreM": 190.05
+}

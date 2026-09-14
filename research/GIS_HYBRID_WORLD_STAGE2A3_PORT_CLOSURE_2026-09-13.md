@@ -3,6 +3,17 @@
 **Date** 2026-09-13 · **Branch** `main` · **Baseline** `632e0fb` · **Candidate** DEFAULT OFF (`?gisRoads=1`)
 **Scope** narrow closeout of the Stage 2A.2 seam. No new data source, no new dependency, no deployment.
 
+> **ERRATA — superseded in part by Stage 2A.4.** Stage 2A.4's audit found a defect in this stage's
+> lot-grid cut candidate enumeration: the segment list handed to `RoadNetwork._along` carried `s: 0`
+> on every segment instead of the cumulative arc, so every candidate position past the first segment
+> came back up to 454 m from the lot boundary it represented. Huntington therefore settled for a
+> 2.28 m phase error when 0.49 m was available at a lot boundary within the same one-lot bound. The
+> generator is fixed and `src/data/gis-backbay-roads.js` regenerated, so the figures in §A.6, §G and
+> §H below are superseded: **parcels beyond the seam 224 → 166, building specs 167 → 123, Huntington
+> phase residual 2.28 m → 0.49 m affecting 66 parcel records rather than 121.** The port closure,
+> the connector set, the locality test, `noSnap` and the routing results in §I are unchanged.
+> See `research/GIS_HYBRID_WORLD_STAGE2A4_CAUSAL_INFLUENCE_CLOSEOUT_2026-09-13.md`.
+
 ---
 
 ## A. Executive summary

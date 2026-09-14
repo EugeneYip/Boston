@@ -1,0 +1,153 @@
+{
+ "schemaVersion": "boston-gis-stage2a2/systems/0.1.0",
+ "core": {
+  "x0": -1380.460107666336,
+  "x1": -980.4960385715406,
+  "z0": 454.5195599993639,
+  "z1": 854.6036399993252
+ },
+ "control": {
+  "components": {
+   "count": 6,
+   "largest": 387,
+   "nodes": 397
+  },
+  "routes": [
+   {
+    "id": "A_outside_through_core",
+    "note": "baseline world -> seam -> factual core -> seam -> baseline world",
+    "found": true,
+    "distanceM": 1007,
+    "edges": 6,
+    "coreEdges": 4,
+    "seamCrossings": 2,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "B_east_west_core",
+    "note": "east/west traversal of the core",
+    "found": true,
+    "distanceM": 380,
+    "edges": 2,
+    "coreEdges": 2,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "C_north_south_core",
+    "note": "north/south cross-street traversal",
+    "found": true,
+    "distanceM": 231,
+    "edges": 4,
+    "coreEdges": 4,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "D_commonwealth",
+    "note": "along the Commonwealth boulevard",
+    "found": true,
+    "distanceM": 380,
+    "edges": 2,
+    "coreEdges": 1,
+    "seamCrossings": 1,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "E_near_northeastern",
+    "note": "near but not through the frozen Northeastern district",
+    "found": true,
+    "distanceM": 648.89,
+    "edges": 2,
+    "coreEdges": 0,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   }
+  ],
+  "trapCensus": {
+   "coreJunctions": 13,
+   "canExit": 13,
+   "canEnter": 13,
+   "traps": []
+  },
+  "spawns": {
+   "total": 3712,
+   "core": 118,
+   "nonFinite": 0,
+   "suspectInCore": 0
+  },
+  "tunnelEdgesInGraph": 0
+ },
+ "candidate": {
+  "components": {
+   "count": 6,
+   "largest": 422,
+   "nodes": 432
+  },
+  "routes": [
+   {
+    "id": "A_outside_through_core",
+    "note": "baseline world -> seam -> factual core -> seam -> baseline world",
+    "found": true,
+    "distanceM": 1014.61,
+    "edges": 9,
+    "coreEdges": 5,
+    "seamCrossings": 2,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "B_east_west_core",
+    "note": "east/west traversal of the core",
+    "found": true,
+    "distanceM": 389.53,
+    "edges": 2,
+    "coreEdges": 2,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "C_north_south_core",
+    "note": "north/south cross-street traversal",
+    "found": true,
+    "distanceM": 450.53,
+    "edges": 9,
+    "coreEdges": 9,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "D_commonwealth",
+    "note": "along the Commonwealth boulevard",
+    "found": true,
+    "distanceM": 390.39,
+    "edges": 2,
+    "coreEdges": 2,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   },
+   {
+    "id": "E_near_northeastern",
+    "note": "near but not through the frozen Northeastern district",
+    "found": true,
+    "distanceM": 648.89,
+    "edges": 2,
+    "coreEdges": 0,
+    "seamCrossings": 0,
+    "tunnelEdges": 0
+   }
+  ],
+  "trapCensus": {
+   "coreJunctions": 16,
+   "canExit": 16,
+   "canEnter": 16,
+   "traps": []
+  },
+  "spawns": {
+   "total": 3750,
+   "core": 144,
+   "nonFinite": 0,
+   "suspectInCore": 0
+  },
+  "tunnelEdgesInGraph": 0
+ }
+}

@@ -347,9 +347,21 @@ function lotGridCut(name, crossing) {
   // plus the centreline's own grid so a degenerate frontage still has options.
   const cand = [];
   for (const g of grids) {
+    // `_along` locates a distance by the CUMULATIVE arc `s` recorded on each
+    // segment. Building the segment list with `s: 0` throughout made it match
+    // the first segment or fall through to the last, so every candidate past
+    // the first segment came back up to 454 m away from the lot boundary it was
+    // supposed to be — which is why Huntington settled for a 2.28 m phase error
+    // when a 0.21 m cut was available within the same one-lot bound.
+    let a2 = 0;
+    const segs = g.line.slice(1).map((q, i) => {
+      const L = Math.hypot(q.x - g.line[i].x, q.z - g.line[i].z);
+      const seg = { a: g.line[i], b: q, L, s: a2 };
+      a2 += L;
+      return seg;
+    });
     for (let k = 0; k <= g.n; k++) {
-      const p = baseline.net._along(g.line.slice(1).map((q, i) => ({ a: g.line[i], b: q,
-        L: Math.hypot(q.x - g.line[i].x, q.z - g.line[i].z), s: 0 })), k * g.step, g.acc);
+      const p = baseline.net._along(segs, k * g.step, g.acc);
       cand.push(atArcOf(pts, arcAt(pts, p).t));
     }
   }

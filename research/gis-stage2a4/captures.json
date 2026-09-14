@@ -1,0 +1,243 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/captures/0.1.0",
+ "canvas": [
+  1280,
+  720
+ ],
+ "common": {
+  "tod": 10.5,
+  "weather": "clear",
+  "quality": "high",
+  "warmup": 26,
+  "holdActors": true
+ },
+ "method": "Stage 2A.1 camera-fair set reused unchanged; recaptured because Stage 2A.4 moved Huntington\u2019s lot-grid cut. Both worlds captured at a matched 1280x720 in one session; candidate captured twice from separate page loads for an A/A floor.",
+ "note": "Canvas is 1280x720 here and was 1920x1080 in Stage 2A.3, so raw percentages are comparable WITHIN this stage only. Raw PNGs and .raw buffers are local (gitignored); metadata, hashes and diffs are committed.",
+ "views": [
+  {
+   "id": "B_boylston_block",
+   "note": "elevated oblique over Boylston \u2014 camera-fair",
+   "pos": [
+    -1180,
+    46,
+    760
+   ],
+   "look": [
+    -1260,
+    6,
+    700
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "cameraFair": true,
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a4/captures/B_boylston_block-control.png",
+     "bytes": 2040538,
+     "sha256": "8b5b38243202e27a11c23bb359da4eaaaf938dab97eb84c3adda776fa7f8b3cc"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a4/captures/B_boylston_block-candidate.png",
+     "bytes": 2155468,
+     "sha256": "467e28eddfad38646ae7076c73936f073c82cb7594561642a0e340aeb2c2eda4"
+    }
+   },
+   "diff": {
+    "ab": {
+     "meanAbsDiff": 43.11,
+     "pctOver32": 50.28,
+     "pixels": 921600
+    },
+    "aa": {
+     "meanAbsDiff": 0.99,
+     "pctOver32": 0.07,
+     "pixels": 921600
+    },
+    "signalOverFloor": 50.21
+   },
+   "stage2a3SignalOverFloor": 49.51
+  },
+  {
+   "id": "C_cross_exeter_fairfield",
+   "note": "elevated cross-street view, Exeter/Fairfield \u2014 camera-fair",
+   "pos": [
+    -1230,
+    40,
+    560
+   ],
+   "look": [
+    -1170,
+    6,
+    660
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "cameraFair": true,
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a4/captures/C_cross_exeter_fairfield-control.png",
+     "bytes": 2155984,
+     "sha256": "3e31d237e7e828dec77095cd1ab4040204dcbbfe1c7670541adc1d80f4a588a6"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a4/captures/C_cross_exeter_fairfield-candidate.png",
+     "bytes": 2198954,
+     "sha256": "77e60a5f722b5851c459a6d9fc63c3144bc20cecd35e949a9d3121000badd627"
+    }
+   },
+   "diff": {
+    "ab": {
+     "meanAbsDiff": 45.36,
+     "pctOver32": 48.67,
+     "pixels": 921600
+    },
+    "aa": {
+     "meanAbsDiff": 1.13,
+     "pctOver32": 0.13,
+     "pixels": 921600
+    },
+    "signalOverFloor": 48.54
+   },
+   "stage2a3SignalOverFloor": 50.39
+  },
+  {
+   "id": "D_district_overview",
+   "note": "district overview, core centred \u2014 camera-fair",
+   "pos": [
+    -1030.5,
+    150,
+    844.6
+   ],
+   "look": [
+    -1210.5,
+    8,
+    614.6
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "cameraFair": true,
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a4/captures/D_district_overview-control.png",
+     "bytes": 2163841,
+     "sha256": "77a8f5f13a02ac55274892179287d5fc4e0d0d17c35b4eb15fc9e510c20f4f08"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a4/captures/D_district_overview-candidate.png",
+     "bytes": 2210504,
+     "sha256": "3cb07318d0514fcab38989fd0c5a7eb783a47ccb4b5b606a45a4728881dce8bb"
+    }
+   },
+   "diff": {
+    "ab": {
+     "meanAbsDiff": 27.16,
+     "pctOver32": 29.23,
+     "pixels": 921600
+    },
+    "aa": {
+     "meanAbsDiff": 0.75,
+     "pctOver32": 0.02,
+     "pixels": 921600
+    },
+    "signalOverFloor": 29.21
+   },
+   "stage2a3SignalOverFloor": 29.59
+  },
+  {
+   "id": "E_commonwealth",
+   "note": "Commonwealth boulevard diagnostic \u2014 mall legibility",
+   "pos": [
+    -1150,
+    38,
+    380
+   ],
+   "look": [
+    -1250,
+    6,
+    470
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "cameraFair": true,
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a4/captures/E_commonwealth-control.png",
+     "bytes": 2090638,
+     "sha256": "d4500e4f3259b21851de86cf09fe645df855369e7b6e95a17ad498d4f9db3a95"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a4/captures/E_commonwealth-candidate.png",
+     "bytes": 2062996,
+     "sha256": "609098e5546a91503ed9829d6ffa6597d798f3070db65128b2ec9eee6d3fac39"
+    }
+   },
+   "diff": {
+    "ab": {
+     "meanAbsDiff": 32.3,
+     "pctOver32": 33.98,
+     "pixels": 921600
+    },
+    "aa": {
+     "meanAbsDiff": 1.16,
+     "pctOver32": 0.12,
+     "pixels": 921600
+    },
+    "signalOverFloor": 33.86
+   },
+   "stage2a3SignalOverFloor": 33.73
+  },
+  {
+   "id": "F_seam",
+   "note": "transition seam diagnostic \u2014 NOT verdict-driving",
+   "pos": [
+    -1460,
+    60,
+    700
+   ],
+   "look": [
+    -1370,
+    8,
+    660
+   ],
+   "fov": 55,
+   "tod": 10.5,
+   "weather": "clear",
+   "quality": "high",
+   "cameraFair": true,
+   "files": {
+    "control": {
+     "path": "research/gis-stage2a4/captures/F_seam-control.png",
+     "bytes": 2330105,
+     "sha256": "3b52be502d7b2221c51c310c5a57b6bd608949ccfb3faaad2bcfe160cb178892"
+    },
+    "candidate": {
+     "path": "research/gis-stage2a4/captures/F_seam-candidate.png",
+     "bytes": 2368358,
+     "sha256": "1acf86a5e45c1a49ec47232922e3ad7af88a73ca7969fa1ee44df30c51d99e90"
+    }
+   },
+   "diff": {
+    "ab": {
+     "meanAbsDiff": 39.81,
+     "pctOver32": 47.29,
+     "pixels": 921600
+    },
+    "aa": {
+     "meanAbsDiff": 0.86,
+     "pctOver32": 0.02,
+     "pixels": 921600
+    },
+    "signalOverFloor": 47.27
+   },
+   "stage2a3SignalOverFloor": 48.05
+  }
+ ]
+}

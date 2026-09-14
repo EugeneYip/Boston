@@ -1,0 +1,22 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/runtime/0.1.0",
+ "why": "Re-run, not carried forward: Stage 2A.4 corrected a defect in the lot-grid cut candidate enumeration, which moved Huntington's cut, so the Stage 2A.3 runtime evidence no longer describes this geometry.",
+ "method": "24 s of stepped runtime per world (4 areas x 6 x api.step(1)), actors released. api.step rather than real time because the Browser pane pauses requestAnimationFrame when hidden.",
+ "areas": [[-1180, 45, 654], [-1000, 45, 560], [-1370, 45, 760], [-1180, 45, 460]],
+ "traffic": {
+  "control":   { "vehiclesInCore": 85, "samples": 1638, "entries": 24, "exits": 2,  "offRoad": 0, "buildingPenetration": 0, "stuck4": 0, "stuck6": 0 },
+  "candidate": { "vehiclesInCore": 87, "samples": 1494, "entries": 28, "exits": 10, "offRoad": 0, "buildingPenetration": 0, "stuck4": 0, "stuck6": 0 }
+ },
+ "pedestrians": {
+  "control":   { "inCore": 136, "insideBuilding": 0, "onCarriageway": 19, "farFromRoad": 0 },
+  "candidate": { "inCore": 141, "insideBuilding": 0, "onCarriageway": 25, "farFromRoad": 0 }
+ },
+ "spawns": { "control": { "total": 3712, "core": 118 }, "candidate": { "total": 3750, "core": 144 } },
+ "coreBuildingSpecs": { "control": 361, "candidate": 387 },
+ "notes": [
+  "offRoad counts samples further than halfRoad + 1.5 m from every road centreline.",
+  "onCarriageway uses d <= halfRoad, a crude proxy. Candidate 25 of 141 (17.7%) against control 19 of 136 (14.0%) is not an improvement and is not claimed as one; no pedestrian is inside a building or stranded in either world.",
+  "Spawn and core-spec counts agree exactly with the headless build, which is the cross-check that the runtime is the same world the measurements describe.",
+  "Collision was accepted in Stage 2A.2 against collider generation that Stage 2A.3 and 2A.4 did not touch; see the report for the carry-forward argument."
+ ]
+}

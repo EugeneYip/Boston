@@ -1764,8 +1764,8 @@ export const GIS_ROADS_CLIPPED = [
    {
     "path": [
      [
-      42.3476508,
-      -71.0795903
+      42.3476985,
+      -71.0795565
      ],
      [
       42.34672,
@@ -1943,7 +1943,7 @@ export const GIS_ROADS_CONNECTORS = [
   "type": "arterial",
   "lanes": 4,
   "transitionConnector": true,
-  "lengthM": 55.89,
+  "lengthM": 52.81,
   "face": "z1",
   "path": [
    [
@@ -1951,8 +1951,8 @@ export const GIS_ROADS_CONNECTORS = [
     -71.0789146
    ],
    [
-    42.3476508,
-    -71.0795903
+    42.3476985,
+    -71.0795565
    ]
   ]
  },

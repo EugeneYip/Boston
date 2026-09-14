@@ -1,0 +1,31 @@
+{
+ "schemaVersion": "boston-gis-stage2a4/envelope/0.1.0",
+ "roadGeometrySeamM": 6.96,
+ "changedEdges": 101,
+ "rayLimitByDistrict": {
+  "financial": 136,
+  "backBay": 80,
+  "beaconHill": 64,
+  "northEnd": 56,
+  "southEnd": 72,
+  "seaport": 128,
+  "fenway": 92,
+  "charlestown": 60,
+  "cambridge": 104,
+  "northeastern": 120
+ },
+ "parcels": {
+  "changed": 998,
+  "beyondRoadSeam": 166,
+  "outsideEnvelope": 0,
+  "maxE2InfluenceM": 58.77,
+  "detail": []
+ },
+ "specs": {
+  "changed": 894,
+  "beyondRoadSeam": 123,
+  "outsideEnvelope": 0,
+  "maxE2InfluenceM": 47.72,
+  "detail": []
+ }
+}
